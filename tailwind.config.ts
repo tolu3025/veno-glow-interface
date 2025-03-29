@@ -21,8 +21,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
-        handwriting: ["Dancing Script", "cursive"]
+        sans: ["var(--font-sans)", "Inter", ...fontFamily.sans],
+        heading: ["Montserrat", "sans-serif"],
+        handwriting: ["Dancing Script", "cursive"],
+        body: ["Inter", "sans-serif"]
       },
       colors: {
         border: "hsl(var(--border))",
@@ -76,10 +78,27 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-20px)" },
+        },
+        "rotate-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "bubble-float": {
+          "0%": { transform: "translateY(0) translateX(0)" },
+          "33%": { transform: "translateY(-30px) translateX(20px)" },
+          "66%": { transform: "translateY(10px) translateX(-15px)" },
+          "100%": { transform: "translateY(0) translateX(0)" },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "float": "float 6s ease-in-out infinite",
+        "rotate-slow": "rotate-slow 15s linear infinite",
+        "bubble-float": "bubble-float 15s ease-in-out infinite",
       },
     },
   },
