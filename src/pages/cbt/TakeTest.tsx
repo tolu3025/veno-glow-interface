@@ -74,10 +74,10 @@ const TakeTest = () => {
             // Transform Supabase data to match our QuizQuestion type
             const formattedQuestions: QuizQuestion[] = data.map(q => ({
               id: q.id,
-              text: q.question,
+              text: q.question, // Use question instead of question_text
               options: Array.isArray(q.options) ? 
                 q.options.map((opt: any) => String(opt)) : [],
-              correctOption: q.answer
+              correctOption: q.answer // Use answer instead of correct_option_index
             }));
             
             setQuestions(formattedQuestions);
@@ -137,6 +137,8 @@ const TakeTest = () => {
   const goToNextQuestion = () => {
     // Record the user's answer
     const currentQuestionData = questions[currentQuestion];
+    if (!currentQuestionData) return;
+    
     const isCorrect = selectedAnswer === currentQuestionData.correctOption;
     
     // Save the user's answer
@@ -325,7 +327,7 @@ const TakeTest = () => {
   }
 
   if (showResults) {
-    const percentage = Math.round((score / questions.length) * 100);
+    const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
     let resultMessage = "Good effort!";
     let resultClass = "text-amber-500";
     
@@ -379,18 +381,24 @@ const TakeTest = () => {
                   <TableBody>
                     {userAnswers.map((answer, index) => {
                       const question = questions[index];
+                      // Add null checking to prevent errors with undefined questions
+                      if (!question) return null;
+                      
                       return (
                         <TableRow key={question.id} className={answer.isCorrect ? "bg-green-50 dark:bg-green-900/10" : "bg-red-50 dark:bg-red-900/10"}>
                           <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                          <TableCell>{question.text}</TableCell>
+                          <TableCell>{question.text || "Question not available"}</TableCell>
                           <TableCell>
-                            {answer.selectedOption !== null ? 
+                            {answer.selectedOption !== null && question.options && question.options[answer.selectedOption] ? 
                               question.options[answer.selectedOption] : 
                               <span className="text-muted-foreground italic">No answer</span>
                             }
                           </TableCell>
                           <TableCell className="font-medium">
-                            {question.options[question.correctOption]}
+                            {question.options && question.options[question.correctOption] ? 
+                              question.options[question.correctOption] : 
+                              "Not available"
+                            }
                           </TableCell>
                           <TableCell className="text-center">
                             {answer.isCorrect ? 
@@ -527,6 +535,30 @@ const TakeTest = () => {
     );
   }
 
+  const currentQuestionData = questions[currentQuestion];
+
+  // Add safety check for current question
+  if (!currentQuestionData) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <VenoLogo className="h-6 w-6" />
+            <CardTitle>Error</CardTitle>
+          </div>
+          <CardDescription>Question data not available</CardDescription>
+        </CardHeader>
+        <CardContent className="py-6 text-center">
+          <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
+          <p className="mb-4">The current question could not be loaded.</p>
+          <Button onClick={() => navigate('/cbt')}>
+            Back to Tests
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -551,11 +583,11 @@ const TakeTest = () => {
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-medium mb-6">
-              {questions[currentQuestion].text}
+              {currentQuestionData.text}
             </h3>
           </div>
           <div className="space-y-3">
-            {questions[currentQuestion].options.map((option, index) => (
+            {currentQuestionData.options && currentQuestionData.options.map((option, index) => (
               <div 
                 key={index}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${
