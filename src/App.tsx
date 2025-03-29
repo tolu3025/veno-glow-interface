@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -27,6 +26,7 @@ import DashboardPage from "./pages/DashboardPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import AdsPolicy from "./pages/AdsPolicy";
+import UnderMaintenancePage from "./pages/UnderMaintenancePage";
 
 // Import our RPC function setup
 import "./functions/appendToActivities";
@@ -46,6 +46,7 @@ const App = () => (
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/ads-policy" element={<AdsPolicy />} />
+              <Route path="/maintenance" element={<UnderMaintenancePage />} />
               
               <Route element={<MainLayout />}>
                 <Route path="/" element={
@@ -137,6 +138,8 @@ const App = () => (
                     <BlogPage />
                   </ProtectedRoute>
                 } />
+                
+                <Route path="/contact" element={<UnderMaintenancePage />} />
               </Route>
               
               <Route path="*" element={<NotFound />} />

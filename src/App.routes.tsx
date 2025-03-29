@@ -20,7 +20,7 @@ import ManageTest from './pages/cbt/ManageTest';
 import Analytics from './pages/cbt/Analytics';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
-import ContactPage from './pages/ContactPage';
+import UnderMaintenancePage from './pages/UnderMaintenancePage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export const routes: RouteObject[] = [
@@ -34,7 +34,8 @@ export const routes: RouteObject[] = [
       { path: 'blog', element: <BlogPage /> },
       { path: 'bot', element: <BotPage /> },
       { path: 'auth', element: <AuthPage /> },
-      { path: 'contact', element: <ContactPage /> },
+      { path: 'contact', element: <UnderMaintenancePage /> },
+      { path: 'maintenance', element: <UnderMaintenancePage /> },
       { 
         path: 'profile',
         element: <ProtectedRoute><ProfilePage /></ProtectedRoute>
