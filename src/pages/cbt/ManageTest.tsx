@@ -98,9 +98,10 @@ const ManageTest = () => {
     removeAfterPrint: true,
     pageStyle: `
       @media print {
-        @page { margin: 0; }
-        body { margin: 1cm; }
+        @page { size: letter; margin: 0.5cm; }
+        body { margin: 0; padding: 0; }
         header, footer, nav, button, .no-print { display: none !important; }
+        .print-content { display: block !important; }
       }
     `,
   });
@@ -279,7 +280,7 @@ const ManageTest = () => {
     setSelectedAttemptId(attemptId);
     setTimeout(() => {
       handlePrint();
-    }, 100);
+    }, 300);
   };
 
   if (loading) {
@@ -490,7 +491,7 @@ const ManageTest = () => {
       )}
       
       <div className="hidden">
-        <div ref={printRef} className="p-8 print:p-0">
+        <div ref={printRef} className="p-8 print:p-0 print-content">
           <div className="relative bg-gradient-to-br from-veno-primary/20 via-background/90 to-veno-primary/5 p-8 rounded-lg mb-8 overflow-hidden print:bg-white">
             <div className="absolute inset-0 opacity-10 print:opacity-0">
               <div className="absolute left-0 top-0 w-40 h-40 rounded-full bg-veno-primary/30 blur-3xl"></div>
@@ -602,7 +603,7 @@ const ManageTest = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl border border-gray-200 dark:border-gray-800 print:border-gray-300">
                 <h3 className="text-xl font-medium mb-4">Performance Summary</h3>
                 <div className="space-y-4">
                   <div>
@@ -626,13 +627,13 @@ const ManageTest = () => {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 print:border-gray-300">
                       <p className="text-sm text-muted-foreground mb-1">Questions</p>
-                      <p className="text-xl font-medium">{testDetails.question_count}</p>
+                      <p className="text-xl font-medium">{testDetails?.question_count}</p>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 print:border-gray-300">
                       <p className="text-sm text-muted-foreground mb-1">Time Limit</p>
-                      <p className="text-xl font-medium">{testDetails.time_limit || 'No'} min</p>
+                      <p className="text-xl font-medium">{testDetails?.time_limit || 'No'} min</p>
                     </div>
                   </div>
                 </div>
@@ -640,7 +641,7 @@ const ManageTest = () => {
             </div>
           )}
           
-          <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800 print:border-gray-300">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center">

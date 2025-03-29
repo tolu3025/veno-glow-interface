@@ -50,9 +50,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           .from('user_profiles')
           .select('activities')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(); // Using maybeSingle instead of single to handle no rows
         
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
         
         // Properly type and handle the activities array
         let activities: Activity[] = [];
@@ -98,7 +98,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                 .from('user_profiles')
                 .select('activities')
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
               
               if (error) return false;
               
@@ -199,24 +199,95 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         setTasks(tasksList);
       } catch (error) {
         console.error("Error fetching tasks:", error);
+        // Still set default tasks even if there's an error
+        setTasks([
+          {
+            id: "1",
+            title: "Daily Login",
+            description: "Login to the app daily (10 times for 100 points)",
+            points: 100,
+            completed: false,
+            type: "login",
+            progress: 30,
+            icon: Calendar,
+            verification: async () => true
+          },
+          {
+            id: "2",
+            title: "Read Blog Posts",
+            description: "Read 5 blog posts to earn 25 points",
+            points: 25,
+            completed: false,
+            type: "blog",
+            progress: 40,
+            icon: MessageSquare,
+            verification: async () => true
+          },
+          {
+            id: "3",
+            title: "Complete CBT Tests",
+            description: "Complete 3 CBT tests to earn 60 points",
+            points: 60,
+            completed: false,
+            type: "cbt",
+            progress: 33,
+            icon: Award,
+            verification: async () => true
+          },
+          {
+            id: "4",
+            title: "Refer a Friend",
+            description: "Invite someone to join Veno (100 points)",
+            points: 100,
+            completed: false,
+            type: "referral",
+            progress: 0,
+            icon: Award,
+            verification: async () => true
+          },
+          {
+            id: "5",
+            title: "Click on Ads",
+            description: "Click on sponsored ads 3 times to earn 50 points",
+            points: 50,
+            completed: false,
+            type: "ads",
+            progress: 0,
+            icon: MousePointer,
+            verification: async () => true
+          },
+          {
+            id: "6",
+            title: "Make a Purchase",
+            description: "Make a purchase in the marketplace (100 points)",
+            points: 100,
+            completed: false,
+            type: "purchase",
+            progress: 0,
+            icon: ShoppingCart,
+            verification: async () => true
+          }
+        ]);
       }
     };
     
     fetchTasks();
     
     // Set up realtime subscription for task updates
-    const channel = supabase
-      .channel('tasks-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_profiles', filter: `user_id=eq.${user?.id}` },
-        () => fetchTasks()
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    if (user) {
+      const channel = supabase
+        .channel('tasks-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'user_profiles', filter: `user_id=eq.${user.id}` },
+          () => fetchTasks()
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user]);
 
   const handleCompleteTask = async (taskId: string) => {
@@ -301,57 +372,64 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       </p>
       
       <div className="space-y-4">
-        {tasks.map((task) => (
-          <Card key={task.id} className={`${task.completed ? 'bg-muted/30' : ''}`}>
-            <CardContent className="p-5">
-              <div className="flex items-start">
-                <div className="mr-3 mt-1">
-                  {task.completed ? (
-                    <CheckCircle className="h-5 w-5 text-veno-primary" />
-                  ) : (
-                    <task.icon className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                      {task.title}
-                    </h3>
-                    <span className="text-sm font-medium text-veno-primary">
-                      +{task.points} pts
-                    </span>
+        {tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8">
+            <ListChecks className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Loading tasks...</p>
+          </div>
+        ) : (
+          tasks.map((task) => (
+            <Card key={task.id} className={`${task.completed ? 'bg-muted/30' : ''}`}>
+              <CardContent className="p-5">
+                <div className="flex items-start">
+                  <div className="mr-3 mt-1">
+                    {task.completed ? (
+                      <CheckCircle className="h-5 w-5 text-veno-primary" />
+                    ) : (
+                      <task.icon className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                   
-                  <p className={`text-sm ${task.completed ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
-                    {task.description}
-                  </p>
-                  
-                  {task.progress !== undefined && task.progress > 0 && task.progress < 100 && (
-                    <div className="mt-2">
-                      <Progress value={task.progress} className="h-2" />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Progress: {task.progress}%
-                      </p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </h3>
+                      <span className="text-sm font-medium text-veno-primary">
+                        +{task.points} pts
+                      </span>
                     </div>
-                  )}
-                  
-                  {!task.completed && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3 text-xs"
-                      onClick={() => handleCompleteTask(task.id)}
-                      disabled={isProcessing === task.id}
-                    >
-                      {isProcessing === task.id ? "Verifying..." : "Complete"}
-                    </Button>
-                  )}
+                    
+                    <p className={`text-sm ${task.completed ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
+                      {task.description}
+                    </p>
+                    
+                    {task.progress !== undefined && task.progress > 0 && task.progress < 100 && (
+                      <div className="mt-2">
+                        <Progress value={task.progress} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Progress: {task.progress}%
+                        </p>
+                      </div>
+                    )}
+                    
+                    {!task.completed && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 text-xs"
+                        onClick={() => handleCompleteTask(task.id)}
+                        disabled={isProcessing === task.id}
+                      >
+                        {isProcessing === task.id ? "Verifying..." : "Complete"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
