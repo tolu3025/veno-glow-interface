@@ -531,7 +531,7 @@ const TakeTest = () => {
               <ul className="list-disc list-inside space-y-1 text-sm">
                 <li>Read each question carefully</li>
                 <li>Select the best answer from the options</li>
-                <li>You can't go back to previous questions</li>
+                <li>You can go back to previous questions</li>
                 <li>The test will automatically submit when time runs out</li>
                 {testDetails?.results_visibility === 'creator_only' && (
                   <li>Your results will be available to the test creator only</li>
@@ -877,4 +877,37 @@ const TakeTest = () => {
                 <div className="flex items-center gap-3">
                   <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
                     selectedAnswer === index 
-                      ? 'border-veno-primary bg-veno
+                      ? 'border-veno-primary bg-veno-primary text-white' 
+                      : 'border-gray-300'
+                  }`}>
+                    {String.fromCharCode(65 + index)}
+                  </div>
+                  <div>{option}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="flex gap-4 pt-6 border-t mt-6">
+        <Button 
+          variant="outline" 
+          onClick={goToPreviousQuestion}
+          disabled={currentQuestion === 0}
+          className="flex-1"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+        <Button 
+          className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
+          onClick={goToNextQuestion}
+        >
+          {currentQuestion < questions.length - 1 ? 'Next' : 'Finish'}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default TakeTest;
