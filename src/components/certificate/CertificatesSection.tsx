@@ -74,7 +74,10 @@ const CertificatesSection = () => {
             .eq('user_id', user.id)
             .single();
           
-          if (profileError) throw profileError;
+          if (profileError && profileError.code !== 'PGRST116') {
+            // PGRST116 is "no rows returned" - not an error in this context
+            throw profileError;
+          }
           
           const activities = profileData?.activities || [];
           
@@ -98,11 +101,8 @@ const CertificatesSection = () => {
         }
       } catch (error) {
         console.error('Error fetching certificates:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch certificates. Please try again later.",
-          variant: "destructive",
-        });
+        // We don't show an error toast anymore, just set empty certificates
+        setCertificates([]);
       } finally {
         setIsLoading(false);
       }
@@ -193,81 +193,92 @@ const CertificatesSection = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {certificates.map((cert) => (
-            <Card key={cert.id} className={cert.unlocked ? 'border-veno-primary/30' : 'border-muted/50'}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center">
-                      <Award className={`h-5 w-5 mr-2 ${cert.unlocked ? 'text-veno-primary' : 'text-muted-foreground'}`} />
-                      <h3 className="font-medium">{cert.name}</h3>
+        <>
+          <Card className="border border-veno-primary/30 bg-muted/10 mb-4">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-lg font-medium mb-2">Congratulations!</h3>
+              <p className="text-muted-foreground mb-4">
+                You have been issued {certificates.length} certificate{certificates.length > 1 ? 's' : ''}. 
+                View or download them below.
+              </p>
+            </CardContent>
+          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {certificates.map((cert) => (
+              <Card key={cert.id} className={cert.unlocked ? 'border-veno-primary/30' : 'border-muted/50'}>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center">
+                        <Award className={`h-5 w-5 mr-2 ${cert.unlocked ? 'text-veno-primary' : 'text-muted-foreground'}`} />
+                        <h3 className="font-medium">{cert.name}</h3>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {cert.unlocked 
+                          ? `Earned on ${format(new Date(cert.date), 'MMM d, yyyy')}`
+                          : 'Complete requirements to unlock'}
+                      </p>
+                      
+                      {cert.unlocked && cert.score > 0 && (
+                        <p className="text-sm mt-1">
+                          Score: <span className="font-medium">{cert.score}%</span>
+                        </p>
+                      )}
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {cert.unlocked 
-                        ? `Earned on ${format(new Date(cert.date), 'MMM d, yyyy')}`
-                        : 'Complete requirements to unlock'}
-                    </p>
-                    
-                    {cert.unlocked && cert.score > 0 && (
-                      <p className="text-sm mt-1">
-                        Score: <span className="font-medium">{cert.score}%</span>
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    {cert.unlocked ? (
-                      <>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="flex items-center"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-3xl p-0">
-                            <div id={`certificate-${cert.id}`}>
-                              <Certificate 
-                                userName={user?.email?.split('@')[0] || 'Student'}
-                                achievementName={cert.name}
-                                date={format(new Date(cert.date), 'MMMM d, yyyy')}
-                                score={cert.score}
-                              />
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        
+                    <div className="flex items-center space-x-2">
+                      {cert.unlocked ? (
+                        <>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="flex items-center"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-3xl p-0">
+                              <div id={`certificate-${cert.id}`}>
+                                <Certificate 
+                                  userName={user?.email?.split('@')[0] || 'Student'}
+                                  achievementName={cert.name}
+                                  date={format(new Date(cert.date), 'MMMM d, yyyy')}
+                                  score={cert.score}
+                                />
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => downloadCertificate(cert.id, cert.name)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                        </>
+                      ) : (
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => downloadCertificate(cert.id, cert.name)}
+                          disabled
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
+                          Locked
+                          <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
-                      </>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                      >
-                        Locked
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
