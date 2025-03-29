@@ -1,0 +1,378 @@
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+const testFormSchema = z.object({
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  description: z.string().optional(),
+  difficulty: z.string().min(1, { message: "Please select a difficulty level" }),
+  timeLimit: z.string().optional(),
+});
+
+type TestFormValues = z.infer<typeof testFormSchema>;
+
+const difficultyOptions = [
+  { value: "beginner", label: "Beginner" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "advanced", label: "Advanced" },
+];
+
+type Question = {
+  id: string;
+  text: string;
+  options: string[];
+  correctOption: number;
+};
+
+const CreateTest = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<Question>({
+    id: crypto.randomUUID(),
+    text: "",
+    options: ["", "", "", ""],
+    correctOption: 0,
+  });
+  const [saving, setSaving] = useState(false);
+  
+  const form = useForm<TestFormValues>({
+    resolver: zodResolver(testFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      difficulty: "intermediate",
+      timeLimit: "",
+    },
+  });
+
+  const addQuestion = () => {
+    if (!currentQuestion.text.trim()) {
+      toast({
+        title: "Question text is required",
+        description: "Please enter the question text",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (currentQuestion.options.some(opt => !opt.trim())) {
+      toast({
+        title: "All options are required",
+        description: "Please fill in all option fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setQuestions([...questions, currentQuestion]);
+    setCurrentQuestion({
+      id: crypto.randomUUID(),
+      text: "",
+      options: ["", "", "", ""],
+      correctOption: 0,
+    });
+    
+    toast({
+      title: "Question added",
+      description: "Your question has been added to the test",
+    });
+  };
+  
+  const updateOption = (index: number, value: string) => {
+    const newOptions = [...currentQuestion.options];
+    newOptions[index] = value;
+    setCurrentQuestion({ ...currentQuestion, options: newOptions });
+  };
+  
+  const removeQuestion = (id: string) => {
+    setQuestions(questions.filter((q) => q.id !== id));
+  };
+  
+  const onSubmit = (data: TestFormValues) => {
+    if (questions.length === 0) {
+      toast({
+        title: "No questions added",
+        description: "Please add at least one question to your test",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSaving(true);
+    
+    // In a real app, this data would be saved to Supabase
+    console.log("Test form data:", data);
+    console.log("Test questions:", questions);
+    
+    setTimeout(() => {
+      setSaving(false);
+      toast({
+        title: "Test created",
+        description: "Your test has been created successfully!",
+      });
+      navigate("/cbt");
+    }, 1500);
+  };
+
+  return (
+    <div className="pb-14">
+      <div className="flex items-center space-x-4 mb-6">
+        <button 
+          onClick={() => navigate('/cbt')}
+          className="p-2 rounded-full bg-secondary/70 hover:bg-secondary"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <h1 className="text-2xl font-bold">Create Test</h1>
+      </div>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="veno-card p-5 space-y-4"
+          >
+            <h2 className="text-lg font-medium mb-3">Test Details</h2>
+            
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter test title" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Enter test description" 
+                      className="resize-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="difficulty"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Difficulty Level</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {difficultyOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="timeLimit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Time Limit (Optional, in minutes)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="Enter time limit" 
+                        {...field} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="veno-card p-5 space-y-4"
+          >
+            <h2 className="text-lg font-medium mb-2">Questions</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add questions to your test. Each question must have 4 options with 1 correct answer.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="questionText" className="text-sm font-medium">
+                    Question Text
+                  </label>
+                  <Textarea
+                    id="questionText"
+                    placeholder="Enter your question"
+                    value={currentQuestion.text}
+                    onChange={(e) => setCurrentQuestion({...currentQuestion, text: e.target.value})}
+                    className="resize-none mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Options</label>
+                  <div className="space-y-2 mt-1">
+                    {currentQuestion.options.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          name="correctOption"
+                          value={index}
+                          checked={currentQuestion.correctOption === index}
+                          onChange={() => setCurrentQuestion({...currentQuestion, correctOption: index})}
+                          className="w-4 h-4 text-veno-primary"
+                        />
+                        <Input
+                          placeholder={`Option ${index + 1}`}
+                          value={option}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          className="flex-1"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <HelpCircle className="inline h-3 w-3 mr-1" />
+                    Select the radio button next to the correct answer
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addQuestion}
+                className="w-full border-dashed border-veno-primary/40 text-veno-primary"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+              </Button>
+            </div>
+            
+            {questions.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-medium mb-3">
+                  Added Questions ({questions.length})
+                </h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {questions.map((q, i) => (
+                    <div key={q.id} className="bg-secondary/40 p-3 rounded-md">
+                      <div className="flex justify-between items-start">
+                        <h4 className="text-sm font-medium">
+                          {i + 1}. {q.text}
+                        </h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeQuestion(q.id)}
+                          className="h-6 w-6 text-destructive"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {q.options.map((opt, j) => (
+                          <div key={j} className="flex items-center">
+                            <span className={j === q.correctOption ? "text-veno-primary font-medium" : ""}>
+                              {String.fromCharCode(65 + j)}. {opt}
+                              {j === q.correctOption && " ✓"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex justify-end"
+          >
+            <Button
+              type="submit"
+              className="bg-veno-primary hover:bg-veno-primary/90"
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-1 h-4 w-4" /> Save Test
+                </>
+              )}
+            </Button>
+          </motion.div>
+        </form>
+      </Form>
+    </div>
+  );
+};
+
+export default CreateTest;
