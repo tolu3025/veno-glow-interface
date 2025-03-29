@@ -9,6 +9,8 @@ import confetti from "canvas-confetti";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
+import { Json } from "@/integrations/supabase/types";
+import { appendActivityAndUpdatePoints } from "@/utils/activityHelpers";
 
 type QuizQuestion = {
   id: string;
@@ -65,7 +67,7 @@ const TakeTest = () => {
             const formattedQuestions: QuizQuestion[] = questions.map(q => ({
               id: q.id,
               text: q.question,
-              options: Array.isArray(q.options) ? q.options : [],
+              options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
               correctOption: q.answer
             }));
             
@@ -83,6 +85,15 @@ const TakeTest = () => {
             setAnswers(new Array(formattedQuestions.length).fill(null));
             // Set time remaining in seconds
             setTimeRemaining(10 * 60);
+            
+            // Record activity if user is logged in
+            if (user) {
+              await appendActivityAndUpdatePoints(user.id, {
+                type: "quiz_started",
+                subject: subjectFromState,
+                timestamp: new Date().toISOString()
+              });
+            }
           } else {
             // No questions found for this subject
             toast({
@@ -113,25 +124,7 @@ const TakeTest = () => {
     };
     
     fetchQuestions();
-  }, [testId, subjectFromState, toast]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (test?.timeLimit && timeRemaining > 0 && !testSubmitted) {
-      const timer = setTimeout(() => {
-        setTimeRemaining(time => {
-          if (time <= 1) {
-            // Auto-submit when time runs out
-            submitTest();
-            return 0;
-          }
-          return time - 1;
-        });
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [timeRemaining, testSubmitted, test]);
+  }, [testId, subjectFromState, toast, user]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -197,6 +190,18 @@ const TakeTest = () => {
           });
           
           if (error) throw error;
+          
+          // Update user activity and add points based on score
+          const pointsEarned = Math.floor(calculatedScore / 10); // 1 point for every 10% score
+          
+          await appendActivityAndUpdatePoints(user.id, {
+            type: "quiz_completed",
+            subject: subjectFromState,
+            score: calculatedScore,
+            points_earned: pointsEarned,
+            timestamp: new Date().toISOString()
+          }, pointsEarned);
+          
         } catch (err) {
           console.error('Error saving test result:', err);
         }
@@ -270,7 +275,6 @@ const TakeTest = () => {
     );
   }
 
-  // Show result screen when test is submitted
   if (testSubmitted) {
     return (
       <div className="pb-6">
@@ -344,7 +348,6 @@ const TakeTest = () => {
               
               <Button
                 onClick={() => {
-                  // Reset the test
                   setTestSubmitted(false);
                   setCurrentQuestionIndex(0);
                   setAnswers(new Array(test.questions.length).fill(null));

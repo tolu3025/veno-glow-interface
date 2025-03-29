@@ -37,3 +37,38 @@ export async function appendActivityAndUpdatePoints(userId: string, activity: an
     return false;
   }
 }
+
+// Add the missing appendToUserActivities function
+export async function appendToUserActivities(userId: string, activity: any): Promise<boolean> {
+  try {
+    // First, get the current profile
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('activities')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    // Make sure activities is an array
+    const currentActivities = Array.isArray(data.activities) ? data.activities : [];
+    
+    // Append the new activity
+    const updatedActivities = [...currentActivities, activity];
+    
+    // Update the database
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({
+        activities: updatedActivities
+      })
+      .eq('user_id', userId);
+    
+    if (updateError) throw updateError;
+    
+    return true;
+  } catch (error) {
+    console.error("Error in appendToUserActivities:", error);
+    return false;
+  }
+}

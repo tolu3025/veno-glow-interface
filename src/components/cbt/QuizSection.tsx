@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Loader2 } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAuth } from '@/providers/AuthProvider';
+import { VenoLogo } from '@/components/ui/logo';
 
 const QuizSection = () => {
   const navigate = useNavigate();
@@ -28,7 +29,10 @@ const QuizSection = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Quiz Library</CardTitle>
+          <div className="flex items-center gap-2">
+            <VenoLogo className="h-6 w-6" />
+            <CardTitle>Quiz Library</CardTitle>
+          </div>
           <CardDescription>Explore subject quizzes</CardDescription>
         </CardHeader>
         <CardContent>
@@ -48,7 +52,10 @@ const QuizSection = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Quiz Library</CardTitle>
+        <div className="flex items-center gap-2">
+          <VenoLogo className="h-6 w-6" />
+          <CardTitle>Quiz Library</CardTitle>
+        </div>
         <CardDescription>Explore subject quizzes from our database</CardDescription>
       </CardHeader>
       <CardContent>
