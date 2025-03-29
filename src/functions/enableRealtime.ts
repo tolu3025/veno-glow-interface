@@ -7,22 +7,21 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const enableRealtimeForTable = async (tableName: string) => {
   try {
-    // First check if the table exists using the existing check_if_table_exists function
-    const { data: tableExists, error: tableCheckError } = await supabase.rpc('check_if_table_exists', { table_name: tableName });
+    // Check if the table exists and has realtime enabled
+    const { data, error } = await supabase.rpc('get_realtime_status', { table_name: tableName });
     
-    if (tableCheckError) {
-      console.error(`Error checking if table ${tableName} exists:`, tableCheckError);
+    if (error) {
+      console.error(`Error checking realtime status for ${tableName}:`, error);
       return false;
     }
     
-    if (!tableExists) {
-      console.error(`Table ${tableName} does not exist`);
+    // If realtime is not enabled, we need to enable it
+    if (!data) {
+      console.log(`Realtime not enabled for ${tableName}. This should be done via SQL.`);
       return false;
     }
     
-    // For now, we'll assume the table exists but we can't check realtime status directly
-    // In production, this would need a custom implementation to verify realtime status
-    console.log(`Table ${tableName} exists. Assuming realtime is enabled.`);
+    console.log(`Realtime is confirmed working for ${tableName}`);
     return true;
   } catch (error) {
     console.error(`Error in enableRealtimeForTable for ${tableName}:`, error);

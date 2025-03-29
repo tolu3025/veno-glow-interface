@@ -1280,6 +1280,12 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["question_difficulty"]
         }[]
       }
+      get_realtime_status: {
+        Args: {
+          table_name: string
+        }
+        Returns: boolean
+      }
       get_subjects_from_questions: {
         Args: Record<PropertyKey, never>
         Returns: {
