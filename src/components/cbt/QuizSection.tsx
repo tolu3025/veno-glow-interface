@@ -14,6 +14,21 @@ const QuizSection = () => {
   const { user } = useAuth();
   const { data: subjects, isLoading, error } = useSubjects();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Monitor online status
+  React.useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleStartQuiz = (subject: string) => {
     setSelectedSubject(subject);
@@ -33,6 +48,33 @@ const QuizSection = () => {
       <div className="flex w-full justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
       </div>
+    );
+  }
+
+  if (isOffline) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <VenoLogo className="h-6 w-6" />
+            <CardTitle>Quiz Library</CardTitle>
+          </div>
+          <CardDescription>Explore subject quizzes</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <div className="mb-4 text-amber-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+              <line x1="12" y1="2" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <p className="text-lg font-medium mb-2">No internet connection</p>
+          <p className="text-muted-foreground mb-4">Please check your connection to access quizzes</p>
+          <Button onClick={() => window.location.reload()}>
+            Reload
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 

@@ -68,8 +68,8 @@ export const routes: RouteObject[] = [
         path: 'cbt',
         children: [
           { index: true, element: <CBTIndex /> },
-          { path: 'create-test', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
-          { path: 'take-test/:shareCode', element: <TakeTest /> },
+          { path: 'create', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
+          { path: 'take/:shareCode', element: <TakeTest /> },
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'library', element: <Library /> }
