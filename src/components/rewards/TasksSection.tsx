@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -296,7 +295,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             completed: false,
             type: "blog",
             progress: 40,
-            icon: MessageSquare,
+            icon: MessageCircle,
             verification: async () => true
           },
           {
