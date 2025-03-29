@@ -16,7 +16,7 @@ interface QuizSettingsProps {
 }
 
 export interface QuizSettings {
-  difficulty: 'easy' | 'medium' | 'hard' | 'all';
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'all';
   timeLimit: number; // in minutes
   questionsCount: number;
 }
@@ -31,7 +31,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
   const handleDifficultyChange = (value: string) => {
     setSettings({
       ...settings,
-      difficulty: value as 'easy' | 'medium' | 'hard' | 'all',
+      difficulty: value as 'beginner' | 'intermediate' | 'advanced' | 'all',
     });
   };
 
@@ -70,16 +70,16 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
             className="grid grid-cols-2 gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="easy" id="easy" />
-              <Label htmlFor="easy" className="cursor-pointer">Easy</Label>
+              <RadioGroupItem value="beginner" id="beginner" />
+              <Label htmlFor="beginner" className="cursor-pointer">Beginner</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="medium" id="medium" />
-              <Label htmlFor="medium" className="cursor-pointer">Medium</Label>
+              <RadioGroupItem value="intermediate" id="intermediate" />
+              <Label htmlFor="intermediate" className="cursor-pointer">Intermediate</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="hard" id="hard" />
-              <Label htmlFor="hard" className="cursor-pointer">Hard</Label>
+              <RadioGroupItem value="advanced" id="advanced" />
+              <Label htmlFor="advanced" className="cursor-pointer">Advanced</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="all" id="all" />

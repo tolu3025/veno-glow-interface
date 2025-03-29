@@ -1,9 +1,23 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Trophy, Clock } from 'lucide-react';
+
+// Define a type for test attempts
+type TestAttempt = {
+  id: string;
+  score: number;
+  total_questions: number;
+  time_taken: number;
+  completed_at: string;
+  test_id: string;
+  user_id: string | null;
+  subject: string;
+  title: string;
+};
 
 // Define a type for top tests
 type TopTest = {
@@ -14,30 +28,47 @@ type TopTest = {
 
 const AnalyticsPage = () => {
   const [topTests, setTopTests] = useState<TopTest[]>([]);
-  const [userTestAttempts, setUserTestAttempts] = useState<any[]>([]);
+  const [userTestAttempts, setUserTestAttempts] = useState<TestAttempt[]>([]);
 
   useEffect(() => {
     const fetchTopTests = async () => {
       try {
-        // Fetch top tests using the new RPC function
+        // Fetch top tests using the RPC function
         const { data: topTestsData, error: topTestsError } = await supabase
-          .rpc('get_top_tests', { limit_count: 5 })
-          .select('test_id, count, user_tests(title)');
+          .rpc('get_top_tests', { limit_count: 5 });
         
-        if (topTestsError) throw topTestsError;
+        if (topTestsError) {
+          console.error('Error fetching top tests:', topTestsError);
+          return;
+        }
         
+        // Now fetch titles for these tests
         if (topTestsData) {
-          // Map the data to include test titles
-          const enrichedTopTests = topTestsData.map(test => ({
-            test_id: test.test_id,
-            count: test.count,
-            title: test.user_tests?.title || 'Unnamed Test'
-          }));
+          const testIds = topTestsData.map(test => test.test_id);
+          
+          const { data: testTitles, error: testTitlesError } = await supabase
+            .from('user_tests')
+            .select('id, title')
+            .in('id', testIds);
+            
+          if (testTitlesError) {
+            console.error('Error fetching test titles:', testTitlesError);
+          }
+          
+          // Combine the data
+          const enrichedTopTests = topTestsData.map(test => {
+            const matchingTest = testTitles?.find(t => t.id === test.test_id);
+            return {
+              test_id: test.test_id,
+              count: test.count,
+              title: matchingTest?.title || 'Unnamed Test'
+            };
+          });
           
           setTopTests(enrichedTopTests);
         }
       } catch (error) {
-        console.error('Error fetching top tests:', error);
+        console.error('Error in top tests workflow:', error);
       }
     };
 
@@ -51,15 +82,26 @@ const AnalyticsPage = () => {
             total_questions, 
             time_taken, 
             completed_at, 
+            test_id,
+            user_id,
             user_tests(title, subject)
           `);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching test attempts:', error);
+          return;
+        }
         
         if (data) {
           // Transform data to match TestAttempt type
-          const transformedData = data.map(attempt => ({
-            ...attempt,
+          const transformedData: TestAttempt[] = data.map(attempt => ({
+            id: attempt.id,
+            score: attempt.score,
+            total_questions: attempt.total_questions,
+            time_taken: attempt.time_taken,
+            completed_at: attempt.completed_at,
+            test_id: attempt.test_id,
+            user_id: attempt.user_id,
             subject: attempt.user_tests?.subject || 'Unknown',
             title: attempt.user_tests?.title || 'Unnamed Test'
           }));
@@ -67,7 +109,7 @@ const AnalyticsPage = () => {
           setUserTestAttempts(transformedData);
         }
       } catch (error) {
-        console.error('Error fetching test attempts:', error);
+        console.error('Error in test attempts workflow:', error);
       }
     };
 

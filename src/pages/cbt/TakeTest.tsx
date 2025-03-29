@@ -64,6 +64,12 @@ const TakeTest = () => {
   });
 
   useEffect(() => {
+    if (location.state?.settings) {
+      setSettings(location.state.settings);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
     const loadTest = async () => {
       setLoading(true);
 
@@ -73,9 +79,7 @@ const TakeTest = () => {
       }
       
       try {
-        // Load specific test by ID
         if (testId) {
-          // First, get test details
           const { data: testData, error: testError } = await supabase
             .from('user_tests')
             .select('*')
@@ -92,7 +96,6 @@ const TakeTest = () => {
           
           setTestDetails(testData as TestDetails);
           
-          // If user is logged in, check previous attempts
           if (user && testData.allow_retakes === false) {
             const { data: attempts, error: attemptsError } = await supabase
               .from('test_attempts')
@@ -105,7 +108,6 @@ const TakeTest = () => {
             }
           }
           
-          // Then, get test questions
           const { data: questionsData, error: questionsError } = await supabase
             .from('user_test_questions')
             .select('*')
@@ -114,18 +116,15 @@ const TakeTest = () => {
           if (questionsError) throw questionsError;
           
           if (questionsData && questionsData.length > 0) {
-            // Transform question data to match our QuizQuestion type
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
-              // Convert options array to string array
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
               correctOption: q.answer
             }));
             
             setQuestions(formattedQuestions);
           } else {
-            // If no questions found, show error
             toast.error("No questions available for this test");
           }
         }
@@ -143,36 +142,33 @@ const TakeTest = () => {
   const loadSubjectQuiz = async () => {
     try {
       const subject = location.state.subject;
+      const settingsFromState = location.state.settings || settings;
       
-      // Map UI difficulty to database difficulty and handle 'all' case
-      const difficultyFilter = settings.difficulty === 'all' 
-        ? ['beginner', 'intermediate', 'advanced'] as const 
-        : [mapDifficulty(settings.difficulty)] as const;
+      const difficultyFilter = settingsFromState.difficulty === 'all' 
+        ? ['beginner', 'intermediate', 'advanced'] 
+        : [settingsFromState.difficulty];
       
       const { data, error } = await supabase
         .from('questions')
         .select('*')
         .eq('subject', subject)
         .in('difficulty', difficultyFilter)
-        .limit(settings.questionsCount);
+        .limit(settingsFromState.questionsCount);
         
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Transform Supabase data to match our QuizQuestion type
         const formattedQuestions: QuizQuestion[] = data.map(q => ({
           id: q.id,
-          text: q.question, // Use question instead of question_text
-          // Convert options array to string array
+          text: q.question,
           options: Array.isArray(q.options) ? 
             q.options.map((opt: any) => String(opt)) : [],
-          correctOption: q.answer // Use answer instead of correct_option_index
+          correctOption: q.answer
         }));
         
         setQuestions(formattedQuestions);
       } else {
-        // If no questions found, provide demo questions
-        setQuestions(generateDemoQuestions(subject));
+        setQuestions(generateDemoQuestions(subject, settingsFromState.difficulty));
       }
     } catch (error) {
       console.error("Error loading subject questions:", error);
@@ -182,13 +178,28 @@ const TakeTest = () => {
     }
   };
 
-  const mapDifficulty = (uiDifficulty: string): "beginner" | "intermediate" | "advanced" => {
-    switch(uiDifficulty) {
-      case 'easy': return 'beginner';
-      case 'medium': return 'intermediate';
-      case 'hard': return 'advanced';
-      default: return 'beginner';
-    }
+  const generateDemoQuestions = (subject: string, difficulty: string = 'all'): QuizQuestion[] => {
+    const difficultyLabel = difficulty === 'all' ? '' : `(${difficulty} level)`;
+    return [
+      {
+        id: '1',
+        text: `What is the capital of France? ${difficultyLabel} (Demo ${subject} question)`,
+        options: ['London', 'Paris', 'Berlin', 'Madrid'],
+        correctOption: 1
+      },
+      {
+        id: '2',
+        text: `Which planet is known as the Red Planet? ${difficultyLabel} (Demo ${subject} question)`,
+        options: ['Earth', 'Mars', 'Venus', 'Jupiter'],
+        correctOption: 1
+      },
+      {
+        id: '3',
+        text: `What is the largest mammal? ${difficultyLabel} (Demo ${subject} question)`,
+        options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'],
+        correctOption: 1
+      },
+    ];
   };
 
   useEffect(() => {
@@ -220,13 +231,11 @@ const TakeTest = () => {
   };
 
   const goToNextQuestion = () => {
-    // Record the user's answer
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
     const isCorrect = selectedAnswer === currentQuestionData.correctOption;
     
-    // Save the user's answer
     setUserAnswers(prev => [
       ...prev,
       {
@@ -236,12 +245,10 @@ const TakeTest = () => {
       }
     ]);
     
-    // Update the score if correct
     if (isCorrect) {
       setScore(score + 1);
     }
     
-    // Move to the next question or finish the test
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(null);
@@ -271,7 +278,6 @@ const TakeTest = () => {
   };
 
   const finishTest = async () => {
-    // If we're finishing without completing all questions, record remaining answers as null
     if (userAnswers.length < questions.length) {
       const remainingAnswers = questions.slice(userAnswers.length).map(q => ({
         questionId: q.id,
@@ -282,7 +288,6 @@ const TakeTest = () => {
       setUserAnswers(prev => [...prev, ...remainingAnswers]);
     }
     
-    // Save test results regardless of visibility settings
     try {
       const testData = {
         test_id: testId,
@@ -297,14 +302,11 @@ const TakeTest = () => {
       
       await supabase.from('test_attempts').insert([testData]);
       
-      // Based on the results_visibility setting, show different screens
       if (testDetails?.results_visibility === 'creator_only') {
         setSubmissionComplete(true);
       } else {
-        // For 'test_takers' or 'public', show results
         setShowResults(true);
         
-        // If results are public, load others' results
         if (testDetails?.results_visibility === 'public') {
           loadPublicResults();
         }
@@ -312,7 +314,7 @@ const TakeTest = () => {
     } catch (error) {
       console.error("Error saving test results:", error);
       toast.error("Could not save your results");
-      setShowResults(true); // Show results anyway
+      setShowResults(true);
     }
   };
 
@@ -320,29 +322,6 @@ const TakeTest = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
-  const generateDemoQuestions = (subject: string): QuizQuestion[] => {
-    return [
-      {
-        id: '1',
-        text: `What is the capital of France? (Demo ${subject} question)`,
-        options: ['London', 'Paris', 'Berlin', 'Madrid'],
-        correctOption: 1
-      },
-      {
-        id: '2',
-        text: `Which planet is known as the Red Planet? (Demo ${subject} question)`,
-        options: ['Earth', 'Mars', 'Venus', 'Jupiter'],
-        correctOption: 1
-      },
-      {
-        id: '3',
-        text: `What is the largest mammal? (Demo ${subject} question)`,
-        options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'],
-        correctOption: 1
-      },
-    ];
   };
 
   if (loading) {
@@ -405,7 +384,6 @@ const TakeTest = () => {
   }
 
   if (!testStarted) {
-    // Check if the user has already taken this test
     if (previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
       return (
         <Card>
@@ -431,7 +409,6 @@ const TakeTest = () => {
       );
     }
 
-    // Show test taker form if needed
     if (showTakerForm) {
       return (
         <Card>
@@ -486,6 +463,14 @@ const TakeTest = () => {
                     {testDetails?.time_limit || settings.timeLimit || 15} minutes
                   </span>
                 </li>
+                {location.state?.settings && (
+                  <li className="flex justify-between">
+                    <span className="text-muted-foreground">Difficulty:</span>
+                    <span className="font-medium capitalize">
+                      {location.state.settings.difficulty === 'all' ? 'All Levels' : location.state.settings.difficulty}
+                    </span>
+                  </li>
+                )}
                 {testDetails && (
                   <>
                     <li className="flex justify-between">
@@ -522,7 +507,6 @@ const TakeTest = () => {
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={() => {
-            // If user is not logged in and not a subject quiz, show the form
             if (!user && testId !== 'subject') {
               setShowTakerForm(true);
             } else {
@@ -549,7 +533,6 @@ const TakeTest = () => {
       resultClass = "text-rose-500";
     }
     
-    // Review mode - show all questions with user answers and correct answers
     if (reviewMode) {
       return (
         <Card>
@@ -591,7 +574,6 @@ const TakeTest = () => {
                   <TableBody>
                     {userAnswers.map((answer, index) => {
                       const question = questions[index];
-                      // Add null checking to prevent errors with undefined questions
                       if (!question) return null;
                       
                       return (
@@ -636,7 +618,6 @@ const TakeTest = () => {
       );
     }
     
-    // Results summary view
     return (
       <Card>
         <CardHeader>
@@ -717,7 +698,6 @@ const TakeTest = () => {
             </div>
           </div>
           
-          {/* Show public results if applicable */}
           {testDetails?.results_visibility === 'public' && publicResults.length > 0 && (
             <div className="bg-secondary/30 p-4 rounded-lg mb-6">
               <h3 className="font-medium mb-3">Leaderboard</h3>
@@ -800,7 +780,6 @@ const TakeTest = () => {
 
   const currentQuestionData = questions[currentQuestion];
 
-  // Add safety check for current question
   if (!currentQuestionData) {
     return (
       <Card>
