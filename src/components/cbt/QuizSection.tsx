@@ -1,178 +1,94 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { BookOpen, Clock, Award, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-
-type Quiz = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  questionCount: number;
-  difficulty: "beginner" | "intermediate" | "advanced";
-  timeEstimate: number;
-  progress?: number;
-};
-
-// Mock quiz data - in a real app this would come from Supabase
-const MOCK_QUIZZES: Quiz[] = [
-  {
-    id: "1",
-    title: "Programming Fundamentals",
-    description: "Core concepts every programmer should know",
-    category: "Programming",
-    questionCount: 15,
-    difficulty: "beginner",
-    timeEstimate: 15,
-    progress: 65,
-  },
-  {
-    id: "2",
-    title: "Web Development Essentials",
-    description: "HTML, CSS, and JavaScript basics",
-    category: "Web",
-    questionCount: 20,
-    difficulty: "intermediate",
-    timeEstimate: 25,
-    progress: 30,
-  },
-  {
-    id: "3",
-    title: "Advanced Data Structures",
-    description: "Complex algorithms and data organization",
-    category: "Computer Science",
-    questionCount: 12,
-    difficulty: "advanced",
-    timeEstimate: 30,
-  },
-];
-
-const difficultyColors = {
-  beginner: "text-green-500",
-  intermediate: "text-amber-500",
-  advanced: "text-rose-500",
-};
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { BookOpen, Clock, Star } from 'lucide-react';
+import { useSubjects } from '@/hooks/useSubjects';
+import { useAuth } from '@/providers/AuthProvider';
 
 const QuizSection = () => {
   const navigate = useNavigate();
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const { data: subjects, isLoading, error } = useSubjects();
 
-  useEffect(() => {
-    // Simulate API call with a delay
-    const timer = setTimeout(() => {
-      setQuizzes(MOCK_QUIZZES);
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const startQuiz = (quizId: string) => {
-    navigate(`/cbt/take/${quizId}`);
-  };
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+  const handleStartQuiz = (subject: string) => {
+    // Navigate to take test page with the subject
+    navigate(`/cbt/take/subject`, { state: { subject } });
   };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="veno-card p-4 animate-pulse">
-            <div className="h-6 w-2/3 bg-secondary rounded mb-3"></div>
-            <div className="h-4 w-full bg-secondary/70 rounded mb-4"></div>
-            <div className="flex justify-between">
-              <div className="h-4 w-1/4 bg-secondary/50 rounded"></div>
-              <div className="h-4 w-1/4 bg-secondary/50 rounded"></div>
-            </div>
-          </div>
-        ))}
+      <div className="flex w-full justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
-  return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-      className="space-y-4"
-    >
-      {quizzes.map((quiz) => (
-        <motion.div 
-          key={quiz.id}
-          variants={itemVariants}
-          className="veno-card"
-        >
-          <div className="p-4 sm:p-5">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium text-lg">{quiz.title}</h3>
-              <span className={cn("text-xs font-medium", difficultyColors[quiz.difficulty])}>
-                {quiz.difficulty.charAt(0).toUpperCase() + quiz.difficulty.slice(1)}
-              </span>
-            </div>
-            
-            <p className="text-sm text-muted-foreground mb-3">
-              {quiz.description}
-            </p>
-            
-            {quiz.progress !== undefined && (
-              <div className="mb-4">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>Progress</span>
-                  <span className="font-medium">{quiz.progress}%</span>
-                </div>
-                <Progress value={quiz.progress} className="h-2" />
-              </div>
-            )}
-            
-            <div className="flex flex-wrap gap-2 mb-4">
-              <div className="flex items-center text-xs text-muted-foreground bg-secondary/50 rounded-full px-2.5 py-1">
-                <BookOpen size={12} className="mr-1" />
-                {quiz.questionCount} questions
-              </div>
-              <div className="flex items-center text-xs text-muted-foreground bg-secondary/50 rounded-full px-2.5 py-1">
-                <Clock size={12} className="mr-1" />
-                {quiz.timeEstimate} mins
-              </div>
-              <div className="flex items-center text-xs text-muted-foreground bg-secondary/50 rounded-full px-2.5 py-1">
-                <Award size={12} className="mr-1" />
-                {quiz.category}
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="bg-veno-primary hover:bg-veno-primary/90"
-                onClick={() => startQuiz(quiz.id)}
-              >
-                Start Quiz <ArrowRight size={14} className="ml-1" />
+  if (error || !subjects || subjects.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Quiz Library</CardTitle>
+          <CardDescription>Explore subject quizzes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No subjects available at the moment.</p>
+            {user && (
+              <Button className="mt-4" onClick={() => navigate('/cbt/create')}>
+                Create a Quiz
               </Button>
-            </div>
+            )}
           </div>
-        </motion.div>
-      ))}
-    </motion.div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Quiz Library</CardTitle>
+        <CardDescription>Explore subject quizzes from our database</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <Card key={subject.name} className="overflow-hidden">
+              <div className="bg-primary/10 p-2">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-lg">{subject.name}</CardTitle>
+                  <CardDescription>
+                    {subject.question_count} Questions
+                  </CardDescription>
+                </CardHeader>
+              </div>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center">
+                    <BookOpen className="mr-1 h-4 w-4 text-muted-foreground" />
+                    <span>Multiple Choice</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
+                    <span>15 mins</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t bg-muted/50 p-4">
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleStartQuiz(subject.name)}
+                >
+                  Start Quiz
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
