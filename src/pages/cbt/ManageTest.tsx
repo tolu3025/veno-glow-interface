@@ -11,7 +11,10 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
-  FileText
+  FileText,
+  PencilIcon,
+  Save,
+  XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +35,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -41,6 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -54,6 +59,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import Certificate from '@/components/certificate/Certificate';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 type Test = {
   id: string;
@@ -79,6 +88,14 @@ type TestAttempt = {
   disqualified?: boolean;
 };
 
+type TestQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  answer: number;
+  explanation?: string;
+};
+
 const ManageTest = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
@@ -86,11 +103,16 @@ const ManageTest = () => {
   const { user } = useAuth();
   const [testDetails, setTestDetails] = useState<Test | null>(null);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
+  const [testQuestions, setTestQuestions] = useState<TestQuestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [testActive, setTestActive] = useState(true);
   const [disqualifying, setDisqualifying] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
+  const [isEditQuestionDialogOpen, setIsEditQuestionDialogOpen] = useState(false);
+  const [currentEditQuestion, setCurrentEditQuestion] = useState<TestQuestion | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -155,6 +177,7 @@ const ManageTest = () => {
         }
 
         setTestAttempts(attemptsData || []);
+        fetchTestQuestions();
       } catch (error) {
         console.error('Error fetching test data:', error);
         toast({
@@ -169,6 +192,42 @@ const ManageTest = () => {
 
     fetchTestData();
   }, [testId, user, navigate, toast]);
+
+  const fetchTestQuestions = async () => {
+    if (!testId) return;
+    
+    setLoadingQuestions(true);
+    try {
+      const { data, error } = await supabase
+        .from('test_questions')
+        .select('*')
+        .eq('test_id', testId);
+        
+      if (error) throw error;
+      
+      if (data) {
+        // Transform data to match our TestQuestion type
+        const questions = data.map(q => ({
+          id: q.id,
+          question: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+          answer: q.answer,
+          explanation: q.explanation || ''
+        }));
+        
+        setTestQuestions(questions);
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load test questions',
+        variant: 'destructive', 
+      });
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
 
   const toggleTestStatus = async () => {
     if (!testDetails) return;
@@ -307,6 +366,65 @@ const ManageTest = () => {
     }, 300);
   };
 
+  const handleEditQuestion = (question: TestQuestion) => {
+    setCurrentEditQuestion({...question});
+    setIsEditQuestionDialogOpen(true);
+  };
+
+  const handleUpdateQuestionField = (field: string, value: any) => {
+    if (!currentEditQuestion) return;
+    setCurrentEditQuestion(prev => {
+      if (!prev) return prev;
+      return {...prev, [field]: value};
+    });
+  };
+
+  const handleUpdateOption = (index: number, value: string) => {
+    if (!currentEditQuestion) return;
+    const newOptions = [...currentEditQuestion.options];
+    newOptions[index] = value;
+    setCurrentEditQuestion({...currentEditQuestion, options: newOptions});
+  };
+
+  const saveQuestionChanges = async () => {
+    if (!currentEditQuestion || !testId) return;
+    
+    setSaveLoading(true);
+    try {
+      const { error } = await supabase
+        .from('test_questions')
+        .update({
+          question: currentEditQuestion.question,
+          options: currentEditQuestion.options,
+          answer: currentEditQuestion.answer,
+          explanation: currentEditQuestion.explanation
+        })
+        .eq('id', currentEditQuestion.id);
+        
+      if (error) throw error;
+      
+      setTestQuestions(prev => 
+        prev.map(q => q.id === currentEditQuestion.id ? currentEditQuestion : q)
+      );
+      
+      toast({
+        title: 'Question Updated',
+        description: 'The question has been successfully updated',
+      });
+      
+      setIsEditQuestionDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating question:', error);
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update the question',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -384,135 +502,316 @@ const ManageTest = () => {
         </CardContent>
       </Card>
       
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={refreshData}
-          disabled={refreshing}
-          className="flex items-center gap-1"
-        >
-          {refreshing ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+      <Tabs defaultValue="participants">
+        <TabsList className="mb-4">
+          <TabsTrigger value="participants">Participants</TabsTrigger>
+          <TabsTrigger value="questions">Questions</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="participants">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={refreshData}
+              disabled={refreshing}
+              className="flex items-center gap-1"
+            >
+              {refreshing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              Refresh
+            </Button>
+          </div>
+          
+          {testAttempts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <p className="text-muted-foreground mb-4">
+                  No one has taken this test yet
+                </p>
+                <Button onClick={() => navigate('/cbt')}>Back to Dashboard</Button>
+              </CardContent>
+            </Card>
           ) : (
-            <RefreshCw size={14} />
-          )}
-          Refresh
-        </Button>
-      </div>
-      
-      {testAttempts.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <p className="text-muted-foreground mb-4">
-              No one has taken this test yet
-            </p>
-            <Button onClick={() => navigate('/cbt')}>Back to Dashboard</Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-center">Score</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {testAttempts.map((attempt) => (
-                  <TableRow 
-                    key={attempt.id} 
-                    className={attempt.disqualified ? "bg-destructive/10" : ""}
-                  >
-                    <TableCell className="font-medium">
-                      {attempt.participant_name || 'Anonymous'}
-                    </TableCell>
-                    <TableCell>{attempt.participant_email || 'N/A'}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="font-medium">
-                        {attempt.score}/{attempt.total_questions}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {Math.round((attempt.score / attempt.total_questions) * 100)}%
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mr-2"
-                        onClick={() => printParticipantResult(attempt.id)}
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="text-center">Score</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {testAttempts.map((attempt) => (
+                      <TableRow 
+                        key={attempt.id} 
+                        className={attempt.disqualified ? "bg-destructive/10" : ""}
                       >
-                        <FileText className="h-3.5 w-3.5 mr-1" />
-                        Print
+                        <TableCell className="font-medium">
+                          {attempt.participant_name || 'Anonymous'}
+                        </TableCell>
+                        <TableCell>{attempt.participant_email || 'N/A'}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="font-medium">
+                            {attempt.score}/{attempt.total_questions}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {Math.round((attempt.score / attempt.total_questions) * 100)}%
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mr-2"
+                            onClick={() => printParticipantResult(attempt.id)}
+                          >
+                            <FileText className="h-3.5 w-3.5 mr-1" />
+                            Print
+                          </Button>
+                          
+                          {attempt.disqualified ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  Reinstate
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will reinstate the participant's results. Are you sure?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => reinstateParticipant(attempt.id)}
+                                  >
+                                    Reinstate
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive">
+                                  {disqualifying === attempt.id ? 
+                                    <Loader2 className="h-4 w-4 animate-spin" /> : 
+                                    'Disqualify'
+                                  }
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will mark the participant's results as disqualified. Are you sure?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => disqualifyParticipant(attempt.id)}
+                                    className="bg-destructive hover:bg-destructive/90"
+                                  >
+                                    Disqualify
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="questions">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
+          </div>
+          
+          {loadingQuestions ? (
+            <Card>
+              <CardContent className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
+              </CardContent>
+            </Card>
+          ) : testQuestions.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <p className="text-muted-foreground mb-4">
+                  No questions found for this test
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {testQuestions.map((question, index) => (
+                <Card key={question.id}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex justify-between">
+                      <span>Question {index + 1}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEditQuestion(question)}
+                        className="h-8 px-2"
+                      >
+                        <PencilIcon size={16} />
+                        <span className="ml-1">Edit</span>
                       </Button>
-                      
-                      {attempt.disqualified ? (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline">
-                              Reinstate
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will reinstate the participant's results. Are you sure?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => reinstateParticipant(attempt.id)}
-                              >
-                                Reinstate
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4">{question.question}</p>
+                    <div className="space-y-2">
+                      {question.options.map((option, optionIndex) => (
+                        <div 
+                          key={optionIndex} 
+                          className={`p-3 rounded-md border ${
+                            optionIndex === question.answer ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 ${
+                              optionIndex === question.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                            }`}>
+                              {String.fromCharCode(65 + optionIndex)}
+                            </div>
+                            <span>{option}</span>
+                            {optionIndex === question.answer && (
+                              <Check size={16} className="ml-2 text-green-500" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {question.explanation && (
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                        <p className="text-sm font-medium mb-1">Explanation:</p>
+                        <p className="text-sm">{question.explanation}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+      
+      {/* Edit Question Dialog */}
+      <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Question</DialogTitle>
+            <DialogDescription>
+              Make changes to the question, options, answer, or explanation.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {currentEditQuestion && (
+            <div className="space-y-4 my-2">
+              <div>
+                <Label htmlFor="question">Question</Label>
+                <Textarea 
+                  id="question" 
+                  value={currentEditQuestion.question}
+                  onChange={(e) => handleUpdateQuestionField('question', e.target.value)}
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <Label>Options</Label>
+                {currentEditQuestion.options.map((option, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <div className={`min-w-8 h-8 flex items-center justify-center rounded-full ${
+                      index === currentEditQuestion.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}>
+                      {String.fromCharCode(65 + index)}
+                    </div>
+                    <Input 
+                      value={option}
+                      onChange={(e) => handleUpdateOption(index, e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={index === currentEditQuestion.answer ? 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200' : ''}
+                      onClick={() => handleUpdateQuestionField('answer', index)}
+                    >
+                      {index === currentEditQuestion.answer ? (
+                        <Check className="h-4 w-4 text-green-500" />
                       ) : (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive">
-                              {disqualifying === attempt.id ? 
-                                <Loader2 className="h-4 w-4 animate-spin" /> : 
-                                'Disqualify'
-                              }
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will mark the participant's results as disqualified. Are you sure?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => disqualifyParticipant(attempt.id)}
-                                className="bg-destructive hover:bg-destructive/90"
-                              >
-                                Disqualify
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        'Set as Answer'
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </Button>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+              </div>
+              
+              <div>
+                <Label htmlFor="explanation">Explanation (Optional)</Label>
+                <Textarea 
+                  id="explanation" 
+                  value={currentEditQuestion.explanation || ''}
+                  onChange={(e) => handleUpdateQuestionField('explanation', e.target.value)}
+                  rows={2}
+                  className="mt-1"
+                  placeholder="Explain why the answer is correct..."
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsEditQuestionDialogOpen(false)}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={saveQuestionChanges}
+              disabled={saveLoading}
+            >
+              {saveLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <div className="hidden">
         <div ref={printRef} className="p-8 print-content">

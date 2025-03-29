@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Lock, AtSign, UserPlus, LogIn, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { VenoLogo } from "@/components/ui/logo";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
@@ -146,9 +147,12 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-veno-secondary bg-clip-text text-transparent">
-            Veno
-          </CardTitle>
+          <div className="flex flex-col items-center justify-center">
+            <VenoLogo className="h-16 w-16 mb-2" />
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-veno-secondary bg-clip-text text-transparent">
+              Veno
+            </CardTitle>
+          </div>
           <CardDescription>
             Sign in to your account or create a new one
           </CardDescription>
