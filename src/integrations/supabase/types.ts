@@ -1061,6 +1061,7 @@ export type Database = {
       }
       user_tests: {
         Row: {
+          allow_retakes: boolean | null
           created_at: string | null
           creator_id: string
           description: string | null
@@ -1075,6 +1076,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allow_retakes?: boolean | null
           created_at?: string | null
           creator_id: string
           description?: string | null
@@ -1089,6 +1091,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allow_retakes?: boolean | null
           created_at?: string | null
           creator_id?: string
           description?: string | null

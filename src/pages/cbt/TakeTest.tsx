@@ -88,16 +88,10 @@ const TakeTest = () => {
             return;
           }
           
-          // Add default value for allow_retakes if it's missing
-          const testWithDefaults = {
-            ...testData,
-            allow_retakes: testData.allow_retakes ?? false // Default to false if not present
-          };
-          
-          setTestDetails(testWithDefaults as TestDetails);
+          setTestDetails(testData as TestDetails);
           
           // If user is logged in, check previous attempts
-          if (user && testWithDefaults.allow_retakes === false) {
+          if (user && testData.allow_retakes === false) {
             const { data: attempts, error: attemptsError } = await supabase
               .from('test_attempts')
               .select('*', { count: 'exact' })
