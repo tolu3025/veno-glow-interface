@@ -91,7 +91,7 @@ type TestAttempt = {
 type TestQuestion = {
   id: string;
   question: string;
-  options: string[];
+  options: string[]; // This was causing the error - now explicitly string[]
   answer: number;
   explanation?: string;
 };
@@ -210,7 +210,7 @@ const ManageTest = () => {
         const questions = data.map(q => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options : [],
+          options: Array.isArray(q.options) ? q.options.map(String) : [], // Ensure options are strings
           answer: q.answer,
           explanation: q.explanation || ''
         }));

@@ -13,10 +13,24 @@ import { toast } from 'sonner';
 import AppNavigation from "@/components/cbt/AppNavigation";
 import ProfileEditor from "@/components/profile/ProfileEditor";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface UserProfile {
   points: number;
-  activities: any[];
+  activities: any[]; // Define as any[] to accommodate parsed Json
+  email?: string;
+  id?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface Activity {
+  type: string;
+  description: string;
+  timestamp: string;
+  points?: number;
+  score?: number;
 }
 
 const ProfilePage = () => {
@@ -31,7 +45,7 @@ const ProfilePage = () => {
     averageScore: 0,
     achievements: 0
   });
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -57,11 +71,17 @@ const ProfilePage = () => {
         return;
       }
       
-      setUserProfile(data);
+      // Transform the data to ensure activities is an array
+      const profileData: UserProfile = {
+        points: data.points || 0,
+        activities: Array.isArray(data.activities) ? data.activities : []
+      };
+      
+      setUserProfile(profileData);
       
       // Get recent activities
-      if (data?.activities && Array.isArray(data.activities)) {
-        const sorted = [...data.activities].sort((a, b) => 
+      if (profileData.activities && Array.isArray(profileData.activities)) {
+        const sorted = [...profileData.activities].sort((a: Activity, b: Activity) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         setRecentActivity(sorted.slice(0, 3));
