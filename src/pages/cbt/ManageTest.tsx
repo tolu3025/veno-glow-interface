@@ -10,7 +10,8 @@ import {
   X,
   RefreshCw,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -88,12 +89,13 @@ const ManageTest = () => {
   const [testActive, setTestActive] = useState(true);
   const [disqualifying, setDisqualifying] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
   
   const printRef = useRef<HTMLDivElement>(null);
   
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
-    documentTitle: `${testDetails?.title || 'Test'} Results`,
+    documentTitle: `${testDetails?.title || 'Test'} - Individual Result`,
     removeAfterPrint: true,
   });
 
@@ -211,7 +213,7 @@ const ManageTest = () => {
     }
   };
 
-  const reinstatePrticipant = async (attemptId: string) => {
+  const reinstateParticipant = async (attemptId: string) => {
     try {
       // In a real implementation, you would update a disqualified field
       // For this demo, we'll just update our local state
@@ -272,6 +274,19 @@ const ManageTest = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
+  // Get the selected participant's data
+  const getSelectedParticipant = () => {
+    return testAttempts.find(attempt => attempt.id === selectedAttemptId);
+  };
+
+  // Set up the participant for printing and trigger print
+  const printParticipantResult = (attemptId: string) => {
+    setSelectedAttemptId(attemptId);
+    setTimeout(() => {
+      handlePrint();
+    }, 100);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -311,15 +326,6 @@ const ManageTest = () => {
           >
             <StopCircle size={16} />
             {testActive ? 'Deactivate Test' : 'Activate Test'}
-          </Button>
-          
-          <Button 
-            onClick={handlePrint}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Printer size={16} />
-            Print Results
           </Button>
         </div>
       </div>
@@ -416,10 +422,20 @@ const ManageTest = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mr-2"
+                        onClick={() => printParticipantResult(attempt.id)}
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1" />
+                        Print
+                      </Button>
+                      
                       {attempt.disqualified ? (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="ml-2">
+                            <Button size="sm" variant="outline">
                               Reinstate
                             </Button>
                           </AlertDialogTrigger>
@@ -433,7 +449,7 @@ const ManageTest = () => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
-                                onClick={() => reinstatePrticipant(attempt.id)}
+                                onClick={() => reinstateParticipant(attempt.id)}
                               >
                                 Reinstate
                               </AlertDialogAction>
@@ -443,7 +459,7 @@ const ManageTest = () => {
                       ) : (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive" className="ml-2">
+                            <Button size="sm" variant="destructive">
                               {disqualifying === attempt.id ? 
                                 <Loader2 className="h-4 w-4 animate-spin" /> : 
                                 'Disqualify'
@@ -478,79 +494,173 @@ const ManageTest = () => {
         </Card>
       )}
       
-      {/* Printable Results Section (hidden until print) */}
+      {/* Individual Printable Results Section (hidden until print) */}
       <div className="hidden">
         <div ref={printRef} className="p-8">
-          <div className="bg-gradient-to-b from-veno-primary/10 to-white dark:from-veno-dark/20 dark:to-transparent p-4 rounded-lg mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="relative bg-gradient-to-br from-veno-primary/20 via-background/90 to-veno-primary/5 p-8 rounded-lg mb-8 overflow-hidden">
+            {/* Abstract background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute left-0 top-0 w-40 h-40 rounded-full bg-veno-primary/30 blur-3xl"></div>
+              <div className="absolute right-20 bottom-10 w-60 h-60 rounded-full bg-blue-500/20 blur-3xl"></div>
+              <div className="absolute right-40 top-20 w-20 h-20 rounded-full bg-purple-500/20 blur-xl"></div>
+            </div>
+            
+            <div className="relative flex items-center justify-between mb-10 z-10">
               <div className="flex items-center">
-                <VenoLogo className="h-12 w-12 mr-3" />
+                <VenoLogo className="h-16 w-16 mr-4" />
                 <div>
-                  <h1 className="text-3xl font-bold text-veno-primary">Veno Assessment</h1>
-                  <p className="text-sm text-muted-foreground">Excellence in Education</p>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-veno-primary to-blue-500 bg-clip-text text-transparent">
+                    Veno Assessment
+                  </h1>
+                  <p className="text-sm text-muted-foreground italic">Excellence in Education</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">Generated on:</p>
-                <p className="text-sm">{new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
+              <div className="text-right bg-black/5 dark:bg-white/5 p-3 rounded-lg border border-black/10 dark:border-white/10">
+                <p className="text-sm font-semibold">Certificate Generated</p>
+                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
               </div>
             </div>
             
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">{testDetails.title}</h2>
-              <p className="text-muted-foreground">{testDetails.description || 'No description provided'}</p>
-              <div className="flex flex-wrap gap-4 mt-3">
-                <span className="px-2 py-1 bg-secondary/50 rounded text-xs">
-                  {testDetails.question_count} questions
-                </span>
-                <span className="px-2 py-1 bg-secondary/50 rounded text-xs">
-                  {testDetails.difficulty} difficulty
-                </span>
-                {testDetails.time_limit && (
-                  <span className="px-2 py-1 bg-secondary/50 rounded text-xs">
-                    {testDetails.time_limit} min time limit
-                  </span>
-                )}
+            <div className="relative mb-8 z-10">
+              <div className="inline-block bg-white/30 dark:bg-white/5 px-4 py-2 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10">
+                <h2 className="text-3xl font-bold mb-2">{testDetails.title}</h2>
+                <p className="text-muted-foreground">{testDetails.description || 'No description provided'}</p>
               </div>
+              
+              {selectedAttemptId && (
+                <div className="mt-6 p-4 bg-white/20 dark:bg-black/20 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10">
+                  <h3 className="text-xl font-medium mb-2">Participant Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Name</p>
+                      <p className="font-medium">{getSelectedParticipant()?.participant_name || 'Anonymous'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{getSelectedParticipant()?.participant_email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Completion Date</p>
+                      <p className="font-medium">{getSelectedParticipant() ? formatDate(getSelectedParticipant()!.completed_at) : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Test Difficulty</p>
+                      <p className="font-medium capitalize">{testDetails.difficulty}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b-2 border-veno-primary/30">
-                <th className="py-3 px-4 text-left bg-veno-primary/10">Participant</th>
-                <th className="py-3 px-4 text-left bg-veno-primary/10">Email</th>
-                <th className="py-3 px-4 text-center bg-veno-primary/10">Score</th>
-                <th className="py-3 px-4 text-right bg-veno-primary/10">Completion Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {testAttempts
-                .filter(attempt => !attempt.disqualified)
-                .map((attempt, index) => (
-                <tr key={attempt.id} className={index % 2 === 0 ? "bg-gray-50 dark:bg-gray-900/10" : ""}>
-                  <td className="py-3 px-4 font-medium">{attempt.participant_name || 'Anonymous'}</td>
-                  <td className="py-3 px-4">{attempt.participant_email || 'N/A'}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-1 rounded ${
-                      (attempt.score / attempt.total_questions) >= 0.7 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-                        : (attempt.score / attempt.total_questions) >= 0.5
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
-                      {attempt.score}/{attempt.total_questions} ({Math.round((attempt.score / attempt.total_questions) * 100)}%)
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">{formatDate(attempt.completed_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {selectedAttemptId && getSelectedParticipant() && (
+            <div className="mb-10">
+              <div className="flex justify-center mb-10">
+                <div className="relative w-60 h-60">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle
+                      className="text-gray-200 dark:text-gray-700"
+                      strokeWidth="10"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="40"
+                      cx="50"
+                      cy="50"
+                    />
+                    {getSelectedParticipant() && (
+                      <circle
+                        className={`${
+                          (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                            ? 'text-green-500' 
+                            : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                              ? 'text-yellow-500'
+                              : 'text-red-500'
+                        }`}
+                        strokeWidth="10"
+                        strokeDasharray={251.2}
+                        strokeDashoffset={251.2 * (1 - (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions))}
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
+                      />
+                    )}
+                  </svg>
+                  {getSelectedParticipant() && (
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                      <div className="text-5xl font-bold">
+                        {Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}%
+                      </div>
+                      <div className="text-lg font-medium mt-2">
+                        {getSelectedParticipant()!.score}/{getSelectedParticipant()!.total_questions} points
+                      </div>
+                      <div className="mt-2 text-sm">
+                        {(getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                          ? 'Excellent' 
+                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                            ? 'Good'
+                            : 'Needs Improvement'
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+                <h3 className="text-xl font-medium mb-4">Performance Summary</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Result Classification</h4>
+                    {getSelectedParticipant() && (
+                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-white ${
+                        (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                          ? 'bg-green-500' 
+                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                      }`}>
+                        {(getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                          ? 'Passed with Distinction' 
+                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                            ? 'Passed'
+                            : 'Needs Improvement'
+                        }
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                      <p className="text-sm text-muted-foreground mb-1">Questions</p>
+                      <p className="text-xl font-medium">{testDetails.question_count}</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                      <p className="text-sm text-muted-foreground mb-1">Time Limit</p>
+                      <p className="text-xl font-medium">{testDetails.time_limit || 'No'} min</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
-          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-muted-foreground">
-            <p>This is an official assessment report generated by Veno Assessment System.</p>
-            <p>© {new Date().getFullYear()} Veno. All rights reserved.</p>
+          <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center">
+                  <VenoLogo className="h-5 w-5 mr-2" />
+                  <p className="text-sm font-medium">Veno Assessment System</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">This is an official certificate of completion</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm">Verification Code:</p>
+                <p className="font-mono text-xs">{selectedAttemptId?.substring(0, 8).toUpperCase() || 'N/A'}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
