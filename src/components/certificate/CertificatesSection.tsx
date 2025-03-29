@@ -77,15 +77,20 @@ const CertificatesSection = () => {
           if (profileError) throw profileError;
           
           const activities = profileData?.activities || [];
-          const rewardCertificates = activities
-            .filter((activity: any) => activity.type === 'reward_redeemed' && activity.reward_name?.includes('Certificate'))
-            .map((activity: any) => ({
-              id: activity.reward_id || `reward-${Date.now()}`,
-              name: activity.reward_name || 'Achievement Certificate',
-              date: activity.timestamp || new Date().toISOString(),
-              score: 100,
-              unlocked: true
-            }));
+          
+          // Fix: Check if activities is an array before calling filter
+          let rewardCertificates: CertificateItem[] = [];
+          if (Array.isArray(activities)) {
+            rewardCertificates = activities
+              .filter((activity: any) => activity.type === 'reward_redeemed' && activity.reward_name?.includes('Certificate'))
+              .map((activity: any) => ({
+                id: activity.reward_id || `reward-${Date.now()}`,
+                name: activity.reward_name || 'Achievement Certificate',
+                date: activity.timestamp || new Date().toISOString(),
+                score: 100,
+                unlocked: true
+              }));
+          }
           
           setCertificates([...userCertificates, ...rewardCertificates]);
         } else {
