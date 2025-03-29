@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Loader2, LibraryIcon, WifiOff } from 'lucide-react';
+import { BookOpen, Clock, Loader2, AlertCircle, WifiOff } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAuth } from '@/providers/AuthProvider';
 import { VenoLogo } from '@/components/ui/logo';
@@ -13,13 +13,16 @@ import { toast } from '@/hooks/use-toast';
 const QuizSection = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: subjects, isLoading, error } = useSubjects();
+  const { data: subjects, isLoading, error, refetch } = useSubjects();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // Monitor online status
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      refetch(); // Refetch when coming back online
+    };
     const handleOffline = () => setIsOffline(true);
     
     window.addEventListener('online', handleOnline);
@@ -29,12 +32,12 @@ const QuizSection = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [refetch]);
 
   // When the subject data changes, log it
   useEffect(() => {
     if (subjects) {
-      console.log('Loaded subjects:', subjects);
+      console.log('Available subjects:', subjects);
     }
   }, [subjects]);
 
@@ -67,7 +70,6 @@ const QuizSection = () => {
   }
 
   if (isOffline) {
-    // Still show subjects but with a warning banner
     return (
       <Card>
         <CardHeader>
@@ -82,11 +84,13 @@ const QuizSection = () => {
             <div className="flex items-center">
               <WifiOff className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mr-2" />
               <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                You're currently offline. Using limited quiz data.
+                You're currently offline. Please reconnect to the internet to access quizzes.
               </p>
             </div>
           </div>
-          {renderSubjectsGrid(subjects || [])}
+          <div className="flex flex-col items-center justify-center py-12">
+            <Button onClick={() => refetch()}>Try Again</Button>
+          </div>
         </CardContent>
         <CardFooter className="border-t bg-muted/50 px-6 py-4">
           <div className="flex items-center justify-between w-full">
@@ -118,8 +122,16 @@ const QuizSection = () => {
           <CardDescription>Explore subject quizzes</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No subjects available at the moment.</p>
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 dark:bg-red-900/20 dark:border-red-600">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mr-2" />
+              <p className="text-sm text-red-700 dark:text-red-400">
+                {error instanceof Error ? error.message : "Unable to load subjects. Please try again later."}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-center justify-center py-12">
+            <Button onClick={() => refetch()}>Retry</Button>
             {user && (
               <Button className="mt-4" onClick={() => navigate('/cbt/create')}>
                 Create a Quiz
