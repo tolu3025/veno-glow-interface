@@ -26,6 +26,7 @@ import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import AdsPolicy from "./pages/AdsPolicy";
 
 // Import our RPC function setup
 import "./functions/appendToActivities";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/ads-policy" element={<AdsPolicy />} />
               
               <Route element={<MainLayout />}>
                 <Route path="/" element={
