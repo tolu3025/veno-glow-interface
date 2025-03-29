@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,9 +45,11 @@ const TakeTest = () => {
         if (testId === 'subject' && location.state?.subject) {
           // Load questions for a specific subject
           const subject = location.state.subject;
+          
+          // Map UI difficulty to database difficulty and handle 'all' case
           const difficultyFilter = settings.difficulty === 'all' 
-            ? ['beginner', 'intermediate', 'advanced'] 
-            : [mapDifficulty(settings.difficulty)];
+            ? ['beginner', 'intermediate', 'advanced'] as const 
+            : [mapDifficulty(settings.difficulty)] as const;
           
           const { data, error } = await supabase
             .from('questions')
@@ -63,10 +64,10 @@ const TakeTest = () => {
             // Transform Supabase data to match our QuizQuestion type
             const formattedQuestions: QuizQuestion[] = data.map(q => ({
               id: q.id,
-              text: q.question_text,
+              text: q.question,
               options: Array.isArray(q.options) ? 
                 q.options.map((opt: any) => String(opt)) : [],
-              correctOption: q.correct_option_index
+              correctOption: q.answer
             }));
             
             setQuestions(formattedQuestions);
@@ -93,7 +94,7 @@ const TakeTest = () => {
   }, [testId, location.state, settings]);
   
   // Map our UI difficulty levels to database difficulty levels
-  const mapDifficulty = (uiDifficulty: string) => {
+  const mapDifficulty = (uiDifficulty: string): "beginner" | "intermediate" | "advanced" => {
     switch(uiDifficulty) {
       case 'easy': return 'beginner';
       case 'medium': return 'intermediate';
