@@ -1,17 +1,25 @@
 
-import { useEffect, useState } from "react";
-import { Outlet, Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
 import { UserCircle, LogOut, LogIn, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
+import MobileMenu from "@/components/ui/mobile-menu";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+
+  const mainLinks = [
+    { name: "Home", path: "/" },
+    { name: "CBT", path: "/cbt" },
+    { name: "Marketplace", path: "/marketplace" },
+    { name: "Blog", path: "/blog" }
+  ];
 
   const handleSignOut = async () => {
     try {
@@ -31,24 +39,27 @@ const MainLayout = () => {
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <VenoLogo className="h-8 w-8" />
-            <span className="font-bold text-xl">Veno</span>
-          </Link>
-          <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-            <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
-              Home
+          <div className="flex items-center space-x-2">
+            <MobileMenu mainLinks={mainLinks} />
+            <Link to="/" className="flex items-center space-x-2">
+              <VenoLogo className="h-8 w-8" />
+              <span className="font-bold text-xl">Veno</span>
             </Link>
-            <Link to="/cbt" className="text-sm font-medium transition-colors hover:text-primary">
-              CBT
-            </Link>
-            <Link to="/marketplace" className="text-sm font-medium transition-colors hover:text-primary">
-              Marketplace
-            </Link>
-            <Link to="/blog" className="text-sm font-medium transition-colors hover:text-primary">
-              Blog
-            </Link>
+          </div>
+          
+          {/* Desktop Navigation - hidden on mobile */}
+          <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 mx-6">
+            {mainLinks.map((link) => (
+              <Link 
+                key={link.name} 
+                to={link.path} 
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                {link.name}
+              </Link>
+            ))}
           </nav>
+          
           <div className="ml-auto flex items-center space-x-4">
             <Button 
               variant="ghost" 
@@ -59,40 +70,44 @@ const MainLayout = () => {
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
             
-            {user ? (
-              <>
-                <div className="text-sm text-muted-foreground hidden md:block">
-                  {user.email}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full"
-                >
-                  <UserCircle className="h-5 w-5" />
-                  <span className="sr-only">Profile</span>
-                </Button>
+            {/* Desktop Auth Controls - hidden on mobile */}
+            <div className="hidden md:flex items-center space-x-2">
+              {user ? (
+                <>
+                  <div className="text-sm text-muted-foreground hidden md:block">
+                    {user.email}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    onClick={() => navigate('/profile')}
+                  >
+                    <UserCircle className="h-5 w-5" />
+                    <span className="sr-only">Profile</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleSignOut}
+                    className="gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </Button>
+                </>
+              ) : (
                 <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleSignOut}
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => navigate("/auth")}
                   className="gap-2"
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden md:inline">Sign Out</span>
+                  <LogIn className="h-4 w-4" />
+                  Sign In
                 </Button>
-              </>
-            ) : (
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={() => navigate("/auth")}
-                className="gap-2"
-              >
-                <LogIn className="h-4 w-4" />
-                Sign In
-              </Button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>

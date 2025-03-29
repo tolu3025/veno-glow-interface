@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, BookOpen, Trophy, Share2, BarChart3, Moon, Sun } from "lucide-react";
+import { Plus, BookOpen, Trophy, BarChart3 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,15 +12,12 @@ import MyTestsSection from "@/components/cbt/MyTestsSection";
 import AppNavigation from "@/components/cbt/AppNavigation";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/providers/AuthProvider";
-import { VenoLogo } from "@/components/ui/logo";
-import { useTheme } from "@/providers/ThemeProvider";
 
 const CbtPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState(() => {
     // Get tab from URL query params or default to 'quiz'
     const params = new URLSearchParams(location.search);
@@ -42,10 +39,6 @@ const CbtPage = () => {
       console.error("Failed to copy:", error);
     }
   };
-  
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   // Update URL when tab changes
   useEffect(() => {
@@ -60,25 +53,11 @@ const CbtPage = () => {
       <AppNavigation />
       
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <VenoLogo className="h-6 w-6 mr-2" />
-          <h1 className="text-2xl font-bold">Veno</h1>
-        </div>
+        <h1 className="text-xl font-bold md:text-2xl">Tests & Quizzes</h1>
         
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleTheme}
-            className="rounded-full"
-          >
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </Button>
-          
-          <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
-            <Plus size={16} className="mr-1" /> Create Test
-          </Button>
-        </div>
+        <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
+          <Plus size={16} className="mr-1" /> Create Test
+        </Button>
       </div>
       
       <motion.div
