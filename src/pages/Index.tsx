@@ -16,27 +16,37 @@ const Index = () => {
     {
       title: "Learn Anywhere, Anytime",
       subtitle: "Access your courses on any device with our responsive platform that adapts to your schedule and learning style.",
-      background: "bg-gradient-to-r from-veno-secondary to-purple-600"
+      background: "bg-gradient-to-r from-veno-secondary to-purple-600",
+      primaryButton: { text: "Start Learning", link: "/cbt" },
+      secondaryButton: { text: "View Courses", link: "/cbt" }
     },
     {
       title: "Interactive Assessment Tools",
       subtitle: "Test your knowledge and track your progress with our comprehensive suite of CBT tools and analytics.",
-      background: "bg-gradient-to-r from-purple-600 to-veno-primary"
+      background: "bg-gradient-to-r from-purple-600 to-veno-primary",
+      primaryButton: { text: "Take a Test", link: "/cbt/take-test" },
+      secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
     },
     {
       title: "Digital Marketplace",
       subtitle: "Discover and purchase high-quality educational resources created by experts in their fields.",
-      background: "bg-gradient-to-r from-veno-primary to-blue-600"
+      background: "bg-gradient-to-r from-veno-primary to-blue-600",
+      primaryButton: { text: "Shop Now", link: "/marketplace" },
+      secondaryButton: { text: "Browse Categories", link: "/marketplace" }
     },
     {
       title: "Insightful Blog Content",
       subtitle: "Stay updated with the latest educational trends and insights through our regularly updated blog.",
-      background: "bg-gradient-to-r from-blue-600 to-veno-secondary"
+      background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
+      primaryButton: { text: "Read Articles", link: "/blog" },
+      secondaryButton: { text: "Latest Posts", link: "/blog" }
     },
     {
       title: "AI-Powered Learning",
       subtitle: "Leverage our intelligent AI assistant to enhance your learning experience with personalized guidance.",
-      background: "bg-gradient-to-r from-veno-secondary to-veno-primary"
+      background: "bg-gradient-to-r from-veno-secondary to-veno-primary",
+      primaryButton: { text: "Chat with AI", link: "/bot" },
+      secondaryButton: { text: "Learn More", link: "/bot" }
     }
   ];
   
@@ -221,7 +231,6 @@ const Index = () => {
             {bannerSlides.map((slide, index) => (
               <CarouselItem key={index}>
                 <div className={`${slide.background} h-[400px] md:h-[500px] flex items-center`}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10"></div>
                   <div className="container relative z-20">
                     <div className="max-w-xl text-white">
                       <motion.div 
@@ -242,18 +251,18 @@ const Index = () => {
                         <div className="flex flex-wrap gap-4">
                           <Button 
                             size="lg" 
-                            onClick={handleGetStarted}
+                            onClick={() => navigate(slide.primaryButton.link)}
                             className="bg-white text-veno-primary hover:bg-white/90"
                           >
-                            {user ? "Go to Dashboard" : "Get Started"}
+                            {slide.primaryButton.text}
                           </Button>
                           <Button 
                             size="lg"
                             variant="outline"
-                            onClick={() => navigate("/marketplace")}
+                            onClick={() => navigate(slide.secondaryButton.link)}
                             className="bg-transparent border-white text-white hover:bg-white/20"
                           >
-                            Explore Marketplace
+                            {slide.secondaryButton.text}
                           </Button>
                         </div>
                       </motion.div>

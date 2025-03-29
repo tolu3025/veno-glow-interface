@@ -112,10 +112,10 @@ const Carousel = React.forwardRef<
       }
 
       const intervalId = setInterval(() => {
-        api.scrollNext()
-        // If can't scroll next (end reached), scroll to first slide
         if (!api.canScrollNext()) {
           api.scrollTo(0)
+        } else {
+          api.scrollNext()
         }
       }, autoplayInterval)
 
