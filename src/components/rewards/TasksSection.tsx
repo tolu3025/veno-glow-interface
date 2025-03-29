@@ -31,6 +31,7 @@ type Activity = {
   task_name?: string;
   points_earned?: number;
   timestamp?: string;
+  blog_id?: string;
 };
 
 const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }) => {
@@ -142,7 +143,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         
         let blogReadCount = 0;
         if (blogReadActivities.length > 0) {
-          if (blogReadActivities[0].blog_id) {
+          if (blogReadActivities.some(activity => activity.blog_id !== undefined)) {
             const uniqueBlogIds = new Set(
               blogReadActivities
                 .map(activity => activity.blog_id)
@@ -211,8 +212,12 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                 }
                 
                 let uniqueBlogCount = 0;
+                const blogReadActivities = userActivities.filter(
+                  (activity: Activity) => activity.type === 'blog_read'
+                );
+                
                 if (blogReadActivities.length > 0) {
-                  if (blogReadActivities[0].blog_id) {
+                  if (blogReadActivities.some(activity => activity.blog_id !== undefined)) {
                     const uniqueBlogIds = new Set(
                       blogReadActivities
                         .map(activity => activity.blog_id)
