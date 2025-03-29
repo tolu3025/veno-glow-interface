@@ -9,8 +9,8 @@ import confetti from "canvas-confetti";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
-import { Json } from "@/integrations/supabase/types";
 import { appendActivityAndUpdatePoints } from "@/utils/activityHelpers";
+import { QuizSettings } from "@/components/cbt/QuizSettings";
 
 type QuizQuestion = {
   id: string;
@@ -26,6 +26,7 @@ const TakeTest = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const subjectFromState = location.state?.subject;
+  const settingsFromState = location.state?.settings as QuizSettings;
   
   const [test, setTest] = useState<{
     id: string;
@@ -52,11 +53,21 @@ const TakeTest = () => {
         
         // If we have a subject from state, use that to fetch questions
         if (subjectFromState) {
-          const { data: questions, error } = await supabase
+          let query = supabase
             .from('questions')
-            .select('id, question, options, answer, subject')
-            .eq('subject', subjectFromState)
-            .limit(10);
+            .select('id, question, options, answer, subject, difficulty')
+            .eq('subject', subjectFromState);
+            
+          // Apply difficulty filter if specified and not "all"
+          if (settingsFromState && settingsFromState.difficulty !== 'all') {
+            query = query.eq('difficulty', settingsFromState.difficulty);
+          }
+            
+          // Limit the number of questions based on settings
+          const questionsCount = settingsFromState ? settingsFromState.questionsCount : 10;
+          query = query.limit(questionsCount);
+            
+          const { data: questions, error } = await query;
             
           if (error) {
             throw error;
@@ -67,7 +78,9 @@ const TakeTest = () => {
             const formattedQuestions: QuizQuestion[] = questions.map(q => ({
               id: q.id,
               text: q.question,
-              options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
+              options: Array.isArray(q.options) 
+                ? q.options.map(opt => String(opt))
+                : [],
               correctOption: q.answer
             }));
             
@@ -75,22 +88,25 @@ const TakeTest = () => {
             const testObject = {
               id: 'subject-' + subjectFromState,
               title: subjectFromState + ' Quiz',
-              description: 'Test your knowledge on ' + subjectFromState,
+              description: `Test your knowledge on ${subjectFromState} (${
+                settingsFromState?.difficulty !== 'all' ? settingsFromState?.difficulty + ' difficulty' : 'all levels'
+              })`,
               questions: formattedQuestions,
-              timeLimit: 10 // minutes
+              timeLimit: settingsFromState ? settingsFromState.timeLimit : 10 // minutes
             };
             
             setTest(testObject);
             // Initialize answers array with nulls
             setAnswers(new Array(formattedQuestions.length).fill(null));
             // Set time remaining in seconds
-            setTimeRemaining(10 * 60);
+            setTimeRemaining((settingsFromState ? settingsFromState.timeLimit : 10) * 60);
             
             // Record activity if user is logged in
             if (user) {
               await appendActivityAndUpdatePoints(user.id, {
                 type: "quiz_started",
                 subject: subjectFromState,
+                difficulty: settingsFromState?.difficulty || "all",
                 timestamp: new Date().toISOString()
               });
             }
@@ -124,7 +140,7 @@ const TakeTest = () => {
     };
     
     fetchQuestions();
-  }, [testId, subjectFromState, toast, user]);
+  }, [testId, subjectFromState, settingsFromState, toast, user]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -186,7 +202,8 @@ const TakeTest = () => {
             subject: subjectFromState || 'Unknown',
             score: calculatedScore,
             test_id: test.id,
-            creator_id: user.id
+            creator_id: user.id,
+            difficulty: settingsFromState?.difficulty || "all"
           });
           
           if (error) throw error;
@@ -198,6 +215,7 @@ const TakeTest = () => {
             type: "quiz_completed",
             subject: subjectFromState,
             score: calculatedScore,
+            difficulty: settingsFromState?.difficulty || "all",
             points_earned: pointsEarned,
             timestamp: new Date().toISOString()
           }, pointsEarned);

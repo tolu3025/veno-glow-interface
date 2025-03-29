@@ -19,6 +19,9 @@ import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RewardSystem from "./pages/RewardSystem";
+import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
+
 // Import our RPC function setup
 import "./functions/appendToActivities";
 
@@ -63,6 +66,8 @@ const App = () => (
                     <RewardSystem />
                   </ProtectedRoute>
                 } />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/bot" element={<BotPage />} />
                 <Route path="/blog" element={<BlogPage />} />

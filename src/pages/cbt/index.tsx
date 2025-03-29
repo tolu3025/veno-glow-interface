@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, BookOpen, Trophy, Share2, BarChart3, Moon, Sun } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QuizSection from "@/components/cbt/QuizSection";
 import MyTestsSection from "@/components/cbt/MyTestsSection";
-import { supabase } from "@/integrations/supabase/client";
+import AppNavigation from "@/components/cbt/AppNavigation";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/providers/AuthProvider";
 import { VenoLogo } from "@/components/ui/logo";
@@ -17,11 +17,15 @@ import { useTheme } from "@/providers/ThemeProvider";
 
 const CbtPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState("quiz");
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    // Get tab from URL query params or default to 'quiz'
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || "quiz";
+  });
   
   const handleCreateTest = () => {
     navigate("/cbt/create");
@@ -43,20 +47,22 @@ const CbtPage = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  // Update URL when tab changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    params.set('tab', activeTab);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  }, [activeTab]);
+
   return (
-    <div className="pb-6">
+    <div className="pb-20 md:pb-6 md:pl-64">
+      {/* App Navigation */}
+      <AppNavigation />
+      
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="p-2 rounded-full bg-secondary/70 hover:bg-secondary"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex items-center">
-            <VenoLogo className="h-6 w-6 mr-2" />
-            <h1 className="text-2xl font-bold">Veno</h1>
-          </div>
+        <div className="flex items-center">
+          <VenoLogo className="h-6 w-6 mr-2" />
+          <h1 className="text-2xl font-bold">Veno</h1>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -81,7 +87,7 @@ const CbtPage = () => {
         transition={{ duration: 0.3 }}
         className="mb-6"
       >
-        <Tabs defaultValue="quiz" onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="quiz" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
               <BookOpen size={16} className="mr-2" /> Quiz Library
