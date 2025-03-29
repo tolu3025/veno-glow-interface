@@ -55,9 +55,13 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         if (error) throw error;
         
         // Properly type and handle the activities array
-        const activities: Activity[] = Array.isArray(userProfile?.activities) 
-          ? userProfile.activities as Activity[] 
-          : [];
+        let activities: Activity[] = [];
+        
+        if (userProfile?.activities && typeof userProfile.activities === 'object') {
+          if (Array.isArray(userProfile.activities)) {
+            activities = userProfile.activities as Activity[];
+          }
+        }
           
         const completedTaskIds = activities
           .filter(activity => activity.type === 'task_completed')
@@ -68,7 +72,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "1",
             title: "Daily Login",
-            description: "Login to the app daily (10 days)",
+            description: "Login to the app daily (10 days for 100 points)",
             points: 100,
             completed: completedTaskIds.includes("1"),
             type: "login",
@@ -82,7 +86,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "2",
             title: "Read Blog Posts",
-            description: "Read blog posts (5 posts)",
+            description: "Read blog posts (5 posts for 25 points)",
             points: 25,
             completed: completedTaskIds.includes("2"),
             type: "blog",
@@ -99,9 +103,12 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
               if (error) return false;
               
               // Properly handle the activities array
-              const userActivities: Activity[] = Array.isArray(data?.activities) 
-                ? data.activities as Activity[] 
-                : [];
+              let userActivities: Activity[] = [];
+              if (data?.activities && typeof data.activities === 'object') {
+                if (Array.isArray(data.activities)) {
+                  userActivities = data.activities as Activity[];
+                }
+              }
                 
               const blogReads = userActivities.filter(
                 (activity: Activity) => activity.type === 'blog_read'
@@ -113,7 +120,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "3",
             title: "Complete CBT Tests",
-            description: "Complete CBT tests (3 tests)",
+            description: "Complete CBT tests (3 tests for 60 points)",
             points: 60,
             completed: completedTaskIds.includes("3"),
             type: "cbt",
@@ -134,7 +141,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "4",
             title: "Refer a Friend",
-            description: "Invite someone to join Veno",
+            description: "Invite someone to join Veno (100 points)",
             points: 100,
             completed: completedTaskIds.includes("4"),
             type: "referral",
@@ -155,7 +162,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "5",
             title: "Click on Ads",
-            description: "Click on sponsored ads (3 times)",
+            description: "Click on sponsored ads (3 times for 50 points)",
             points: 50,
             completed: completedTaskIds.includes("5"),
             type: "ads",
@@ -169,7 +176,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "6",
             title: "Make a Purchase",
-            description: "Make a purchase in the marketplace",
+            description: "Make a purchase in the marketplace (100 points)",
             points: 100,
             completed: completedTaskIds.includes("6"),
             type: "purchase",
