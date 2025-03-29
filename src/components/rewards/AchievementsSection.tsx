@@ -23,6 +23,14 @@ interface AchievementsSectionProps {
   userPoints: number;
 }
 
+type Activity = {
+  type: string;
+  task_id?: string;
+  task_name?: string;
+  points_earned?: number;
+  timestamp?: string;
+};
+
 const AchievementsSection: React.FC<AchievementsSectionProps> = ({ userPoints }) => {
   const { user } = useAuth();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -53,9 +61,13 @@ const AchievementsSection: React.FC<AchievementsSectionProps> = ({ userPoints })
           
         if (profileError) throw profileError;
         
-        const activities = userProfile?.activities || [];
-        const blogReads = activities.filter((activity: any) => activity.type === 'blog_read').length;
-        const tasksCompleted = activities.filter((activity: any) => activity.type === 'task_completed').length;
+        // Properly type and handle the activities array
+        const activities: Activity[] = Array.isArray(userProfile?.activities) 
+          ? userProfile.activities as Activity[] 
+          : [];
+          
+        const blogReads = activities.filter(activity => activity.type === 'blog_read').length;
+        const tasksCompleted = activities.filter(activity => activity.type === 'task_completed').length;
         const perfectScoreTest = testAttempts?.some(test => 
           test.score === test.total_questions && test.total_questions > 0
         ) || false;

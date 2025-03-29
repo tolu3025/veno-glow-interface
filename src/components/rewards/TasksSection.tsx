@@ -26,6 +26,14 @@ interface TasksSectionProps {
   setUserPoints: React.Dispatch<React.SetStateAction<number>>;
 }
 
+type Activity = {
+  type: string;
+  task_id?: string;
+  task_name?: string;
+  points_earned?: number;
+  timestamp?: string;
+};
+
 const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,10 +54,14 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         
         if (error) throw error;
         
-        const activities = userProfile?.activities || [];
+        // Properly type and handle the activities array
+        const activities: Activity[] = Array.isArray(userProfile?.activities) 
+          ? userProfile.activities as Activity[] 
+          : [];
+          
         const completedTaskIds = activities
-          .filter((activity: any) => activity.type === 'task_completed')
-          .map((activity: any) => activity.task_id);
+          .filter(activity => activity.type === 'task_completed')
+          .map(activity => activity.task_id);
         
         // Define tasks with verification functions
         const tasksList: Task[] = [
@@ -86,9 +98,13 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
               
               if (error) return false;
               
-              const activities = data?.activities || [];
-              const blogReads = activities.filter(
-                (activity: any) => activity.type === 'blog_read'
+              // Properly handle the activities array
+              const userActivities: Activity[] = Array.isArray(data?.activities) 
+                ? data.activities as Activity[] 
+                : [];
+                
+              const blogReads = userActivities.filter(
+                (activity: Activity) => activity.type === 'blog_read'
               ).length;
               
               return blogReads >= 2; // Require at least 2 blog reads

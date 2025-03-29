@@ -31,6 +31,11 @@ interface LeaderboardEntry {
   isCurrentUser: boolean;
 }
 
+interface ReferralCount {
+  referrer_id: string;
+  count: number;
+}
+
 const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userPoints }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -57,20 +62,25 @@ const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({ userPoints }) =
         
         if (error) throw error;
         
-        // Fetch user referrals to count them
+        // Fetch user referrals to count them - fixed query to avoid using group()
         const { data: referralsData, error: referralsError } = await supabase
           .from('user_referrals')
-          .select('referrer_id, count')
-          .eq('status', 'completed')
-          .group('referrer_id');
+          .select('referrer_id, status');
           
         if (referralsError) throw referralsError;
         
-        // Map referral counts to a dictionary
+        // Process the referrals manually
         const referralCounts: Record<string, number> = {};
-        referralsData?.forEach((item: any) => {
-          referralCounts[item.referrer_id] = item.count;
-        });
+        if (referralsData) {
+          referralsData.forEach((item: any) => {
+            if (item.status === 'completed' && item.referrer_id) {
+              if (!referralCounts[item.referrer_id]) {
+                referralCounts[item.referrer_id] = 0;
+              }
+              referralCounts[item.referrer_id]++;
+            }
+          });
+        }
         
         // Transform the data
         const leaderboard: LeaderboardEntry[] = data.map((profile: any, index: number) => {
