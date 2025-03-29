@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, BarChart3, Users, Clock, Award } from "lucide-react";
+import { ArrowLeft, BarChart3, Users, Clock, Award, CheckCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -26,7 +25,6 @@ import {
   CartesianGrid
 } from "recharts";
 
-// Mock analytics data
 const performanceData = [
   { name: 'JavaScript', score: 85, average: 72 },
   { name: 'React', score: 76, average: 69 },
@@ -52,7 +50,6 @@ const testCompletionData = [
   { name: 'Data Structures', completions: 18 },
 ];
 
-// Mock achievement data
 const achievements = [
   {
     id: 1,
@@ -104,7 +101,6 @@ const Analytics = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 800);
