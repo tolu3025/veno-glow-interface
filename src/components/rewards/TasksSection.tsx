@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -6,15 +7,15 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
-import { CheckCircle, CircleDashed, LucideIcon } from "lucide-react";
+import { CheckCircle, CircleDashed } from "lucide-react";
 import { appendActivityAndUpdatePoints } from "@/utils/activityHelpers";
+import { Json } from "@/integrations/supabase/types";
 
 interface Task {
   id: string;
   title: string;
   description: string;
   points: number;
-  icon: LucideIcon;
   completed: boolean;
   action: () => Promise<boolean>;
 }
@@ -64,9 +65,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
   const completeTask = async (taskId: string, points: number) => {
     if (!user) {
       toast({
-        title: "Login required",
-        description: "Please log in to complete tasks",
-        variant: "destructive"
+        description: "Please log in to complete tasks"
       });
       return;
     }
@@ -87,8 +86,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         setUserPoints(prev => prev + points);
         
         toast({
-          title: "Task completed!",
-          description: `You earned ${points} points!`,
+          description: `You earned ${points} points!`
         });
       } else {
         throw new Error("Failed to update profile");
@@ -96,12 +94,10 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
     } catch (error) {
       console.error("Error completing task:", error);
       toast({
-        title: "Failed to complete task",
-        description: "Please try again later",
-        variant: "destructive"
+        description: "Failed to complete task"
       });
     } finally {
-      setCompletingTask('');
+      setCompletingTask(null);
     }
   };
 
@@ -111,7 +107,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       title: 'Create Your First Test',
       description: 'Create a custom test in the CBT section',
       points: 50,
-      icon: CircleDashed,
       completed: completedTasks.includes('create_test'),
       action: async () => {
         await completeTask('create_test', 50);
@@ -123,7 +118,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       title: 'Complete Your Profile',
       description: 'Add your details to your user profile',
       points: 30,
-      icon: CircleDashed,
       completed: completedTasks.includes('complete_profile'),
       action: async () => {
         await completeTask('complete_profile', 30);
@@ -135,7 +129,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       title: 'Refer a Friend',
       description: 'Invite a friend to join Veno',
       points: 100,
-      icon: CircleDashed,
       completed: completedTasks.includes('first_referral'),
       action: async () => {
         await completeTask('first_referral', 100);
@@ -147,7 +140,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       title: 'Take a Test',
       description: 'Complete your first test in the CBT section',
       points: 40,
-      icon: CircleDashed,
       completed: completedTasks.includes('take_test'),
       action: async () => {
         await completeTask('take_test', 40);
@@ -186,7 +178,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                   <div className={`p-1.5 rounded-full ${task.completed ? 'bg-primary/20' : 'bg-muted'}`}>
                     {task.completed ? 
                       <CheckCircle className="h-5 w-5 text-primary" /> : 
-                      <task.icon className="h-5 w-5 text-muted-foreground" />
+                      <CircleDashed className="h-5 w-5 text-muted-foreground" />
                     }
                   </div>
                 </div>

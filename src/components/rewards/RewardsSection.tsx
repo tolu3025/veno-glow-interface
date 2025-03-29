@@ -1,19 +1,53 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { appendActivityAndUpdatePoints } from '@/utils/activityHelpers';
 
-const RewardsSection = () => {
+// Define a reward interface
+interface Reward {
+  id: string;
+  title: string;
+  description: string;
+  points: number;
+}
+
+// Define mock rewards as we don't have a rewards table
+const AVAILABLE_REWARDS: Reward[] = [
+  {
+    id: 'discount_10',
+    title: '10% Discount',
+    description: 'Get 10% off on your next purchase',
+    points: 50
+  },
+  {
+    id: 'premium_1month',
+    title: '1 Month Premium',
+    description: 'Get 1 month of premium features',
+    points: 100
+  },
+  {
+    id: 'custom_badge',
+    title: 'Custom Profile Badge',
+    description: 'Get a unique badge for your profile',
+    points: 75
+  },
+  {
+    id: 'priority_support',
+    title: 'Priority Support',
+    description: 'Get priority customer support for 1 month',
+    points: 150
+  }
+];
+
+const RewardsSection = ({ userPoints, setUserPoints }: { userPoints: number; setUserPoints: React.Dispatch<React.SetStateAction<number>> }) => {
   const { user } = useAuth();
-  const [rewards, setRewards] = useState([]);
-  const [userPoints, setUserPoints] = useState(0);
-  const [claimedRewards, setClaimedRewards] = useState([]);
-  const [claimingReward, setClaimingReward] = useState('');
+  const [claimedRewards, setClaimedRewards] = useState<string[]>([]);
+  const [claimingReward, setClaimingReward] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRewards();
     if (user) {
       fetchUserProfile();
     } else {
@@ -21,39 +55,24 @@ const RewardsSection = () => {
     }
   }, [user]);
 
-  const fetchRewards = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('rewards')
-        .select('*')
-        .order('points', { ascending: true });
-      
-      if (error) throw error;
-      setRewards(data || []);
-    } catch (error) {
-      console.error('Error fetching rewards:', error);
-    }
-  };
-
   const fetchUserProfile = async () => {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('points, activities')
-        .eq('user_id', user.id)
+        .select('activities')
+        .eq('user_id', user?.id)
         .single();
       
       if (error) throw error;
       
-      setUserPoints(data.points || 0);
-      
       // Extract claimed rewards from activities
-      const activities = data.activities || [];
-      const claimed = activities
-        .filter(a => a.type === 'reward_claimed')
-        .map(a => a.reward_id);
-      
-      setClaimedRewards(claimed);
+      if (data && data.activities && Array.isArray(data.activities)) {
+        const claimed = data.activities
+          .filter(a => a && typeof a === 'object' && a.type === 'reward_claimed')
+          .map(a => a.reward_id);
+        
+        setClaimedRewards(claimed);
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
     } finally {
@@ -61,12 +80,11 @@ const RewardsSection = () => {
     }
   };
 
-  const claimReward = async (reward) => {
+  const claimReward = async (reward: Reward) => {
     if (!user) {
       toast({
         title: "Login required",
-        description: "Please log in to claim rewards",
-        variant: "destructive"
+        description: "Please log in to claim rewards"
       });
       return;
     }
@@ -74,8 +92,7 @@ const RewardsSection = () => {
     if (userPoints < reward.points) {
       toast({
         title: "Not enough points",
-        description: `You need ${reward.points - userPoints} more points to claim this reward`,
-        variant: "destructive"
+        description: `You need ${reward.points - userPoints} more points to claim this reward`
       });
       return;
     }
@@ -98,7 +115,7 @@ const RewardsSection = () => {
         
         toast({
           title: "Reward claimed!",
-          description: `You have spent ${reward.points} points`,
+          description: `You have spent ${reward.points} points`
         });
       } else {
         throw new Error("Failed to update profile");
@@ -107,8 +124,7 @@ const RewardsSection = () => {
       console.error("Error claiming reward:", error);
       toast({
         title: "Failed to claim reward",
-        description: "Please try again later",
-        variant: "destructive"
+        description: "Please try again later"
       });
     } finally {
       setClaimingReward('');
@@ -138,13 +154,13 @@ const RewardsSection = () => {
         <div className="text-center py-8 border rounded-lg bg-muted/30">
           <p className="text-muted-foreground">Please log in to view and claim rewards</p>
         </div>
-      ) : rewards.length === 0 ? (
+      ) : AVAILABLE_REWARDS.length === 0 ? (
         <div className="text-center py-8 border rounded-lg bg-muted/30">
           <p className="text-muted-foreground">No rewards available at the moment</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {rewards.map((reward) => {
+          {AVAILABLE_REWARDS.map((reward) => {
             const isClaimed = claimedRewards.includes(reward.id);
             const canClaim = userPoints >= reward.points && !isClaimed;
             

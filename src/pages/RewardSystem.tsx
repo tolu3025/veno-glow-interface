@@ -44,7 +44,7 @@ const RewardSystem = () => {
           const { error: insertError } = await supabase
             .from('user_profiles')
             .insert({ 
-              id: user.id, // Added the required id field
+              id: user.id,
               user_id: user.id,
               email: user.email,
               points: 0,
