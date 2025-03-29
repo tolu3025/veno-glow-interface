@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -95,13 +96,20 @@ const ManageTest = () => {
   
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
-    documentTitle: `${testDetails?.title || 'Test'} - Results`,
+    documentTitle: `${testDetails?.title || 'Test'} - Certificate`,
     removeAfterPrint: true,
     pageStyle: `
       @page { size: letter; margin: 0.5cm; }
-      body { margin: 0; padding: 0; }
-      header, footer, nav, button, .no-print { display: none !important; }
-      .print-content { display: block !important; }
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .no-print { display: none !important; }
+        .print-content { display: block !important; }
+      }
     `,
   });
 
@@ -273,6 +281,23 @@ const ManageTest = () => {
 
   const getSelectedParticipant = () => {
     return testAttempts.find(attempt => attempt.id === selectedAttemptId);
+  };
+
+  const getSortedAttempts = () => {
+    return [...testAttempts].sort((a, b) => b.score / b.total_questions - a.score / a.total_questions);
+  };
+
+  const getParticipantPosition = (attemptId: string) => {
+    const sortedAttempts = getSortedAttempts();
+    const index = sortedAttempts.findIndex(attempt => attempt.id === attemptId);
+    if (index === -1) return '';
+    
+    // Convert to position (1st, 2nd, 3rd, etc.)
+    const position = index + 1;
+    if (position === 1) return "1st";
+    if (position === 2) return "2nd";
+    if (position === 3) return "3rd";
+    return `${position}th`;
   };
 
   const printParticipantResult = (attemptId: string) => {
@@ -494,9 +519,10 @@ const ManageTest = () => {
           {selectedAttemptId && getSelectedParticipant() && (
             <Certificate 
               userName={getSelectedParticipant()?.participant_name || 'Anonymous'} 
-              achievementName={`${testDetails.title} Assessment`}
+              achievementName={`${testDetails?.title || 'Test'} Assessment`}
               date={formatDate(getSelectedParticipant()!.completed_at)}
               score={Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}
+              position={getParticipantPosition(selectedAttemptId)}
             />
           )}
         </div>

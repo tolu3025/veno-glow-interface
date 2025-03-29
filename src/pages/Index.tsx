@@ -24,7 +24,7 @@ const Index = () => {
       title: "Interactive Assessment Tools",
       subtitle: "Test your knowledge and track your progress with our comprehensive suite of CBT tools and analytics.",
       background: "bg-gradient-to-r from-purple-600 to-veno-primary",
-      primaryButton: { text: "Take a Test", link: "/cbt/take-test" },
+      primaryButton: { text: "Take a Test", link: "/cbt" },
       secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
     },
     {

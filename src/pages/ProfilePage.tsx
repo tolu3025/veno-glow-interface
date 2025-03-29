@@ -1,26 +1,94 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, ChangeEvent } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Award, Trophy, Edit2, LogOut } from "lucide-react";
+import { BookOpen, Award, Trophy, Edit2, LogOut, Upload, ArrowLeft } from "lucide-react";
 import { VenoLogo } from "@/components/ui/logo";
 import { useAuth } from "@/providers/AuthProvider";
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import AppNavigation from "@/components/cbt/AppNavigation";
 import ProfileEditor from "@/components/profile/ProfileEditor";
 
 const ProfilePage = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateUserMetadata } = useAuth();
+  const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Basic validation
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // Convert to base64 for simple storage
+      // In a production app, you would upload to storage instead
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result as string;
+          
+          await updateUserMetadata({
+            avatar_url: base64String
+          });
+          
+          toast.success('Profile picture updated');
+        } catch (error) {
+          console.error('Error updating profile picture:', error);
+          toast.error('Failed to update profile picture');
+        } finally {
+          setIsUploading(false);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error reading file:', error);
+      toast.error('Failed to process image');
+      setIsUploading(false);
+    }
+  };
+  
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
   
   return (
     <div className="pb-20 md:pb-6 md:pl-64">
       <AppNavigation />
       
-      <div className="flex items-center mb-6">
-        <VenoLogo className="h-6 w-6 mr-2" />
-        <h1 className="text-2xl font-bold">Profile</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="mr-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center">
+            <VenoLogo className="h-6 w-6 mr-2" />
+            <h1 className="text-2xl font-bold">Profile</h1>
+          </div>
+        </div>
       </div>
       
       {user ? (
@@ -28,12 +96,36 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-6 items-center">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src={user.user_metadata?.avatar_url} />
-                  <AvatarFallback className="text-3xl">
-                    {user.email?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="w-24 h-24 border-2 border-veno-primary/20">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="text-3xl">
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={triggerFileInput}
+                    disabled={isUploading}
+                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background"
+                  >
+                    {isUploading ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-veno-primary border-t-transparent" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                  </Button>
+                  
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                  />
+                </div>
                 
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-2xl font-bold mb-1">
@@ -56,8 +148,22 @@ const ProfilePage = () => {
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="text-destructive" onClick={signOut}>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="text-destructive md:flex hidden"
+                    onClick={signOut}
+                  >
                     <LogOut className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="text-destructive md:hidden flex items-center gap-2"
+                    onClick={signOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
                   </Button>
                 </div>
               </div>
