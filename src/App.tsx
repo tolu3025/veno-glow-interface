@@ -46,7 +46,11 @@ const App = () => (
               <Route path="/terms-of-service" element={<TermsOfService />} />
               
               <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                } />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>

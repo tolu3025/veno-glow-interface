@@ -14,10 +14,19 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import 'katex/dist/katex.min.css';
 
+// Define the types we need
 interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+}
+
+interface ChatHistoryRecord {
+  id: string;
+  user_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
 }
 
 const BotPage = () => {
@@ -69,7 +78,8 @@ const BotPage = () => {
         }
         
         if (data && data.length > 0) {
-          const formattedMessages = data.map(item => ({
+          // Convert the chat history records to Message format
+          const formattedMessages = data.map((item: ChatHistoryRecord) => ({
             role: item.role as "user" | "assistant",
             content: item.content,
             timestamp: new Date(item.created_at)
@@ -265,6 +275,7 @@ const BotPage = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Redirect if not logged in
   if (!user) {
     navigate("/auth");
     return null;
