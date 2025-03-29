@@ -4,7 +4,7 @@ import { useEffect } from "react";
 const MarketplacePage = () => {
   useEffect(() => {
     // Redirect to external marketplace
-    window.location.href = "https://www.venomarketplace.vercel.app";
+    window.location.href = "https://venomarketplace.vercel.app/";
   }, []);
 
   return (

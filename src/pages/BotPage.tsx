@@ -5,8 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import 'katex/dist/katex.min.css';
 
 interface Message {
   role: "user" | "assistant";
@@ -20,7 +24,7 @@ const BotPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm Veno Bot. How can I assist you today?",
+      content: "Hello! I'm Veno Bot. How can I assist you today? I can now properly format mathematical expressions like fractions using LaTeX notation. Try asking me about math!",
       timestamp: new Date(),
     },
   ]);
@@ -67,7 +71,7 @@ const BotPage = () => {
           messages: [
             {
               role: "system",
-              content: "You are Veno Bot, a helpful assistant that provides concise, accurate information."
+              content: "You are Veno Bot, a helpful assistant that provides concise, accurate information. When explaining mathematical concepts, especially fractions, always use LaTeX notation wrapped in dollar signs. For example, write fractions as $\\frac{numerator}{denominator}$. Ensure all mathematical expressions are properly formatted with LaTeX."
             },
             ...messages.map(msg => ({
               role: msg.role,
@@ -105,7 +109,7 @@ const BotPage = () => {
   const handleClearChat = () => {
     setMessages([{
       role: "assistant",
-      content: "Hello! I'm Veno Bot. How can I assist you today?",
+      content: "Hello! I'm Veno Bot. How can I assist you today? I can now properly format mathematical expressions like fractions using LaTeX notation. Try asking me about math!",
       timestamp: new Date(),
     }]);
   };
@@ -180,11 +184,17 @@ const BotPage = () => {
                   message.role === "user" ? "flex-row-reverse" : ""
                 }`}
               >
-                <Avatar className={`h-8 w-8 ${message.role === "assistant" ? "bg-veno-primary text-white" : "bg-secondary"} shadow-sm`}>
-                  <span className="text-xs font-semibold">
-                    {message.role === "assistant" ? "V" : "U"}
-                  </span>
-                </Avatar>
+                {message.role === "assistant" ? (
+                  <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
+                    <AvatarImage src="/veno-logo.png" alt="Veno AI" />
+                    <AvatarFallback className="bg-veno-primary text-white">V</AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <Avatar className="h-8 w-8 bg-secondary shadow-sm">
+                    <AvatarFallback>U</AvatarFallback>
+                  </Avatar>
+                )}
+                
                 <div
                   className={`rounded-lg p-3 shadow-sm ${
                     message.role === "user"
@@ -192,7 +202,14 @@ const BotPage = () => {
                       : "bg-muted border border-muted-foreground/10"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div className="text-sm whitespace-pre-wrap">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                   </div>
@@ -203,8 +220,9 @@ const BotPage = () => {
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
-                <Avatar className="h-8 w-8 bg-veno-primary text-white shadow-sm">
-                  <span className="text-xs font-semibold">V</span>
+                <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
+                  <AvatarImage src="/veno-logo.png" alt="Veno AI" />
+                  <AvatarFallback className="bg-veno-primary text-white">V</AvatarFallback>
                 </Avatar>
                 <div className="rounded-lg p-3 bg-muted border border-muted-foreground/10 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
