@@ -1,14 +1,34 @@
 
 import { useNavigate } from "react-router-dom";
-import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight, LucideIcon } from "lucide-react";
+import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
 import ServiceCard from "@/components/ServiceCard";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  const bannerSlides = [
+    {
+      title: "Education Reimagined",
+      subtitle: "Your comprehensive educational platform with interactive learning, assessments, and personalized study tools designed for the modern learner.",
+      background: "bg-gradient-to-r from-veno-primary to-veno-secondary"
+    },
+    {
+      title: "Learn Anywhere, Anytime",
+      subtitle: "Access your courses on any device with our responsive platform that adapts to your schedule and learning style.",
+      background: "bg-gradient-to-r from-veno-secondary to-purple-600"
+    },
+    {
+      title: "Interactive Assessment Tools",
+      subtitle: "Test your knowledge and track your progress with our comprehensive suite of CBT tools and analytics.",
+      background: "bg-gradient-to-r from-purple-600 to-veno-primary"
+    }
+  ];
   
   const services = [
     {
@@ -90,14 +110,20 @@ const Index = () => {
 
   return (
     <div className="pb-6 relative overflow-hidden">
-      {/* Animated iPhone Bubbles */}
+      {/* 3D Transparent Water Bubbles Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className="device-bubble w-48 h-48 -top-12 left-1/4"
+          className="bubble w-48 h-48 rounded-full absolute -top-12 left-1/4 opacity-60"
+          style={{ 
+            background: "radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1))",
+            boxShadow: "inset 0 0 20px rgba(255, 255, 255, 0.5)",
+            border: "1px solid rgba(255, 255, 255, 0.2)"
+          }}
           animate={{ 
             y: [0, -40, -10, 0],
             x: [0, 30, -20, 0],
-            rotate: [0, 10, -5, 0]
+            rotate: [0, 10, -5, 0],
+            scale: [1, 1.05, 0.98, 1]
           }}
           transition={{ 
             duration: 15, 
@@ -105,20 +131,20 @@ const Index = () => {
             repeat: Infinity,
             repeatType: "reverse" 
           }}
-        >
-          <img 
-            src="/placeholder.svg" 
-            alt="iPhone" 
-            className="w-full h-full object-cover opacity-70"
-          />
-        </motion.div>
+        />
         
         <motion.div
-          className="device-bubble w-32 h-32 top-1/3 -right-10"
+          className="bubble w-32 h-32 rounded-full absolute top-1/3 -right-10 opacity-50"
+          style={{ 
+            background: "radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1))",
+            boxShadow: "inset 0 0 15px rgba(255, 255, 255, 0.3)",
+            border: "1px solid rgba(255, 255, 255, 0.2)"
+          }}
           animate={{
             y: [0, 30, -20, 0],
             x: [0, -20, 10, 0],
-            rotate: [0, -5, 10, 0]
+            rotate: [0, -5, 10, 0],
+            scale: [1, 0.95, 1.02, 1]
           }}
           transition={{
             duration: 18,
@@ -127,20 +153,20 @@ const Index = () => {
             repeatType: "reverse",
             delay: 2
           }}
-        >
-          <img 
-            src="/placeholder.svg" 
-            alt="iPhone" 
-            className="w-full h-full object-cover opacity-60"
-          />
-        </motion.div>
+        />
         
         <motion.div
-          className="device-bubble w-40 h-40 bottom-20 left-10"
+          className="bubble w-40 h-40 rounded-full absolute bottom-20 left-10 opacity-40"
+          style={{ 
+            background: "radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1))",
+            boxShadow: "inset 0 0 18px rgba(255, 255, 255, 0.4)",
+            border: "1px solid rgba(255, 255, 255, 0.2)"
+          }}
           animate={{
             y: [0, -30, 20, 0],
             x: [0, 20, -30, 0],
-            rotate: [0, -10, 5, 0]
+            rotate: [0, -10, 5, 0],
+            scale: [1, 1.04, 0.97, 1]
           }}
           transition={{
             duration: 20,
@@ -149,57 +175,85 @@ const Index = () => {
             repeatType: "reverse",
             delay: 1
           }}
-        >
-          <img 
-            src="/placeholder.svg" 
-            alt="iPhone" 
-            className="w-full h-full object-cover opacity-50"
-          />
-        </motion.div>
+        />
+        
+        <motion.div
+          className="bubble w-24 h-24 rounded-full absolute top-1/2 left-1/4 opacity-30"
+          style={{ 
+            background: "radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05))",
+            boxShadow: "inset 0 0 10px rgba(255, 255, 255, 0.3)",
+            border: "1px solid rgba(255, 255, 255, 0.15)"
+          }}
+          animate={{
+            y: [0, 20, -15, 0],
+            x: [0, -15, 25, 0],
+            rotate: [0, 8, -12, 0],
+            scale: [1, 0.98, 1.03, 1]
+          }}
+          transition={{
+            duration: 17,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse",
+            delay: 3
+          }}
+        />
       </div>
 
-      {/* Hero Banner */}
+      {/* Hero Banner Carousel */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="relative rounded-2xl overflow-hidden mb-10"
       >
-        <div className="bg-gradient-to-r from-veno-primary to-veno-secondary h-[400px] md:h-[500px] flex items-center">
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10"></div>
-          <div className="container relative z-20">
-            <div className="max-w-xl text-white">
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 font-heading">
-                  Education <span className="text-veno-accent">Reimagined</span>
-                </h1>
-                <p className="text-lg md:text-xl opacity-90 mb-8 leading-relaxed">
-                  Your comprehensive educational platform with interactive learning, assessments, and personalized study tools designed for the modern learner.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <Button 
-                    size="lg" 
-                    onClick={handleGetStarted}
-                    className="bg-white text-veno-primary hover:bg-white/90"
-                  >
-                    {user ? "Go to Dashboard" : "Get Started"}
-                  </Button>
-                  <Button 
-                    size="lg"
-                    variant="outline"
-                    onClick={() => navigate("/marketplace")}
-                    className="bg-transparent border-white text-white hover:bg-white/20"
-                  >
-                    Explore Marketplace
-                  </Button>
+        <Carousel autoplay={true} autoplayInterval={5000} showControls={false} className="h-[400px] md:h-[500px]">
+          <CarouselContent>
+            {bannerSlides.map((slide, index) => (
+              <CarouselItem key={index}>
+                <div className={`${slide.background} h-[400px] md:h-[500px] flex items-center`}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10"></div>
+                  <div className="container relative z-20">
+                    <div className="max-w-xl text-white">
+                      <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <h1 className="text-4xl md:text-6xl font-bold mb-4 font-heading">
+                          {slide.title.split(' ').map((word, i) => (
+                            <span key={i} className={i % 2 === 1 ? "text-veno-accent" : ""}>
+                              {word}{' '}
+                            </span>
+                          ))}
+                        </h1>
+                        <p className="text-lg md:text-xl opacity-90 mb-8 leading-relaxed">
+                          {slide.subtitle}
+                        </p>
+                        <div className="flex flex-wrap gap-4">
+                          <Button 
+                            size="lg" 
+                            onClick={handleGetStarted}
+                            className="bg-white text-veno-primary hover:bg-white/90"
+                          >
+                            {user ? "Go to Dashboard" : "Get Started"}
+                          </Button>
+                          <Button 
+                            size="lg"
+                            variant="outline"
+                            onClick={() => navigate("/marketplace")}
+                            className="bg-transparent border-white text-white hover:bg-white/20"
+                          >
+                            Explore Marketplace
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
       </motion.div>
       
       {/* Features Section */}
@@ -279,7 +333,7 @@ const Index = () => {
         </motion.div>
       </motion.div>
 
-      {/* Testimonial Section */}
+      {/* Testimonial Section with updated image and name */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -295,9 +349,12 @@ const Index = () => {
                 "Veno has transformed how I approach learning and assessment. The interactive tools and personalized feedback have significantly improved my study efficiency and outcomes."
               </blockquote>
               <div className="flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-gray-300 mr-4"></div>
+                <Avatar className="w-12 h-12 rounded-full border-2 border-veno-primary mr-4">
+                  <AvatarImage src="/lovable-uploads/cb8d05cb-602f-45e9-a069-f187aee51c74.png" alt="Toluwanimi Oyetade" />
+                  <AvatarFallback>TO</AvatarFallback>
+                </Avatar>
                 <div className="text-left">
-                  <p className="font-semibold">Sarah Johnson</p>
+                  <p className="font-semibold">Toluwanimi Oyetade</p>
                   <p className="text-sm text-muted-foreground">University Student</p>
                 </div>
               </div>

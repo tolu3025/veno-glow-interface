@@ -151,7 +151,29 @@
     @apply bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10;
   }
   
-  .device-bubble {
-    @apply absolute rounded-full shadow-xl bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-md border border-white/30;
+  .bubble {
+    @apply backdrop-blur-sm z-0;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05));
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
+  
+  .dark .bubble {
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.03));
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.15), 0 0 15px rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Add slide indicator styles for carousel */
+.embla__dots {
+  @apply flex justify-center gap-1 mt-4;
+}
+
+.embla__dot {
+  @apply w-2 h-2 rounded-full bg-gray-300 transition-all duration-200;
+}
+
+.embla__dot--selected {
+  @apply bg-veno-primary w-4;
 }
