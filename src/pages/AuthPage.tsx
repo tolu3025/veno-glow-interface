@@ -114,7 +114,9 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Veno CBT</CardTitle>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-veno-secondary bg-clip-text text-transparent">
+            Veno
+          </CardTitle>
           <CardDescription>
             Sign in to your account or create a new one
           </CardDescription>

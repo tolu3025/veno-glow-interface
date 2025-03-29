@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RewardSystem from "./pages/RewardSystem";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,11 @@ const App = () => (
                 <Route path="/cbt/analytics" element={
                   <ProtectedRoute>
                     <Analytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/rewards" element={
+                  <ProtectedRoute>
+                    <RewardSystem />
                   </ProtectedRoute>
                 } />
                 <Route path="/marketplace" element={<MarketplacePage />} />
