@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Trophy, Award, Settings, User } from 'lucide-react';
+import { Home, BookOpen, Trophy, Award, Settings, User, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -13,6 +13,12 @@ const AppNavigation = () => {
   const appLinks = [
     {
       name: 'Dashboard',
+      path: '/dashboard',
+      icon: LayoutDashboard,
+      requiresAuth: true
+    },
+    {
+      name: 'CBT',
       path: '/cbt',
       icon: Home
     },

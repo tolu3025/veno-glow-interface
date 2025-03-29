@@ -23,6 +23,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RewardSystem from "./pages/RewardSystem";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import DashboardPage from "./pages/DashboardPage";
 
 // Import our RPC function setup
 import "./functions/appendToActivities";
@@ -41,6 +42,11 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/cbt" element={<CbtPage />} />
                 <Route path="/cbt/take/:testId" element={<TakeTest />} />
                 <Route path="/cbt/create" element={

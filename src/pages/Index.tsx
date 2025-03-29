@@ -4,9 +4,11 @@ import { Book, ShoppingCart, Bot, FileText } from "lucide-react";
 import ServiceCard from "@/components/ServiceCard";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/providers/AuthProvider";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const services = [
     {
@@ -55,6 +57,14 @@ const Index = () => {
     }
   };
 
+  const handleGetStarted = () => {
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      navigate("/cbt");
+    }
+  };
+
   return (
     <div className="pb-6">
       {/* Hero Banner */}
@@ -79,10 +89,10 @@ const Index = () => {
                 <div className="flex flex-wrap gap-4">
                   <Button 
                     size="lg" 
-                    onClick={() => navigate("/cbt")}
+                    onClick={handleGetStarted}
                     className="bg-white text-veno-primary hover:bg-white/90"
                   >
-                    Get Started
+                    {user ? "Go to Dashboard" : "Get Started"}
                   </Button>
                   <Button 
                     size="lg"
