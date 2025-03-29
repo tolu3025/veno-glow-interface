@@ -56,8 +56,8 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
       icon: Settings
     },
     {
-      name: 'Services',
-      path: '/services',
+      name: 'Profile',
+      path: '/profile',
       icon: User
     }
   ];

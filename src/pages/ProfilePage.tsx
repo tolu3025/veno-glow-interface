@@ -52,6 +52,50 @@ const ProfilePage = () => {
     if (user) {
       fetchUserProfile();
       fetchTestStats();
+      
+      // Set up realtime subscription for profile updates
+      const channel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Profile changed:', payload);
+            // Refresh user profile data when changes occur
+            fetchUserProfile();
+          }
+        )
+        .subscribe();
+        
+      // Set up realtime subscription for test attempts
+      const testAttemptsChannel = supabase
+        .channel('test-attempts-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'test_attempts',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('New test attempt:', payload);
+            // Refresh test stats when a new attempt is added
+            fetchTestStats();
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        // Clean up the subscriptions when component unmounts
+        supabase.removeChannel(channel);
+        supabase.removeChannel(testAttemptsChannel);
+      };
     } else {
       setLoading(false);
     }
@@ -85,6 +129,13 @@ const ProfilePage = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         setRecentActivity(sorted.slice(0, 3));
+      }
+      
+      // Show toast notification for realtime updates (only if not initial load)
+      if (!loading) {
+        toast.info("Profile data updated", {
+          description: "Your profile information has been refreshed"
+        });
       }
     } catch (error) {
       console.error('Error fetching profile data:', error);
