@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, BookOpen, Trophy, Share2, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, BookOpen, Trophy, Share2, BarChart3, Moon, Sun } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,11 +12,14 @@ import MyTestsSection from "@/components/cbt/MyTestsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/providers/AuthProvider";
+import { VenoLogo } from "@/components/ui/logo";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const CbtPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("quiz");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -36,6 +39,10 @@ const CbtPage = () => {
     }
   };
   
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
     <div className="pb-6">
       <div className="flex items-center justify-between mb-6">
@@ -47,14 +54,25 @@ const CbtPage = () => {
             <ArrowLeft size={18} />
           </button>
           <div className="flex items-center">
-            <img src="/veno-logo.png" alt="Veno Logo" className="h-6 w-6 mr-2" />
-            <h1 className="text-2xl font-bold">Veno CBT</h1>
+            <VenoLogo className="h-6 w-6 mr-2" />
+            <h1 className="text-2xl font-bold">Veno</h1>
           </div>
         </div>
         
-        <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
-          <Plus size={16} className="mr-1" /> Create Test
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme}
+            className="rounded-full"
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </Button>
+          
+          <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
+            <Plus size={16} className="mr-1" /> Create Test
+          </Button>
+        </div>
       </div>
       
       <motion.div

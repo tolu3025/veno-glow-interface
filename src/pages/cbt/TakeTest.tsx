@@ -1,13 +1,14 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Clock, AlertCircle, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import confetti from "canvas-confetti";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/providers/AuthProvider";
 
 type QuizQuestion = {
   id: string;
@@ -16,56 +17,22 @@ type QuizQuestion = {
   correctOption: number;
 };
 
-// Mock data - in a real app this would come from Supabase
-const MOCK_TEST = {
-  id: "test1",
-  title: "JavaScript Quiz",
-  description: "Test your JavaScript knowledge",
-  questions: [
-    {
-      id: "q1",
-      text: "Which of the following is not a JavaScript data type?",
-      options: ["String", "Boolean", "Float", "Object"],
-      correctOption: 2,
-    },
-    {
-      id: "q2",
-      text: "Which method is used to add elements to the end of an array?",
-      options: ["push()", "append()", "addToEnd()", "insert()"],
-      correctOption: 0,
-    },
-    {
-      id: "q3",
-      text: "What does DOM stand for?",
-      options: [
-        "Document Object Model",
-        "Data Object Model",
-        "Document Oriented Model",
-        "Digital Ordinance Model",
-      ],
-      correctOption: 0,
-    },
-    {
-      id: "q4",
-      text: "Which operator is used for strict equality comparison?",
-      options: ["==", "===", "=", "!="],
-      correctOption: 1,
-    },
-    {
-      id: "q5",
-      text: "What is the output of: console.log(typeof [])?",
-      options: ["array", "object", "list", "undefined"],
-      correctOption: 1,
-    },
-  ],
-  timeLimit: 10, // minutes
-};
-
 const TakeTest = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const [test, setTest] = useState<typeof MOCK_TEST | null>(null);
+  const { user } = useAuth();
+  const subjectFromState = location.state?.subject;
+  
+  const [test, setTest] = useState<{
+    id: string;
+    title: string;
+    description: string;
+    questions: QuizQuestion[];
+    timeLimit: number;
+  } | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
@@ -77,20 +44,76 @@ const TakeTest = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
 
   useEffect(() => {
-    // In a real app, this would fetch the test from Supabase
-    setTimeout(() => {
-      setTest(MOCK_TEST);
-      setLoading(false);
-      
-      // Initialize answers array with nulls
-      setAnswers(new Array(MOCK_TEST.questions.length).fill(null));
-      
-      // Set time remaining in seconds
-      if (MOCK_TEST.timeLimit) {
-        setTimeRemaining(MOCK_TEST.timeLimit * 60);
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        
+        // If we have a subject from state, use that to fetch questions
+        if (subjectFromState) {
+          const { data: questions, error } = await supabase
+            .from('questions')
+            .select('id, question, options, answer, subject')
+            .eq('subject', subjectFromState)
+            .limit(10);
+            
+          if (error) {
+            throw error;
+          }
+          
+          if (questions && questions.length > 0) {
+            // Transform the questions to match our expected format
+            const formattedQuestions: QuizQuestion[] = questions.map(q => ({
+              id: q.id,
+              text: q.question,
+              options: Array.isArray(q.options) ? q.options : [],
+              correctOption: q.answer
+            }));
+            
+            // Create a test object with the questions
+            const testObject = {
+              id: 'subject-' + subjectFromState,
+              title: subjectFromState + ' Quiz',
+              description: 'Test your knowledge on ' + subjectFromState,
+              questions: formattedQuestions,
+              timeLimit: 10 // minutes
+            };
+            
+            setTest(testObject);
+            // Initialize answers array with nulls
+            setAnswers(new Array(formattedQuestions.length).fill(null));
+            // Set time remaining in seconds
+            setTimeRemaining(10 * 60);
+          } else {
+            // No questions found for this subject
+            toast({
+              title: "No questions available",
+              description: `We couldn't find any questions for ${subjectFromState}`,
+              variant: "destructive",
+            });
+          }
+        } else if (testId) {
+          // Logic to fetch a specific test by ID could go here
+          // For now, we'll just display an error
+          toast({
+            title: "Test not found",
+            description: "The test you're looking for couldn't be located",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching questions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load quiz questions",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    }, 1000);
-  }, [testId]);
+    };
+    
+    fetchQuestions();
+  }, [testId, subjectFromState, toast]);
 
   // Timer countdown
   useEffect(() => {
@@ -161,6 +184,27 @@ const TakeTest = () => {
     const calculatedScore = Math.round((correct / test.questions.length) * 100);
     setScore(calculatedScore);
     
+    // Save test result to Supabase if user is logged in
+    if (user) {
+      const saveResult = async () => {
+        try {
+          const { error } = await supabase.from('test_results').insert({
+            user_email: user.email,
+            subject: subjectFromState || 'Unknown',
+            score: calculatedScore,
+            test_id: test.id,
+            creator_id: user.id
+          });
+          
+          if (error) throw error;
+        } catch (err) {
+          console.error('Error saving test result:', err);
+        }
+      };
+      
+      saveResult();
+    }
+    
     // Show success message and confetti for good scores
     if (calculatedScore >= 70) {
       toast({
@@ -204,7 +248,7 @@ const TakeTest = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="w-16 h-16 border-4 border-veno-primary/30 border-t-veno-primary rounded-full animate-spin"></div>
+        <Loader2 className="h-16 w-16 text-veno-primary animate-spin" />
         <p className="mt-4 text-muted-foreground">Loading test...</p>
       </div>
     );
@@ -315,49 +359,49 @@ const TakeTest = () => {
               </Button>
             </div>
           </div>
-        </motion.div>
-        
-        {showFeedback && (
-          <div className="space-y-4 mt-6">
-            <h3 className="text-lg font-medium">Review Questions</h3>
-            
-            {test.questions.map((question, index) => (
-              <Card key={question.id} className={`p-4 ${answers[index] === question.correctOption ? 'border-green-500/30' : 'border-rose-500/30'}`}>
-                <div className="flex items-start">
-                  <div className="mr-3 mt-1">
-                    {answers[index] === question.correctOption ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-rose-500" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium mb-2">{index + 1}. {question.text}</h4>
-                    <div className="grid gap-2">
-                      {question.options.map((option, optIndex) => (
-                        <div 
-                          key={optIndex}
-                          className={`p-2 rounded-md text-sm ${
-                            optIndex === question.correctOption 
-                              ? 'bg-green-500/20 border border-green-500/30' 
-                              : optIndex === answers[index] 
-                                ? 'bg-rose-500/20 border border-rose-500/30' 
-                                : 'bg-secondary/40'
-                          }`}
-                        >
-                          {option}
-                          {optIndex === question.correctOption && (
-                            <span className="ml-2 text-green-500">✓ Correct</span>
-                          )}
-                        </div>
-                      ))}
+          
+          {showFeedback && (
+            <div className="space-y-4 mt-6">
+              <h3 className="text-lg font-medium">Review Questions</h3>
+              
+              {test.questions.map((question, index) => (
+                <Card key={question.id} className={`p-4 ${answers[index] === question.correctOption ? 'border-green-500/30' : 'border-rose-500/30'}`}>
+                  <div className="flex items-start">
+                    <div className="mr-3 mt-1">
+                      {answers[index] === question.correctOption ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-rose-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium mb-2">{index + 1}. {question.text}</h4>
+                      <div className="grid gap-2">
+                        {question.options.map((option, optIndex) => (
+                          <div 
+                            key={optIndex}
+                            className={`p-2 rounded-md text-sm ${
+                              optIndex === question.correctOption 
+                                ? 'bg-green-500/20 border border-green-500/30' 
+                                : optIndex === answers[index] 
+                                  ? 'bg-rose-500/20 border border-rose-500/30' 
+                                  : 'bg-secondary/40'
+                            }`}
+                          >
+                            {option}
+                            {optIndex === question.correctOption && (
+                              <span className="ml-2 text-green-500">✓ Correct</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+                </Card>
+              ))}
+            </div>
+          )}
+        </motion.div>
       </div>
     );
   }

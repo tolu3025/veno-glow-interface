@@ -1,24 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/providers/AuthProvider";
-import { toast } from "sonner";
-import { CheckCircle, CircleDashed } from "lucide-react";
-import { appendActivityAndUpdatePoints } from "@/utils/activityHelpers";
-import { Json } from "@/integrations/supabase/types";
+import { CheckCircle, Circle, ListChecks } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/providers/AuthProvider';
+import { appendToUserActivities } from '@/utils/activityHelpers';
 
-interface Task {
+type Task = {
   id: string;
   title: string;
   description: string;
   points: number;
   completed: boolean;
-  action: () => Promise<boolean>;
-}
+  type: string;
+  progress?: number;
+};
 
 interface TasksSectionProps {
   userPoints: number;
@@ -26,188 +24,143 @@ interface TasksSectionProps {
 }
 
 const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }) => {
+  const { toast } = useToast();
   const { user } = useAuth();
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [taskInProgress, setTaskInProgress] = useState<string | null>(null);
-  const [completingTask, setCompletingTask] = useState<string | null>(null);
-
+  const [tasks, setTasks] = useState<Task[]>([]);
+  
   useEffect(() => {
-    if (!user) return;
-
-    const fetchCompletedTasks = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('activities')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) throw error;
-        
-        if (data && data.activities) {
-          const activities = Array.isArray(data.activities) ? data.activities : [];
-          
-          const completedTaskIds = activities
-            .filter((activity: any) => activity && activity.type === 'task_completed')
-            .map((activity: any) => activity.task_id);
-          
-          setCompletedTasks(completedTaskIds);
-        }
-      } catch (error) {
-        console.error("Error fetching completed tasks:", error);
+    // In a real app, you would fetch this data from a database
+    const mockTasks = [
+      {
+        id: "1",
+        title: "Complete your first test",
+        description: "Take and complete your first quiz or test",
+        points: 100,
+        completed: false,
+        type: "test",
+        progress: 0
+      },
+      {
+        id: "2",
+        title: "Create a test",
+        description: "Create your own test with at least 5 questions",
+        points: 200,
+        completed: false,
+        type: "create",
+        progress: 0
+      },
+      {
+        id: "3",
+        title: "Refer a friend",
+        description: "Invite someone to join Veno",
+        points: 150,
+        completed: false,
+        type: "referral",
+        progress: 0
       }
-    };
+    ];
+    
+    setTasks(mockTasks);
+  }, []);
 
-    fetchCompletedTasks();
-  }, [user]);
-
-  const completeTask = async (taskId: string, points: number) => {
+  const handleCompleteTask = (taskId: string) => {
     if (!user) {
       toast({
-        description: "Please log in to complete tasks"
+        title: "Authentication Required",
+        description: "You need to sign in to complete tasks",
+        variant: "destructive",
       });
       return;
     }
+
+    const taskToUpdate = tasks.find(task => task.id === taskId);
+    if (!taskToUpdate) return;
     
-    setCompletingTask(taskId);
+    // Update task
+    setTasks(prevTasks => prevTasks.map(task => 
+      task.id === taskId ? { ...task, completed: true } : task
+    ));
     
-    try {
-      const newActivity = {
-        type: 'task_completed',
+    // Add points
+    setUserPoints(prev => prev + taskToUpdate.points);
+
+    // In a real app, you would send this to your backend
+    if (user) {
+      appendToUserActivities(user.id, {
+        type: "task_completed",
         task_id: taskId,
+        task_name: taskToUpdate.title,
+        points_earned: taskToUpdate.points,
         timestamp: new Date().toISOString()
-      };
-      
-      const success = await appendActivityAndUpdatePoints(user.id, newActivity, points);
-      
-      if (success) {
-        setCompletedTasks([...completedTasks, taskId]);
-        setUserPoints(prev => prev + points);
-        
-        toast({
-          description: `You earned ${points} points!`
-        });
-      } else {
-        throw new Error("Failed to update profile");
-      }
-    } catch (error) {
-      console.error("Error completing task:", error);
-      toast({
-        description: "Failed to complete task"
       });
-    } finally {
-      setCompletingTask(null);
     }
+    
+    toast({
+      title: "Task Completed!",
+      description: `You've earned ${taskToUpdate.points} points`,
+    });
   };
-
-  const tasks: Task[] = [
-    {
-      id: 'create_test',
-      title: 'Create Your First Test',
-      description: 'Create a custom test in the CBT section',
-      points: 50,
-      completed: completedTasks.includes('create_test'),
-      action: async () => {
-        await completeTask('create_test', 50);
-        return true;
-      }
-    },
-    {
-      id: 'complete_profile',
-      title: 'Complete Your Profile',
-      description: 'Add your details to your user profile',
-      points: 30,
-      completed: completedTasks.includes('complete_profile'),
-      action: async () => {
-        await completeTask('complete_profile', 30);
-        return true;
-      }
-    },
-    {
-      id: 'first_referral',
-      title: 'Refer a Friend',
-      description: 'Invite a friend to join Veno',
-      points: 100,
-      completed: completedTasks.includes('first_referral'),
-      action: async () => {
-        await completeTask('first_referral', 100);
-        return true;
-      }
-    },
-    {
-      id: 'take_test',
-      title: 'Take a Test',
-      description: 'Complete your first test in the CBT section',
-      points: 40,
-      completed: completedTasks.includes('take_test'),
-      action: async () => {
-        await completeTask('take_test', 40);
-        return true;
-      }
-    }
-  ];
-
-  const completedTaskCount = completedTasks.length;
-  const totalTasks = tasks.length;
-  const progressPercentage = totalTasks > 0 ? (completedTaskCount / totalTasks) * 100 : 0;
-
+  
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-medium">Overall Progress</h3>
-          <span className="text-sm text-muted-foreground">
-            {completedTaskCount} / {totalTasks} Tasks
-          </span>
-        </div>
-        <Progress value={progressPercentage} className="h-2" />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <h2 className="text-xl font-semibold flex items-center">
+        <ListChecks className="mr-2 h-5 w-5" /> Tasks
+      </h2>
+      
+      <p className="text-muted-foreground">
+        Complete these tasks to earn points.
+      </p>
+      
+      <div className="space-y-4">
         {tasks.map((task) => (
-          <motion.div 
-            key={task.id}
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            <Card className={`overflow-hidden ${task.completed ? 'bg-primary/5 border-primary/30' : ''}`}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{task.title}</CardTitle>
-                  <div className={`p-1.5 rounded-full ${task.completed ? 'bg-primary/20' : 'bg-muted'}`}>
-                    {task.completed ? 
-                      <CheckCircle className="h-5 w-5 text-primary" /> : 
-                      <CircleDashed className="h-5 w-5 text-muted-foreground" />
-                    }
-                  </div>
-                </div>
-                <CardDescription>{task.description}</CardDescription>
-              </CardHeader>
-              <CardFooter className="pt-2 flex justify-between items-center">
-                <div className="flex items-center gap-1 text-sm font-medium text-primary">
-                  +{task.points} points
-                </div>
-                <Button 
-                  variant={task.completed ? "secondary" : "default"}
-                  size="sm"
-                  disabled={loading || task.completed}
-                  onClick={() => task.action()}
-                  className={task.completed ? "pointer-events-none opacity-70" : ""}
-                >
-                  {taskInProgress === task.id ? (
-                    <>
-                      <span className="animate-spin mr-1">⟳</span> Processing...
-                    </>
-                  ) : task.completed ? (
-                    'Completed'
+          <Card key={task.id} className={`${task.completed ? 'bg-muted/30' : ''}`}>
+            <CardContent className="p-5">
+              <div className="flex items-start">
+                <div className="mr-3 mt-1">
+                  {task.completed ? (
+                    <CheckCircle className="h-5 w-5 text-veno-primary" />
                   ) : (
-                    'Complete Task'
+                    <Circle className="h-5 w-5 text-muted-foreground" />
                   )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </motion.div>
+                </div>
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                      {task.title}
+                    </h3>
+                    <span className="text-sm font-medium text-veno-primary">
+                      +{task.points} pts
+                    </span>
+                  </div>
+                  
+                  <p className={`text-sm ${task.completed ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
+                    {task.description}
+                  </p>
+                  
+                  {task.progress !== undefined && task.progress > 0 && task.progress < 100 && (
+                    <div className="mt-2">
+                      <Progress value={task.progress} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Progress: {task.progress}%
+                      </p>
+                    </div>
+                  )}
+                  
+                  {!task.completed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 text-xs"
+                      onClick={() => handleCompleteTask(task.id)}
+                    >
+                      Complete
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

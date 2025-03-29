@@ -3,12 +3,15 @@ import { useEffect, useState } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
-import { UserCircle, LogOut, LogIn } from "lucide-react";
+import { UserCircle, LogOut, LogIn, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
+import { VenoLogo } from "@/components/ui/logo";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -20,12 +23,16 @@ const MainLayout = () => {
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center">
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/veno-logo.png" alt="Veno Logo" className="h-8 w-8" />
+            <VenoLogo className="h-8 w-8" />
             <span className="font-bold text-xl">Veno</span>
           </Link>
           <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
@@ -43,6 +50,15 @@ const MainLayout = () => {
             </Link>
           </nav>
           <div className="ml-auto flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme}
+              className="rounded-full"
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </Button>
+            
             {user ? (
               <>
                 <div className="text-sm text-muted-foreground hidden md:block">

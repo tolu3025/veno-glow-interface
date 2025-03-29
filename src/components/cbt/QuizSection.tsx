@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Star } from 'lucide-react';
+import { BookOpen, Clock, Loader2 } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -13,14 +13,13 @@ const QuizSection = () => {
   const { data: subjects, isLoading, error } = useSubjects();
 
   const handleStartQuiz = (subject: string) => {
-    // Navigate to take test page with the subject
     navigate(`/cbt/take/subject`, { state: { subject } });
   };
 
   if (isLoading) {
     return (
       <div className="flex w-full justify-center p-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
       </div>
     );
   }

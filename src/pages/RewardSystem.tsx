@@ -1,131 +1,152 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/providers/AuthProvider";
-import { toast } from "sonner";
-import { Award, Gift, Star, Trophy, Users, UserPlus, CheckCircle, CircleDashed } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import LeaderboardSection from "@/components/rewards/LeaderboardSection";
-import TasksSection from "@/components/rewards/TasksSection";
-import RewardsSection from "@/components/rewards/RewardsSection";
-import AchievementsSection from "@/components/rewards/AchievementsSection";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Trophy, Gift, List, UserCircle2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/providers/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
+
+import RewardsSection from '@/components/rewards/RewardsSection';
+import TasksSection from '@/components/rewards/TasksSection';
+import LeaderboardSection from '@/components/rewards/LeaderboardSection';
+import AchievementsSection from '@/components/rewards/AchievementsSection';
+import { VenoLogo } from '@/components/ui/logo';
 
 const RewardSystem = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('tasks');
   const [userPoints, setUserPoints] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch user points
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   useEffect(() => {
-    if (!user) return;
-
-    const fetchUserProfile = async () => {
+    const fetchUserPoints = async () => {
+      if (!user) return;
+      
       try {
         const { data, error } = await supabase
           .from('user_profiles')
           .select('points')
           .eq('user_id', user.id)
           .single();
-
+        
         if (error) throw error;
         
         if (data) {
           setUserPoints(data.points || 0);
         } else {
-          // Create user profile if it doesn't exist
+          // Create a profile if it doesn't exist
           const { error: insertError } = await supabase
             .from('user_profiles')
-            .insert({ 
-              id: user.id,
+            .insert({
+              id: user.id, // UUID for the profile
               user_id: user.id,
               email: user.email,
-              points: 0,
+              points: 100, // Start with some points
               activities: []
             });
-            
+          
           if (insertError) throw insertError;
+          
+          setUserPoints(100);
+          toast({
+            title: "Welcome to Rewards!",
+            description: "We've given you 100 points to get started.",
+          });
         }
       } catch (error) {
-        console.error("Error fetching user profile:", error);
-        toast.error("Failed to load user profile");
-      } finally {
-        setLoading(false);
+        console.error("Error fetching user points:", error);
       }
     };
-
-    fetchUserProfile();
-  }, [user]);
-
-  if (!user) {
-    navigate('/auth');
-    return null;
-  }
-
+    
+    fetchUserPoints();
+  }, [user, toast]);
+  
+  // Effect to update user points in Supabase when they change
+  useEffect(() => {
+    const updateUserPoints = async () => {
+      if (!user) return;
+      
+      try {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ points: userPoints })
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error updating user points:", error);
+      }
+    };
+    
+    // Only update if the user exists and points have been loaded
+    if (user && userPoints !== 0) {
+      updateUserPoints();
+    }
+  }, [userPoints, user]);
+  
   return (
-    <div className="container mx-auto py-6 px-4 max-w-7xl">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col gap-6"
-      >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Rewards & Referrals</h1>
-            <p className="text-muted-foreground">Earn points, complete tasks, and climb the leaderboard</p>
-          </div>
-          
-          <motion.div 
-            className="flex items-center gap-2 bg-gradient-to-r from-primary/30 to-veno-accent/30 p-3 rounded-lg"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            <Star className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-semibold">{userPoints} Points</span>
-          </motion.div>
+    <div className="container mx-auto py-6">
+      <div className="flex items-center mb-8">
+        <div className="flex items-center">
+          <VenoLogo className="h-10 w-10 mr-3" />
+          <h1 className="text-3xl font-bold">Veno Rewards</h1>
         </div>
-
-        <Tabs defaultValue="tasks" className="w-full">
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-4">
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <CircleDashed className="h-4 w-4" /> Tasks
-            </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex items-center gap-2">
-              <Users className="h-4 w-4" /> Leaderboard
-            </TabsTrigger>
-            <TabsTrigger value="rewards" className="flex items-center gap-2">
-              <Gift className="h-4 w-4" /> Rewards
-            </TabsTrigger>
-            <TabsTrigger value="achievements" className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" /> Achievements
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="tasks">
-            <TasksSection userPoints={userPoints} setUserPoints={setUserPoints} />
-          </TabsContent>
-          
-          <TabsContent value="referrals">
-            <LeaderboardSection userPoints={userPoints} />
-          </TabsContent>
-          
-          <TabsContent value="rewards">
-            <RewardsSection userPoints={userPoints} setUserPoints={setUserPoints} />
-          </TabsContent>
-          
-          <TabsContent value="achievements">
-            <AchievementsSection userPoints={userPoints} />
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+      </div>
+      
+      <Card className="mb-8 border border-veno-primary/20 bg-gradient-to-br from-card/50 to-card">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold mb-1 flex items-center">
+                <Trophy className="h-6 w-6 text-veno-primary mr-2" />
+                Your Reward Points
+              </h2>
+              <p className="text-muted-foreground">Complete tasks, take quizzes, and earn rewards</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Tabs defaultValue="tasks" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-6">
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
+            <List className="h-4 w-4 mr-2" />
+            Tasks
+          </TabsTrigger>
+          <TabsTrigger value="rewards" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
+            <Gift className="h-4 w-4 mr-2" />
+            Rewards
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
+            <UserCircle2 className="h-4 w-4 mr-2" />
+            Achievements
+          </TabsTrigger>
+          <TabsTrigger value="leaderboard" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
+            <Trophy className="h-4 w-4 mr-2" />
+            Leaderboard
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="tasks" className="animate-fade-in">
+          <TasksSection userPoints={userPoints} setUserPoints={setUserPoints} />
+        </TabsContent>
+        
+        <TabsContent value="rewards" className="animate-fade-in">
+          <RewardsSection userPoints={userPoints} setUserPoints={setUserPoints} />
+        </TabsContent>
+        
+        <TabsContent value="achievements" className="animate-fade-in">
+          <AchievementsSection userPoints={userPoints} />
+        </TabsContent>
+        
+        <TabsContent value="leaderboard" className="animate-fade-in">
+          <LeaderboardSection />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
