@@ -4,7 +4,7 @@ import { useEffect } from "react";
 const BlogPage = () => {
   useEffect(() => {
     // Redirect to external blog
-    window.location.href = "https://blog.veno.co";
+    window.location.href = "https://venoblog.venobot.online/";
   }, []);
 
   return (
