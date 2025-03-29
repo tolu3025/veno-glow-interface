@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
 
 type QuizQuestion = {
   id: string;
@@ -22,6 +23,16 @@ type UserAnswer = {
   questionId: string;
   selectedOption: number | null;
   isCorrect: boolean;
+};
+
+type TestDetails = {
+  id: string;
+  title: string;
+  description: string | null;
+  creator_id: string;
+  time_limit: number | null;
+  results_visibility: 'creator_only' | 'test_takers' | 'public';
+  allow_retakes: boolean;
 };
 
 const TakeTest = () => {
@@ -40,6 +51,10 @@ const TakeTest = () => {
   const [testStarted, setTestStarted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [reviewMode, setReviewMode] = useState(false);
+  const [testDetails, setTestDetails] = useState<TestDetails | null>(null);
+  const [showTakerForm, setShowTakerForm] = useState(false);
+  const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
+  const [previousAttempts, setPreviousAttempts] = useState<number>(0);
 
   // Get the settings from location state or use defaults
   const settings = location.state?.settings || {
@@ -49,59 +64,121 @@ const TakeTest = () => {
   };
 
   useEffect(() => {
-    const loadQuestions = async () => {
+    const loadTest = async () => {
       setLoading(true);
+
+      if (testId === 'subject' && location.state?.subject) {
+        loadSubjectQuiz();
+        return;
+      }
+      
       try {
-        if (testId === 'subject' && location.state?.subject) {
-          // Load questions for a specific subject
-          const subject = location.state.subject;
-          
-          // Map UI difficulty to database difficulty and handle 'all' case
-          const difficultyFilter = settings.difficulty === 'all' 
-            ? ['beginner', 'intermediate', 'advanced'] as const 
-            : [mapDifficulty(settings.difficulty)] as const;
-          
-          const { data, error } = await supabase
-            .from('questions')
+        // Load specific test by ID
+        if (testId) {
+          // First, get test details
+          const { data: testData, error: testError } = await supabase
+            .from('user_tests')
             .select('*')
-            .eq('subject', subject)
-            .in('difficulty', difficultyFilter)
-            .limit(settings.questionsCount);
+            .eq('id', testId)
+            .single();
             
-          if (error) throw error;
+          if (testError) throw testError;
           
-          if (data && data.length > 0) {
-            // Transform Supabase data to match our QuizQuestion type
-            const formattedQuestions: QuizQuestion[] = data.map(q => ({
+          if (!testData) {
+            toast.error("Test not found");
+            navigate('/cbt');
+            return;
+          }
+          
+          setTestDetails(testData as TestDetails);
+          
+          // If user is logged in, check previous attempts
+          if (user && !testData.allow_retakes) {
+            const { data: attempts, error: attemptsError } = await supabase
+              .from('test_attempts')
+              .select('*', { count: 'exact' })
+              .eq('test_id', testId)
+              .eq('user_id', user.id);
+              
+            if (!attemptsError && attempts && attempts.length > 0) {
+              setPreviousAttempts(attempts.length);
+            }
+          }
+          
+          // Then, get test questions
+          const { data: questionsData, error: questionsError } = await supabase
+            .from('user_test_questions')
+            .select('*')
+            .eq('test_id', testId);
+            
+          if (questionsError) throw questionsError;
+          
+          if (questionsData && questionsData.length > 0) {
+            // Transform question data to match our QuizQuestion type
+            const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
-              text: q.question, // Use question instead of question_text
-              options: Array.isArray(q.options) ? 
-                q.options.map((opt: any) => String(opt)) : [],
-              correctOption: q.answer // Use answer instead of correct_option_index
+              text: q.question_text,
+              options: Array.isArray(q.options) ? q.options : [],
+              correctOption: q.answer
             }));
             
             setQuestions(formattedQuestions);
           } else {
-            // If no questions found, provide demo questions
-            setQuestions(generateDemoQuestions(subject));
+            // If no questions found, show error
+            toast.error("No questions available for this test");
           }
-        } else {
-          // Handle specific test ID case
-          // In a real app, fetch the specific test by ID
-          console.log("Loading specific test:", testId);
-          // For now, use demo questions
-          setQuestions(generateDemoQuestions("Demo"));
         }
       } catch (error) {
-        console.error("Error loading questions:", error);
-        toast.error("Failed to load questions");
+        console.error("Error loading test:", error);
+        toast.error("Failed to load test");
       } finally {
         setLoading(false);
       }
     };
-    
-    loadQuestions();
-  }, [testId, location.state, settings]);
+
+    loadTest();
+  }, [testId, user]);
+  
+  const loadSubjectQuiz = async () => {
+    try {
+      const subject = location.state.subject;
+      
+      // Map UI difficulty to database difficulty and handle 'all' case
+      const difficultyFilter = settings.difficulty === 'all' 
+        ? ['beginner', 'intermediate', 'advanced'] as const 
+        : [mapDifficulty(settings.difficulty)] as const;
+      
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('subject', subject)
+        .in('difficulty', difficultyFilter)
+        .limit(settings.questionsCount);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Transform Supabase data to match our QuizQuestion type
+        const formattedQuestions: QuizQuestion[] = data.map(q => ({
+          id: q.id,
+          text: q.question, // Use question instead of question_text
+          options: Array.isArray(q.options) ? 
+            q.options.map((opt: any) => String(opt)) : [],
+          correctOption: q.answer // Use answer instead of correct_option_index
+        }));
+        
+        setQuestions(formattedQuestions);
+      } else {
+        // If no questions found, provide demo questions
+        setQuestions(generateDemoQuestions(subject));
+      }
+    } catch (error) {
+      console.error("Error loading subject questions:", error);
+      toast.error("Failed to load questions");
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Map our UI difficulty levels to database difficulty levels
   const mapDifficulty = (uiDifficulty: string): "beginner" | "intermediate" | "advanced" => {
@@ -125,8 +202,15 @@ const TakeTest = () => {
     }
   }, [timeRemaining, testStarted]);
 
+  const handleTestTakerSubmit = (data: TestTakerInfo) => {
+    setTestTakerInfo(data);
+    setShowTakerForm(false);
+    startTest();
+  };
+
   const startTest = () => {
-    setTimeRemaining(settings.timeLimit * 60);
+    const timeLimit = testDetails?.time_limit || settings.timeLimit || 15;
+    setTimeRemaining(timeLimit * 60);
     setTestStarted(true);
   };
 
@@ -165,7 +249,7 @@ const TakeTest = () => {
     }
   };
 
-  const finishTest = () => {
+  const finishTest = async () => {
     // If we're finishing without completing all questions, record remaining answers as null
     if (userAnswers.length < questions.length) {
       const remainingAnswers = questions.slice(userAnswers.length).map(q => ({
@@ -179,31 +263,20 @@ const TakeTest = () => {
     
     setShowResults(true);
     
-    // Save test results to database if user is logged in
-    if (user) {
-      saveTestResults();
-    }
-  };
-
-  const saveTestResults = async () => {
+    // Save test results
     try {
-      if (!user) return;
-      
       const testData = {
-        user_id: user.id,
-        test_id: testId || 'subject_quiz',
-        subject: location.state?.subject || 'General',
+        test_id: testId,
         score: score,
         total_questions: questions.length,
-        percentage: Math.round((score / questions.length) * 100),
+        time_taken: (testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining,
+        user_id: user?.id || null,
+        participant_email: testTakerInfo?.email || user?.email || '',
+        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || '',
         completed_at: new Date().toISOString(),
       };
       
-      const { error } = await supabase
-        .from('test_results')
-        .insert([testData]);
-        
-      if (error) throw error;
+      await supabase.from('test_attempts').insert([testData]);
     } catch (error) {
       console.error("Error saving test results:", error);
     }
@@ -272,6 +345,55 @@ const TakeTest = () => {
   }
 
   if (!testStarted) {
+    // Check if the user has already taken this test
+    if (previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
+      return (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <VenoLogo className="h-6 w-6" />
+              <CardTitle>Test Already Taken</CardTitle>
+            </div>
+            <CardDescription>
+              {testDetails?.title || ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-6 text-center">
+            <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
+            <p className="mb-4">
+              You have already taken this test and multiple attempts are not allowed.
+            </p>
+            <Button onClick={() => navigate('/cbt')}>
+              Back to Tests
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Show test taker form if needed
+    if (showTakerForm) {
+      return (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <VenoLogo className="h-6 w-6" />
+              <CardTitle>Test Registration</CardTitle>
+            </div>
+            <CardDescription>
+              {testDetails?.title || location.state?.subject || "Quiz"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-6">
+            <TestTakerForm 
+              onSubmit={handleTestTakerSubmit} 
+              testTitle={testDetails?.title || undefined}
+            />
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card>
         <CardHeader>
@@ -280,7 +402,7 @@ const TakeTest = () => {
             <CardTitle>Ready to Start?</CardTitle>
           </div>
           <CardDescription>
-            {location.state?.subject || testId} Quiz
+            {testDetails?.title || location.state?.subject || testId} Quiz
           </CardDescription>
         </CardHeader>
         <CardContent className="py-6">
@@ -290,7 +412,9 @@ const TakeTest = () => {
               <ul className="space-y-2 text-sm">
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Subject:</span>
-                  <span className="font-medium">{location.state?.subject || "General"}</span>
+                  <span className="font-medium">
+                    {testDetails?.title || location.state?.subject || "General"}
+                  </span>
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Questions:</span>
@@ -298,12 +422,16 @@ const TakeTest = () => {
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Time Limit:</span>
-                  <span className="font-medium">{settings.timeLimit} minutes</span>
+                  <span className="font-medium">
+                    {testDetails?.time_limit || settings.timeLimit || 15} minutes
+                  </span>
                 </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Difficulty:</span>
-                  <span className="font-medium capitalize">{settings.difficulty}</span>
-                </li>
+                {testDetails && (
+                  <li className="flex justify-between">
+                    <span className="text-muted-foreground">Multiple Attempts:</span>
+                    <span className="font-medium">{testDetails.allow_retakes ? 'Allowed' : 'Not allowed'}</span>
+                  </li>
+                )}
               </ul>
             </div>
             <div className="bg-secondary/30 p-4 rounded-lg">
@@ -318,7 +446,14 @@ const TakeTest = () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full" onClick={startTest}>
+          <Button className="w-full" onClick={() => {
+            // If user is not logged in and not a subject quiz, show the form
+            if (!user && testId !== 'subject') {
+              setShowTakerForm(true);
+            } else {
+              startTest();
+            }
+          }}>
             Start Quiz
           </Button>
         </CardFooter>
@@ -349,7 +484,7 @@ const TakeTest = () => {
               <CardTitle>Quiz Review</CardTitle>
             </div>
             <CardDescription>
-              {location.state?.subject || testId} Quiz - Review your answers
+              {testDetails?.title || location.state?.subject || testId} Quiz - Review your answers
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -360,7 +495,7 @@ const TakeTest = () => {
                   <h2 className="font-semibold">Final Score: {score}/{questions.length} ({percentage}%)</h2>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Time taken: {formatTime((settings.timeLimit * 60) - timeRemaining)}
+                  Time taken: {formatTime((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining)}
                 </div>
               </div>
               <Progress value={percentage} className="h-2" />
@@ -435,7 +570,7 @@ const TakeTest = () => {
             <CardTitle>Quiz Results</CardTitle>
           </div>
           <CardDescription>
-            {location.state?.subject || testId} Quiz
+            {testDetails?.title || location.state?.subject || testId} Quiz
           </CardDescription>
         </CardHeader>
         <CardContent className="py-6">
@@ -472,7 +607,9 @@ const TakeTest = () => {
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Time taken:</span>
-                  <span className="font-medium">{formatTime((settings.timeLimit * 60) - timeRemaining)}</span>
+                  <span className="font-medium">
+                    {formatTime((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining)}
+                  </span>
                 </li>
               </ul>
             </div>
@@ -490,10 +627,14 @@ const TakeTest = () => {
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-muted-foreground">Time Efficiency</span>
-                    <span>{Math.round(((settings.timeLimit * 60) - timeRemaining) / (settings.timeLimit * 60) * 100)}%</span>
+                    <span>
+                      {Math.round(((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining) / 
+                        ((testDetails?.time_limit || settings.timeLimit || 15) * 60) * 100)}%
+                    </span>
                   </div>
                   <Progress 
-                    value={Math.round(((settings.timeLimit * 60) - timeRemaining) / (settings.timeLimit * 60) * 100)} 
+                    value={Math.round(((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining) / 
+                      ((testDetails?.time_limit || settings.timeLimit || 15) * 60) * 100)} 
                     className="h-2" 
                   />
                 </div>
@@ -520,16 +661,22 @@ const TakeTest = () => {
           <Button variant="outline" className="flex-1" onClick={() => navigate('/cbt')}>
             Back to Tests
           </Button>
-          <Button className="flex-1 bg-veno-primary hover:bg-veno-primary/90" onClick={() => {
-            setCurrentQuestion(0);
-            setSelectedAnswer(null);
-            setScore(0);
-            setShowResults(false);
-            setUserAnswers([]);
-            setTimeRemaining(settings.timeLimit * 60);
-          }}>
-            Try Again
-          </Button>
+          {(testDetails?.allow_retakes || testId === 'subject') && (
+            <Button 
+              className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
+              onClick={() => {
+                setCurrentQuestion(0);
+                setSelectedAnswer(null);
+                setScore(0);
+                setShowResults(false);
+                setUserAnswers([]);
+                setTimeRemaining((testDetails?.time_limit || settings.timeLimit || 15) * 60);
+                setTestStarted(false);
+              }}
+            >
+              Try Again
+            </Button>
+          )}
         </CardFooter>
       </Card>
     );

@@ -20,17 +20,26 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/providers/AuthProvider";
 
 const testFormSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
   description: z.string().optional(),
   difficulty: z.string().min(1, { message: "Please select a difficulty level" }),
   timeLimit: z.string().optional(),
+  resultsVisibility: z.enum(["creator_only", "test_takers", "public"], { 
+    required_error: "Please select who can view results" 
+  }),
+  allowRetakes: z.boolean().default(false),
 });
 
 type TestFormValues = z.infer<typeof testFormSchema>;
@@ -39,6 +48,12 @@ const difficultyOptions = [
   { value: "beginner", label: "Beginner" },
   { value: "intermediate", label: "Intermediate" },
   { value: "advanced", label: "Advanced" },
+];
+
+const resultsVisibilityOptions = [
+  { value: "creator_only", label: "Only me (creator)" },
+  { value: "test_takers", label: "Test takers (see only their results)" },
+  { value: "public", label: "Public (test takers can see all results)" },
 ];
 
 type Question = {
@@ -51,6 +66,7 @@ type Question = {
 const CreateTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: crypto.randomUUID(),
@@ -67,6 +83,8 @@ const CreateTest = () => {
       description: "",
       difficulty: "intermediate",
       timeLimit: "",
+      resultsVisibility: "creator_only",
+      allowRetakes: false,
     },
   });
 
@@ -113,7 +131,7 @@ const CreateTest = () => {
     setQuestions(questions.filter((q) => q.id !== id));
   };
   
-  const onSubmit = (data: TestFormValues) => {
+  const onSubmit = async (data: TestFormValues) => {
     if (questions.length === 0) {
       toast({
         title: "No questions added",
@@ -125,18 +143,61 @@ const CreateTest = () => {
     
     setSaving(true);
     
-    // In a real app, this data would be saved to Supabase
-    console.log("Test form data:", data);
-    console.log("Test questions:", questions);
-    
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      if (!user) {
+        throw new Error("You must be logged in to create a test");
+      }
+      
+      // Save test to Supabase
+      const { data: testData, error: testError } = await supabase
+        .from('user_tests')
+        .insert({
+          title: data.title,
+          description: data.description || null,
+          difficulty: data.difficulty as any,
+          time_limit: data.timeLimit ? parseInt(data.timeLimit) : null,
+          creator_id: user.id,
+          subject: "General", // Default subject
+          question_count: questions.length,
+          results_visibility: data.resultsVisibility,
+          allow_retakes: data.allowRetakes,
+        })
+        .select()
+        .single();
+        
+      if (testError) throw testError;
+      
+      // Save questions
+      const questionsToInsert = questions.map(q => ({
+        test_id: testData.id,
+        question_text: q.text,
+        options: q.options,
+        answer: q.correctOption,
+        subject: "General", // Default subject
+      }));
+      
+      const { error: questionsError } = await supabase
+        .from('user_test_questions')
+        .insert(questionsToInsert);
+      
+      if (questionsError) throw questionsError;
+      
       toast({
         title: "Test created",
         description: "Your test has been created successfully!",
       });
+      
       navigate("/cbt");
-    }, 1500);
+    } catch (error) {
+      console.error("Error creating test:", error);
+      toast({
+        title: "Error creating test",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -237,6 +298,57 @@ const CreateTest = () => {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="resultsVisibility"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Results Visibility</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="space-y-1"
+                    >
+                      {resultsVisibilityOptions.map((option) => (
+                        <div key={option.value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option.value} id={`visibility-${option.value}`} />
+                          <Label htmlFor={`visibility-${option.value}`}>{option.label}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormDescription>
+                    Control who can see the test results after completion
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="allowRetakes"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4 text-veno-primary"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Allow multiple attempts</FormLabel>
+                    <FormDescription>
+                      If checked, test takers can take the test more than once
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
           </motion.div>
           
           <motion.div
