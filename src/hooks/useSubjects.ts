@@ -2,20 +2,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 
 export type Subject = {
   name: string;
   question_count: number;
 };
-
-// Fallback subjects in case the database is unavailable
-const FALLBACK_SUBJECTS: Subject[] = [
-  { name: 'Mathematics', question_count: 50 },
-  { name: 'English Language', question_count: 40 },
-  { name: 'Physics', question_count: 35 },
-  { name: 'Chemistry', question_count: 30 },
-  { name: 'Biology', question_count: 45 }
-];
 
 export const useSubjects = () => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -37,38 +29,44 @@ export const useSubjects = () => {
   return useQuery({
     queryKey: ['subjects'],
     queryFn: async () => {
-      try {
-        // If offline, return fallback subjects
-        if (isOffline) {
-          console.log('Using fallback subjects due to offline status');
-          return FALLBACK_SUBJECTS;
-        }
+      if (isOffline) {
+        toast({
+          title: "You're offline",
+          description: "Please check your internet connection to see available subjects.",
+          variant: "warning",
+        });
+        throw new Error('You are offline');
+      }
 
+      try {
         // Use the database function to get subjects from the questions table
         const { data, error } = await supabase.rpc('get_subjects_from_questions');
         
         if (error) {
           console.error('Error from Supabase RPC:', error);
+          toast({
+            title: "Failed to load subjects",
+            description: "There was an error loading subjects from the database.",
+            variant: "destructive",
+          });
           throw new Error(`Error loading subjects: ${error.message}`);
         }
         
-        // If no data or empty array, use fallback subjects
+        // If no data or empty array, show error
         if (!data || data.length === 0) {
-          console.log('No subjects found in database, using fallback data');
-          return FALLBACK_SUBJECTS;
+          console.log('No subjects found in database');
+          throw new Error('No subjects found in database');
         }
         
         console.log('Loaded subjects from database:', data);
         return data as Subject[];
       } catch (error) {
         console.error('Error in useSubjects query:', error);
-        
-        // Return fallback subjects on any error
-        console.log('Using fallback subjects due to error');
-        return FALLBACK_SUBJECTS;
+        throw error;
       }
     },
-    retry: 1,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
