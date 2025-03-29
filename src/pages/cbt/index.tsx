@@ -122,7 +122,7 @@ const CbtPage = () => {
               </h3>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Track your learning progress and test performance over time.
+              Track your educational progress and test performance over time.
             </p>
             <div className="flex justify-end">
               <Button variant="outline" size="sm" className="text-xs border-veno-primary/30 text-veno-primary"

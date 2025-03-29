@@ -11,7 +11,7 @@ const Index = () => {
   const services = [
     {
       title: "Veno CBT",
-      description: "Computer-based training solutions for professional development.",
+      description: "Interactive educational platform for effective learning and assessment.",
       icon: Book,
       href: "/cbt",
     },
@@ -74,7 +74,7 @@ const Index = () => {
               >
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to Veno</h1>
                 <p className="text-lg md:text-xl opacity-90 mb-8">
-                  Your next-generation digital learning platform with personalized training, marketplace access, and AI assistance.
+                  Your comprehensive educational platform with interactive learning, assessments, and personalized study tools.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Button 

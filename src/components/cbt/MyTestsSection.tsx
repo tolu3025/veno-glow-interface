@@ -11,6 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/providers/AuthProvider";
 
 type Test = {
   id: string;
@@ -26,42 +29,75 @@ interface MyTestsSectionProps {
   onShare: (testId: string) => void;
 }
 
-// Mock tests data - in a real app this would come from Supabase
-const MOCK_TESTS: Test[] = [
-  {
-    id: "test1",
-    title: "JavaScript Quiz",
-    description: "Test your JavaScript knowledge",
-    questionCount: 10,
-    createdAt: "2023-09-15",
-    attempts: 24,
-    avgScore: 78,
-  },
-  {
-    id: "test2",
-    title: "React Fundamentals",
-    description: "Core concepts of React framework",
-    questionCount: 15,
-    createdAt: "2023-10-02",
-    attempts: 12,
-    avgScore: 85,
-  },
-];
-
 const MyTestsSection = ({ onShare }: MyTestsSectionProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [tests, setTests] = useState<Test[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call with a delay
-    const timer = setTimeout(() => {
-      setTests(MOCK_TESTS);
-      setIsLoading(false);
-    }, 500);
+    const fetchTests = async () => {
+      if (!user) {
+        setTests([]);
+        setIsLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
-  }, []);
+      try {
+        // Fetch user tests from Supabase
+        const { data, error } = await supabase
+          .from('user_tests')
+          .select('*, test_attempts(score)')
+          .eq('creator_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching tests:", error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          // Transform the data to match our Test type
+          const transformedTests: Test[] = data.map(test => {
+            // Calculate average score from attempts
+            let avgScore = 0;
+            const testAttempts = test.test_attempts || [];
+            
+            if (testAttempts.length > 0) {
+              const sum = testAttempts.reduce((acc: number, curr: any) => acc + (curr.score || 0), 0);
+              avgScore = Math.round(sum / testAttempts.length);
+            }
+            
+            return {
+              id: test.id,
+              title: test.title,
+              description: test.description || "",
+              questionCount: test.question_count,
+              createdAt: test.created_at,
+              attempts: testAttempts.length,
+              avgScore: avgScore
+            };
+          });
+          
+          setTests(transformedTests);
+        } else {
+          setTests([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch tests:", err);
+        toast({
+          title: "Error loading tests",
+          description: "Please try again later",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTests();
+  }, [user, toast]);
 
   const editTest = (testId: string) => {
     navigate(`/cbt/edit/${testId}`);
@@ -71,9 +107,38 @@ const MyTestsSection = ({ onShare }: MyTestsSectionProps) => {
     navigate(`/cbt/stats/${testId}`);
   };
 
-  const deleteTest = (testId: string) => {
-    // In a real app, this would delete from Supabase
-    setTests(tests.filter(test => test.id !== testId));
+  const deleteTest = async (testId: string) => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Delete the test from Supabase
+      const { error } = await supabase
+        .from('user_tests')
+        .delete()
+        .eq('id', testId)
+        .eq('creator_id', user.id);
+        
+      if (error) throw error;
+      
+      // Update UI
+      setTests(tests.filter(test => test.id !== testId));
+      
+      toast({
+        title: "Test deleted",
+        description: "Your test has been deleted successfully",
+      });
+    } catch (err) {
+      console.error("Failed to delete test:", err);
+      toast({
+        title: "Error deleting test",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
