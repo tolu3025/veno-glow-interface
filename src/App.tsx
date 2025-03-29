@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
 import TakeTest from "./pages/cbt/TakeTest";
+import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import MarketplacePage from "./pages/MarketplacePage";
 import BotPage from "./pages/BotPage";
@@ -50,6 +51,11 @@ const App = () => (
                 <Route path="/cbt/edit/:testId" element={
                   <ProtectedRoute>
                     <CreateTest />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cbt/manage/:testId" element={
+                  <ProtectedRoute>
+                    <ManageTest />
                   </ProtectedRoute>
                 } />
                 <Route path="/cbt/stats/:testId" element={

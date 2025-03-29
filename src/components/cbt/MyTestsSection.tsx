@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, User, BarChart2, Share2 } from 'lucide-react';
+import { Clock, User, BarChart2, Share2, Edit } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from '@/hooks/use-toast';
@@ -102,6 +103,10 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
 
   const handleViewResultsClick = (testId: string) => {
     fetchTestAttempts(testId);
+  };
+
+  const handleEditTestClick = (testId: string) => {
+    navigate(`/cbt/manage/${testId}`);
   };
 
   const closeResults = () => {
@@ -226,14 +231,24 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
                       {test.description || 'No description'}
                     </p>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onShare(test.id)}
-                    className="text-veno-primary h-8 w-8"
-                  >
-                    <Share2 size={16} />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleEditTestClick(test.id)}
+                      className="text-veno-primary h-8 w-8"
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onShare(test.id)}
+                      className="text-veno-primary h-8 w-8"
+                    >
+                      <Share2 size={16} />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
                   <span className="bg-primary/10 px-2 py-1 rounded">
