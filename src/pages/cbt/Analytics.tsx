@@ -32,20 +32,20 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from "@/components/ui/chart";
+import { useSubjects, Subject } from "@/hooks/useSubjects";
 
 // Types for our data
 type TestAttempt = {
   id: string;
   test_id: string;
-  subject: string;
+  subject: string; // This might need to be joined from another table
   score: number;
   total_questions: number;
   completed_at: string;
-};
-
-type TestSubject = {
-  name: string;
-  question_count: number;
+  participant_email?: string;
+  participant_name?: string;
+  time_taken?: number;
+  user_id?: string;
 };
 
 type UserStats = {
@@ -71,8 +71,8 @@ const Analytics = () => {
     progressData: []
   });
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
-  const [subjects, setSubjects] = useState<TestSubject[]>([]);
   const [topUserTests, setTopUserTests] = useState<any[]>([]);
+  const { data: subjects = [] } = useSubjects();
 
   // Helper to calculate performance data
   const calculatePerformanceData = () => {
@@ -107,10 +107,10 @@ const Analytics = () => {
       
       setIsLoading(true);
       try {
-        // Fetch test attempts
+        // Fetch test attempts - we'll need to join with user_tests to get subject
         const { data: attemptsData, error: attemptsError } = await supabase
           .from('test_attempts')
-          .select('*')
+          .select('*, user_tests:test_id(subject)')
           .eq('user_id', user.id);
           
         if (attemptsError) throw attemptsError;
@@ -123,21 +123,17 @@ const Analytics = () => {
           
         if (testsError) throw testsError;
         
-        // Fetch subjects from database
-        const { data: subjectsData, error: subjectsError } = await supabase
-          .rpc('get_subjects_from_questions');
-          
-        if (subjectsError) throw subjectsError;
-        
-        // Fetch top tests by number of attempts 
+        // Fetch top tests by number of attempts - using a different approach instead of .group()
         const { data: topTests, error: topTestsError } = await supabase
-          .from('test_attempts')
-          .select('test_id, count(*)')
-          .group('test_id')
-          .order('count', { ascending: false })
-          .limit(5);
+          .rpc('get_top_tests', { limit_count: 5 });
           
-        if (topTestsError) throw topTestsError;
+        if (topTestsError) {
+          console.error("Error fetching top tests:", topTestsError);
+          // If the RPC doesn't exist yet, we'll use an empty array
+          setTopUserTests([]);
+        } else {
+          setTopUserTests(topTests || []);
+        }
         
         // Calculate study hours (estimate based on test attempts)
         const studyHours = Math.round((attemptsData?.length || 0) * 0.5);
@@ -146,7 +142,21 @@ const Analytics = () => {
         let totalScore = 0;
         let totalQuestions = 0;
         
-        attemptsData?.forEach((attempt: any) => {
+        // Transform the attemptsData to include subject from joined user_tests
+        const formattedAttempts: TestAttempt[] = attemptsData?.map((attempt: any) => ({
+          id: attempt.id,
+          test_id: attempt.test_id,
+          subject: attempt.user_tests?.subject || "Unknown",
+          score: attempt.score || 0,
+          total_questions: attempt.total_questions || 1,
+          completed_at: attempt.completed_at,
+          participant_email: attempt.participant_email,
+          participant_name: attempt.participant_name,
+          time_taken: attempt.time_taken,
+          user_id: attempt.user_id
+        })) || [];
+        
+        formattedAttempts.forEach((attempt) => {
           totalScore += attempt.score || 0;
           totalQuestions += attempt.total_questions || 1;
         });
@@ -154,15 +164,15 @@ const Analytics = () => {
         const avgScore = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
         
         // Group attempts by subject
-        const subjects: {[key: string]: number} = {};
-        attemptsData?.forEach((attempt: any) => {
+        const subjectCounts: {[key: string]: number} = {};
+        formattedAttempts.forEach((attempt) => {
           if (attempt.subject) {
-            subjects[attempt.subject] = (subjects[attempt.subject] || 0) + 1;
+            subjectCounts[attempt.subject] = (subjectCounts[attempt.subject] || 0) + 1;
           }
         });
         
         // Create progress data over time
-        const sortedAttempts = [...(attemptsData || [])].sort(
+        const sortedAttempts = [...formattedAttempts].sort(
           (a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
         );
         
@@ -171,7 +181,7 @@ const Analytics = () => {
         if (sortedAttempts.length > 0) {
           const monthsMap: {[key: string]: {tests: number, totalScore: number, count: number}} = {};
           
-          sortedAttempts.forEach((attempt: any) => {
+          sortedAttempts.forEach((attempt) => {
             const month = formatMonth(attempt.completed_at);
             if (!monthsMap[month]) {
               monthsMap[month] = { tests: 0, totalScore: 0, count: 0 };
@@ -205,15 +215,13 @@ const Analytics = () => {
           });
         }
         
-        setTestAttempts(attemptsData || []);
-        setSubjects(subjectsData || []);
-        setTopUserTests(topTests || []);
+        setTestAttempts(formattedAttempts);
         setUserStats({
-          totalTests: attemptsData?.length || 0,
+          totalTests: formattedAttempts.length || 0,
           testsCreated: testsData?.length || 0,
           studyHours,
           avgScore,
-          subjects,
+          subjects: subjectCounts,
           progressData: progressData.slice(-6) // Get last 6 months
         });
         
