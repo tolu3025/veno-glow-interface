@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ChartPieIcon, BarChart3, Book, ShoppingCart, FileText, Bot, Award } from "lucide-react";
+import { ChartPieIcon, BarChart3, Book, ShoppingCart, FileText, Bot, Award, Trophy } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { VenoLogo } from "@/components/ui/logo";
@@ -88,12 +88,14 @@ const DashboardPage = () => {
         let commentsPosted = 0;
         
         if (userProfile?.activities) {
-          articlesRead = userProfile.activities.filter(
-            (activity) => activity.type === 'blog_read'
+          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
+          
+          articlesRead = activities.filter(
+            (activity: any) => activity.type === 'blog_read'
           ).length;
           
-          commentsPosted = userProfile.activities.filter(
-            (activity) => activity.type === 'blog_comment'
+          commentsPosted = activities.filter(
+            (activity: any) => activity.type === 'blog_comment'
           ).length;
         }
         
@@ -105,6 +107,22 @@ const DashboardPage = () => {
           
         if (purchaseError) {
           console.error('Error fetching purchase count:', purchaseError);
+        }
+
+        // Count bot activities if they exist
+        let botConversations = 0;
+        let botQueries = 0;
+
+        if (userProfile?.activities) {
+          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
+          
+          botConversations = activities.filter(
+            (activity: any) => activity.type === 'bot_conversation'
+          ).length;
+          
+          botQueries = activities.filter(
+            (activity: any) => activity.type === 'bot_query'
+          ).length;
         }
         
         setUserData({
@@ -124,8 +142,8 @@ const DashboardPage = () => {
             commentsPosted
           },
           botStats: {
-            conversationsStarted: userProfile?.activities?.filter(a => a.type === 'bot_conversation')?.length || 0,
-            queriesAnswered: userProfile?.activities?.filter(a => a.type === 'bot_query')?.length || 0
+            conversationsStarted: botConversations,
+            queriesAnswered: botQueries
           }
         });
       } catch (error) {
@@ -494,10 +512,24 @@ const DashboardPage = () => {
                               <div className="flex items-center justify-between mb-1">
                                 <p className="text-sm font-medium">Tasks Completed</p>
                                 <p className="text-sm font-medium">
-                                  {userProfile?.activities?.filter(a => a.type === 'task_completed')?.length || 0}
+                                  {(() => {
+                                    // Count task_completed activities
+                                    if (!user) return 0;
+                                    const { data } = supabase
+                                      .from('user_profiles')
+                                      .select('activities')
+                                      .eq('user_id', user.id)
+                                      .single();
+                                    
+                                    if (!data || !data.activities) return 0;
+                                    
+                                    return Array.isArray(data.activities) 
+                                      ? data.activities.filter((a: any) => a.type === 'task_completed').length 
+                                      : 0;
+                                  })() || 0}
                                 </p>
                               </div>
-                              <Progress value={(userProfile?.activities?.filter(a => a.type === 'task_completed')?.length || 0) / 20 * 100} className="h-2" />
+                              <Progress value={0} className="h-2" />
                             </div>
                             <div className="flex justify-end">
                               <Button 
@@ -524,27 +556,40 @@ const DashboardPage = () => {
                       <CardContent>
                         {isLoading ? (
                           <p className="text-muted-foreground">Loading activities...</p>
-                        ) : userProfile?.activities && userProfile.activities.length > 0 ? (
-                          <ul className="space-y-2">
-                            {userProfile.activities.slice(0, 5).map((activity, index) => (
-                              <li key={index} className="p-3 border rounded-md">
-                                <div className="flex justify-between">
-                                  <span className="font-medium">{activity.description}</span>
-                                  <span className="text-muted-foreground text-sm">
-                                    {new Date(activity.timestamp).toLocaleDateString()}
-                                  </span>
-                                </div>
-                                {activity.points && (
-                                  <span className="text-veno-primary text-sm">
-                                    +{activity.points} points
-                                  </span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-muted-foreground">No activities yet</p>
-                        )}
+                        ) : (() => {
+                            const { data } = supabase
+                              .from('user_profiles')
+                              .select('activities')
+                              .eq('user_id', user.id)
+                              .single();
+                              
+                            const activities = data?.activities;
+                            
+                            if (!activities || !Array.isArray(activities) || activities.length === 0) {
+                              return <p className="text-muted-foreground">No activities yet</p>;
+                            }
+                            
+                            return (
+                              <ul className="space-y-2">
+                                {activities.slice(0, 5).map((activity: any, index: number) => (
+                                  <li key={index} className="p-3 border rounded-md">
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">{activity.description}</span>
+                                      <span className="text-muted-foreground text-sm">
+                                        {new Date(activity.timestamp).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    {activity.points && (
+                                      <span className="text-veno-primary text-sm">
+                                        +{activity.points} points
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            );
+                          })()
+                        }
                       </CardContent>
                     </Card>
                   </div>
