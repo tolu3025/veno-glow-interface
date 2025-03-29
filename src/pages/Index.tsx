@@ -14,11 +14,6 @@ const Index = () => {
   
   const bannerSlides = [
     {
-      title: "Education Reimagined",
-      subtitle: "Your comprehensive educational platform with interactive learning, assessments, and personalized study tools designed for the modern learner.",
-      background: "bg-gradient-to-r from-veno-primary to-veno-secondary"
-    },
-    {
       title: "Learn Anywhere, Anytime",
       subtitle: "Access your courses on any device with our responsive platform that adapts to your schedule and learning style.",
       background: "bg-gradient-to-r from-veno-secondary to-purple-600"
@@ -27,6 +22,21 @@ const Index = () => {
       title: "Interactive Assessment Tools",
       subtitle: "Test your knowledge and track your progress with our comprehensive suite of CBT tools and analytics.",
       background: "bg-gradient-to-r from-purple-600 to-veno-primary"
+    },
+    {
+      title: "Digital Marketplace",
+      subtitle: "Discover and purchase high-quality educational resources created by experts in their fields.",
+      background: "bg-gradient-to-r from-veno-primary to-blue-600"
+    },
+    {
+      title: "Insightful Blog Content",
+      subtitle: "Stay updated with the latest educational trends and insights through our regularly updated blog.",
+      background: "bg-gradient-to-r from-blue-600 to-veno-secondary"
+    },
+    {
+      title: "AI-Powered Learning",
+      subtitle: "Leverage our intelligent AI assistant to enhance your learning experience with personalized guidance.",
+      background: "bg-gradient-to-r from-veno-secondary to-veno-primary"
     }
   ];
   

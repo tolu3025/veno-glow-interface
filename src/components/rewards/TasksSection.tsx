@@ -72,7 +72,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "1",
             title: "Daily Login",
-            description: "Login to the app daily (10 days for 100 points)",
+            description: "Login to the app daily (10 times for 100 points)",
             points: 100,
             completed: completedTaskIds.includes("1"),
             type: "login",
@@ -86,7 +86,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "2",
             title: "Read Blog Posts",
-            description: "Read blog posts (5 posts for 25 points)",
+            description: "Read 5 blog posts to earn 25 points",
             points: 25,
             completed: completedTaskIds.includes("2"),
             type: "blog",
@@ -120,7 +120,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "3",
             title: "Complete CBT Tests",
-            description: "Complete CBT tests (3 tests for 60 points)",
+            description: "Complete 3 CBT tests to earn 60 points",
             points: 60,
             completed: completedTaskIds.includes("3"),
             type: "cbt",
@@ -162,7 +162,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           {
             id: "5",
             title: "Click on Ads",
-            description: "Click on sponsored ads (3 times for 50 points)",
+            description: "Click on sponsored ads 3 times to earn 50 points",
             points: 50,
             completed: completedTaskIds.includes("5"),
             type: "ads",
