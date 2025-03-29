@@ -2,11 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, Gift, List, UserCircle2, WifiOff } from 'lucide-react';
+import { Trophy, Gift, List, UserCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 
 import RewardsSection from '@/components/rewards/RewardsSection';
 import TasksSection from '@/components/rewards/TasksSection';
@@ -19,40 +18,11 @@ const RewardSystem = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [isOffline, setIsOffline] = useState(false);
-  
-  // Monitor online status
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    setIsOffline(!navigator.onLine);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
   
   useEffect(() => {
     const fetchUserPoints = async () => {
       if (!user) {
         setIsLoading(false);
-        return;
-      }
-      
-      // Check if offline first
-      if (!navigator.onLine) {
-        setIsOffline(true);
-        setIsLoading(false);
-        toast({
-          title: "You're offline",
-          description: "Reward data will be limited until you're back online",
-          variant: "default",
-        });
         return;
       }
       
@@ -69,7 +39,7 @@ const RewardSystem = () => {
             const { error: insertError } = await supabase
               .from('user_profiles')
               .insert({
-                id: user.id,
+                id: user.id, // Add this line: use user's id as the profile id
                 user_id: user.id,
                 email: user.email,
                 points: 100, // Start with some points
@@ -123,34 +93,33 @@ const RewardSystem = () => {
     fetchUserPoints();
     
     // Set up subscription to listen for point changes
-    if (user && navigator.onLine) {
-      const channel = supabase.channel('user-points-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'user_profiles',
-            filter: `user_id=eq.${user?.id}`,
-          },
-          (payload) => {
-            if (payload.new && typeof payload.new.points === 'number') {
-              setUserPoints(payload.new.points);
-            }
+    const channel = supabase.channel('user-points-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          if (payload.new && typeof payload.new.points === 'number') {
+            setUserPoints(payload.new.points);
           }
-        )
-        .subscribe();
-        
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, toast, isOffline]);
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, toast]);
   
   // Effect to update user points in Supabase when they change client-side
+  // This ensures persistence across sessions
   useEffect(() => {
     const updateUserPoints = async () => {
-      if (!user || isLoading || isOffline) return;
+      if (!user || isLoading) return;
       
       try {
         const { error } = await supabase
@@ -164,39 +133,11 @@ const RewardSystem = () => {
       }
     };
     
-    // Only update if the user exists, points have loaded, and we're online
-    if (user && !isLoading && !isOffline) {
+    // Only update if the user exists and points have loaded
+    if (user && !isLoading) {
       updateUserPoints();
     }
-  }, [userPoints, user, isLoading, isOffline]);
-  
-  // Render offline page if detected
-  if (isOffline) {
-    return (
-      <div className="container mx-auto py-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Veno Rewards</h1>
-        </div>
-        
-        <Card className="p-8 text-center">
-          <div className="flex flex-col items-center">
-            <WifiOff className="h-16 w-16 text-amber-500 mb-4" />
-            <h2 className="text-2xl font-bold mb-2">You're currently offline</h2>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Veno Rewards requires an internet connection to track your progress and award points.
-              Please check your connection and try again.
-            </p>
-            <Button 
-              className="bg-veno-primary hover:bg-veno-primary/90"
-              onClick={() => window.location.reload()}
-            >
-              Reload page
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  }, [userPoints, user, isLoading]);
   
   return (
     <div className="container mx-auto py-6">
