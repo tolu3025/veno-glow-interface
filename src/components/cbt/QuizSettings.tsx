@@ -96,7 +96,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
           <div className="space-y-4">
             <Slider
               defaultValue={[settings.timeLimit]}
-              max={30}
+              max={40}
               min={5}
               step={5}
               onValueChange={handleTimeLimitChange}
@@ -105,7 +105,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">5 min</span>
               <span className="text-sm font-medium">{settings.timeLimit} minutes</span>
-              <span className="text-sm text-muted-foreground">30 min</span>
+              <span className="text-sm text-muted-foreground">40 min</span>
             </div>
           </div>
         </div>
@@ -118,7 +118,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
           <div className="space-y-4">
             <Slider
               defaultValue={[settings.questionsCount]}
-              max={20}
+              max={40}
               min={5}
               step={5}
               onValueChange={handleQuestionsCountChange}
@@ -127,7 +127,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">5</span>
               <span className="text-sm font-medium">{settings.questionsCount} questions</span>
-              <span className="text-sm text-muted-foreground">20</span>
+              <span className="text-sm text-muted-foreground">40</span>
             </div>
           </div>
         </div>
