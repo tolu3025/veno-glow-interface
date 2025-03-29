@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, BookOpen, Trophy, Award, Settings, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
-import { VenoLogo } from '@/components/ui/logo';
 import MobileMenu from '@/components/ui/mobile-menu';
 
 const AppNavigation = () => {
@@ -67,7 +66,6 @@ const AppNavigation = () => {
       {/* Mobile Navigation Menu (visible on top of the page via the MainLayout) */}
       <div className="md:hidden flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <VenoLogo className="h-6 w-6 mr-2" />
           <h1 className="text-2xl font-bold">Veno</h1>
         </div>
       </div>
@@ -75,7 +73,6 @@ const AppNavigation = () => {
       {/* Desktop Sidebar - Only visible on larger screens */}
       <div className="hidden md:block fixed left-0 top-0 bottom-0 w-64 bg-background border-r p-4 z-10">
         <div className="flex items-center mb-8">
-          <VenoLogo className="h-6 w-6 mr-2" />
           <h2 className="text-xl font-bold">Veno</h2>
         </div>
         

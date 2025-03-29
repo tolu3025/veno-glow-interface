@@ -1,5 +1,5 @@
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
@@ -12,7 +12,9 @@ import MobileMenu from "@/components/ui/mobile-menu";
 const MainLayout = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, setTheme } = useTheme();
+  const isHomePage = location.pathname === "/";
 
   const mainLinks = [
     { name: "Home", path: "/" },
@@ -42,7 +44,7 @@ const MainLayout = () => {
           <div className="flex items-center space-x-2">
             <MobileMenu mainLinks={mainLinks} />
             <Link to="/" className="flex items-center space-x-2">
-              <VenoLogo className="h-8 w-8" />
+              {isHomePage && <VenoLogo className="h-8 w-8" />}
               <span className="font-bold text-xl">Veno</span>
             </Link>
           </div>

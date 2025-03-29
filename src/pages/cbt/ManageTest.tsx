@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { VenoLogo } from '@/components/ui/logo';
 import {
   Table,
   TableBody,
@@ -480,41 +481,77 @@ const ManageTest = () => {
       {/* Printable Results Section (hidden until print) */}
       <div className="hidden">
         <div ref={printRef} className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold">{testDetails.title} - Results</h1>
-            <p className="text-gray-600">
-              {testDetails.question_count} questions | {testDetails.difficulty} difficulty 
-              {testDetails.time_limit ? ` | ${testDetails.time_limit} min time limit` : ''}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Printed on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
-            </p>
+          <div className="bg-gradient-to-b from-veno-primary/10 to-white dark:from-veno-dark/20 dark:to-transparent p-4 rounded-lg mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <VenoLogo className="h-12 w-12 mr-3" />
+                <div>
+                  <h1 className="text-3xl font-bold text-veno-primary">Veno Assessment</h1>
+                  <p className="text-sm text-muted-foreground">Excellence in Education</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium">Generated on:</p>
+                <p className="text-sm">{new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-2">{testDetails.title}</h2>
+              <p className="text-muted-foreground">{testDetails.description || 'No description provided'}</p>
+              <div className="flex flex-wrap gap-4 mt-3">
+                <span className="px-2 py-1 bg-secondary/50 rounded text-xs">
+                  {testDetails.question_count} questions
+                </span>
+                <span className="px-2 py-1 bg-secondary/50 rounded text-xs">
+                  {testDetails.difficulty} difficulty
+                </span>
+                {testDetails.time_limit && (
+                  <span className="px-2 py-1 bg-secondary/50 rounded text-xs">
+                    {testDetails.time_limit} min time limit
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
           
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b-2 border-gray-300">
-                <th className="py-2 text-left">Participant</th>
-                <th className="py-2 text-left">Email</th>
-                <th className="py-2 text-center">Score</th>
-                <th className="py-2 text-right">Completion Date</th>
+              <tr className="border-b-2 border-veno-primary/30">
+                <th className="py-3 px-4 text-left bg-veno-primary/10">Participant</th>
+                <th className="py-3 px-4 text-left bg-veno-primary/10">Email</th>
+                <th className="py-3 px-4 text-center bg-veno-primary/10">Score</th>
+                <th className="py-3 px-4 text-right bg-veno-primary/10">Completion Date</th>
               </tr>
             </thead>
             <tbody>
               {testAttempts
                 .filter(attempt => !attempt.disqualified)
                 .map((attempt, index) => (
-                <tr key={attempt.id} className={index % 2 === 0 ? "bg-gray-100" : ""}>
-                  <td className="py-3 font-medium">{attempt.participant_name || 'Anonymous'}</td>
-                  <td className="py-3">{attempt.participant_email || 'N/A'}</td>
-                  <td className="py-3 text-center">
-                    {attempt.score}/{attempt.total_questions} ({Math.round((attempt.score / attempt.total_questions) * 100)}%)
+                <tr key={attempt.id} className={index % 2 === 0 ? "bg-gray-50 dark:bg-gray-900/10" : ""}>
+                  <td className="py-3 px-4 font-medium">{attempt.participant_name || 'Anonymous'}</td>
+                  <td className="py-3 px-4">{attempt.participant_email || 'N/A'}</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2 py-1 rounded ${
+                      (attempt.score / attempt.total_questions) >= 0.7 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                        : (attempt.score / attempt.total_questions) >= 0.5
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {attempt.score}/{attempt.total_questions} ({Math.round((attempt.score / attempt.total_questions) * 100)}%)
+                    </span>
                   </td>
-                  <td className="py-3 text-right">{formatDate(attempt.completed_at)}</td>
+                  <td className="py-3 px-4 text-right">{formatDate(attempt.completed_at)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          
+          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-muted-foreground">
+            <p>This is an official assessment report generated by Veno Assessment System.</p>
+            <p>© {new Date().getFullYear()} Veno. All rights reserved.</p>
+          </div>
         </div>
       </div>
     </div>
