@@ -56,10 +56,9 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
       icon: Settings
     },
     {
-      name: 'Profile',
-      path: '/profile',
-      icon: User,
-      requiresAuth: true
+      name: 'Services',
+      path: '/services',
+      icon: User
     }
   ];
 
@@ -149,24 +148,14 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
                 <div className="px-4 text-sm text-muted-foreground">
                   {user.email}
                 </div>
-                <div className="flex flex-col space-y-2">
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => navigate('/profile')}
-                  >
-                    <UserCircle className="h-5 w-5 mr-2" />
-                    Profile
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="h-5 w-5 mr-2" />
-                    Sign Out
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  className="justify-start w-full"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-5 w-5 mr-2" />
+                  Sign Out
+                </Button>
               </div>
             ) : (
               <Button 
