@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,12 +55,11 @@ const TakeTest = () => {
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
 
-  // Get the settings from location state or use defaults
-  const settings = location.state?.settings || {
+  const [settings, setSettings] = useState({
     difficulty: 'beginner',
     timeLimit: 15,
     questionsCount: 10
-  };
+  });
 
   useEffect(() => {
     const loadTest = async () => {
@@ -90,10 +88,16 @@ const TakeTest = () => {
             return;
           }
           
-          setTestDetails(testData as TestDetails);
+          // Add default value for allow_retakes if it's missing
+          const testWithDefaults = {
+            ...testData,
+            allow_retakes: testData.allow_retakes ?? false // Default to false if not present
+          };
+          
+          setTestDetails(testWithDefaults as TestDetails);
           
           // If user is logged in, check previous attempts
-          if (user && !testData.allow_retakes) {
+          if (user && testWithDefaults.allow_retakes === false) {
             const { data: attempts, error: attemptsError } = await supabase
               .from('test_attempts')
               .select('*', { count: 'exact' })
@@ -118,7 +122,8 @@ const TakeTest = () => {
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
-              options: Array.isArray(q.options) ? q.options : [],
+              // Convert options array to string array
+              options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
               correctOption: q.answer
             }));
             
@@ -162,6 +167,7 @@ const TakeTest = () => {
         const formattedQuestions: QuizQuestion[] = data.map(q => ({
           id: q.id,
           text: q.question, // Use question instead of question_text
+          // Convert options array to string array
           options: Array.isArray(q.options) ? 
             q.options.map((opt: any) => String(opt)) : [],
           correctOption: q.answer // Use answer instead of correct_option_index
@@ -180,7 +186,6 @@ const TakeTest = () => {
     }
   };
   
-  // Map our UI difficulty levels to database difficulty levels
   const mapDifficulty = (uiDifficulty: string): "beginner" | "intermediate" | "advanced" => {
     switch(uiDifficulty) {
       case 'easy': return 'beginner';
@@ -288,7 +293,6 @@ const TakeTest = () => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Helper function to generate demo questions if needed
   const generateDemoQuestions = (subject: string): QuizQuestion[] => {
     return [
       {

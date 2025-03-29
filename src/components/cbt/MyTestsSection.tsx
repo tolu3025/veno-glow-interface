@@ -61,7 +61,14 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setTests(data || []);
+        
+        // Add default value for allow_retakes if it's missing
+        const testsWithDefaults = data?.map(test => ({
+          ...test,
+          allow_retakes: test.allow_retakes ?? false // Default to false if not present
+        })) || [];
+        
+        setTests(testsWithDefaults);
       } catch (error) {
         console.error('Error fetching tests:', error);
       } finally {
