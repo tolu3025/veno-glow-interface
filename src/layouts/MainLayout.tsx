@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,10 @@ const MainLayout = () => {
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center">
-          <Link to="/" className="font-bold text-xl">Veno CBT</Link>
+          <Link to="/" className="flex items-center space-x-2">
+            <img src="/veno-logo.png" alt="Veno Logo" className="h-8 w-8" />
+            <span className="font-bold text-xl">Veno</span>
+          </Link>
           <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
             <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
               Home
@@ -84,7 +88,7 @@ const MainLayout = () => {
       <footer className="border-t py-4">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 md:h-14 text-muted-foreground">
           <p className="text-sm">
-            © {new Date().getFullYear()} Veno CBT. All rights reserved.
+            © {new Date().getFullYear()} Veno. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link to="/" className="text-xs underline-offset-4 hover:underline">

@@ -31,10 +31,11 @@ export async function appendToActivities(userId: string, newActivity: any): Prom
 }
 
 // Register the function with Supabase
-supabase.functions.invoke = supabase.functions.invoke || {};
-supabase.rpc = (functionName: string, params?: { [key: string]: any }) => {
-  if (functionName === 'append_to_activities' && params) {
-    return appendToActivities(params.user_id_param, params.new_activity);
-  }
-  return null;
-};
+if (!supabase.rpc) {
+  supabase.rpc = function(functionName: string, params?: { [key: string]: any }) {
+    if (functionName === 'append_to_activities' && params) {
+      return appendToActivities(params.user_id_param, params.new_activity);
+    }
+    return null as any;
+  };
+}

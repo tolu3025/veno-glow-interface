@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, BookOpen, Trophy, Share2, BarChart3 } from "lucide-react";
@@ -11,11 +11,14 @@ import QuizSection from "@/components/cbt/QuizSection";
 import MyTestsSection from "@/components/cbt/MyTestsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/providers/AuthProvider";
 
 const CbtPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("quiz");
+  const [isLoading, setIsLoading] = useState(false);
   
   const handleCreateTest = () => {
     navigate("/cbt/create");
@@ -43,7 +46,10 @@ const CbtPage = () => {
           >
             <ArrowLeft size={18} />
           </button>
-          <h1 className="text-2xl font-bold">Veno CBT</h1>
+          <div className="flex items-center">
+            <img src="/veno-logo.png" alt="Veno Logo" className="h-6 w-6 mr-2" />
+            <h1 className="text-2xl font-bold">Veno CBT</h1>
+          </div>
         </div>
         
         <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">

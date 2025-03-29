@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
 import { CheckCircle, CircleDashed, LucideIcon } from "lucide-react";
+import { appendActivityAndUpdatePoints } from "@/utils/activityHelpers";
 
 interface Task {
   id: string;
@@ -29,8 +29,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [taskInProgress, setTaskInProgress] = useState<string | null>(null);
+  const [completingTask, setCompletingTask] = useState<string | null>(null);
 
-  // Fetch completed tasks
   useEffect(() => {
     if (!user) return;
 
@@ -45,10 +45,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         if (error) throw error;
         
         if (data && data.activities) {
-          // Make sure activities is an array before filtering
           const activities = Array.isArray(data.activities) ? data.activities : [];
           
-          // Filter activities to only include completed tasks
           const completedTaskIds = activities
             .filter((activity: any) => activity && activity.type === 'task_completed')
             .map((activity: any) => activity.task_id);
@@ -64,52 +62,49 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
   }, [user]);
 
   const completeTask = async (taskId: string, points: number) => {
-    if (!user) return;
-
-    setTaskInProgress(taskId);
-    setLoading(true);
-
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please log in to complete tasks",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setCompletingTask(taskId);
+    
     try {
-      // Check if the task is already completed
-      if (completedTasks.includes(taskId)) {
-        toast.info("Task already completed!");
-        return;
-      }
-      
-      // Add the task to completed tasks and update points
       const newActivity = {
         type: 'task_completed',
         task_id: taskId,
         timestamp: new Date().toISOString()
       };
       
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          points: userPoints + points,
-          // Properly append to the activities array using Postgres array functions
-          activities: supabase.rpc('append_to_activities', { 
-            user_id_param: user.id, 
-            new_activity: newActivity 
-          })
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      const success = await appendActivityAndUpdatePoints(user.id, newActivity, points);
       
-      setCompletedTasks([...completedTasks, taskId]);
-      setUserPoints(prevPoints => prevPoints + points);
-      toast.success(`Task completed! You earned ${points} points`);
+      if (success) {
+        setCompletedTasks([...completedTasks, taskId]);
+        setUserPoints(prev => prev + points);
+        
+        toast({
+          title: "Task completed!",
+          description: `You earned ${points} points!`,
+        });
+      } else {
+        throw new Error("Failed to update profile");
+      }
     } catch (error) {
       console.error("Error completing task:", error);
-      toast.error("Failed to complete task");
+      toast({
+        title: "Failed to complete task",
+        description: "Please try again later",
+        variant: "destructive"
+      });
     } finally {
-      setLoading(false);
-      setTaskInProgress(null);
+      setCompletingTask('');
     }
   };
 
-  // Define tasks
   const tasks: Task[] = [
     {
       id: 'create_test',
@@ -119,8 +114,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       icon: CircleDashed,
       completed: completedTasks.includes('create_test'),
       action: async () => {
-        // This would normally check if user has created a test
-        // For now we'll just mark it as complete
         await completeTask('create_test', 50);
         return true;
       }
@@ -163,7 +156,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
     }
   ];
 
-  // Calculate overall progress
   const completedTaskCount = completedTasks.length;
   const totalTasks = tasks.length;
   const progressPercentage = totalTasks > 0 ? (completedTaskCount / totalTasks) * 100 : 0;

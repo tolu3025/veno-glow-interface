@@ -1,213 +1,198 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { appendActivityAndUpdatePoints } from '@/utils/activityHelpers';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/providers/AuthProvider";
-import { toast } from "sonner";
-import { Gift, Terminal, Book, BookOpen, Glasses, Crown, Smartphone } from "lucide-react";
-import confetti from 'canvas-confetti';
-
-interface Reward {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  points: number;
-  available: boolean;
-}
-
-interface RewardsSectionProps {
-  userPoints: number;
-  setUserPoints: React.Dispatch<React.SetStateAction<number>>;
-}
-
-const RewardsSection: React.FC<RewardsSectionProps> = ({ userPoints, setUserPoints }) => {
+const RewardsSection = () => {
   const { user } = useAuth();
-  const [claimingReward, setClaimingReward] = useState<string | null>(null);
-  
-  // Define available rewards
-  const rewards: Reward[] = [
-    {
-      id: 'premium_week',
-      title: '1 Week Premium',
-      description: 'Access all premium features for 1 week',
-      icon: <Crown className="h-10 w-10 text-yellow-500" />,
-      points: 500,
-      available: true,
-    },
-    {
-      id: 'exam_unlock',
-      title: 'Exam Bundle Unlock',
-      description: 'Unlock a bundle of premium exam questions',
-      icon: <BookOpen className="h-10 w-10 text-emerald-500" />,
-      points: 300,
-      available: true,
-    },
-    {
-      id: 'study_guide',
-      title: 'Study Guide',
-      description: 'Access to a curated study guide for your exams',
-      icon: <Book className="h-10 w-10 text-blue-500" />,
-      points: 200,
-      available: true,
-    },
-    {
-      id: 'dark_theme',
-      title: 'Custom Theme',
-      description: 'Unlock a special dark theme for the app',
-      icon: <Glasses className="h-10 w-10 text-purple-500" />,
-      points: 100,
-      available: true,
-    },
-    {
-      id: 'mobile_access',
-      title: 'Mobile Access',
-      description: 'Early access to our upcoming mobile app',
-      icon: <Smartphone className="h-10 w-10 text-indigo-500" />,
-      points: 1000,
-      available: true,
-    },
-    {
-      id: 'code_snippet',
-      title: 'Code Snippet Pack',
-      description: 'Useful code snippets for developers',
-      icon: <Terminal className="h-10 w-10 text-slate-500" />,
-      points: 400,
-      available: true,
-    },
-  ];
+  const [rewards, setRewards] = useState([]);
+  const [userPoints, setUserPoints] = useState(0);
+  const [claimedRewards, setClaimedRewards] = useState([]);
+  const [claimingReward, setClaimingReward] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleRewardClaim = async (reward: Reward) => {
-    if (!user) return;
-    
-    // Check if user has enough points
-    if (userPoints < reward.points) {
-      toast.error(`You need ${reward.points - userPoints} more points to claim this reward`);
+  useEffect(() => {
+    fetchRewards();
+    if (user) {
+      fetchUserProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const fetchRewards = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rewards')
+        .select('*')
+        .order('points', { ascending: true });
+      
+      if (error) throw error;
+      setRewards(data || []);
+    } catch (error) {
+      console.error('Error fetching rewards:', error);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('points, activities')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      
+      setUserPoints(data.points || 0);
+      
+      // Extract claimed rewards from activities
+      const activities = data.activities || [];
+      const claimed = activities
+        .filter(a => a.type === 'reward_claimed')
+        .map(a => a.reward_id);
+      
+      setClaimedRewards(claimed);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const claimReward = async (reward) => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please log in to claim rewards",
+        variant: "destructive"
+      });
       return;
     }
-
+    
+    if (userPoints < reward.points) {
+      toast({
+        title: "Not enough points",
+        description: `You need ${reward.points - userPoints} more points to claim this reward`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setClaimingReward(reward.id);
     
     try {
-      // Create new activity object
       const newActivity = {
         type: 'reward_claimed',
         reward_id: reward.id,
         timestamp: new Date().toISOString()
       };
       
-      // Update user points in the database
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          points: userPoints - reward.points,
-          // Use RPC to append to the activities array
-          activities: supabase.rpc('append_to_activities', { 
-            user_id_param: user.id, 
-            new_activity: newActivity 
-          })  
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      const success = await appendActivityAndUpdatePoints(user.id, newActivity, -reward.points);
       
-      // Trigger confetti effect
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-      
-      // Update local state
-      setUserPoints(userPoints - reward.points);
-      
-      toast.success(`You've claimed: ${reward.title}!`);
+      if (success) {
+        // Update local state
+        setUserPoints(prev => prev - reward.points);
+        setClaimedRewards([...claimedRewards, reward.id]);
+        
+        toast({
+          title: "Reward claimed!",
+          description: `You have spent ${reward.points} points`,
+        });
+      } else {
+        throw new Error("Failed to update profile");
+      }
     } catch (error) {
       console.error("Error claiming reward:", error);
-      toast.error("Failed to claim reward");
+      toast({
+        title: "Failed to claim reward",
+        description: "Please try again later",
+        variant: "destructive"
+      });
     } finally {
-      setClaimingReward(null);
+      setClaimingReward('');
     }
   };
 
-  return (
-    <motion.div 
-      className="space-y-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" /> Available Rewards
-          </CardTitle>
-          <CardDescription>
-            Redeem your points for these exclusive rewards
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rewards.map((reward) => (
-              <motion.div
-                key={reward.id}
-                whileHover={{ scale: 1.03, boxShadow: "0 10px 30px -15px rgba(0,0,0,0.2)" }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <Card className="overflow-hidden h-full flex flex-col">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-lg">{reward.title}</CardTitle>
-                    <div className="p-2 bg-muted rounded-full">{reward.icon}</div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-sm">
-                      {reward.description}
-                    </CardDescription>
-                  </CardContent>
-                  <CardFooter className="mt-auto pt-2 flex justify-between items-center">
-                    <div className="text-sm font-semibold">
-                      {reward.points} points
-                    </div>
-                    <Button 
-                      variant={userPoints >= reward.points ? "default" : "outline"} 
-                      size="sm"
-                      disabled={userPoints < reward.points || claimingReward === reward.id}
-                      onClick={() => handleRewardClaim(reward)}
-                    >
-                      {claimingReward === reward.id ? (
-                        <span className="animate-pulse">Processing...</span>
-                      ) : userPoints >= reward.points ? (
-                        "Claim Reward"
-                      ) : (
-                        `Need ${reward.points - userPoints} more`
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
-      <Card>
-        <CardHeader>
-          <CardTitle>How to Earn Points</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p>Complete various tasks to earn points:</p>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>Create a quiz/test: <span className="font-medium">50 points</span></li>
-            <li>Complete your profile: <span className="font-medium">30 points</span></li> 
-            <li>Take a test: <span className="font-medium">40 points</span></li>
-            <li>Refer a friend: <span className="font-medium">100 points</span></li>
-            <li>Daily login streak: <span className="font-medium">10 points/day</span></li>
-          </ul>
-        </CardContent>
-      </Card>
-    </motion.div>
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Available Rewards</h2>
+        {user && (
+          <div className="bg-veno-primary/10 text-veno-primary px-3 py-1 rounded-full text-sm font-medium">
+            Your Points: {userPoints}
+          </div>
+        )}
+      </div>
+
+      {!user ? (
+        <div className="text-center py-8 border rounded-lg bg-muted/30">
+          <p className="text-muted-foreground">Please log in to view and claim rewards</p>
+        </div>
+      ) : rewards.length === 0 ? (
+        <div className="text-center py-8 border rounded-lg bg-muted/30">
+          <p className="text-muted-foreground">No rewards available at the moment</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {rewards.map((reward) => {
+            const isClaimed = claimedRewards.includes(reward.id);
+            const canClaim = userPoints >= reward.points && !isClaimed;
+            
+            return (
+              <div 
+                key={reward.id}
+                className={`border rounded-lg p-4 ${
+                  isClaimed 
+                    ? 'bg-muted/30 border-muted' 
+                    : canClaim 
+                      ? 'border-veno-primary/30' 
+                      : 'border-muted'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-medium">{reward.title}</h3>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    canClaim ? 'bg-veno-primary/20 text-veno-primary' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {reward.points} points
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{reward.description}</p>
+                <button
+                  onClick={() => claimReward(reward)}
+                  disabled={!canClaim || claimingReward === reward.id}
+                  className={`w-full py-1.5 rounded-md text-sm font-medium ${
+                    isClaimed 
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                      : canClaim 
+                        ? 'bg-veno-primary text-white hover:bg-veno-primary/90' 
+                        : 'bg-muted text-muted-foreground cursor-not-allowed'
+                  }`}
+                >
+                  {claimingReward === reward.id 
+                    ? 'Processing...' 
+                    : isClaimed 
+                      ? 'Claimed' 
+                      : canClaim 
+                        ? 'Claim Reward' 
+                        : `Need ${reward.points - userPoints} more points`}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
 
