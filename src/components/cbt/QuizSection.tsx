@@ -69,6 +69,8 @@ const QuizSection = () => {
     );
   }
 
+  // Instead of showing an error state, we now always have fallback data
+  // But we'll show a warning if we're offline
   if (isOffline) {
     return (
       <Card>
@@ -84,13 +86,11 @@ const QuizSection = () => {
             <div className="flex items-center">
               <WifiOff className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mr-2" />
               <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                You're currently offline. Please reconnect to the internet to access quizzes.
+                You're currently offline. Showing locally cached subjects.
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-center justify-center py-12">
-            <Button onClick={() => refetch()}>Try Again</Button>
-          </div>
+          {renderSubjectsGrid(subjects || [])}
         </CardContent>
         <CardFooter className="border-t bg-muted/50 px-6 py-4">
           <div className="flex items-center justify-between w-full">
@@ -107,38 +107,6 @@ const QuizSection = () => {
             </Button>
           </div>
         </CardFooter>
-      </Card>
-    );
-  }
-
-  if (error || !subjects || subjects.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Quiz Library</CardTitle>
-          </div>
-          <CardDescription>Explore subject quizzes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 dark:bg-red-900/20 dark:border-red-600">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mr-2" />
-              <p className="text-sm text-red-700 dark:text-red-400">
-                {error instanceof Error ? error.message : "Unable to load subjects. Please try again later."}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col items-center justify-center py-12">
-            <Button onClick={() => refetch()}>Retry</Button>
-            {user && (
-              <Button className="mt-4" onClick={() => navigate('/cbt/create')}>
-                Create a Quiz
-              </Button>
-            )}
-          </div>
-        </CardContent>
       </Card>
     );
   }
@@ -172,7 +140,7 @@ const QuizSection = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {renderSubjectsGrid(subjects)}
+        {renderSubjectsGrid(subjects || [])}
       </CardContent>
       <CardFooter className="border-t bg-muted/50 px-6 py-4">
         <div className="flex items-center justify-between w-full">
