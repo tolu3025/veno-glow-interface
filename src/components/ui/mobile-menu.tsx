@@ -3,22 +3,66 @@ import React from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
-import { LogOut, LogIn, Moon, Sun, UserCircle } from "lucide-react";
+import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Award, Settings, User } from "lucide-react";
 import { toast } from "sonner";
 
 interface MobileMenuProps {
   mainLinks: { name: string; path: string }[];
-  appLinks?: { name: string; path: string; icon: React.ElementType; requiresAuth?: boolean }[];
 }
 
-const MobileMenu = ({ mainLinks, appLinks }: MobileMenuProps) => {
+const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+
+  // App navigation links that were previously in AppNavigation.tsx
+  const appLinks = [
+    {
+      name: 'Dashboard',
+      path: '/cbt',
+      icon: Home
+    },
+    {
+      name: 'My Tests',
+      path: '/cbt?tab=mytests',
+      icon: BookOpen
+    },
+    {
+      name: 'Analytics',
+      path: '/cbt/analytics',
+      icon: Trophy,
+      requiresAuth: true
+    },
+    {
+      name: 'Rewards',
+      path: '/rewards',
+      icon: Award,
+      requiresAuth: true
+    },
+    {
+      name: 'Settings',
+      path: '/settings',
+      icon: Settings
+    },
+    {
+      name: 'Profile',
+      path: '/profile',
+      icon: User,
+      requiresAuth: true
+    }
+  ];
+
+  const isActive = (path: string) => {
+    if (path === '/cbt?tab=mytests') {
+      return location.pathname === '/cbt' && location.search.includes('tab=mytests');
+    }
+    return location.pathname === path;
+  };
 
   const handleSignOut = async () => {
     try {
@@ -42,7 +86,7 @@ const MobileMenu = ({ mainLinks, appLinks }: MobileMenuProps) => {
           <span className="sr-only">Open menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+      <SheetContent side="right" className="w-[300px] sm:w-[400px]">
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between mb-6 mt-2">
             <Link to="/" className="flex items-center space-x-2">
@@ -54,7 +98,7 @@ const MobileMenu = ({ mainLinks, appLinks }: MobileMenuProps) => {
             </Button>
           </div>
           
-          <div className="space-y-6 flex-1">
+          <div className="space-y-6 flex-1 overflow-y-auto">
             <div className="space-y-2">
               <h3 className="text-sm font-medium px-4">Main Navigation</h3>
               <nav className="flex flex-col space-y-1">
@@ -62,7 +106,7 @@ const MobileMenu = ({ mainLinks, appLinks }: MobileMenuProps) => {
                   <Link
                     key={link.name}
                     to={link.path}
-                    className="px-4 py-2 hover:bg-accent rounded-md transition-colors"
+                    className={`px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center ${location.pathname === link.path ? 'bg-accent text-accent-foreground font-medium' : ''}`}
                   >
                     {link.name}
                   </Link>
@@ -70,29 +114,27 @@ const MobileMenu = ({ mainLinks, appLinks }: MobileMenuProps) => {
               </nav>
             </div>
 
-            {appLinks && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium px-4">App Navigation</h3>
-                <nav className="flex flex-col space-y-1">
-                  {appLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      className="flex items-center px-4 py-2 hover:bg-accent rounded-md transition-colors"
-                      onClick={(e) => {
-                        if (link.requiresAuth && !user) {
-                          e.preventDefault();
-                          navigate('/auth');
-                        }
-                      }}
-                    >
-                      {link.icon && <link.icon className="mr-2 h-5 w-5" />}
-                      {link.name}
-                    </Link>
-                  ))}
-                </nav>
-              </div>
-            )}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium px-4">App Navigation</h3>
+              <nav className="flex flex-col space-y-1">
+                {appLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    className={`flex items-center px-4 py-2 hover:bg-accent rounded-md transition-colors ${isActive(link.path) ? 'bg-accent text-accent-foreground font-medium' : ''}`}
+                    onClick={(e) => {
+                      if (link.requiresAuth && !user) {
+                        e.preventDefault();
+                        navigate('/auth');
+                      }
+                    }}
+                  >
+                    {link.icon && <link.icon className="mr-2 h-5 w-5" />}
+                    {link.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
           </div>
 
           <div className="border-t py-4">

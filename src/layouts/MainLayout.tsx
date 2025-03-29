@@ -42,7 +42,6 @@ const MainLayout = () => {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center">
           <div className="flex items-center space-x-2">
-            <MobileMenu mainLinks={mainLinks} />
             <Link to="/" className="flex items-center space-x-2">
               {isHomePage && <VenoLogo className="h-8 w-8" />}
               <span className="font-bold text-xl">Veno</span>
@@ -110,6 +109,9 @@ const MainLayout = () => {
                 </Button>
               )}
             </div>
+            
+            {/* Mobile Menu - now positioned at the right */}
+            <MobileMenu mainLinks={mainLinks} />
           </div>
         </div>
       </header>
