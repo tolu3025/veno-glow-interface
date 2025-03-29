@@ -17,10 +17,14 @@ const RewardSystem = () => {
   const [userPoints, setUserPoints] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const fetchUserPoints = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       
       try {
         const { data, error } = await supabase
@@ -29,12 +33,37 @@ const RewardSystem = () => {
           .eq('user_id', user.id)
           .single();
         
-        if (error) throw error;
-        
-        if (data) {
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No profile found, create one
+            const { error: insertError } = await supabase
+              .from('user_profiles')
+              .insert({
+                user_id: user.id,
+                email: user.email,
+                points: 100, // Start with some points
+                activities: [{
+                  type: 'login',
+                  description: 'First login',
+                  timestamp: new Date().toISOString(),
+                  points: 100
+                }]
+              });
+            
+            if (insertError) throw insertError;
+            
+            setUserPoints(100);
+            toast({
+              title: "Welcome to Rewards!",
+              description: "We've given you 100 points to get started.",
+            });
+          } else {
+            throw error;
+          }
+        } else if (data) {
           setUserPoints(data.points || 0);
           
-          // Log login activity if this is the first load
+          // Check for login activity only if profile exists
           if (Array.isArray(data.activities)) {
             const today = new Date().toISOString().split('T')[0];
             const loggedInToday = data.activities.some((activity: any) => 
@@ -44,45 +73,52 @@ const RewardSystem = () => {
             );
             
             if (!loggedInToday) {
-              // Will be handled in TasksSection component
               console.log("User has not logged in today yet");
             }
           }
-        } else {
-          // Create a profile if it doesn't exist
-          const { error: insertError } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: user.id, // UUID for the profile
-              user_id: user.id,
-              email: user.email,
-              points: 100, // Start with some points
-              activities: [{
-                type: 'login',
-                timestamp: new Date().toISOString()
-              }]
-            });
-          
-          if (insertError) throw insertError;
-          
-          setUserPoints(100);
-          toast({
-            title: "Welcome to Rewards!",
-            description: "We've given you 100 points to get started.",
-          });
         }
       } catch (error) {
         console.error("Error fetching user points:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch your reward points. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchUserPoints();
+    
+    // Set up subscription to listen for point changes
+    const channel = supabase.channel('user-points-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          if (payload.new && typeof payload.new.points === 'number') {
+            setUserPoints(payload.new.points);
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, toast]);
   
-  // Effect to update user points in Supabase when they change
+  // Effect to update user points in Supabase when they change client-side
+  // This ensures persistence across sessions
   useEffect(() => {
     const updateUserPoints = async () => {
-      if (!user) return;
+      if (!user || isLoading) return;
       
       try {
         const { error } = await supabase
@@ -96,11 +132,11 @@ const RewardSystem = () => {
       }
     };
     
-    // Only update if the user exists and points have been loaded
-    if (user && userPoints !== 0) {
+    // Only update if the user exists and points have loaded
+    if (user && !isLoading) {
       updateUserPoints();
     }
-  }, [userPoints, user]);
+  }, [userPoints, user, isLoading]);
   
   return (
     <div className="container mx-auto py-6">
@@ -119,7 +155,14 @@ const RewardSystem = () => {
               <p className="text-muted-foreground">Complete tasks, take quizzes, and earn rewards</p>
             </div>
             <div className="mt-4 md:mt-0">
-              <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-veno-primary"></div>
+                  <span>Loading...</span>
+                </div>
+              ) : (
+                <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
+              )}
             </div>
           </div>
         </CardContent>
