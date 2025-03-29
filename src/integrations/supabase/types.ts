@@ -1263,6 +1263,15 @@ export type Database = {
           question_count: number
         }[]
       }
+      get_top_tests: {
+        Args: {
+          limit_count?: number
+        }
+        Returns: {
+          test_id: string
+          count: number
+        }[]
+      }
       has_role: {
         Args: {
           user_id: string
