@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle, MailCheck } from 'lucide-react';
+import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle, MailCheck, ArrowLeft } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +35,7 @@ type TestDetails = {
 };
 
 const TakeTest = () => {
+  
   const { testId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -228,33 +229,71 @@ const TakeTest = () => {
 
   const handleAnswerSelect = (optionIndex: number) => {
     setSelectedAnswer(optionIndex);
-  };
-
-  const goToNextQuestion = () => {
+    
+    
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    const isCorrect = selectedAnswer === currentQuestionData.correctOption;
+    const isCorrect = optionIndex === currentQuestionData.correctOption;
     
-    setUserAnswers(prev => [
-      ...prev,
-      {
+    
+    const updatedAnswers = [...userAnswers];
+    
+    
+    const existingAnswerIndex = updatedAnswers.findIndex(
+      answer => answer.questionId === currentQuestionData.id
+    );
+    
+    if (existingAnswerIndex >= 0) {
+      updatedAnswers[existingAnswerIndex] = {
         questionId: currentQuestionData.id,
-        selectedOption: selectedAnswer,
+        selectedOption: optionIndex,
         isCorrect: isCorrect
-      }
-    ]);
-    
-    if (isCorrect) {
-      setScore(score + 1);
+      };
+    } else {
+      
+      updatedAnswers[currentQuestion] = {
+        questionId: currentQuestionData.id,
+        selectedOption: optionIndex,
+        isCorrect: isCorrect
+      };
     }
     
+    setUserAnswers(updatedAnswers);
+  };
+
+  const goToPreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+      
+      const previousAnswer = userAnswers[currentQuestion - 1];
+      if (previousAnswer) {
+        setSelectedAnswer(previousAnswer.selectedOption);
+      } else {
+        setSelectedAnswer(null);
+      }
+    }
+  };
+
+  const goToNextQuestion = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      setSelectedAnswer(null);
+      
+      const nextAnswer = userAnswers[currentQuestion + 1];
+      if (nextAnswer) {
+        setSelectedAnswer(nextAnswer.selectedOption);
+      } else {
+        setSelectedAnswer(null);
+      }
     } else {
+      calculateScore();
       finishTest();
     }
+  };
+
+  const calculateScore = () => {
+    const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
+    setScore(correctAnswers);
   };
 
   const loadPublicResults = async () => {
@@ -278,15 +317,8 @@ const TakeTest = () => {
   };
 
   const finishTest = async () => {
-    if (userAnswers.length < questions.length) {
-      const remainingAnswers = questions.slice(userAnswers.length).map(q => ({
-        questionId: q.id,
-        selectedOption: null,
-        isCorrect: false
-      }));
-      
-      setUserAnswers(prev => [...prev, ...remainingAnswers]);
-    }
+    
+    calculateScore();
     
     try {
       const testData = {
@@ -325,6 +357,7 @@ const TakeTest = () => {
   };
 
   if (loading) {
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-veno-primary mb-4" />
@@ -334,6 +367,7 @@ const TakeTest = () => {
   }
 
   if (questions.length === 0) {
+    
     return (
       <Card>
         <CardHeader>
@@ -356,6 +390,7 @@ const TakeTest = () => {
     );
   }
 
+  
   if (submissionComplete) {
     return (
       <Card>
@@ -842,29 +877,4 @@ const TakeTest = () => {
                 <div className="flex items-center gap-3">
                   <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
                     selectedAnswer === index 
-                      ? 'border-veno-primary bg-veno-primary text-white' 
-                      : 'border-muted-foreground text-muted-foreground'
-                  }`}>
-                    {String.fromCharCode(65 + index)}
-                  </div>
-                  <span>{option}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button 
-          disabled={selectedAnswer === null}
-          onClick={goToNextQuestion} 
-          className="w-full"
-        >
-          {currentQuestion < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-};
-
-export default TakeTest;
+                      ? 'border-veno-primary bg-veno
