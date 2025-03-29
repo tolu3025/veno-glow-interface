@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +8,11 @@ import { BookOpen, Award, Trophy, Edit2, LogOut } from "lucide-react";
 import { VenoLogo } from "@/components/ui/logo";
 import { useAuth } from "@/providers/AuthProvider";
 import AppNavigation from "@/components/cbt/AppNavigation";
+import ProfileEditor from "@/components/profile/ProfileEditor";
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   return (
     <div className="pb-20 md:pb-6 md:pl-64">
@@ -48,7 +49,11 @@ const ProfilePage = () => {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setIsEditModalOpen(true)}
+                  >
                     <Edit2 className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="icon" className="text-destructive" onClick={signOut}>
@@ -58,6 +63,11 @@ const ProfilePage = () => {
               </div>
             </CardContent>
           </Card>
+          
+          <ProfileEditor 
+            open={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+          />
           
           <div className="grid md:grid-cols-3 gap-4">
             <Card>

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,32 +8,110 @@ import { ChartPieIcon, BarChart3, Book, ShoppingCart, FileText, Bot } from "luci
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { VenoLogo } from "@/components/ui/logo";
+import { supabase } from '@/integrations/supabase/client';
 
 const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Sample data - in a real app, you would fetch this from an API
-  const userData = {
+  const [userData, setUserData] = useState({
     cbtStats: {
-      testsCompleted: 24,
-      avgScore: 78,
-      questionsAnswered: 248
+      testsCompleted: 0,
+      avgScore: 0,
+      questionsAnswered: 0
     },
     marketplaceStats: {
-      purchases: 5,
-      reviews: 12,
-      favoriteItems: 8
+      purchases: 0,
+      reviews: 0,
+      favoriteItems: 0
     },
     blogStats: {
-      articlesRead: 15,
-      commentsPosted: 7
+      articlesRead: 0,
+      commentsPosted: 0
     },
     botStats: {
-      conversationsStarted: 34,
-      queriesAnswered: 120
+      conversationsStarted: 0,
+      queriesAnswered: 0
     }
-  };
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      
+      try {
+        const { data: testAttempts, error: testError } = await supabase
+          .from('test_attempts')
+          .select('id, score, total_questions')
+          .eq('user_id', user.id);
+        
+        if (testError) {
+          console.error('Error fetching test attempts:', testError);
+        }
+        
+        let avgScore = 0;
+        let questionsAnswered = 0;
+        
+        if (testAttempts && testAttempts.length > 0) {
+          questionsAnswered = testAttempts.reduce((total, attempt) => total + attempt.total_questions, 0);
+          const totalScorePercent = testAttempts.reduce((total, attempt) => {
+            return total + (attempt.score / attempt.total_questions * 100);
+          }, 0);
+          avgScore = Math.round(totalScorePercent / testAttempts.length);
+        }
+        
+        setUserData({
+          cbtStats: {
+            testsCompleted: testAttempts?.length || 0,
+            avgScore,
+            questionsAnswered
+          },
+          marketplaceStats: {
+            purchases: 5,
+            reviews: 12,
+            favoriteItems: 8
+          },
+          blogStats: {
+            articlesRead: 15,
+            commentsPosted: 7
+          },
+          botStats: {
+            conversationsStarted: 34,
+            queriesAnswered: 120
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+    
+    const channel = supabase.channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'test_attempts' },
+        (payload) => {
+          if (payload.new && payload.new.user_id === user.id) {
+            fetchDashboardData();
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -70,7 +147,6 @@ const DashboardPage = () => {
             animate="visible"
             className="space-y-6"
           >
-            {/* Welcome Card */}
             <motion.div variants={itemVariants}>
               <Card className="border border-veno-primary/20 bg-gradient-to-br from-card/50 to-card">
                 <CardContent className="p-6">
@@ -79,7 +155,12 @@ const DashboardPage = () => {
                       <h2 className="text-2xl font-bold mb-1">
                         Welcome back, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                       </h2>
-                      <p className="text-muted-foreground">Here's an overview of your activity across all Veno services</p>
+                      <p className="text-muted-foreground">
+                        {isLoading 
+                          ? "Loading your dashboard..." 
+                          : `You've completed ${userData.cbtStats.testsCompleted} tests with an average score of ${userData.cbtStats.avgScore}%`
+                        }
+                      </p>
                     </div>
                     <div className="mt-4 md:mt-0 flex space-x-3">
                       <Button 
@@ -101,7 +182,6 @@ const DashboardPage = () => {
               </Card>
             </motion.div>
 
-            {/* Overall Stats */}
             <motion.div variants={itemVariants}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card>
@@ -159,7 +239,6 @@ const DashboardPage = () => {
               </div>
             </motion.div>
 
-            {/* Detailed Analytics */}
             <motion.div variants={itemVariants}>
               <Tabs defaultValue="cbt" className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-6">
@@ -331,7 +410,6 @@ const DashboardPage = () => {
               </Tabs>
             </motion.div>
 
-            {/* Quick Access */}
             <motion.div variants={itemVariants}>
               <h2 className="text-xl font-medium mb-4">Quick Access</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
