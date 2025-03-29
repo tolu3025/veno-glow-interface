@@ -39,6 +39,7 @@ const DashboardPage = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [taskCompletedCount, setTaskCompletedCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -124,6 +125,16 @@ const DashboardPage = () => {
             (activity: any) => activity.type === 'bot_query'
           ).length;
         }
+
+        // Count completed tasks
+        if (userProfile?.activities) {
+          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
+          const tasksCompleted = activities.filter(
+            (activity: any) => activity.type === 'task_completed'
+          ).length;
+          
+          setTaskCompletedCount(tasksCompleted);
+        }
         
         setUserData({
           cbtStats: {
@@ -199,6 +210,48 @@ const DashboardPage = () => {
   };
 
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Asynchronously fetch activities and filter for task completion
+  const getTaskCompletedCount = async () => {
+    if (!user) return 0;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('activities')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (error || !data) return 0;
+      
+      const activities = Array.isArray(data.activities) ? data.activities : [];
+      return activities.filter((a: any) => a.type === 'task_completed').length;
+    } catch (error) {
+      console.error('Error getting task completed count:', error);
+      return 0;
+    }
+  };
+
+  // Asynchronously fetch recent activities
+  const getRecentActivities = async () => {
+    if (!user) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('activities')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (error || !data) return [];
+      
+      const activities = Array.isArray(data.activities) ? data.activities : [];
+      return activities.slice(0, 5);
+    } catch (error) {
+      console.error('Error getting recent activities:', error);
+      return [];
+    }
+  };
 
   return (
     <div className="pb-6">
@@ -511,25 +564,9 @@ const DashboardPage = () => {
                             <div>
                               <div className="flex items-center justify-between mb-1">
                                 <p className="text-sm font-medium">Tasks Completed</p>
-                                <p className="text-sm font-medium">
-                                  {(() => {
-                                    // Count task_completed activities
-                                    if (!user) return 0;
-                                    const { data } = supabase
-                                      .from('user_profiles')
-                                      .select('activities')
-                                      .eq('user_id', user.id)
-                                      .single();
-                                    
-                                    if (!data || !data.activities) return 0;
-                                    
-                                    return Array.isArray(data.activities) 
-                                      ? data.activities.filter((a: any) => a.type === 'task_completed').length 
-                                      : 0;
-                                  })() || 0}
-                                </p>
+                                <p className="text-sm font-medium">{taskCompletedCount}</p>
                               </div>
-                              <Progress value={0} className="h-2" />
+                              <Progress value={taskCompletedCount / 20 * 100} className="h-2" />
                             </div>
                             <div className="flex justify-end">
                               <Button 
@@ -556,40 +593,11 @@ const DashboardPage = () => {
                       <CardContent>
                         {isLoading ? (
                           <p className="text-muted-foreground">Loading activities...</p>
-                        ) : (() => {
-                            const { data } = supabase
-                              .from('user_profiles')
-                              .select('activities')
-                              .eq('user_id', user.id)
-                              .single();
-                              
-                            const activities = data?.activities;
-                            
-                            if (!activities || !Array.isArray(activities) || activities.length === 0) {
-                              return <p className="text-muted-foreground">No activities yet</p>;
-                            }
-                            
-                            return (
-                              <ul className="space-y-2">
-                                {activities.slice(0, 5).map((activity: any, index: number) => (
-                                  <li key={index} className="p-3 border rounded-md">
-                                    <div className="flex justify-between">
-                                      <span className="font-medium">{activity.description}</span>
-                                      <span className="text-muted-foreground text-sm">
-                                        {new Date(activity.timestamp).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                    {activity.points && (
-                                      <span className="text-veno-primary text-sm">
-                                        +{activity.points} points
-                                      </span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            );
-                          })()
-                        }
+                        ) : (
+                          <React.Suspense fallback={<p className="text-muted-foreground">Loading activities...</p>}>
+                            <RecentActivities userId={user.id} />
+                          </React.Suspense>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -619,6 +627,63 @@ const DashboardPage = () => {
         </Card>
       )}
     </div>
+  );
+};
+
+// Extract the RecentActivities component to handle async data loading
+const RecentActivities = ({ userId }: { userId: string }) => {
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('activities')
+          .eq('user_id', userId)
+          .single();
+          
+        if (error) throw error;
+        
+        const activityList = Array.isArray(data?.activities) ? data.activities : [];
+        setActivities(activityList.slice(0, 5));
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, [userId]);
+
+  if (loading) {
+    return <p className="text-muted-foreground">Loading activities...</p>;
+  }
+
+  if (activities.length === 0) {
+    return <p className="text-muted-foreground">No activities yet</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {activities.map((activity: any, index: number) => (
+        <li key={index} className="p-3 border rounded-md">
+          <div className="flex justify-between">
+            <span className="font-medium">{activity.description}</span>
+            <span className="text-muted-foreground text-sm">
+              {new Date(activity.timestamp).toLocaleDateString()}
+            </span>
+          </div>
+          {activity.points && (
+            <span className="text-veno-primary text-sm">
+              +{activity.points} points
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 };
 
