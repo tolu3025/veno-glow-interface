@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -5,7 +6,6 @@ import { Trophy, Gift, List, UserCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { useTheme } from 'next-themes';
 
 import RewardsSection from '@/components/rewards/RewardsSection';
 import TasksSection from '@/components/rewards/TasksSection';
@@ -25,7 +25,7 @@ const RewardSystem = () => {
       try {
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('points')
+          .select('points, activities')
           .eq('user_id', user.id)
           .single();
         
@@ -33,6 +33,21 @@ const RewardSystem = () => {
         
         if (data) {
           setUserPoints(data.points || 0);
+          
+          // Log login activity if this is the first load
+          if (Array.isArray(data.activities)) {
+            const today = new Date().toISOString().split('T')[0];
+            const loggedInToday = data.activities.some((activity: any) => 
+              activity.type === 'login' && 
+              activity.timestamp && 
+              new Date(activity.timestamp).toISOString().split('T')[0] === today
+            );
+            
+            if (!loggedInToday) {
+              // Will be handled in TasksSection component
+              console.log("User has not logged in today yet");
+            }
+          }
         } else {
           // Create a profile if it doesn't exist
           const { error: insertError } = await supabase
@@ -42,7 +57,10 @@ const RewardSystem = () => {
               user_id: user.id,
               email: user.email,
               points: 100, // Start with some points
-              activities: []
+              activities: [{
+                type: 'login',
+                timestamp: new Date().toISOString()
+              }]
             });
           
           if (insertError) throw insertError;
