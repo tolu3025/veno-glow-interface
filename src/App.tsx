@@ -29,6 +29,7 @@ import TermsOfService from "./pages/TermsOfService";
 import AdsPolicy from "./pages/AdsPolicy";
 import UnderMaintenancePage from "./pages/UnderMaintenancePage";
 import ContactPage from "./pages/ContactPage";
+import ServicesPage from "./pages/ServicesPage";
 
 // Import our RPC function setup
 import "./functions/appendToActivities";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/ads-policy" element={<AdsPolicy />} />
               <Route path="/maintenance" element={<UnderMaintenancePage />} />
+              <Route path="/services" element={<ServicesPage />} />
               
               <Route element={<MainLayout />}>
                 <Route path="/" element={
