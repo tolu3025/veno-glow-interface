@@ -24,7 +24,7 @@ const BotPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm Veno Bot. How can I assist you today? I can now properly format mathematical expressions like fractions using LaTeX notation. Try asking me about math!",
+      content: "Hello! I'm Veno Bot. How can I assist you today?",
       timestamp: new Date(),
     },
   ]);
@@ -32,6 +32,8 @@ const BotPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
+  const [streamingMessage, setStreamingMessage] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const apiKey = "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";
 
@@ -41,7 +43,7 @@ const BotPage = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,8 @@ const BotPage = () => {
     setMessages((prev) => [...prev, userMessage]);
     setPrompt("");
     setIsLoading(true);
+    setIsStreaming(true);
+    setStreamingMessage("");
     
     try {
       // Call the API directly using fetch
@@ -71,7 +75,7 @@ const BotPage = () => {
           messages: [
             {
               role: "system",
-              content: "You are Veno Bot, a helpful assistant that provides concise, accurate information. When explaining mathematical concepts, especially fractions, always use LaTeX notation wrapped in dollar signs. For example, write fractions as $\\frac{numerator}{denominator}$. Ensure all mathematical expressions are properly formatted with LaTeX."
+              content: "You are Veno Bot, a helpful assistant that provides concise, accurate information. When explaining mathematical concepts, use LaTeX notation wrapped in dollar signs for proper formatting. For example, write fractions as \\frac{numerator}{denominator} inside dollar signs. For inline math use single dollar signs like $\\frac{1}{2}$ and for display math use double dollar signs like $$\\frac{1}{2}$$. Ensure all mathematical expressions are properly formatted with LaTeX. Always provide complete responses gradually rather than all at once."
             },
             ...messages.map(msg => ({
               role: msg.role,
@@ -79,6 +83,7 @@ const BotPage = () => {
             })),
             { role: "user", content: prompt }
           ],
+          stream: true,
           temperature: 0.7,
           max_tokens: 1000
         })
@@ -89,18 +94,51 @@ const BotPage = () => {
         throw new Error(errorData.error?.message || "Failed to get a response");
       }
       
-      const data = await response.json();
+      // Handle the streamed response
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullContent = "";
       
-      const botMessage = { 
-        role: "assistant" as const, 
-        content: data.choices[0].message.content,
-        timestamp: new Date()
-      };
-      
-      setMessages((prev) => [...prev, botMessage]);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          
+          // Parse the chunk to extract content
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.substring(6));
+                if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
+                  fullContent += data.choices[0].delta.content;
+                  setStreamingMessage(fullContent);
+                }
+              } catch (e) {
+                // Skip parsing errors in stream chunks
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error processing stream:", error);
+      } finally {
+        // When streaming is done, add the complete message
+        const botMessage = { 
+          role: "assistant" as const, 
+          content: fullContent,
+          timestamp: new Date()
+        };
+        
+        setMessages((prev) => [...prev, botMessage]);
+        setIsStreaming(false);
+      }
     } catch (error) {
       console.error("Error calling AI API:", error);
       toast.error("Failed to get a response. Please try again.");
+      setIsStreaming(false);
     } finally {
       setIsLoading(false);
     }
@@ -109,9 +147,11 @@ const BotPage = () => {
   const handleClearChat = () => {
     setMessages([{
       role: "assistant",
-      content: "Hello! I'm Veno Bot. How can I assist you today? I can now properly format mathematical expressions like fractions using LaTeX notation. Try asking me about math!",
+      content: "Hello! I'm Veno Bot. How can I assist you today?",
       timestamp: new Date(),
     }]);
+    setStreamingMessage("");
+    setIsStreaming(false);
   };
 
   const handleDownloadChat = () => {
@@ -217,7 +257,35 @@ const BotPage = () => {
               </div>
             </div>
           ))}
-          {isLoading && (
+          
+          {/* Streaming message */}
+          {isStreaming && (
+            <div className="flex justify-start">
+              <div className="flex items-start gap-3 max-w-[85%]">
+                <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
+                  <AvatarImage src="/veno-logo.png" alt="Veno AI" />
+                  <AvatarFallback className="bg-veno-primary text-white">V</AvatarFallback>
+                </Avatar>
+                <div className="rounded-lg p-3 bg-muted border border-muted-foreground/10">
+                  <div className="text-sm whitespace-pre-wrap">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {streamingMessage}
+                    </ReactMarkdown>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Typing...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Loading indicator (only shown when not streaming) */}
+          {isLoading && !isStreaming && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
                 <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
