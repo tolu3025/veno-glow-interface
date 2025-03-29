@@ -185,6 +185,9 @@ const MainLayout = () => {
             <Link to="/privacy-policy" className="text-xs underline-offset-4 hover:underline">
               Privacy
             </Link>
+            <Link to="/contact" className="text-xs underline-offset-4 hover:underline">
+              Contact Us
+            </Link>
           </div>
         </div>
       </footer>

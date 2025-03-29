@@ -52,6 +52,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import Certificate from '@/components/certificate/Certificate';
 
 type Test = {
   id: string;
@@ -94,15 +95,13 @@ const ManageTest = () => {
   
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
-    documentTitle: `${testDetails?.title || 'Test'} - Individual Result`,
+    documentTitle: `${testDetails?.title || 'Test'} - Results`,
     removeAfterPrint: true,
     pageStyle: `
-      @media print {
-        @page { size: letter; margin: 0.5cm; }
-        body { margin: 0; padding: 0; }
-        header, footer, nav, button, .no-print { display: none !important; }
-        .print-content { display: block !important; }
-      }
+      @page { size: letter; margin: 0.5cm; }
+      body { margin: 0; padding: 0; }
+      header, footer, nav, button, .no-print { display: none !important; }
+      .print-content { display: block !important; }
     `,
   });
 
@@ -491,171 +490,15 @@ const ManageTest = () => {
       )}
       
       <div className="hidden">
-        <div ref={printRef} className="p-8 print:p-0 print-content">
-          <div className="relative bg-gradient-to-br from-veno-primary/20 via-background/90 to-veno-primary/5 p-8 rounded-lg mb-8 overflow-hidden print:bg-white">
-            <div className="absolute inset-0 opacity-10 print:opacity-0">
-              <div className="absolute left-0 top-0 w-40 h-40 rounded-full bg-veno-primary/30 blur-3xl"></div>
-              <div className="absolute right-20 bottom-10 w-60 h-60 rounded-full bg-blue-500/20 blur-3xl"></div>
-              <div className="absolute right-40 top-20 w-20 h-20 rounded-full bg-purple-500/20 blur-xl"></div>
-            </div>
-            
-            <div className="relative flex items-center justify-between mb-10 z-10">
-              <div className="flex items-center">
-                <VenoLogo className="h-16 w-16 mr-4" />
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-veno-primary to-blue-500 bg-clip-text text-transparent print:text-veno-primary">
-                    Veno Assessment
-                  </h1>
-                  <p className="text-sm text-muted-foreground italic">Excellence in Education</p>
-                </div>
-              </div>
-              <div className="text-right bg-black/5 dark:bg-white/5 p-3 rounded-lg border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
-                <p className="text-sm font-semibold">Certificate Generated</p>
-                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
-              </div>
-            </div>
-            
-            <div className="relative mb-8 z-10">
-              <div className="inline-block bg-white/30 dark:bg-white/5 px-4 py-2 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
-                <h2 className="text-3xl font-bold mb-2">{testDetails?.title}</h2>
-                <p className="text-muted-foreground">{testDetails?.description || 'No description provided'}</p>
-              </div>
-              
-              {selectedAttemptId && (
-                <div className="mt-6 p-4 bg-white/20 dark:bg-black/20 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
-                  <h3 className="text-xl font-medium mb-2">Participant Information</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Name</p>
-                      <p className="font-medium">{getSelectedParticipant()?.participant_name || 'Anonymous'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{getSelectedParticipant()?.participant_email || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Completion Date</p>
-                      <p className="font-medium">{getSelectedParticipant() ? formatDate(getSelectedParticipant()!.completed_at) : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Test Difficulty</p>
-                      <p className="font-medium capitalize">{testDetails?.difficulty}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
+        <div ref={printRef} className="p-8 print-content">
           {selectedAttemptId && getSelectedParticipant() && (
-            <div className="mb-10">
-              <div className="flex justify-center mb-10">
-                <div className="relative w-60 h-60">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle
-                      className="text-gray-200 dark:text-gray-700"
-                      strokeWidth="10"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="40"
-                      cx="50"
-                      cy="50"
-                    />
-                    {getSelectedParticipant() && (
-                      <circle
-                        className={`${
-                          (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
-                            ? 'text-green-500' 
-                            : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
-                              ? 'text-yellow-500'
-                              : 'text-red-500'
-                        }`}
-                        strokeWidth="10"
-                        strokeDasharray={251.2}
-                        strokeDashoffset={251.2 * (1 - (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions))}
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="40"
-                        cx="50"
-                        cy="50"
-                      />
-                    )}
-                  </svg>
-                  {getSelectedParticipant() && (
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                      <div className="text-5xl font-bold">
-                        {Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}%
-                      </div>
-                      <div className="text-lg font-medium mt-2">
-                        {getSelectedParticipant()!.score}/{getSelectedParticipant()!.total_questions} points
-                      </div>
-                      <div className="mt-2 text-sm">
-                        {(getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
-                          ? 'Excellent' 
-                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
-                            ? 'Good'
-                            : 'Needs Improvement'
-                        }
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl border border-gray-200 dark:border-gray-800 print:border-gray-300">
-                <h3 className="text-xl font-medium mb-4">Performance Summary</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Result Classification</h4>
-                    {getSelectedParticipant() && (
-                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-white ${
-                        (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
-                          ? 'bg-green-500' 
-                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                      }`}>
-                        {(getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
-                          ? 'Passed with Distinction' 
-                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
-                            ? 'Passed'
-                            : 'Needs Improvement'
-                        }
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 print:border-gray-300">
-                      <p className="text-sm text-muted-foreground mb-1">Questions</p>
-                      <p className="text-xl font-medium">{testDetails?.question_count}</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 print:border-gray-300">
-                      <p className="text-sm text-muted-foreground mb-1">Time Limit</p>
-                      <p className="text-xl font-medium">{testDetails?.time_limit || 'No'} min</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Certificate 
+              userName={getSelectedParticipant()?.participant_name || 'Anonymous'} 
+              achievementName={`${testDetails.title} Assessment`}
+              date={formatDate(getSelectedParticipant()!.completed_at)}
+              score={Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}
+            />
           )}
-          
-          <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800 print:border-gray-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center">
-                  <VenoLogo className="h-5 w-5 mr-2" />
-                  <p className="text-sm font-medium">Veno Assessment System</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">This is an official certificate of completion</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm">Verification Code:</p>
-                <p className="font-mono text-xs">{selectedAttemptId?.substring(0, 8).toUpperCase() || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
