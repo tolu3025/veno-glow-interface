@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
-import { UserCircle, LogOut, LogIn, Moon, Sun } from "lucide-react";
+import { UserCircle, LogOut, LogIn, Moon, Sun, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
 import { toast } from "sonner";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -125,6 +125,59 @@ const MainLayout = () => {
           <p className="text-sm">
             © {new Date().getFullYear()} Veno. All rights reserved.
           </p>
+          
+          {/* Social Media Links */}
+          <div className="flex items-center gap-6 mb-4 md:mb-0">
+            <a 
+              href="https://www.facebook.com/share/1DvXpB5pM3/?mibextid=wwXIfr" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+              aria-label="Facebook"
+            >
+              <Facebook size={20} />
+            </a>
+            <a 
+              href="https://www.instagram.com/veno_official_4?igsh=MXM4c3FjNWI1bGlwcw%3D%3D&utm_source=qr" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram size={20} />
+            </a>
+            <a 
+              href="https://youtube.com/@veno_official-f9t?si=fzBQcfESIP4eDSW5" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+              aria-label="YouTube"
+            >
+              <Youtube size={20} />
+            </a>
+            <a 
+              href="https://www.tiktok.com/@veno_official3?_t=ZM-8v1Yo7Wdsf9&_r=1" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+              aria-label="TikTok"
+            >
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                className="current-fill"
+              >
+                <path 
+                  d="M17 4.5c1.7 1.3 3 2 5 2v3c-1.3.1-3-.1-5-1v6.5C17 20.4 13.4 24 8 24S-1 20.4-1 15 2.6 6 8 6c.5 0 1 0 1.5.1V10c-.5-.1-1-.2-1.5-.2-2.7 0-5 2.3-5 5s2.3 5 5 5c2.8 0 5-2.2 5-5V0h4v4.5z" 
+                  fill="currentColor"
+                />
+              </svg>
+            </a>
+          </div>
+
           <div className="flex items-center gap-4">
             <Link to="/" className="text-xs underline-offset-4 hover:underline">
               Terms of Service

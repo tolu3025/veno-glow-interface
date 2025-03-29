@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Circle, ListChecks } from "lucide-react";
+import { CheckCircle, Circle, ListChecks, Calendar, MessageSquare, Award, MousePointer, ShoppingCart } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -16,6 +16,7 @@ type Task = {
   completed: boolean;
   type: string;
   progress?: number;
+  icon: React.ElementType;
 };
 
 interface TasksSectionProps {
@@ -33,30 +34,63 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
     const mockTasks = [
       {
         id: "1",
-        title: "Complete your first test",
-        description: "Take and complete your first quiz or test",
-        points: 100,
+        title: "Daily Login",
+        description: "Login to the app daily (10 days)",
+        points: 100, // 10 points x 10 days
         completed: false,
-        type: "test",
-        progress: 0
+        type: "login",
+        progress: 30, // 3 out of 10 days
+        icon: Calendar
       },
       {
         id: "2",
-        title: "Create a test",
-        description: "Create your own test with at least 5 questions",
-        points: 200,
+        title: "Read Blog Posts",
+        description: "Read blog posts (5 posts)",
+        points: 25, // 5 points x 5 posts
         completed: false,
-        type: "create",
-        progress: 0
+        type: "blog",
+        progress: 40, // 2 out of 5 posts
+        icon: MessageSquare
       },
       {
         id: "3",
-        title: "Refer a friend",
+        title: "Complete CBT Tests",
+        description: "Complete CBT tests (3 tests)",
+        points: 60, // 20 points x 3 tests
+        completed: false,
+        type: "cbt",
+        progress: 33, // 1 out of 3 tests
+        icon: Award
+      },
+      {
+        id: "4",
+        title: "Refer a Friend",
         description: "Invite someone to join Veno",
-        points: 150,
+        points: 100,
         completed: false,
         type: "referral",
-        progress: 0
+        progress: 0,
+        icon: Award
+      },
+      {
+        id: "5",
+        title: "Click on Ads",
+        description: "Click on sponsored ads (3 times)",
+        points: 150, // 50 points x 3 clicks
+        completed: false,
+        type: "ads",
+        progress: 0,
+        icon: MousePointer
+      },
+      {
+        id: "6",
+        title: "Make a Purchase",
+        description: "Make a purchase in the marketplace",
+        points: 100,
+        completed: false,
+        type: "purchase",
+        progress: 0,
+        icon: ShoppingCart
       }
     ];
     
@@ -120,7 +154,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                   {task.completed ? (
                     <CheckCircle className="h-5 w-5 text-veno-primary" />
                   ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" />
+                    <task.icon className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
                 
