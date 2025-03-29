@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Send, AtSign, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, Send, AtSign, Phone, MapPin, MessageCircle, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -13,12 +13,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -29,9 +35,37 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const faqs = [
+  {
+    question: "How do I create a test?",
+    answer: "To create a test, log in to your account, navigate to the CBT section, and click on 'Create Test'. Follow the on-screen instructions to add questions, set time limits, and customize other test settings."
+  },
+  {
+    question: "How can students take my tests?",
+    answer: "After creating a test, you'll receive a share code. Distribute this code to your students, who can then enter it on the 'Take Test' page to access and complete the assessment."
+  },
+  {
+    question: "Is there a limit to how many tests I can create?",
+    answer: "Free accounts can create up to 5 tests with 30 questions each. Premium accounts have unlimited test creation capability with up to 500 questions per test."
+  },
+  {
+    question: "Can I export test results?",
+    answer: "Yes, test results can be exported in PDF or CSV format from the test management dashboard."
+  },
+  {
+    question: "How secure are the tests?",
+    answer: "Our platform includes various security measures such as question randomization, time limits, and browser focus monitoring to ensure the integrity of your assessments."
+  },
+  {
+    question: "Do you offer certificates for test takers?",
+    answer: "Yes, certificates can be automatically generated for test takers who achieve passing scores. This feature can be enabled in test settings."
+  }
+];
+
 const ContactPage = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -169,6 +203,34 @@ const ContactPage = () => {
               </Form>
             </CardContent>
           </Card>
+
+          {/* FAQ Section */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5" />
+                Frequently Asked Questions
+              </CardTitle>
+              <CardDescription>
+                Find quick answers to common questions about our platform.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {faqs.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger>{faq.question}</AccordionTrigger>
+                    <AccordionContent>{faq.answer}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+            <CardFooter className="flex justify-center border-t pt-6">
+              <p className="text-sm text-muted-foreground">
+                Don't see what you're looking for? Contact our support team for assistance.
+              </p>
+            </CardFooter>
+          </Card>
         </div>
         
         <div className="space-y-6">
@@ -181,26 +243,61 @@ const ContactPage = () => {
                 <div>
                   <h3 className="font-medium mb-1">Email Us</h3>
                   <p className="text-muted-foreground text-sm mb-2">For general inquiries</p>
-                  <a href="mailto:info@veno.com" className="text-veno-primary hover:underline">
-                    info@veno.com
+                  <a href="mailto:cbtveno@gmail.com" className="text-veno-primary hover:underline block">
+                    cbtveno@gmail.com
+                  </a>
+                  <a href="mailto:support@venobot.online" className="text-veno-primary hover:underline block mt-1">
+                    support@venobot.online
                   </a>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
-                <div className="bg-veno-primary/10 p-3 rounded-full text-veno-primary">
-                  <Phone size={24} />
+                <div className="bg-green-100 dark:bg-green-800 p-3 rounded-full text-green-600 dark:text-green-400">
+                  <MessageCircle size={24} />
                 </div>
                 <div>
-                  <h3 className="font-medium mb-1">Call Us</h3>
-                  <p className="text-muted-foreground text-sm mb-2">Mon-Fri, 9am-5pm</p>
-                  <a href="tel:+123456789" className="text-veno-primary hover:underline">
-                    +1 (234) 567-89
-                  </a>
+                  <h3 className="font-medium mb-1">Chat with Us</h3>
+                  <p className="text-muted-foreground text-sm mb-3">
+                    Need immediate help? Chat with our customer care team on WhatsApp.
+                  </p>
+                  
+                  <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Start WhatsApp Chat
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>WhatsApp Customer Care</DialogTitle>
+                        <DialogDescription>
+                          Our WhatsApp customer care service is coming soon. We'll update this feature with our official support number shortly.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex justify-center py-4">
+                        <p className="text-center text-sm">
+                          In the meantime, please contact us via email at<br />
+                          <a href="mailto:support@venobot.online" className="text-veno-primary hover:underline">
+                            support@venobot.online
+                          </a>
+                        </p>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setWhatsappOpen(false)}
+                        >
+                          Close
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardContent>
