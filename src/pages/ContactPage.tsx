@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Send, AtSign, Phone, MessageCircle, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Send, AtSign, Phone, MessageCircle, ChevronDown, ChevronUp, HelpCircle, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
