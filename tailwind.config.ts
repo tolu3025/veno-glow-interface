@@ -58,9 +58,9 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        "veno-primary": "#4f46e5",
-        "veno-secondary": "#f59e0b",
-        "veno-accent": "#10b981",
+        "veno-primary": "#1a8754",     // Green
+        "veno-secondary": "#0ea5e9",   // Blue
+        "veno-accent": "#86efac",      // Light Green
       },
       borderRadius: {
         lg: "var(--radius)",
