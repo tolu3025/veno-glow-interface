@@ -91,12 +91,23 @@ const RewardsSection: React.FC<RewardsSectionProps> = ({ userPoints, setUserPoin
     setClaimingReward(reward.id);
     
     try {
+      // Create new activity object
+      const newActivity = {
+        type: 'reward_claimed',
+        reward_id: reward.id,
+        timestamp: new Date().toISOString()
+      };
+      
       // Update user points in the database
       const { error } = await supabase
         .from('user_profiles')
         .update({ 
           points: userPoints - reward.points,
-          activities: supabase.sql`array_append(activities, jsonb_build_object('type', 'reward_claimed', 'reward_id', ${reward.id}, 'timestamp', ${new Date().toISOString()}))` 
+          // Use RPC to append to the activities array
+          activities: supabase.rpc('append_to_activities', { 
+            user_id_param: user.id, 
+            new_activity: newActivity 
+          })  
         })
         .eq('user_id', user.id);
 

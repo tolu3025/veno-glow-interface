@@ -19,6 +19,8 @@ import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RewardSystem from "./pages/RewardSystem";
+// Import our RPC function setup
+import "./functions/appendToActivities";
 
 const queryClient = new QueryClient();
 

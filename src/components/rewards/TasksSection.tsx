@@ -45,9 +45,12 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         if (error) throw error;
         
         if (data && data.activities) {
+          // Make sure activities is an array before filtering
+          const activities = Array.isArray(data.activities) ? data.activities : [];
+          
           // Filter activities to only include completed tasks
-          const completedTaskIds = data.activities
-            .filter((activity: any) => activity.type === 'task_completed')
+          const completedTaskIds = activities
+            .filter((activity: any) => activity && activity.type === 'task_completed')
             .map((activity: any) => activity.task_id);
           
           setCompletedTasks(completedTaskIds);
@@ -74,11 +77,21 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
       }
       
       // Add the task to completed tasks and update points
+      const newActivity = {
+        type: 'task_completed',
+        task_id: taskId,
+        timestamp: new Date().toISOString()
+      };
+      
       const { error } = await supabase
         .from('user_profiles')
         .update({ 
           points: userPoints + points,
-          activities: supabase.sql`array_append(activities, jsonb_build_object('type', 'task_completed', 'task_id', ${taskId}, 'timestamp', ${new Date().toISOString()}))` 
+          // Properly append to the activities array using Postgres array functions
+          activities: supabase.rpc('append_to_activities', { 
+            user_id_param: user.id, 
+            new_activity: newActivity 
+          })
         })
         .eq('user_id', user.id);
 
