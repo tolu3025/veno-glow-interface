@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,7 +102,11 @@ const DashboardPage = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'test_attempts' },
         (payload) => {
-          if (payload.new && payload.new.user_id === user.id) {
+          // Add proper type checking before accessing user_id
+          if (payload.new && 
+              typeof payload.new === 'object' && 
+              'user_id' in payload.new && 
+              payload.new.user_id === user.id) {
             fetchDashboardData();
           }
         }
