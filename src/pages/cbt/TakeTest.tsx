@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle, MailCheck } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +54,8 @@ const TakeTest = () => {
   const [showTakerForm, setShowTakerForm] = useState(false);
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
+  const [publicResults, setPublicResults] = useState<any[]>([]);
+  const [submissionComplete, setSubmissionComplete] = useState(false);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -137,7 +139,7 @@ const TakeTest = () => {
 
     loadTest();
   }, [testId, user]);
-  
+
   const loadSubjectQuiz = async () => {
     try {
       const subject = location.state.subject;
@@ -179,7 +181,7 @@ const TakeTest = () => {
       setLoading(false);
     }
   };
-  
+
   const mapDifficulty = (uiDifficulty: string): "beginner" | "intermediate" | "advanced" => {
     switch(uiDifficulty) {
       case 'easy': return 'beginner';
@@ -248,6 +250,26 @@ const TakeTest = () => {
     }
   };
 
+  const loadPublicResults = async () => {
+    if (!testId || testDetails?.results_visibility !== 'public') return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('test_attempts')
+        .select('*')
+        .eq('test_id', testId)
+        .order('score', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setPublicResults(data);
+      }
+    } catch (error) {
+      console.error("Error loading public results:", error);
+    }
+  };
+
   const finishTest = async () => {
     // If we're finishing without completing all questions, record remaining answers as null
     if (userAnswers.length < questions.length) {
@@ -260,9 +282,7 @@ const TakeTest = () => {
       setUserAnswers(prev => [...prev, ...remainingAnswers]);
     }
     
-    setShowResults(true);
-    
-    // Save test results
+    // Save test results regardless of visibility settings
     try {
       const testData = {
         test_id: testId,
@@ -276,8 +296,23 @@ const TakeTest = () => {
       };
       
       await supabase.from('test_attempts').insert([testData]);
+      
+      // Based on the results_visibility setting, show different screens
+      if (testDetails?.results_visibility === 'creator_only') {
+        setSubmissionComplete(true);
+      } else {
+        // For 'test_takers' or 'public', show results
+        setShowResults(true);
+        
+        // If results are public, load others' results
+        if (testDetails?.results_visibility === 'public') {
+          loadPublicResults();
+        }
+      }
     } catch (error) {
       console.error("Error saving test results:", error);
+      toast.error("Could not save your results");
+      setShowResults(true); // Show results anyway
     }
   };
 
@@ -336,6 +371,33 @@ const TakeTest = () => {
           <p className="mb-4">There are currently no questions available for this subject or test.</p>
           <Button onClick={() => navigate('/cbt')}>
             Back to Tests
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (submissionComplete) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <VenoLogo className="h-6 w-6" />
+            <CardTitle>Test Submitted Successfully!</CardTitle>
+          </div>
+          <CardDescription>
+            {testDetails?.title || "Quiz"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="py-6 text-center">
+          <MailCheck className="mx-auto h-16 w-16 text-veno-primary mb-6" />
+          <h2 className="text-2xl font-bold mb-2">Thank you for completing the test</h2>
+          <p className="text-muted-foreground mb-6">
+            Your answers have been recorded. The test creator will review your results.
+            {testTakerInfo?.email && " You may be contacted via email with your score and feedback."}
+          </p>
+          <Button onClick={() => navigate('/cbt')} className="mt-4">
+            Return to Tests
           </Button>
         </CardContent>
       </Card>
@@ -425,10 +487,22 @@ const TakeTest = () => {
                   </span>
                 </li>
                 {testDetails && (
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Multiple Attempts:</span>
-                    <span className="font-medium">{testDetails.allow_retakes ? 'Allowed' : 'Not allowed'}</span>
-                  </li>
+                  <>
+                    <li className="flex justify-between">
+                      <span className="text-muted-foreground">Multiple Attempts:</span>
+                      <span className="font-medium">{testDetails.allow_retakes ? 'Allowed' : 'Not allowed'}</span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-muted-foreground">Results Visibility:</span>
+                      <span className="font-medium">
+                        {testDetails.results_visibility === 'creator_only' 
+                          ? 'Only visible to test creator' 
+                          : testDetails.results_visibility === 'test_takers' 
+                            ? 'Visible to you after completion' 
+                            : 'Publicly visible'}
+                      </span>
+                    </li>
+                  </>
                 )}
               </ul>
             </div>
@@ -439,6 +513,9 @@ const TakeTest = () => {
                 <li>Select the best answer from the options</li>
                 <li>You can't go back to previous questions</li>
                 <li>The test will automatically submit when time runs out</li>
+                {testDetails?.results_visibility === 'creator_only' && (
+                  <li>Your results will be available to the test creator only</li>
+                )}
               </ul>
             </div>
           </div>
@@ -639,6 +716,47 @@ const TakeTest = () => {
               </div>
             </div>
           </div>
+          
+          {/* Show public results if applicable */}
+          {testDetails?.results_visibility === 'public' && publicResults.length > 0 && (
+            <div className="bg-secondary/30 p-4 rounded-lg mb-6">
+              <h3 className="font-medium mb-3">Leaderboard</h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rank</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="text-right">Score</TableHead>
+                      <TableHead className="text-right">Time (min)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {publicResults.map((result, index) => (
+                      <TableRow key={result.id} className={
+                        (result.participant_email === (testTakerInfo?.email || user?.email)) 
+                          ? "bg-veno-primary/10" 
+                          : ""
+                      }>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>
+                          {result.participant_name || "Anonymous"}
+                          {(result.participant_email === (testTakerInfo?.email || user?.email)) && 
+                            " (You)"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {result.score}/{result.total_questions}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {Math.floor(result.time_taken / 60)}:{(result.time_taken % 60).toString().padStart(2, '0')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
           
           <div className="bg-secondary/30 p-4 rounded-lg text-center">
             <h3 className="font-medium mb-2">Review Your Answers</h3>
