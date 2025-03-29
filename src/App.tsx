@@ -13,6 +13,7 @@ import CreateTest from "./pages/cbt/CreateTest";
 import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
+import Library from "./pages/cbt/Library";
 import MarketplacePage from "./pages/MarketplacePage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
@@ -104,6 +105,12 @@ const App = () => (
                 <Route path="/cbt/analytics" element={
                   <ProtectedRoute>
                     <Analytics />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/cbt/library" element={
+                  <ProtectedRoute>
+                    <Library />
                   </ProtectedRoute>
                 } />
                 

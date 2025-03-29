@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Loader2 } from 'lucide-react';
+import { BookOpen, Clock, Loader2, LibraryIcon } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAuth } from '@/providers/AuthProvider';
 import { VenoLogo } from '@/components/ui/logo';
@@ -77,7 +77,16 @@ const QuizSection = () => {
           <VenoLogo className="h-6 w-6" />
           <CardTitle>Quiz Library</CardTitle>
         </div>
-        <CardDescription>Explore subject quizzes from our database</CardDescription>
+        <CardDescription>
+          Explore subject quizzes from our database
+          <Button 
+            variant="link" 
+            className="text-veno-primary p-0 h-auto font-medium ml-2"
+            onClick={() => navigate('/cbt/library')}
+          >
+            Visit our Educational Library
+          </Button>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -115,6 +124,21 @@ const QuizSection = () => {
           ))}
         </div>
       </CardContent>
+      <CardFooter className="border-t bg-muted/50 px-6 py-4">
+        <div className="flex items-center justify-between w-full">
+          <p className="text-sm text-muted-foreground">
+            Need study materials?
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/cbt/library')}
+            className="gap-2"
+          >
+            <BookOpen size={16} />
+            Visit Library
+          </Button>
+        </div>
+      </CardFooter>
     </Card>
   );
 };

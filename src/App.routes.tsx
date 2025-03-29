@@ -18,6 +18,7 @@ import CreateTest from './pages/cbt/CreateTest';
 import TakeTest from './pages/cbt/TakeTest';
 import ManageTest from './pages/cbt/ManageTest';
 import Analytics from './pages/cbt/Analytics';
+import Library from './pages/cbt/Library';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import UnderMaintenancePage from './pages/UnderMaintenancePage';
@@ -70,7 +71,8 @@ export const routes: RouteObject[] = [
           { path: 'create-test', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
           { path: 'take-test/:shareCode', element: <TakeTest /> },
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
-          { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> }
+          { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
+          { path: 'library', element: <Library /> }
         ]
       },
       { path: '*', element: <NotFound /> }

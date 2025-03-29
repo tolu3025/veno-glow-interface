@@ -1,99 +1,73 @@
-
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Trophy, Award, Settings, User, LayoutDashboard } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/providers/AuthProvider';
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Home, PlusCircle, BarChart, BookOpen } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/providers/AuthProvider";
+import { Button } from "@/components/ui/button";
 
 const AppNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const { user } = useAuth();
-  
-  const appLinks = [
+
+  const navItems = [
     {
-      name: 'Dashboard',
-      path: '/dashboard',
-      icon: LayoutDashboard,
-      requiresAuth: true
+      name: "Dashboard",
+      path: "/cbt",
+      icon: <Home size={18} />,
+      authRequired: true
     },
     {
-      name: 'CBT',
-      path: '/cbt',
-      icon: Home
+      name: "Create Test",
+      path: "/cbt/create",
+      icon: <PlusCircle size={18} />,
+      authRequired: true
     },
     {
-      name: 'My Tests',
-      path: '/cbt?tab=mytests',
-      icon: BookOpen
+      name: "Analytics",
+      path: "/cbt/analytics",
+      icon: <BarChart size={18} />,
+      authRequired: true
     },
     {
-      name: 'Analytics',
-      path: '/cbt/analytics',
-      icon: Trophy,
-      requiresAuth: true
-    },
-    {
-      name: 'Rewards',
-      path: '/rewards',
-      icon: Award,
-      requiresAuth: true
-    },
-    {
-      name: 'Settings',
-      path: '/settings',
-      icon: Settings
-    },
-    {
-      name: 'Profile',
-      path: '/profile',
-      icon: User,
-      requiresAuth: true
+      name: "Library",
+      path: "/cbt/library",
+      icon: <BookOpen size={18} />,
+      authRequired: false
     }
   ];
 
-  const isActive = (path: string) => {
-    if (path === '/cbt?tab=mytests') {
-      return location.pathname === '/cbt' && location.search.includes('tab=mytests');
-    }
-    return location.pathname === path;
-  };
-
   return (
-    <>
-      {/* Desktop Sidebar - Only visible on larger screens */}
-      <div className="hidden md:block fixed left-0 top-0 bottom-0 w-64 bg-background border-r p-4 z-10">
-        <div className="flex items-center mb-8">
-          <h2 className="text-xl font-bold">Veno</h2>
-        </div>
-        
-        <nav className="flex flex-col gap-2">
-          {appLinks.map((item) => (
+    <aside className="fixed left-0 top-0 z-40 h-full border-r bg-background/95 backdrop-blur md:w-64">
+      <div className="hidden md:flex flex-col justify-between h-full">
+        <nav className="flex flex-col px-4 py-6">
+          {navItems.map((item) => (
             <Button
               key={item.name}
-              variant={isActive(item.path) ? "secondary" : "ghost"}
-              className={`justify-start ${
-                isActive(item.path) ? 'text-veno-primary bg-primary/10' : ''
-              }`}
+              variant="ghost"
+              className={`justify-start ${location.pathname === item.path ? 'font-bold' : ''}`}
               onClick={() => navigate(item.path)}
-              disabled={item.requiresAuth && !user}
+              disabled={item.authRequired && !user}
             >
-              <item.icon className="mr-2 h-5 w-5" />
-              {item.name}
+              {item.icon}
+              <span>{item.name}</span>
             </Button>
           ))}
         </nav>
-        
-        {!user && (
-          <Button 
-            className="mt-8 w-full bg-veno-primary hover:bg-veno-primary/90" 
-            onClick={() => navigate('/auth')}
-          >
-            Sign In
-          </Button>
-        )}
+        <div className="px-4 py-6">
+          {user ? (
+            <Button variant="outline" className="w-full" onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={() => navigate('/auth')}>
+              Sign In
+            </Button>
+          )}
+        </div>
       </div>
-    </>
+    </aside>
   );
 };
 
