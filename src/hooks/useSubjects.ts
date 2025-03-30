@@ -33,7 +33,7 @@ export const useSubjects = () => {
           setTimeout(() => reject(new Error('Request timeout')), 5000);
         });
         
-        // First try to get subjects via database function with timeout
+        // First try to get subjects via database function
         try {
           const rpcPromise = supabase.rpc('get_subjects_from_questions');
           const result = await Promise.race([rpcPromise, timeoutPromise]);

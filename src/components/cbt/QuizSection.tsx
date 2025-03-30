@@ -17,7 +17,6 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSubjects } from '@/hooks/useSubjects';
-import { supabase } from '@/integrations/supabase/client';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -37,26 +36,20 @@ const QuizSection = () => {
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
 
-  // Test connection to Supabase
+  // Check network connection
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const result = await supabase.testConnection();
-        setConnectionStatus(result.connected ? 'connected' : 'disconnected');
-        
-        if (!result.connected) {
-          toast({
-            title: "Connection issue detected",
-            description: "Unable to connect to the database. Some features may be limited.",
-            variant: "destructive",
-          });
-        }
-      } catch (e) {
-        setConnectionStatus('disconnected');
-      }
-    };
+    setConnectionStatus(navigator.onLine ? 'connected' : 'disconnected');
     
-    checkConnection();
+    const handleOnline = () => setConnectionStatus('connected');
+    const handleOffline = () => setConnectionStatus('disconnected');
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   // Reset subject selection if subjects change
@@ -81,7 +74,6 @@ const QuizSection = () => {
     setIsRetrying(true);
     try {
       await refetch();
-      await supabase.testConnection();
       toast({
         title: "Retry successful",
         description: "Reconnected to the database successfully.",
@@ -135,7 +127,7 @@ const QuizSection = () => {
             <div className="flex items-center">
               <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Connection to database unavailable. Some subjects may not be displayed.
+                Connection unavailable. Some subjects may not be displayed.
               </p>
             </div>
             <div className="flex justify-end mt-2">
