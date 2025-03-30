@@ -34,6 +34,34 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Enable realtime subscriptions for tables we'll use
+const enableRealtimeForTables = async () => {
+  try {
+    await supabase.channel('table-db-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'user_tests' 
+      }, () => {})
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'test_attempts' 
+      }, () => {})
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'user_test_questions'
+      }, () => {})
+      .subscribe();
+  } catch (error) {
+    console.error('Failed to enable realtime subscriptions:', error);
+  }
+};
+
+// Call the function to enable realtime
+enableRealtimeForTables();
+
 // Add fallback error handling to prevent app crashes
 const originalFrom = supabase.from.bind(supabase);
 supabase.from = function(table) {

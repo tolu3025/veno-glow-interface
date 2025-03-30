@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -10,22 +10,13 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { BookOpen, Clock } from 'lucide-react';
+import { BookOpen, Clock, Loader2 } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
-// Use simple mock data for subjects to avoid loading issues
-const mockSubjects = [
-  { name: "Mathematics", question_count: 25 },
-  { name: "English", question_count: 30 },
-  { name: "Physics", question_count: 20 },
-  { name: "Chemistry", question_count: 15 },
-  { name: "Biology", question_count: 18 },
-  { name: "Computer Science", question_count: 22 }
-];
+import { useSubjects } from '@/hooks/useSubjects';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -36,12 +27,30 @@ const difficultyOptions = [
 
 const QuizSection = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: subjects, isLoading, error } = useSubjects();
   
   const [subject, setSubject] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('all');
   const [timeLimit, setTimeLimit] = useState<number>(15);
   const [questionsCount, setQuestionsCount] = useState<number>(10);
+
+  // Reset subject selection if subjects change
+  useEffect(() => {
+    if (subjects && subjects.length > 0 && !subject) {
+      setSubject('');
+    }
+  }, [subjects]);
+
+  // Show error toast if subjects loading fails
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error loading subjects",
+        description: "Failed to load available subjects. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [error]);
 
   const handleStartQuiz = () => {
     if (!subject) {
@@ -84,11 +93,22 @@ const QuizSection = () => {
               <SelectValue placeholder="Select a subject" />
             </SelectTrigger>
             <SelectContent>
-              {mockSubjects.map((subj) => (
-                <SelectItem key={subj.name} value={subj.name}>
-                  {subj.name} ({subj.question_count} questions)
-                </SelectItem>
-              ))}
+              {isLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-veno-primary mr-2" />
+                  <span>Loading subjects...</span>
+                </div>
+              ) : subjects && subjects.length > 0 ? (
+                subjects.map((subj) => (
+                  <SelectItem key={subj.name} value={subj.name}>
+                    {subj.name} ({subj.question_count} questions)
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  No subjects available
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -157,10 +177,19 @@ const QuizSection = () => {
         <Button 
           className="w-full bg-veno-primary hover:bg-veno-primary/90"
           onClick={handleStartQuiz}
-          disabled={!subject}
+          disabled={!subject || isLoading}
         >
-          <BookOpen className="mr-2 h-4 w-4" />
-          Start Quiz
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading...
+            </>
+          ) : (
+            <>
+              <BookOpen className="mr-2 h-4 w-4" />
+              Start Quiz
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

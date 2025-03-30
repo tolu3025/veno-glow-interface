@@ -45,7 +45,7 @@ const CbtPage = () => {
     const params = new URLSearchParams(location.search);
     params.set('tab', activeTab);
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
-  }, [activeTab]);
+  }, [activeTab, navigate, location.pathname, location.search]);
 
   return (
     <div className="pb-20 md:pb-6 md:pl-64">

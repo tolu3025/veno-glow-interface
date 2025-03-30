@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, User, BarChart2, Share2, Edit, WifiOff } from 'lucide-react';
+import { Clock, User, BarChart2, Share2, Edit, WifiOff, Loader2 } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from '@tanstack/react-query';
 
 type Test = {
   id: string;
@@ -32,34 +32,6 @@ type TestAttempt = {
   completed_at: string;
 };
 
-// Mock data for when network is unavailable
-const MOCK_TESTS: Test[] = [
-  {
-    id: '1',
-    title: 'Mathematics Quiz',
-    description: 'Test your math skills with this quiz',
-    difficulty: 'intermediate',
-    time_limit: 15,
-    question_count: 20,
-    created_at: new Date().toISOString(),
-    share_code: 'abc123',
-    results_visibility: 'creator_only',
-    allow_retakes: false
-  },
-  {
-    id: '2',
-    title: 'Science Test',
-    description: 'Comprehensive science evaluation',
-    difficulty: 'advanced',
-    time_limit: 30,
-    question_count: 30,
-    created_at: new Date().toISOString(),
-    share_code: 'def456',
-    results_visibility: 'creator_only',
-    allow_retakes: true
-  }
-];
-
 interface MyTestsSectionProps {
   onShare: (testId: string) => void;
 }
@@ -67,8 +39,6 @@ interface MyTestsSectionProps {
 const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [tests, setTests] = useState<Test[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTest, setSelectedTest] = useState<string | null>(null);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
@@ -88,54 +58,52 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchTests = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+  // Fetch user tests with React Query
+  const { 
+    data: tests, 
+    isLoading, 
+    error,
+    refetch: refetchTests 
+  } = useQuery({
+    queryKey: ['userTests', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('user_tests')
+        .select('*')
+        .eq('creator_id', user.id)
+        .order('created_at', { ascending: false });
 
-      setLoading(true);
-      try {
-        // If offline, use mock data
-        if (isOffline) {
-          console.log('Offline mode: Using mock tests data');
-          setTests(MOCK_TESTS);
-          setLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('user_tests')
-          .select('*')
-          .eq('creator_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching tests:', error);
-          // Fall back to mock data on error
-          setTests(MOCK_TESTS);
-        } else {
-          console.log('Fetched tests:', data);
-          setTests(data || []);
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error fetching tests:', error);
-        setTests(MOCK_TESTS);
-      } finally {
-        setLoading(false);
+        throw new Error(error.message);
       }
-    };
+      
+      return data || [];
+    },
+    enabled: !!user && !isOffline,
+    refetchOnWindowFocus: false,
+    staleTime: 60000, // 1 minute
+  });
 
-    fetchTests();
-  }, [user, isOffline]);
+  // Effect to show error notifications
+  useEffect(() => {
+    if (error) {
+      console.error('Test fetch error:', error);
+      toast({
+        title: "Error loading tests",
+        description: "Failed to fetch your tests. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const fetchTestAttempts = async (testId: string) => {
     setAttemptsLoading(true);
     setSelectedTest(testId);
     
     try {
-      // If offline, use empty data
       if (isOffline) {
         setTestAttempts([]);
         setAttemptsLoading(false);
@@ -189,7 +157,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-10">
         <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
@@ -233,48 +201,19 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {tests.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">No tests available offline</p>
-              <Button onClick={() => navigate("/cbt/create")} disabled={isOffline}>
-                Create Test When Online
-              </Button>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {tests.map((test) => (
-                <div key={test.id} className="bg-secondary/30 p-4 rounded-lg">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-medium">{test.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {test.description || 'No description'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
-                    <span className="bg-primary/10 px-2 py-1 rounded">
-                      {test.question_count} Questions
-                    </span>
-                    <span className="bg-primary/10 px-2 py-1 rounded flex items-center">
-                      <Clock className="mr-1 h-3 w-3" /> 
-                      {test.time_limit || 'No'} min
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-xs text-yellow-600">Full functionality available when online</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">Tests are not available offline</p>
+            <Button onClick={() => navigate("/cbt/create")} disabled={isOffline}>
+              Create Test When Online
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   if (selectedTest) {
-    const selectedTestData = tests.find(test => test.id === selectedTest);
+    const selectedTestData = tests?.find(test => test.id === selectedTest);
     
     return (
       <Card>
@@ -341,7 +280,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
         <CardDescription>Manage your created tests</CardDescription>
       </CardHeader>
       <CardContent>
-        {tests.length === 0 ? (
+        {!tests || tests.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">You haven't created any tests yet</p>
             <Button onClick={() => navigate("/cbt/create")}>Create Your First Test</Button>
