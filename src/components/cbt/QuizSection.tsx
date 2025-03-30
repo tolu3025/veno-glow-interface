@@ -3,17 +3,26 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Loader2, AlertCircle, WifiOff, RefreshCw } from 'lucide-react';
+import { BookOpen, Clock, Loader2, AlertCircle, WifiOff, RefreshCw, DatabaseIcon } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAuth } from '@/providers/AuthProvider';
 import { VenoLogo } from '@/components/ui/logo';
 import QuizSettings, { QuizSettings as QuizSettingsType } from './QuizSettings';
 import { toast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const QuizSection = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: subjects, isLoading, error, refetch, isError } = useSubjects();
+  const { 
+    data: subjects, 
+    isLoading, 
+    error, 
+    refetch, 
+    isError,
+    isRefetching,
+    failureCount 
+  } = useSubjects();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -61,7 +70,7 @@ const QuizSection = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || isRefetching) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center p-8">
@@ -73,6 +82,23 @@ const QuizSection = () => {
   }
 
   if (isError || error) {
+    let errorMessage = "Failed to load subjects from the database.";
+    let isConnectionError = false;
+
+    if (error instanceof Error) {
+      if (error.message.includes('Failed to fetch') || 
+          error.message.includes('NetworkError') || 
+          error.message.includes('network') || 
+          error.message.includes('offline')) {
+        isConnectionError = true;
+        errorMessage = "Connection issue. Please check your internet connection.";
+      } else if (error.message.includes('not found') || error.message.includes('No subjects')) {
+        errorMessage = "No subjects found in database. Please check if there are any questions available.";
+      } else if (error.message.includes('Database error')) {
+        errorMessage = "Database issue. There might be a problem with the database configuration.";
+      }
+    }
+
     return (
       <Card>
         <CardHeader>
@@ -83,26 +109,37 @@ const QuizSection = () => {
           <CardDescription>Explore subject quizzes</CardDescription>
         </CardHeader>
         <CardContent className="py-6">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 dark:bg-red-900/20 dark:border-red-600">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mr-2" />
-              <p className="text-sm text-red-700 dark:text-red-400">
-                {isOffline 
-                  ? "You're currently offline. Please check your internet connection."
-                  : "Failed to load subjects. There might be an issue with the connection or database."}
-              </p>
-            </div>
-          </div>
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {isOffline 
+                ? "You're currently offline. Please check your internet connection."
+                : errorMessage}
+            </AlertDescription>
+          </Alert>
           <div className="flex justify-center mt-6">
             <Button 
               variant="outline" 
               onClick={() => refetch()}
               className="flex items-center gap-2"
+              disabled={isRefetching}
             >
-              <RefreshCw size={16} />
+              {isRefetching ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw size={16} className="mr-2" />
+              )}
               Retry Loading Subjects
             </Button>
           </div>
+          {failureCount > 2 && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                If the problem persists, please contact support.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
