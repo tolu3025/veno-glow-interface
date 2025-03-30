@@ -1,5 +1,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -20,11 +22,11 @@
     --popover-foreground: 222.2 84% 4.9%;
 
     /* Primary Colors */
-    --primary: 173 80% 40%;
+    --primary: 150 60% 32%;      /* Green */
     --primary-foreground: 210 40% 98%;
 
     /* Secondary Colors */
-    --secondary: 210 40% 96.1%;
+    --secondary: 199 85% 48%;    /* Blue */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     /* Muted Colors */
@@ -32,7 +34,7 @@
     --muted-foreground: 215.4 16.3% 46.9%;
 
     /* Accent Colors */
-    --accent: 210 40% 96.1%;
+    --accent: 142 76% 73%;       /* Light Green */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     /* Destructive Colors */
@@ -42,17 +44,17 @@
     /* Border and Input Colors */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 173 80% 40%;
+    --ring: 150 60% 32%;
 
     /* Border Radius */
     --radius: 0.75rem;
 
     /* Veno Colors - Light Mode */
-    --veno-primary: 173 80% 40%;
-    --veno-secondary: 180 100% 35%;
-    --veno-accent: 163 94% 43%;
-    --veno-muted: 166 60% 92%;
-    --veno-dark: 160 84% 16%;
+    --veno-primary: 150 60% 32%;     /* Green */
+    --veno-secondary: 199 85% 48%;   /* Blue */
+    --veno-accent: 142 76% 73%;      /* Light Green */
+    --veno-muted: 150 60% 95%;
+    --veno-dark: 150 60% 15%;
 
     /* Sidebar Colors */
     --sidebar-background: 0 0% 98%;
@@ -67,31 +69,31 @@
 
   .dark {
     /* Base Colors */
-    --background: 222.2 84% 4.9%;
+    --background: 150 15% 10%;       /* Dark Green Background */
     --foreground: 210 40% 98%;
 
     /* Card Colors */
-    --card: 222.2 84% 4.9%;
+    --card: 150 20% 12%;             /* Dark Green Card */
     --card-foreground: 210 40% 98%;
 
     /* Popover Colors */
-    --popover: 222.2 84% 4.9%;
+    --popover: 150 20% 12%;
     --popover-foreground: 210 40% 98%;
 
     /* Primary Colors */
-    --primary: 173 80% 40%;
+    --primary: 150 50% 40%;          /* Medium Green */
     --primary-foreground: 222.2 47.4% 11.2%;
 
     /* Secondary Colors */
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 150 25% 20%;        /* Dark Green Secondary */
     --secondary-foreground: 210 40% 98%;
 
     /* Muted Colors */
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 150 25% 20%;
+    --muted-foreground: 150 10% 70%;
 
     /* Accent Colors */
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 150 30% 30%;           /* Dark Green Accent */
     --accent-foreground: 210 40% 98%;
 
     /* Destructive Colors */
@@ -99,26 +101,26 @@
     --destructive-foreground: 210 40% 98%;
 
     /* Border and Input Colors */
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 173 80% 40%;
+    --border: 150 25% 20%;
+    --input: 150 25% 20%;
+    --ring: 150 50% 40%;
 
     /* Veno Colors - Dark Mode */
-    --veno-primary: 173 70% 30%;
-    --veno-secondary: 180 70% 25%;
-    --veno-accent: 163 70% 33%;
-    --veno-muted: 166 30% 20%;
-    --veno-dark: 160 30% 10%;
+    --veno-primary: 150 50% 40%;     /* Medium Green */
+    --veno-secondary: 150 30% 25%;   /* Darker Green */
+    --veno-accent: 142 40% 50%;      /* Muted Green */
+    --veno-muted: 150 20% 25%;
+    --veno-dark: 150 20% 10%;
 
     /* Sidebar Colors */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 150 20% 8%;
+    --sidebar-foreground: 150 10% 90%;
+    --sidebar-primary: 150 50% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 150 15% 15%;
+    --sidebar-accent-foreground: 150 10% 90%;
+    --sidebar-border: 150 15% 15%;
+    --sidebar-ring: 150 50% 40%;
   }
 }
 
@@ -128,7 +130,11 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-body;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold;
   }
 }
 
@@ -144,4 +150,30 @@
   .veno-glass {
     @apply bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10;
   }
+  
+  .bubble {
+    @apply backdrop-blur-sm z-0;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05));
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .bubble {
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.03));
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.15), 0 0 15px rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Add slide indicator styles for carousel */
+.embla__dots {
+  @apply flex justify-center gap-1 mt-4;
+}
+
+.embla__dot {
+  @apply w-2 h-2 rounded-full bg-gray-300 transition-all duration-200;
+}
+
+.embla__dot--selected {
+  @apply bg-veno-primary w-4;
 }

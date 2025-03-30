@@ -3,19 +3,23 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle, MailCheck } from 'lucide-react';
+import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle, MailCheck, ArrowLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 type QuizQuestion = {
   id: string;
   text: string;
   options: string[];
   correctOption: number;
+  explanation?: string;
 };
 
 type UserAnswer = {
@@ -35,6 +39,7 @@ type TestDetails = {
 };
 
 const TakeTest = () => {
+  
   const { testId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -120,7 +125,8 @@ const TakeTest = () => {
               id: q.id,
               text: q.question_text,
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
-              correctOption: q.answer
+              correctOption: q.answer,
+              explanation: q.explanation
             }));
             
             setQuestions(formattedQuestions);
@@ -163,7 +169,8 @@ const TakeTest = () => {
           text: q.question,
           options: Array.isArray(q.options) ? 
             q.options.map((opt: any) => String(opt)) : [],
-          correctOption: q.answer
+          correctOption: q.answer,
+          explanation: q.explanation
         }));
         
         setQuestions(formattedQuestions);
@@ -185,19 +192,22 @@ const TakeTest = () => {
         id: '1',
         text: `What is the capital of France? ${difficultyLabel} (Demo ${subject} question)`,
         options: ['London', 'Paris', 'Berlin', 'Madrid'],
-        correctOption: 1
+        correctOption: 1,
+        explanation: `The correct answer is A: London.`
       },
       {
         id: '2',
         text: `Which planet is known as the Red Planet? ${difficultyLabel} (Demo ${subject} question)`,
         options: ['Earth', 'Mars', 'Venus', 'Jupiter'],
-        correctOption: 1
+        correctOption: 1,
+        explanation: `The correct answer is B: Mars.`
       },
       {
         id: '3',
         text: `What is the largest mammal? ${difficultyLabel} (Demo ${subject} question)`,
         options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'],
-        correctOption: 1
+        correctOption: 1,
+        explanation: `The correct answer is C: Blue Whale.`
       },
     ];
   };
@@ -228,33 +238,67 @@ const TakeTest = () => {
 
   const handleAnswerSelect = (optionIndex: number) => {
     setSelectedAnswer(optionIndex);
-  };
-
-  const goToNextQuestion = () => {
+    
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    const isCorrect = selectedAnswer === currentQuestionData.correctOption;
+    const isCorrect = optionIndex === currentQuestionData.correctOption;
     
-    setUserAnswers(prev => [
-      ...prev,
-      {
+    const updatedAnswers = [...userAnswers];
+    
+    const existingAnswerIndex = updatedAnswers.findIndex(
+      answer => answer.questionId === currentQuestionData.id
+    );
+    
+    if (existingAnswerIndex >= 0) {
+      updatedAnswers[existingAnswerIndex] = {
         questionId: currentQuestionData.id,
-        selectedOption: selectedAnswer,
+        selectedOption: optionIndex,
         isCorrect: isCorrect
-      }
-    ]);
-    
-    if (isCorrect) {
-      setScore(score + 1);
+      };
+    } else {
+      updatedAnswers[currentQuestion] = {
+        questionId: currentQuestionData.id,
+        selectedOption: optionIndex,
+        isCorrect: isCorrect
+      };
     }
     
+    setUserAnswers(updatedAnswers);
+  };
+
+  const goToPreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+      
+      const previousAnswer = userAnswers[currentQuestion - 1];
+      if (previousAnswer) {
+        setSelectedAnswer(previousAnswer.selectedOption);
+      } else {
+        setSelectedAnswer(null);
+      }
+    }
+  };
+
+  const goToNextQuestion = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      setSelectedAnswer(null);
+      
+      const nextAnswer = userAnswers[currentQuestion + 1];
+      if (nextAnswer) {
+        setSelectedAnswer(nextAnswer.selectedOption);
+      } else {
+        setSelectedAnswer(null);
+      }
     } else {
+      calculateScore();
       finishTest();
     }
+  };
+
+  const calculateScore = () => {
+    const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
+    setScore(correctAnswers);
   };
 
   const loadPublicResults = async () => {
@@ -278,15 +322,8 @@ const TakeTest = () => {
   };
 
   const finishTest = async () => {
-    if (userAnswers.length < questions.length) {
-      const remainingAnswers = questions.slice(userAnswers.length).map(q => ({
-        questionId: q.id,
-        selectedOption: null,
-        isCorrect: false
-      }));
-      
-      setUserAnswers(prev => [...prev, ...remainingAnswers]);
-    }
+    
+    calculateScore();
     
     try {
       const testData = {
@@ -325,6 +362,7 @@ const TakeTest = () => {
   };
 
   if (loading) {
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-veno-primary mb-4" />
@@ -334,6 +372,7 @@ const TakeTest = () => {
   }
 
   if (questions.length === 0) {
+    
     return (
       <Card>
         <CardHeader>
@@ -356,6 +395,7 @@ const TakeTest = () => {
     );
   }
 
+  
   if (submissionComplete) {
     return (
       <Card>
@@ -496,7 +536,7 @@ const TakeTest = () => {
               <ul className="list-disc list-inside space-y-1 text-sm">
                 <li>Read each question carefully</li>
                 <li>Select the best answer from the options</li>
-                <li>You can't go back to previous questions</li>
+                <li>You can go back to previous questions</li>
                 <li>The test will automatically submit when time runs out</li>
                 {testDetails?.results_visibility === 'creator_only' && (
                   <li>Your results will be available to the test creator only</li>
@@ -535,7 +575,7 @@ const TakeTest = () => {
     
     if (reviewMode) {
       return (
-        <Card>
+        <Card className="max-w-4xl mx-auto">
           <CardHeader>
             <div className="flex items-center gap-2">
               <VenoLogo className="h-6 w-6" />
@@ -550,60 +590,131 @@ const TakeTest = () => {
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-veno-primary" />
-                  <h2 className="font-semibold">Final Score: {score}/{questions.length} ({percentage}%)</h2>
+                  <h2 className="font-semibold">Final Score: {score}/{questions.length} ({Math.round((score / questions.length) * 100)}%)</h2>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Time taken: {formatTime((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining)}
                 </div>
               </div>
-              <Progress value={percentage} className="h-2" />
+              <Progress value={Math.round((score / questions.length) * 100)} className="h-2" />
             </div>
             
-            <div className="space-y-8 mt-6">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12 text-center">No.</TableHead>
-                      <TableHead>Question</TableHead>
-                      <TableHead>Your Answer</TableHead>
-                      <TableHead>Correct Answer</TableHead>
-                      <TableHead className="w-16 text-center">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userAnswers.map((answer, index) => {
-                      const question = questions[index];
-                      if (!question) return null;
+            <div className="space-y-6 mt-6">
+              <h3 className="text-lg font-semibold mb-2">Question Review</h3>
+              {userAnswers.map((answer, index) => {
+                const question = questions[index];
+                if (!question) return null;
+                
+                return (
+                  <Collapsible key={question.id} className="w-full">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={cn(
+                        "rounded-lg border p-4 transition-all hover:shadow-md", 
+                        answer.isCorrect 
+                          ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800" 
+                          : "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full", 
+                            answer.isCorrect 
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          )}>
+                            {answer.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-base">{index + 1}. {question.text}</div>
+                            
+                            <div className="mt-2 space-y-2 text-sm">
+                              {question.options.map((option, optionIndex) => (
+                                <div 
+                                  key={optionIndex}
+                                  className={cn(
+                                    "flex items-center gap-2 py-1 px-3 rounded",
+                                    optionIndex === question.correctOption 
+                                      ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+                                      : optionIndex === answer.selectedOption && !answer.isCorrect 
+                                        ? "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
+                                        : "text-gray-600 dark:text-gray-400"
+                                  )}
+                                >
+                                  <div className={cn(
+                                    "flex items-center justify-center w-5 h-5 rounded-full text-xs border",
+                                    optionIndex === question.correctOption 
+                                      ? "border-green-500 bg-green-500 text-white" 
+                                      : optionIndex === answer.selectedOption && !answer.isCorrect
+                                        ? "border-red-500 bg-red-500 text-white"
+                                        : "border-gray-300 dark:border-gray-600"
+                                  )}>
+                                    {String.fromCharCode(65 + optionIndex)}
+                                  </div>
+                                  <span>{option}</span>
+                                  {optionIndex === question.correctOption && 
+                                    <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                                  }
+                                  {optionIndex === answer.selectedOption && !answer.isCorrect && 
+                                    <XCircle className="h-4 w-4 text-red-600 ml-auto" />
+                                  }
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <CollapsibleTrigger className="p-2 hover:bg-secondary/80 rounded-full transition-colors">
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        </CollapsibleTrigger>
+                      </div>
                       
-                      return (
-                        <TableRow key={question.id} className={answer.isCorrect ? "bg-green-50 dark:bg-green-900/10" : "bg-red-50 dark:bg-red-900/10"}>
-                          <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                          <TableCell>{question.text || "Question not available"}</TableCell>
-                          <TableCell>
-                            {answer.selectedOption !== null && question.options && question.options[answer.selectedOption] ? 
-                              question.options[answer.selectedOption] : 
-                              <span className="text-muted-foreground italic">No answer</span>
-                            }
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {question.options && question.options[question.correctOption] ? 
-                              question.options[question.correctOption] : 
-                              "Not available"
-                            }
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {answer.isCorrect ? 
-                              <CheckCircle className="h-5 w-5 text-green-600 inline" /> : 
-                              <XCircle className="h-5 w-5 text-red-600 inline" />
-                            }
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                      <CollapsibleContent className="mt-3 pt-3 border-t space-y-2">
+                        <div className="flex items-start gap-2 px-2 text-sm">
+                          <Info size={16} className="text-veno-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium">Explanation</h4>
+                            <p className="text-muted-foreground">
+                              {question.explanation || 
+                                `The correct answer is ${String.fromCharCode(65 + question.correctOption)}: ${
+                                  question.options[question.correctOption]
+                                }.`}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {answer.isCorrect ? (
+                          <div className="flex items-start gap-2 px-2 bg-green-50/50 dark:bg-green-950/10 p-2 rounded text-sm">
+                            <CheckCircle size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-medium text-green-700 dark:text-green-400">Correct!</h4>
+                              <p className="text-green-700/70 dark:text-green-500/70">
+                                Great job on selecting the right option.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2 px-2 bg-red-50/50 dark:bg-red-950/10 p-2 rounded text-sm">
+                            <XCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-medium text-red-700 dark:text-red-400">Incorrect</h4>
+                              <p className="text-red-700/70 dark:text-red-500/70">
+                                You selected {answer.selectedOption !== null ? 
+                                  `option ${String.fromCharCode(65 + answer.selectedOption)}` : 
+                                  "no answer"}.
+                                The correct answer is option {String.fromCharCode(65 + question.correctOption)}.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </motion.div>
+                  </Collapsible>
+                );
+              })}
             </div>
           </CardContent>
           <CardFooter className="flex gap-4">
@@ -843,24 +954,32 @@ const TakeTest = () => {
                   <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
                     selectedAnswer === index 
                       ? 'border-veno-primary bg-veno-primary text-white' 
-                      : 'border-muted-foreground text-muted-foreground'
+                      : 'border-gray-300'
                   }`}>
                     {String.fromCharCode(65 + index)}
                   </div>
-                  <span>{option}</span>
+                  <div>{option}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex gap-4 pt-6 border-t mt-6">
         <Button 
-          disabled={selectedAnswer === null}
-          onClick={goToNextQuestion} 
-          className="w-full"
+          variant="outline" 
+          onClick={goToPreviousQuestion}
+          disabled={currentQuestion === 0}
+          className="flex-1"
         >
-          {currentQuestion < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+        <Button 
+          className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
+          onClick={goToNextQuestion}
+        >
+          {currentQuestion < questions.length - 1 ? 'Next' : 'Finish'}
         </Button>
       </CardFooter>
     </Card>

@@ -10,9 +10,10 @@ interface CertificateProps {
   achievementName: string;
   date: string;
   score?: number;
+  position?: string;
 }
 
-const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, date, score }) => {
+const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, date, score, position }) => {
   return (
     <Card className="border-2 border-veno-primary/30 p-1">
       <div className="border border-dashed border-veno-primary/50 p-6">
@@ -32,6 +33,11 @@ const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, da
                 with a score of <span className="text-veno-primary font-bold">{score}%</span>
               </p>
             )}
+            {position && (
+              <p className="font-medium mt-2">
+                Position: <span className="text-veno-primary font-bold">{position}</span>
+              </p>
+            )}
             <p className="text-muted-foreground mt-6">Awarded on {date}</p>
           </div>
           
@@ -42,11 +48,7 @@ const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, da
                 <p className="text-xs text-muted-foreground">Certificate ID: VEN-{Date.now().toString().slice(-8)}</p>
               </div>
               <div>
-                <img 
-                  src="/veno-logo.png" 
-                  alt="Digital Signature" 
-                  className="h-12 w-auto" 
-                />
+                <p className="font-handwriting text-2xl text-veno-primary">Veno Signature</p>
               </div>
             </div>
           </div>

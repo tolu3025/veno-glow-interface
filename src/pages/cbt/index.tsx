@@ -10,7 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import QuizSection from "@/components/cbt/QuizSection";
 import MyTestsSection from "@/components/cbt/MyTestsSection";
 import AppNavigation from "@/components/cbt/AppNavigation";
-import { toast } from "@/hooks/use-toast";
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from "@/providers/AuthProvider";
 
 const CbtPage = () => {
@@ -69,7 +69,7 @@ const CbtPage = () => {
         <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="quiz" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
-              <BookOpen size={16} className="mr-2" /> Quiz Library
+              <BookOpen size={16} className="mr-2" /> Quiz
             </TabsTrigger>
             <TabsTrigger value="mytests" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
               <Trophy size={16} className="mr-2" /> My Tests
