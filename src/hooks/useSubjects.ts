@@ -1,22 +1,67 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, testConnection } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
 
 export type Subject = {
   name: string;
   question_count: number;
 };
 
+// Mock subjects data for fallback when offline
+const MOCK_SUBJECTS: Subject[] = [
+  { name: 'Mathematics', question_count: 15 },
+  { name: 'Biology', question_count: 12 },
+  { name: 'Chemistry', question_count: 10 },
+  { name: 'Physics', question_count: 8 },
+  { name: 'Computer Science', question_count: 14 },
+  { name: 'English', question_count: 7 }
+];
+
 // Query configuration
-const FETCH_TIMEOUT = 10000; // 10 seconds
-const MAX_RETRIES = 1;
+const FETCH_TIMEOUT = 12000; // 12 seconds
+const MAX_RETRIES = 2;
 const RETRY_DELAY = 2000; // 2 seconds
+const STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
 export const useSubjects = () => {
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [connectionTested, setConnectionTested] = useState<boolean>(false);
+  const [hasConnection, setHasConnection] = useState<boolean | null>(null);
+
+  // Update online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Test actual Supabase connection on mount
+    const checkConnection = async () => {
+      const connected = await testConnection();
+      setHasConnection(connected);
+      setConnectionTested(true);
+    };
+    
+    checkConnection();
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   return useQuery({
     queryKey: ['subjects'],
     queryFn: async () => {
+      // If we know we're offline or connection test failed, immediately use fallback
+      if ((!isOnline || hasConnection === false) && connectionTested) {
+        console.log('Using offline subjects data');
+        return MOCK_SUBJECTS;
+      }
+
       try {
         console.log('Fetching subjects from Supabase...');
         
@@ -54,6 +99,12 @@ export const useSubjects = () => {
           
           if (questionsError) {
             console.error('Error fetching subjects from questions table:', questionsError);
+            // Try fallback if error is network related
+            if (questionsError.message?.includes('Failed to fetch') || 
+                questionsError.code === 'NETWORK_ERROR') {
+              console.log('Network error detected, using offline data');
+              return MOCK_SUBJECTS;
+            }
             throw new Error(`Database error: ${questionsError.message}`);
           }
           
@@ -64,7 +115,7 @@ export const useSubjects = () => {
               description: "No subjects could be loaded from the database.",
               variant: "destructive",
             });
-            return [];
+            return MOCK_SUBJECTS; // Use fallback data
           }
           
           console.log('Questions fetched successfully:', questions.length);
@@ -89,25 +140,55 @@ export const useSubjects = () => {
           
           console.log('Formatted subjects:', formattedSubjects);
           
+          // Cache the results locally for offline use
+          localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));
           return formattedSubjects;
         } catch (error: any) {
           console.error('Error in direct query:', error);
-          throw error;
+          
+          // Try to get cached subjects from local storage
+          const cachedSubjects = localStorage.getItem('cached_subjects');
+          if (cachedSubjects) {
+            console.log('Using cached subjects from local storage');
+            return JSON.parse(cachedSubjects) as Subject[];
+          }
+          
+          // Last resort fallback
+          console.log('Using offline fallback subjects');
+          return MOCK_SUBJECTS;
         }
       } catch (error: any) {
         console.error('Error in useSubjects query:', error);
+        
+        // Try to get cached subjects from local storage
+        const cachedSubjects = localStorage.getItem('cached_subjects');
+        if (cachedSubjects) {
+          console.log('Using cached subjects from local storage');
+          return JSON.parse(cachedSubjects) as Subject[];
+        }
+        
         toast({
           title: "Failed to load subjects",
-          description: "Please check your internet connection and try again.",
-          variant: "destructive",
+          description: "Using offline data instead. Check your connection and try again.",
+          variant: "warning",
           duration: 5000,
         });
-        return [];
+        
+        return MOCK_SUBJECTS;
       }
     },
     retry: MAX_RETRIES,
     retryDelay: (attemptIndex) => Math.min(RETRY_DELAY * (attemptIndex + 1), 8000), // Exponential backoff
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: STALE_TIME, // Cache for 5 minutes
+    // Provide initial data from local storage if available
+    initialData: () => {
+      const cachedSubjects = localStorage.getItem('cached_subjects');
+      if (cachedSubjects) {
+        console.log('Using initial data from local storage');
+        return JSON.parse(cachedSubjects) as Subject[];
+      }
+      return undefined;
+    },
   });
 };

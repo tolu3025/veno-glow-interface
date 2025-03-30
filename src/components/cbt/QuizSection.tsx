@@ -10,13 +10,14 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { BookOpen, Clock, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { BookOpen, Clock, Loader2, RefreshCw, AlertTriangle, WifiOff } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSubjects } from '@/hooks/useSubjects';
+import { testConnection } from '@/integrations/supabase/client';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -27,7 +28,7 @@ const difficultyOptions = [
 
 const QuizSection = () => {
   const navigate = useNavigate();
-  const { data: subjects, isLoading, error, refetch } = useSubjects();
+  const { data: subjects, isLoading, error, refetch, isError } = useSubjects();
   
   const [subject, setSubject] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('all');
@@ -38,9 +39,22 @@ const QuizSection = () => {
 
   // Check network connection
   useEffect(() => {
-    setConnectionStatus(navigator.onLine ? 'connected' : 'disconnected');
+    const checkConnection = async () => {
+      const isOnline = navigator.onLine;
+      
+      if (isOnline) {
+        // Even if browser says we're online, check actual connection to Supabase
+        setConnectionStatus('unknown');
+        const connected = await testConnection();
+        setConnectionStatus(connected ? 'connected' : 'disconnected');
+      } else {
+        setConnectionStatus('disconnected');
+      }
+    };
     
-    const handleOnline = () => setConnectionStatus('connected');
+    checkConnection();
+    
+    const handleOnline = () => checkConnection();
     const handleOffline = () => setConnectionStatus('disconnected');
     
     window.addEventListener('online', handleOnline);
@@ -61,27 +75,43 @@ const QuizSection = () => {
 
   // Show error toast if subjects loading fails
   useEffect(() => {
-    if (error) {
+    if (isError && error) {
       toast({
-        title: "Error loading subjects",
-        description: "Failed to load available subjects. Please try again later.",
-        variant: "destructive",
+        title: "Connection issue",
+        description: "Using locally stored data. Some features may be limited.",
+        variant: "warning",
       });
     }
-  }, [error]);
+  }, [isError, error]);
 
   const handleRetry = async () => {
     setIsRetrying(true);
+    setConnectionStatus('unknown');
+    
     try {
-      await refetch();
-      toast({
-        title: "Retry successful",
-        description: "Reconnected to the database successfully.",
-      });
+      // Test direct connection first
+      const connected = await testConnection();
+      
+      if (connected) {
+        await refetch();
+        setConnectionStatus('connected');
+        toast({
+          title: "Connection restored",
+          description: "Successfully reconnected to the database.",
+        });
+      } else {
+        setConnectionStatus('disconnected');
+        toast({
+          title: "Still disconnected",
+          description: "Could not establish connection to the database.",
+          variant: "destructive",
+        });
+      }
     } catch (e) {
+      setConnectionStatus('disconnected');
       toast({
-        title: "Retry failed",
-        description: "Still unable to connect to the database. Please check your internet connection.",
+        title: "Connection failed",
+        description: "Could not connect to the database. Using offline data.",
         variant: "destructive",
       });
     } finally {
@@ -125,9 +155,11 @@ const QuizSection = () => {
         {connectionStatus === 'disconnected' && (
           <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 mb-4">
             <div className="flex items-center">
-              <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+              <WifiOff className="h-5 w-5 text-yellow-500 mr-2" />
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Connection unavailable. Some subjects may not be displayed.
+                {navigator.onLine ? 
+                  "Connected to internet but can't reach our servers. Using offline data." :
+                  "No internet connection. Using offline data."}
               </p>
             </div>
             <div className="flex justify-end mt-2">
@@ -140,11 +172,11 @@ const QuizSection = () => {
               >
                 {isRetrying ? (
                   <>
-                    <Loader2 className="h-3 w-3 animate-spin mr-1" /> Retrying...
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" /> Connecting...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-3 w-3 mr-1" /> Retry Connection
+                    <RefreshCw className="h-3 w-3 mr-1" /> Try Again
                   </>
                 )}
               </Button>
@@ -179,6 +211,14 @@ const QuizSection = () => {
               )}
             </SelectContent>
           </Select>
+          
+          {subjects && subjects.length > 0 && connectionStatus !== 'connected' && (
+            <p className="text-xs text-muted-foreground">
+              {connectionStatus === 'disconnected' ? 
+                'Showing cached subjects. Some may be unavailable offline.' : 
+                'Showing available subjects.'}
+            </p>
+          )}
         </div>
 
         {/* Difficulty Level */}
