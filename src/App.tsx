@@ -13,6 +13,7 @@ import CreateTest from "./pages/cbt/CreateTest";
 import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
+import Library from "./pages/cbt/Library";
 import MarketplacePage from "./pages/MarketplacePage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
@@ -29,6 +30,7 @@ import TermsOfService from "./pages/TermsOfService";
 import AdsPolicy from "./pages/AdsPolicy";
 import UnderMaintenancePage from "./pages/UnderMaintenancePage";
 import ContactPage from "./pages/ContactPage";
+import ServicesPage from "./pages/ServicesPage";
 
 // Import our RPC function setup
 import "./functions/appendToActivities";
@@ -49,6 +51,7 @@ const App = () => (
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/ads-policy" element={<AdsPolicy />} />
               <Route path="/maintenance" element={<UnderMaintenancePage />} />
+              <Route path="/services" element={<ServicesPage />} />
               
               <Route element={<MainLayout />}>
                 <Route path="/" element={
@@ -102,6 +105,12 @@ const App = () => (
                 <Route path="/cbt/analytics" element={
                   <ProtectedRoute>
                     <Analytics />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/cbt/library" element={
+                  <ProtectedRoute>
+                    <Library />
                   </ProtectedRoute>
                 } />
                 

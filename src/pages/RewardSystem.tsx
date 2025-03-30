@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, Gift, List, UserCircle2 } from 'lucide-react';
+import { Trophy, Gift, List, UserCircle2, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
 
 import RewardsSection from '@/components/rewards/RewardsSection';
 import TasksSection from '@/components/rewards/TasksSection';
@@ -17,54 +18,139 @@ const RewardSystem = () => {
   const [userPoints, setUserPoints] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+  
+  // Monitor online status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    setIsOffline(!navigator.onLine);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   
   useEffect(() => {
     const fetchUserPoints = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if offline first
+      if (!navigator.onLine) {
+        setIsOffline(true);
+        setIsLoading(false);
+        toast({
+          title: "You're offline",
+          description: "Reward data will be limited until you're back online",
+          variant: "default",
+        });
+        return;
+      }
       
       try {
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('points')
+          .select('points, activities')
           .eq('user_id', user.id)
           .single();
         
-        if (error) throw error;
-        
-        if (data) {
-          setUserPoints(data.points || 0);
-        } else {
-          // Create a profile if it doesn't exist
-          const { error: insertError } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: user.id, // UUID for the profile
-              user_id: user.id,
-              email: user.email,
-              points: 100, // Start with some points
-              activities: []
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No profile found, create one
+            const { error: insertError } = await supabase
+              .from('user_profiles')
+              .insert({
+                id: user.id,
+                user_id: user.id,
+                email: user.email,
+                points: 100, // Start with some points
+                activities: [{
+                  type: 'login',
+                  description: 'First login',
+                  timestamp: new Date().toISOString(),
+                  points: 100
+                }]
+              });
+            
+            if (insertError) throw insertError;
+            
+            setUserPoints(100);
+            toast({
+              title: "Welcome to Rewards!",
+              description: "We've given you 100 points to get started.",
             });
+          } else {
+            throw error;
+          }
+        } else if (data) {
+          setUserPoints(data.points || 0);
           
-          if (insertError) throw insertError;
-          
-          setUserPoints(100);
-          toast({
-            title: "Welcome to Rewards!",
-            description: "We've given you 100 points to get started.",
-          });
+          // Check for login activity only if profile exists
+          if (Array.isArray(data.activities)) {
+            const today = new Date().toISOString().split('T')[0];
+            const loggedInToday = data.activities.some((activity: any) => 
+              activity.type === 'login' && 
+              activity.timestamp && 
+              new Date(activity.timestamp).toISOString().split('T')[0] === today
+            );
+            
+            if (!loggedInToday) {
+              console.log("User has not logged in today yet");
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching user points:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch your reward points. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchUserPoints();
-  }, [user, toast]);
+    
+    // Set up subscription to listen for point changes
+    if (user && navigator.onLine) {
+      const channel = supabase.channel('user-points-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'user_profiles',
+            filter: `user_id=eq.${user?.id}`,
+          },
+          (payload) => {
+            if (payload.new && typeof payload.new.points === 'number') {
+              setUserPoints(payload.new.points);
+            }
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, toast, isOffline]);
   
-  // Effect to update user points in Supabase when they change
+  // Effect to update user points in Supabase when they change client-side
   useEffect(() => {
     const updateUserPoints = async () => {
-      if (!user) return;
+      if (!user || isLoading || isOffline) return;
       
       try {
         const { error } = await supabase
@@ -78,11 +164,39 @@ const RewardSystem = () => {
       }
     };
     
-    // Only update if the user exists and points have been loaded
-    if (user && userPoints !== 0) {
+    // Only update if the user exists, points have loaded, and we're online
+    if (user && !isLoading && !isOffline) {
       updateUserPoints();
     }
-  }, [userPoints, user]);
+  }, [userPoints, user, isLoading, isOffline]);
+  
+  // Render offline page if detected
+  if (isOffline) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Veno Rewards</h1>
+        </div>
+        
+        <Card className="p-8 text-center">
+          <div className="flex flex-col items-center">
+            <WifiOff className="h-16 w-16 text-amber-500 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">You're currently offline</h2>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Veno Rewards requires an internet connection to track your progress and award points.
+              Please check your connection and try again.
+            </p>
+            <Button 
+              className="bg-veno-primary hover:bg-veno-primary/90"
+              onClick={() => window.location.reload()}
+            >
+              Reload page
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto py-6">
@@ -101,7 +215,14 @@ const RewardSystem = () => {
               <p className="text-muted-foreground">Complete tasks, take quizzes, and earn rewards</p>
             </div>
             <div className="mt-4 md:mt-0">
-              <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-veno-primary"></div>
+                  <span>Loading...</span>
+                </div>
+              ) : (
+                <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
+              )}
             </div>
           </div>
         </CardContent>
