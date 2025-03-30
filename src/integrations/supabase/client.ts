@@ -16,7 +16,8 @@ export const supabase = createClient<Database>(
   {
     auth: {
       persistSession: true,
-      autoRefreshToken: true
+      autoRefreshToken: true,
+      detectSessionInUrl: true
     },
     global: {
       headers: {
@@ -28,7 +29,35 @@ export const supabase = createClient<Database>(
       schema: 'public'
     },
     realtime: {
-      timeout: 30000
+      timeout: 60000
     }
   }
 );
+
+// Add fallback error handling to prevent app crashes
+const originalFrom = supabase.from.bind(supabase);
+supabase.from = function(table) {
+  const result = originalFrom(table);
+  
+  // Add error logging wrapper to common functions
+  const originalSelect = result.select.bind(result);
+  result.select = function(...args) {
+    const query = originalSelect(...args);
+    const originalThen = query.then.bind(query);
+    
+    query.then = function(onFulfilled, onRejected) {
+      return originalThen(
+        onFulfilled, 
+        (error) => {
+          console.error(`Supabase query error on table ${table}:`, error);
+          if (onRejected) return onRejected(error);
+          return Promise.reject(error);
+        }
+      );
+    };
+    
+    return query;
+  };
+  
+  return result;
+};

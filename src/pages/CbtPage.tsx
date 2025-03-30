@@ -49,6 +49,8 @@ const CbtPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             className="veno-card p-5"
+            onClick={() => navigate('/cbt/')}
+            role="button"
           >
             <div className="flex justify-between mb-2">
               <div className="flex items-center space-x-3">
@@ -70,8 +72,11 @@ const CbtPage = () => {
         ))}
       </div>
       
-      <button className="veno-button w-full mt-6">
-        Resume Learning
+      <button 
+        className="veno-button w-full mt-6"
+        onClick={() => navigate('/cbt')}
+      >
+        Explore Courses
       </button>
     </div>
   );

@@ -121,22 +121,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           setLoginStreak(streak);
         }
         
-        let testAttemptCount = 0;
-        try {
-          const { count, error: testError } = await supabase
-            .from('test_attempts')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id);
-            
-          if (testError) {
-            console.error("Error fetching test attempts:", testError);
-          } else {
-            testAttemptCount = count || 0;
-          }
-        } catch (err) {
-          console.error("Exception fetching test attempts:", err);
-        }
-        
         const blogReadActivities = activities.filter(
           (activity: Activity) => activity.type === 'blog_read'
         );
@@ -232,34 +216,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                 return uniqueBlogCount >= 5;
               } catch (err) {
                 console.error("Blog verification exception:", err);
-                return false;
-              }
-            }
-          },
-          {
-            id: "3",
-            title: "Complete CBT Tests",
-            description: "Complete 3 CBT tests to earn 60 points",
-            points: 60,
-            completed: completedTaskIds.includes("3"),
-            type: "cbt",
-            progress: testAttemptCount ? Math.min((testAttemptCount / 3) * 100, 100) : 0,
-            icon: Award,
-            verification: async (userId: string) => {
-              try {
-                const { count, error } = await supabase
-                  .from('test_attempts')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('user_id', userId);
-                
-                if (error) {
-                  console.error("CBT verification error:", error);
-                  return false;
-                }
-                
-                return count !== null && count >= 3;
-              } catch (err) {
-                console.error("CBT verification exception:", err);
                 return false;
               }
             }
@@ -363,17 +319,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             type: "blog",
             progress: 40,
             icon: MessageCircle,
-            verification: async () => true
-          },
-          {
-            id: "3",
-            title: "Complete CBT Tests",
-            description: "Complete 3 CBT tests to earn 60 points",
-            points: 60,
-            completed: false,
-            type: "cbt",
-            progress: 33,
-            icon: Award,
             verification: async () => true
           },
           {

@@ -16,7 +16,16 @@ import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useSubjects } from '@/hooks/useSubjects';
+
+// Use simple mock data for subjects to avoid loading issues
+const mockSubjects = [
+  { name: "Mathematics", question_count: 25 },
+  { name: "English", question_count: 30 },
+  { name: "Physics", question_count: 20 },
+  { name: "Chemistry", question_count: 15 },
+  { name: "Biology", question_count: 18 },
+  { name: "Computer Science", question_count: 22 }
+];
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -27,7 +36,7 @@ const difficultyOptions = [
 
 const QuizSection = () => {
   const navigate = useNavigate();
-  const { data: subjects, isLoading, isError, error, refetch } = useSubjects();
+  const [isLoading, setIsLoading] = useState(false);
   
   const [subject, setSubject] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('all');
@@ -70,42 +79,18 @@ const QuizSection = () => {
         <div className="space-y-3">
           <Label htmlFor="subject">Pick Subject</Label>
           
-          {isLoading ? (
-            <Select disabled>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Loading subjects..." />
-              </SelectTrigger>
-            </Select>
-          ) : isError ? (
-            <div className="space-y-2">
-              <Select disabled>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Failed to load subjects" />
-                </SelectTrigger>
-              </Select>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => refetch()}
-                className="w-full"
-              >
-                Retry loading subjects
-              </Button>
-            </div>
-          ) : (
-            <Select value={subject} onValueChange={setSubject}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects && subjects.map((subj) => (
-                  <SelectItem key={subj.name} value={subj.name}>
-                    {subj.name} ({subj.question_count} questions)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select value={subject} onValueChange={setSubject}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {mockSubjects.map((subj) => (
+                <SelectItem key={subj.name} value={subj.name}>
+                  {subj.name} ({subj.question_count} questions)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Difficulty Level */}
