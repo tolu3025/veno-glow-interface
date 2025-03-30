@@ -3,6 +3,18 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Define an extended client type that includes our custom methods
+interface ConnectionTestResult {
+  connected: boolean;
+  latency: number;
+  error?: any;
+}
+
+// Extend the SupabaseClient type
+type ExtendedSupabaseClient = ReturnType<typeof createClient<Database>> & {
+  testConnection: () => Promise<ConnectionTestResult>;
+};
+
 const SUPABASE_URL = "https://oavauprgngpftanumlzs.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hdmF1cHJnbmdwZnRhbnVtbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2NjAwNzcsImV4cCI6MjA1MDIzNjA3N30.KSCyROzMVdoW0_lrknnbx6TmabgZTEdsDNVZ67zuKyg";
 
@@ -10,7 +22,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 // Initialize the Supabase client with additional options for better reliability
-export const supabase = createClient<Database>(
+const baseClient = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
   {
@@ -35,6 +47,9 @@ export const supabase = createClient<Database>(
     }
   }
 );
+
+// Create extended client with our custom methods
+export const supabase = baseClient as ExtendedSupabaseClient;
 
 // Enable realtime subscriptions for tables we'll use
 const enableRealtimeForTables = async () => {
@@ -95,7 +110,7 @@ supabase.from = function(table) {
   };
   
   return result;
-};
+} as typeof supabase.from;
 
 // Add a connection test method to check if Supabase is reachable
 supabase.testConnection = async function() {
