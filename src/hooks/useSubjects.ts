@@ -23,38 +23,31 @@ export const useSubjects = () => {
           return subjectsData as Subject[];
         }
         
-        // If the function fails or returns no data, query user_test_questions directly
-        const { data: testSubjects, error: testSubjectsError } = await supabase
-          .from('user_test_questions')
-          .select('subject')
-          .not('subject', 'is', null);
-          
-        if (testSubjectsError) {
-          console.error('Error fetching subjects from user_test_questions:', testSubjectsError);
-          throw new Error(`Database error: ${testSubjectsError.message}`);
-        }
+        console.log('RPC method failed or returned no data, querying questions table directly');
         
-        // Also query questions table
+        // If the function fails or returns no data, query questions table directly
         const { data: questions, error: questionsError } = await supabase
           .from('questions')
           .select('subject');
           
         if (questionsError) {
-          console.error('Error fetching subjects from questions:', questionsError);
+          console.error('Error fetching subjects from questions table:', questionsError);
+          throw new Error(`Database error: ${questionsError.message}`);
         }
         
-        // Combine and count subjects from both tables
-        const allSubjects = [
-          ...(testSubjects || []).map(s => s.subject),
-          ...(questions || []).map(q => q.subject)
-        ].filter(Boolean);
+        if (!questions || questions.length === 0) {
+          console.log('No questions found in the questions table');
+          return [];
+        }
+        
+        console.log('Questions fetched successfully:', questions.length);
         
         // Count questions by subject
         const subjectCounts: Record<string, number> = {};
         
-        allSubjects.forEach(subject => {
-          if (subject) {
-            subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
+        questions.forEach(q => {
+          if (q.subject) {
+            subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1;
           }
         });
         
