@@ -24,8 +24,6 @@ import RewardSystem from "./pages/RewardSystem";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
 
 // Import our RPC function setup
 import "./functions/appendToActivities";
@@ -86,8 +84,6 @@ const App = () => (
                 <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/bot" element={<BotPage />} />
                 <Route path="/blog" element={<BlogPage />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/terms-of-service" element={<TermsOfService />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

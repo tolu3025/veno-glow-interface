@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
@@ -18,9 +17,6 @@ type CarouselProps = {
   plugins?: CarouselPlugin
   orientation?: "horizontal" | "vertical"
   setApi?: (api: CarouselApi) => void
-  showControls?: boolean
-  autoplay?: boolean
-  autoplayInterval?: number
 }
 
 type CarouselContextProps = {
@@ -30,7 +26,6 @@ type CarouselContextProps = {
   scrollNext: () => void
   canScrollPrev: boolean
   canScrollNext: boolean
-  showControls?: boolean
 } & CarouselProps
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null)
@@ -57,9 +52,6 @@ const Carousel = React.forwardRef<
       plugins,
       className,
       children,
-      showControls = true,
-      autoplay = false,
-      autoplayInterval = 5000,
       ...props
     },
     ref
@@ -68,7 +60,6 @@ const Carousel = React.forwardRef<
       {
         ...opts,
         axis: orientation === "horizontal" ? "x" : "y",
-        loop: autoplay ? true : opts?.loop,
       },
       plugins
     )
@@ -105,25 +96,6 @@ const Carousel = React.forwardRef<
       [scrollPrev, scrollNext]
     )
 
-    // Set up autoplay
-    React.useEffect(() => {
-      if (!api || !autoplay) {
-        return
-      }
-
-      const intervalId = setInterval(() => {
-        api.scrollNext()
-        // If can't scroll next (end reached), scroll to first slide
-        if (!api.canScrollNext()) {
-          api.scrollTo(0)
-        }
-      }, autoplayInterval)
-
-      return () => {
-        clearInterval(intervalId)
-      }
-    }, [api, autoplay, autoplayInterval])
-
     React.useEffect(() => {
       if (!api || !setApi) {
         return
@@ -158,7 +130,6 @@ const Carousel = React.forwardRef<
           scrollNext,
           canScrollPrev,
           canScrollNext,
-          showControls,
         }}
       >
         <div
@@ -225,9 +196,7 @@ const CarouselPrevious = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
-  const { orientation, scrollPrev, canScrollPrev, showControls } = useCarousel()
-
-  if (!showControls) return null;
+  const { orientation, scrollPrev, canScrollPrev } = useCarousel()
 
   return (
     <Button
@@ -256,9 +225,7 @@ const CarouselNext = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
-  const { orientation, scrollNext, canScrollNext, showControls } = useCarousel()
-
-  if (!showControls) return null;
+  const { orientation, scrollNext, canScrollNext } = useCarousel()
 
   return (
     <Button

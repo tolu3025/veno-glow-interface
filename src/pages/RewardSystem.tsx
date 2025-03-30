@@ -1,22 +1,26 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, Gift, List, UserCircle2 } from 'lucide-react';
+import { Trophy, Gift, List, UserCircle2, Moon, Sun } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 
 import RewardsSection from '@/components/rewards/RewardsSection';
 import TasksSection from '@/components/rewards/TasksSection';
 import LeaderboardSection from '@/components/rewards/LeaderboardSection';
 import AchievementsSection from '@/components/rewards/AchievementsSection';
+import { VenoLogo } from '@/components/ui/logo';
 
 const RewardSystem = () => {
   const [activeTab, setActiveTab] = useState('tasks');
   const [userPoints, setUserPoints] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   
   useEffect(() => {
     const fetchUserPoints = async () => {
@@ -83,11 +87,30 @@ const RewardSystem = () => {
       updateUserPoints();
     }
   }, [userPoints, user]);
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
   
   return (
     <div className="container mx-auto py-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Veno Rewards</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center">
+          <VenoLogo className="h-10 w-10 mr-3" />
+          <h1 className="text-3xl font-bold">Veno Rewards</h1>
+        </div>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          {theme === "light" ? (
+            <Moon className="h-5 w-5" />
+          ) : (
+            <Sun className="h-5 w-5" />
+          )}
+        </Button>
       </div>
       
       <Card className="mb-8 border border-veno-primary/20 bg-gradient-to-br from-card/50 to-card">
