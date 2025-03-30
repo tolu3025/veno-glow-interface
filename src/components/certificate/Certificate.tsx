@@ -10,10 +10,9 @@ interface CertificateProps {
   achievementName: string;
   date: string;
   score?: number;
-  position?: string;
 }
 
-const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, date, score, position }) => {
+const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, date, score }) => {
   return (
     <Card className="border-2 border-veno-primary/30 p-1">
       <div className="border border-dashed border-veno-primary/50 p-6">
@@ -31,11 +30,6 @@ const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, da
             {score !== undefined && (
               <p className="font-medium">
                 with a score of <span className="text-veno-primary font-bold">{score}%</span>
-              </p>
-            )}
-            {position && (
-              <p className="font-medium mt-2">
-                Position: <span className="text-veno-primary font-bold">{position}</span>
               </p>
             )}
             <p className="text-muted-foreground mt-6">Awarded on {date}</p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -11,10 +10,7 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
-  FileText,
-  PencilIcon,
-  Save,
-  XCircle
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +31,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -45,7 +40,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -58,11 +52,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import Certificate from '@/components/certificate/Certificate';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 type Test = {
   id: string;
@@ -88,14 +77,6 @@ type TestAttempt = {
   disqualified?: boolean;
 };
 
-type TestQuestion = {
-  id: string;
-  question: string;
-  options: string[]; // This was causing the error - now explicitly string[]
-  answer: number;
-  explanation?: string;
-};
-
 const ManageTest = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
@@ -103,34 +84,23 @@ const ManageTest = () => {
   const { user } = useAuth();
   const [testDetails, setTestDetails] = useState<Test | null>(null);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
-  const [testQuestions, setTestQuestions] = useState<TestQuestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [testActive, setTestActive] = useState(true);
   const [disqualifying, setDisqualifying] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
-  const [isEditQuestionDialogOpen, setIsEditQuestionDialogOpen] = useState(false);
-  const [currentEditQuestion, setCurrentEditQuestion] = useState<TestQuestion | null>(null);
-  const [saveLoading, setSaveLoading] = useState(false);
   
   const printRef = useRef<HTMLDivElement>(null);
   
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
-    documentTitle: `${testDetails?.title || 'Test'} - Certificate`,
+    documentTitle: `${testDetails?.title || 'Test'} - Individual Result`,
     removeAfterPrint: true,
     pageStyle: `
-      @page { size: letter; margin: 0.5cm; }
       @media print {
-        body {
-          margin: 0;
-          padding: 0;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .no-print { display: none !important; }
-        .print-content { display: block !important; }
+        @page { margin: 0; }
+        body { margin: 1cm; }
+        header, footer, nav, button, .no-print { display: none !important; }
       }
     `,
   });
@@ -177,7 +147,6 @@ const ManageTest = () => {
         }
 
         setTestAttempts(attemptsData || []);
-        fetchTestQuestions();
       } catch (error) {
         console.error('Error fetching test data:', error);
         toast({
@@ -192,42 +161,6 @@ const ManageTest = () => {
 
     fetchTestData();
   }, [testId, user, navigate, toast]);
-
-  const fetchTestQuestions = async () => {
-    if (!testId) return;
-    
-    setLoadingQuestions(true);
-    try {
-      const { data, error } = await supabase
-        .from('test_questions')
-        .select('*')
-        .eq('test_id', testId);
-        
-      if (error) throw error;
-      
-      if (data) {
-        // Transform data to match our TestQuestion type
-        const questions = data.map(q => ({
-          id: q.id,
-          question: q.question,
-          options: Array.isArray(q.options) ? q.options.map(String) : [], // Ensure options are strings
-          answer: q.answer,
-          explanation: q.explanation || ''
-        }));
-        
-        setTestQuestions(questions);
-      }
-    } catch (error) {
-      console.error('Error fetching questions:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load test questions',
-        variant: 'destructive', 
-      });
-    } finally {
-      setLoadingQuestions(false);
-    }
-  };
 
   const toggleTestStatus = async () => {
     if (!testDetails) return;
@@ -342,87 +275,11 @@ const ManageTest = () => {
     return testAttempts.find(attempt => attempt.id === selectedAttemptId);
   };
 
-  const getSortedAttempts = () => {
-    return [...testAttempts].sort((a, b) => b.score / b.total_questions - a.score / a.total_questions);
-  };
-
-  const getParticipantPosition = (attemptId: string) => {
-    const sortedAttempts = getSortedAttempts();
-    const index = sortedAttempts.findIndex(attempt => attempt.id === attemptId);
-    if (index === -1) return '';
-    
-    // Convert to position (1st, 2nd, 3rd, etc.)
-    const position = index + 1;
-    if (position === 1) return "1st";
-    if (position === 2) return "2nd";
-    if (position === 3) return "3rd";
-    return `${position}th`;
-  };
-
   const printParticipantResult = (attemptId: string) => {
     setSelectedAttemptId(attemptId);
     setTimeout(() => {
       handlePrint();
-    }, 300);
-  };
-
-  const handleEditQuestion = (question: TestQuestion) => {
-    setCurrentEditQuestion({...question});
-    setIsEditQuestionDialogOpen(true);
-  };
-
-  const handleUpdateQuestionField = (field: string, value: any) => {
-    if (!currentEditQuestion) return;
-    setCurrentEditQuestion(prev => {
-      if (!prev) return prev;
-      return {...prev, [field]: value};
-    });
-  };
-
-  const handleUpdateOption = (index: number, value: string) => {
-    if (!currentEditQuestion) return;
-    const newOptions = [...currentEditQuestion.options];
-    newOptions[index] = value;
-    setCurrentEditQuestion({...currentEditQuestion, options: newOptions});
-  };
-
-  const saveQuestionChanges = async () => {
-    if (!currentEditQuestion || !testId) return;
-    
-    setSaveLoading(true);
-    try {
-      const { error } = await supabase
-        .from('test_questions')
-        .update({
-          question: currentEditQuestion.question,
-          options: currentEditQuestion.options,
-          answer: currentEditQuestion.answer,
-          explanation: currentEditQuestion.explanation
-        })
-        .eq('id', currentEditQuestion.id);
-        
-      if (error) throw error;
-      
-      setTestQuestions(prev => 
-        prev.map(q => q.id === currentEditQuestion.id ? currentEditQuestion : q)
-      );
-      
-      toast({
-        title: 'Question Updated',
-        description: 'The question has been successfully updated',
-      });
-      
-      setIsEditQuestionDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating question:', error);
-      toast({
-        title: 'Update Failed',
-        description: 'Failed to update the question',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaveLoading(false);
-    }
+    }, 100);
   };
 
   if (loading) {
@@ -502,328 +359,302 @@ const ManageTest = () => {
         </CardContent>
       </Card>
       
-      <Tabs defaultValue="participants">
-        <TabsList className="mb-4">
-          <TabsTrigger value="participants">Participants</TabsTrigger>
-          <TabsTrigger value="questions">Questions</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="participants">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={refreshData}
-              disabled={refreshing}
-              className="flex items-center gap-1"
-            >
-              {refreshing ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw size={14} />
-              )}
-              Refresh
-            </Button>
-          </div>
-          
-          {testAttempts.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-muted-foreground mb-4">
-                  No one has taken this test yet
-                </p>
-                <Button onClick={() => navigate('/cbt')}>Back to Dashboard</Button>
-              </CardContent>
-            </Card>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={refreshData}
+          disabled={refreshing}
+          className="flex items-center gap-1"
+        >
+          {refreshing ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
-            <Card>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead className="text-center">Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {testAttempts.map((attempt) => (
-                      <TableRow 
-                        key={attempt.id} 
-                        className={attempt.disqualified ? "bg-destructive/10" : ""}
-                      >
-                        <TableCell className="font-medium">
-                          {attempt.participant_name || 'Anonymous'}
-                        </TableCell>
-                        <TableCell>{attempt.participant_email || 'N/A'}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="font-medium">
-                            {attempt.score}/{attempt.total_questions}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {Math.round((attempt.score / attempt.total_questions) * 100)}%
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mr-2"
-                            onClick={() => printParticipantResult(attempt.id)}
-                          >
-                            <FileText className="h-3.5 w-3.5 mr-1" />
-                            Print
-                          </Button>
-                          
-                          {attempt.disqualified ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="outline">
-                                  Reinstate
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will reinstate the participant's results. Are you sure?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => reinstateParticipant(attempt.id)}
-                                  >
-                                    Reinstate
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="destructive">
-                                  {disqualifying === attempt.id ? 
-                                    <Loader2 className="h-4 w-4 animate-spin" /> : 
-                                    'Disqualify'
-                                  }
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will mark the participant's results as disqualified. Are you sure?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => disqualifyParticipant(attempt.id)}
-                                    className="bg-destructive hover:bg-destructive/90"
-                                  >
-                                    Disqualify
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <RefreshCw size={14} />
           )}
-        </TabsContent>
-        
-        <TabsContent value="questions">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
-          </div>
-          
-          {loadingQuestions ? (
-            <Card>
-              <CardContent className="flex justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
-              </CardContent>
-            </Card>
-          ) : testQuestions.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-muted-foreground mb-4">
-                  No questions found for this test
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {testQuestions.map((question, index) => (
-                <Card key={question.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex justify-between">
-                      <span>Question {index + 1}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditQuestion(question)}
-                        className="h-8 px-2"
-                      >
-                        <PencilIcon size={16} />
-                        <span className="ml-1">Edit</span>
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4">{question.question}</p>
-                    <div className="space-y-2">
-                      {question.options.map((option, optionIndex) => (
-                        <div 
-                          key={optionIndex} 
-                          className={`p-3 rounded-md border ${
-                            optionIndex === question.answer ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <div className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 ${
-                              optionIndex === question.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                            }`}>
-                              {String.fromCharCode(65 + optionIndex)}
-                            </div>
-                            <span>{option}</span>
-                            {optionIndex === question.answer && (
-                              <Check size={16} className="ml-2 text-green-500" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {question.explanation && (
-                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm font-medium mb-1">Explanation:</p>
-                        <p className="text-sm">{question.explanation}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          Refresh
+        </Button>
+      </div>
       
-      {/* Edit Question Dialog */}
-      <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Edit Question</DialogTitle>
-            <DialogDescription>
-              Make changes to the question, options, answer, or explanation.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {currentEditQuestion && (
-            <div className="space-y-4 my-2">
-              <div>
-                <Label htmlFor="question">Question</Label>
-                <Textarea 
-                  id="question" 
-                  value={currentEditQuestion.question}
-                  onChange={(e) => handleUpdateQuestionField('question', e.target.value)}
-                  rows={3}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <Label>Options</Label>
-                {currentEditQuestion.options.map((option, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <div className={`min-w-8 h-8 flex items-center justify-center rounded-full ${
-                      index === currentEditQuestion.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}>
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                    <Input 
-                      value={option}
-                      onChange={(e) => handleUpdateOption(index, e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className={index === currentEditQuestion.answer ? 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200' : ''}
-                      onClick={() => handleUpdateQuestionField('answer', index)}
-                    >
-                      {index === currentEditQuestion.answer ? (
-                        <Check className="h-4 w-4 text-green-500" />
+      {testAttempts.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <p className="text-muted-foreground mb-4">
+              No one has taken this test yet
+            </p>
+            <Button onClick={() => navigate('/cbt')}>Back to Dashboard</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-center">Score</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {testAttempts.map((attempt) => (
+                  <TableRow 
+                    key={attempt.id} 
+                    className={attempt.disqualified ? "bg-destructive/10" : ""}
+                  >
+                    <TableCell className="font-medium">
+                      {attempt.participant_name || 'Anonymous'}
+                    </TableCell>
+                    <TableCell>{attempt.participant_email || 'N/A'}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="font-medium">
+                        {attempt.score}/{attempt.total_questions}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((attempt.score / attempt.total_questions) * 100)}%
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mr-2"
+                        onClick={() => printParticipantResult(attempt.id)}
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1" />
+                        Print
+                      </Button>
+                      
+                      {attempt.disqualified ? (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              Reinstate
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will reinstate the participant's results. Are you sure?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => reinstateParticipant(attempt.id)}
+                              >
+                                Reinstate
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       ) : (
-                        'Set as Answer'
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive">
+                              {disqualifying === attempt.id ? 
+                                <Loader2 className="h-4 w-4 animate-spin" /> : 
+                                'Disqualify'
+                              }
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will mark the participant's results as disqualified. Are you sure?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => disqualifyParticipant(attempt.id)}
+                                className="bg-destructive hover:bg-destructive/90"
+                              >
+                                Disqualify
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
-                    </Button>
-                  </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-              
-              <div>
-                <Label htmlFor="explanation">Explanation (Optional)</Label>
-                <Textarea 
-                  id="explanation" 
-                  value={currentEditQuestion.explanation || ''}
-                  onChange={(e) => handleUpdateQuestionField('explanation', e.target.value)}
-                  rows={2}
-                  className="mt-1"
-                  placeholder="Explain why the answer is correct..."
-                />
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsEditQuestionDialogOpen(false)}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button 
-              type="button" 
-              onClick={saveQuestionChanges}
-              disabled={saveLoading}
-            >
-              {saveLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="hidden">
-        <div ref={printRef} className="p-8 print-content">
+        <div ref={printRef} className="p-8 print:p-0">
+          <div className="relative bg-gradient-to-br from-veno-primary/20 via-background/90 to-veno-primary/5 p-8 rounded-lg mb-8 overflow-hidden print:bg-white">
+            <div className="absolute inset-0 opacity-10 print:opacity-0">
+              <div className="absolute left-0 top-0 w-40 h-40 rounded-full bg-veno-primary/30 blur-3xl"></div>
+              <div className="absolute right-20 bottom-10 w-60 h-60 rounded-full bg-blue-500/20 blur-3xl"></div>
+              <div className="absolute right-40 top-20 w-20 h-20 rounded-full bg-purple-500/20 blur-xl"></div>
+            </div>
+            
+            <div className="relative flex items-center justify-between mb-10 z-10">
+              <div className="flex items-center">
+                <VenoLogo className="h-16 w-16 mr-4" />
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-veno-primary to-blue-500 bg-clip-text text-transparent print:text-veno-primary">
+                    Veno Assessment
+                  </h1>
+                  <p className="text-sm text-muted-foreground italic">Excellence in Education</p>
+                </div>
+              </div>
+              <div className="text-right bg-black/5 dark:bg-white/5 p-3 rounded-lg border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
+                <p className="text-sm font-semibold">Certificate Generated</p>
+                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
+              </div>
+            </div>
+            
+            <div className="relative mb-8 z-10">
+              <div className="inline-block bg-white/30 dark:bg-white/5 px-4 py-2 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
+                <h2 className="text-3xl font-bold mb-2">{testDetails?.title}</h2>
+                <p className="text-muted-foreground">{testDetails?.description || 'No description provided'}</p>
+              </div>
+              
+              {selectedAttemptId && (
+                <div className="mt-6 p-4 bg-white/20 dark:bg-black/20 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
+                  <h3 className="text-xl font-medium mb-2">Participant Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Name</p>
+                      <p className="font-medium">{getSelectedParticipant()?.participant_name || 'Anonymous'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{getSelectedParticipant()?.participant_email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Completion Date</p>
+                      <p className="font-medium">{getSelectedParticipant() ? formatDate(getSelectedParticipant()!.completed_at) : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Test Difficulty</p>
+                      <p className="font-medium capitalize">{testDetails?.difficulty}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
           {selectedAttemptId && getSelectedParticipant() && (
-            <Certificate 
-              userName={getSelectedParticipant()?.participant_name || 'Anonymous'} 
-              achievementName={`${testDetails?.title || 'Test'} Assessment`}
-              date={formatDate(getSelectedParticipant()!.completed_at)}
-              score={Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}
-              position={getParticipantPosition(selectedAttemptId)}
-            />
+            <div className="mb-10">
+              <div className="flex justify-center mb-10">
+                <div className="relative w-60 h-60">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle
+                      className="text-gray-200 dark:text-gray-700"
+                      strokeWidth="10"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="40"
+                      cx="50"
+                      cy="50"
+                    />
+                    {getSelectedParticipant() && (
+                      <circle
+                        className={`${
+                          (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                            ? 'text-green-500' 
+                            : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                              ? 'text-yellow-500'
+                              : 'text-red-500'
+                        }`}
+                        strokeWidth="10"
+                        strokeDasharray={251.2}
+                        strokeDashoffset={251.2 * (1 - (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions))}
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
+                      />
+                    )}
+                  </svg>
+                  {getSelectedParticipant() && (
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                      <div className="text-5xl font-bold">
+                        {Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}%
+                      </div>
+                      <div className="text-lg font-medium mt-2">
+                        {getSelectedParticipant()!.score}/{getSelectedParticipant()!.total_questions} points
+                      </div>
+                      <div className="mt-2 text-sm">
+                        {(getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                          ? 'Excellent' 
+                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                            ? 'Good'
+                            : 'Needs Improvement'
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-900/30 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+                <h3 className="text-xl font-medium mb-4">Performance Summary</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Result Classification</h4>
+                    {getSelectedParticipant() && (
+                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-white ${
+                        (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                          ? 'bg-green-500' 
+                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                      }`}>
+                        {(getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.7 
+                          ? 'Passed with Distinction' 
+                          : (getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) >= 0.5
+                            ? 'Passed'
+                            : 'Needs Improvement'
+                        }
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                      <p className="text-sm text-muted-foreground mb-1">Questions</p>
+                      <p className="text-xl font-medium">{testDetails.question_count}</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                      <p className="text-sm text-muted-foreground mb-1">Time Limit</p>
+                      <p className="text-xl font-medium">{testDetails.time_limit || 'No'} min</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
+          
+          <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center">
+                  <VenoLogo className="h-5 w-5 mr-2" />
+                  <p className="text-sm font-medium">Veno Assessment System</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">This is an official certificate of completion</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm">Verification Code:</p>
+                <p className="font-mono text-xs">{selectedAttemptId?.substring(0, 8).toUpperCase() || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

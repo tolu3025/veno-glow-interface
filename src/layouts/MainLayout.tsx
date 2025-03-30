@@ -179,17 +179,11 @@ const MainLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link to="/terms-of-service" className="text-xs underline-offset-4 hover:underline">
+            <Link to="/" className="text-xs underline-offset-4 hover:underline">
               Terms of Service
             </Link>
-            <Link to="/privacy-policy" className="text-xs underline-offset-4 hover:underline">
+            <Link to="/" className="text-xs underline-offset-4 hover:underline">
               Privacy
-            </Link>
-            <Link to="/ads-policy" className="text-xs underline-offset-4 hover:underline">
-              Ads Policy
-            </Link>
-            <Link to="/contact" className="text-xs underline-offset-4 hover:underline">
-              Contact Us
             </Link>
           </div>
         </div>

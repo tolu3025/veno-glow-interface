@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
 import ServiceCard from "@/components/ServiceCard";
@@ -13,39 +14,19 @@ const Index = () => {
   
   const bannerSlides = [
     {
+      title: "Education Reimagined",
+      subtitle: "Your comprehensive educational platform with interactive learning, assessments, and personalized study tools designed for the modern learner.",
+      background: "bg-gradient-to-r from-veno-primary to-veno-secondary"
+    },
+    {
       title: "Learn Anywhere, Anytime",
       subtitle: "Access your courses on any device with our responsive platform that adapts to your schedule and learning style.",
-      background: "bg-gradient-to-r from-veno-secondary to-purple-600",
-      primaryButton: { text: "Start Learning", link: "/cbt" },
-      secondaryButton: { text: "View Courses", link: "/cbt" }
+      background: "bg-gradient-to-r from-veno-secondary to-purple-600"
     },
     {
       title: "Interactive Assessment Tools",
       subtitle: "Test your knowledge and track your progress with our comprehensive suite of CBT tools and analytics.",
-      background: "bg-gradient-to-r from-purple-600 to-veno-primary",
-      primaryButton: { text: "Take a Test", link: "/cbt" },
-      secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
-    },
-    {
-      title: "Digital Marketplace",
-      subtitle: "Discover and purchase high-quality educational resources created by experts in their fields.",
-      background: "bg-gradient-to-r from-veno-primary to-blue-600",
-      primaryButton: { text: "Shop Now", link: "/marketplace" },
-      secondaryButton: { text: "Browse Categories", link: "/marketplace" }
-    },
-    {
-      title: "Insightful Blog Content",
-      subtitle: "Stay updated with the latest educational trends and insights through our regularly updated blog.",
-      background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-      primaryButton: { text: "Read Articles", link: "/blog" },
-      secondaryButton: { text: "Latest Posts", link: "/blog" }
-    },
-    {
-      title: "AI-Powered Learning",
-      subtitle: "Leverage our intelligent AI assistant to enhance your learning experience with personalized guidance.",
-      background: "bg-gradient-to-r from-veno-secondary to-veno-primary",
-      primaryButton: { text: "Chat with AI", link: "/bot" },
-      secondaryButton: { text: "Learn More", link: "/bot" }
+      background: "bg-gradient-to-r from-purple-600 to-veno-primary"
     }
   ];
   
@@ -99,6 +80,7 @@ const Index = () => {
     },
   ];
 
+  // Animation variants for container and items
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -128,6 +110,7 @@ const Index = () => {
 
   return (
     <div className="pb-6 relative overflow-hidden">
+      {/* 3D Transparent Water Bubbles Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
           className="bubble w-48 h-48 rounded-full absolute -top-12 left-1/4 opacity-60"
@@ -217,6 +200,7 @@ const Index = () => {
         />
       </div>
 
+      {/* Hero Banner Carousel */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -227,6 +211,7 @@ const Index = () => {
             {bannerSlides.map((slide, index) => (
               <CarouselItem key={index}>
                 <div className={`${slide.background} h-[400px] md:h-[500px] flex items-center`}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10"></div>
                   <div className="container relative z-20">
                     <div className="max-w-xl text-white">
                       <motion.div 
@@ -247,18 +232,18 @@ const Index = () => {
                         <div className="flex flex-wrap gap-4">
                           <Button 
                             size="lg" 
-                            onClick={() => navigate(slide.primaryButton.link)}
+                            onClick={handleGetStarted}
                             className="bg-white text-veno-primary hover:bg-white/90"
                           >
-                            {slide.primaryButton.text}
+                            {user ? "Go to Dashboard" : "Get Started"}
                           </Button>
                           <Button 
                             size="lg"
                             variant="outline"
-                            onClick={() => navigate(slide.secondaryButton.link)}
+                            onClick={() => navigate("/marketplace")}
                             className="bg-transparent border-white text-white hover:bg-white/20"
                           >
-                            {slide.secondaryButton.text}
+                            Explore Marketplace
                           </Button>
                         </div>
                       </motion.div>
@@ -271,6 +256,7 @@ const Index = () => {
         </Carousel>
       </motion.div>
       
+      {/* Features Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -304,6 +290,7 @@ const Index = () => {
         </div>
       </motion.div>
 
+      {/* Services Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -319,7 +306,7 @@ const Index = () => {
           <Button 
             variant="outline" 
             className="mt-4 md:mt-0"
-            onClick={() => navigate("/services")}
+            onClick={() => navigate("/cbt")}
           >
             View All <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
@@ -346,6 +333,7 @@ const Index = () => {
         </motion.div>
       </motion.div>
 
+      {/* Testimonial Section with updated image and name */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -375,6 +363,7 @@ const Index = () => {
         </div>
       </motion.div>
 
+      {/* CTA Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

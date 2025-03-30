@@ -7,7 +7,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
-import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Award, Settings, User, LayoutDashboard } from "lucide-react";
+import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Award, Settings, User } from "lucide-react";
 import { toast } from "sonner";
 
 interface MobileMenuProps {
@@ -24,12 +24,6 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
   const appLinks = [
     {
       name: 'Dashboard',
-      path: '/dashboard',
-      icon: LayoutDashboard,
-      requiresAuth: true
-    },
-    {
-      name: 'CBT',
       path: '/cbt',
       icon: Home
     },
@@ -58,7 +52,8 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
     {
       name: 'Profile',
       path: '/profile',
-      icon: User
+      icon: User,
+      requiresAuth: true
     }
   ];
 
@@ -148,14 +143,24 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
                 <div className="px-4 text-sm text-muted-foreground">
                   {user.email}
                 </div>
-                <Button
-                  variant="ghost"
-                  className="justify-start w-full"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Sign Out
-                </Button>
+                <div className="flex flex-col space-y-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => navigate('/profile')}
+                  >
+                    <UserCircle className="h-5 w-5 mr-2" />
+                    Profile
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-5 w-5 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             ) : (
               <Button 

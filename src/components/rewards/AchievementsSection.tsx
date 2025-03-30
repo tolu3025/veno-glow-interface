@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Award, Star, Clock, BookOpen, CheckSquare, WifiOff, RefreshCw } from "lucide-react";
+import { Trophy, Award, Star, Clock, BookOpen, CheckSquare } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 
 interface Achievement {
   id: string;
@@ -29,27 +29,12 @@ type Activity = {
   task_name?: string;
   points_earned?: number;
   timestamp?: string;
-  blog_id?: string;
 };
 
 const AchievementsSection: React.FC<AchievementsSectionProps> = ({ userPoints }) => {
   const { user } = useAuth();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -59,57 +44,35 @@ const AchievementsSection: React.FC<AchievementsSectionProps> = ({ userPoints })
       }
 
       try {
-        if (isOffline) {
-          setLoading(false);
-          return;
-        }
-
+        // Fetch test attempts
         const { data: testAttempts, error: testError } = await supabase
           .from('test_attempts')
           .select('*')
           .eq('user_id', user.id);
         
-        if (testError) {
-          console.error("Error fetching test attempts:", testError);
-          throw testError;
-        }
+        if (testError) throw testError;
         
+        // Fetch user profile
         const { data: userProfile, error: profileError } = await supabase
           .from('user_profiles')
           .select('activities')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .single();
           
-        if (profileError) {
-          console.error("Error fetching user profile:", profileError);
-          throw profileError;
-        }
+        if (profileError) throw profileError;
         
+        // Properly type and handle the activities array
         const activities: Activity[] = Array.isArray(userProfile?.activities) 
           ? userProfile.activities as Activity[] 
           : [];
-        
-        let blogReadsCount = 0;
-        const blogReadActivities = activities.filter(activity => activity.type === 'blog_read');
-        
-        if (blogReadActivities.length > 0) {
-          if (blogReadActivities[0].blog_id) {
-            const uniqueBlogIds = new Set(
-              blogReadActivities
-                .map(activity => activity.blog_id)
-                .filter(id => id !== undefined)
-            );
-            blogReadsCount = uniqueBlogIds.size;
-          } else {
-            blogReadsCount = blogReadActivities.length;
-          }
-        }
-        
+          
+        const blogReads = activities.filter(activity => activity.type === 'blog_read').length;
         const tasksCompleted = activities.filter(activity => activity.type === 'task_completed').length;
         const perfectScoreTest = testAttempts?.some(test => 
           test.score === test.total_questions && test.total_questions > 0
         ) || false;
         
+        // Calculate achievement data
         const achievementData: Achievement[] = [
           {
             id: 'points_collector',
@@ -138,11 +101,11 @@ const AchievementsSection: React.FC<AchievementsSectionProps> = ({ userPoints })
             title: 'Bookworm',
             description: 'Read 5 blog articles',
             icon: BookOpen,
-            progress: Math.min(blogReadsCount / 5, 1),
-            unlocked: blogReadsCount >= 5,
+            progress: Math.min(blogReads / 5, 1),
+            unlocked: blogReads >= 5,
             color: 'bg-blue-500',
             requiredValue: 5,
-            currentValue: blogReadsCount
+            currentValue: blogReads
           },
           {
             id: 'perfect_score',
@@ -177,29 +140,7 @@ const AchievementsSection: React.FC<AchievementsSectionProps> = ({ userPoints })
     };
 
     fetchUserData();
-  }, [user, userPoints, isOffline]);
-
-  if (isOffline) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6 text-center">
-          <div className="flex flex-col items-center">
-            <WifiOff className="h-12 w-12 text-amber-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">You're currently offline</h3>
-            <p className="text-muted-foreground mb-4">
-              Please check your internet connection to view your achievements
-            </p>
-            <Button 
-              onClick={() => window.location.reload()}
-              className="bg-veno-primary hover:bg-veno-primary/90 flex items-center gap-2"
-            >
-              <RefreshCw size={16} /> Reload page
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  }, [user, userPoints]);
 
   if (loading) {
     return (

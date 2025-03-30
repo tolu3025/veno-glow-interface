@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, User, BarChart2, Share2, Edit, WifiOff } from 'lucide-react';
+import { Clock, User, BarChart2, Share2, Edit } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from '@/hooks/use-toast';
@@ -32,34 +32,6 @@ type TestAttempt = {
   completed_at: string;
 };
 
-// Mock data for when network is unavailable
-const MOCK_TESTS: Test[] = [
-  {
-    id: '1',
-    title: 'Mathematics Quiz',
-    description: 'Test your math skills with this quiz',
-    difficulty: 'intermediate',
-    time_limit: 15,
-    question_count: 20,
-    created_at: new Date().toISOString(),
-    share_code: 'abc123',
-    results_visibility: 'creator_only',
-    allow_retakes: false
-  },
-  {
-    id: '2',
-    title: 'Science Test',
-    description: 'Comprehensive science evaluation',
-    difficulty: 'advanced',
-    time_limit: 30,
-    question_count: 30,
-    created_at: new Date().toISOString(),
-    share_code: 'def456',
-    results_visibility: 'creator_only',
-    allow_retakes: true
-  }
-];
-
 interface MyTestsSectionProps {
   onShare: (testId: string) => void;
 }
@@ -72,21 +44,6 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
   const [selectedTest, setSelectedTest] = useState<string | null>(null);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-
-  // Monitor online status
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -97,56 +54,29 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
 
       setLoading(true);
       try {
-        // If offline, use mock data
-        if (isOffline) {
-          console.log('Offline mode: Using mock tests data');
-          setTests(MOCK_TESTS);
-          setLoading(false);
-          return;
-        }
-
         const { data, error } = await supabase
           .from('user_tests')
           .select('*')
           .eq('creator_id', user.id)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching tests:', error);
-          // Fall back to mock data on error
-          setTests(MOCK_TESTS);
-        } else {
-          console.log('Fetched tests:', data);
-          setTests(data || []);
-        }
+        if (error) throw error;
+        setTests(data || []);
       } catch (error) {
         console.error('Error fetching tests:', error);
-        setTests(MOCK_TESTS);
       } finally {
         setLoading(false);
       }
     };
 
     fetchTests();
-  }, [user, isOffline]);
+  }, [user]);
 
   const fetchTestAttempts = async (testId: string) => {
     setAttemptsLoading(true);
     setSelectedTest(testId);
     
     try {
-      // If offline, use empty data
-      if (isOffline) {
-        setTestAttempts([]);
-        setAttemptsLoading(false);
-        toast({
-          title: "Network issue",
-          description: "Can't load test attempts while offline",
-          variant: "warning",
-        });
-        return;
-      }
-
       const { data, error } = await supabase
         .from('test_attempts')
         .select('*')
@@ -212,62 +142,6 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
             You need to be signed in to create and manage your tests
           </p>
           <Button onClick={() => navigate("/auth")}>Sign In</Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isOffline) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>My Tests</CardTitle>
-          </div>
-          <CardDescription>
-            <div className="flex items-center">
-              <WifiOff size={16} className="mr-2 text-yellow-600" />
-              <span>Limited functionality while offline</span>
-            </div>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {tests.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">No tests available offline</p>
-              <Button onClick={() => navigate("/cbt/create")} disabled={isOffline}>
-                Create Test When Online
-              </Button>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {tests.map((test) => (
-                <div key={test.id} className="bg-secondary/30 p-4 rounded-lg">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-medium">{test.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {test.description || 'No description'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
-                    <span className="bg-primary/10 px-2 py-1 rounded">
-                      {test.question_count} Questions
-                    </span>
-                    <span className="bg-primary/10 px-2 py-1 rounded flex items-center">
-                      <Clock className="mr-1 h-3 w-3" /> 
-                      {test.time_limit || 'No'} min
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-xs text-yellow-600">Full functionality available when online</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     );
