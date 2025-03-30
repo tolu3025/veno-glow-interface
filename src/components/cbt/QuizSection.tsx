@@ -1,22 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { BookOpen, Clock, Loader2, RefreshCw, AlertTriangle, WifiOff } from 'lucide-react';
+import { BookOpen, Clock, Loader2 } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSubjects } from '@/hooks/useSubjects';
 import { testSupabaseConnection } from '@/integrations/supabase/client';
+
+// Import our new components
+import ConnectionStatus from './quiz/ConnectionStatus';
+import SubjectSelector from './quiz/SubjectSelector';
+import DifficultySelector from './quiz/DifficultySelector';
+import SliderControl from './quiz/SliderControl';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -84,9 +81,9 @@ const QuizSection = () => {
     setConnectionStatus('unknown');
     
     try {
-      const connected = await testSupabaseConnection();
+      const result = await testSupabaseConnection();
       
-      if (connected) {
+      if (result.success) {
         await refetch();
         setConnectionStatus('connected');
         toast({
@@ -145,130 +142,47 @@ const QuizSection = () => {
         <CardDescription>Configure your quiz settings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {connectionStatus === 'disconnected' && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 mb-4">
-            <div className="flex items-center">
-              <WifiOff className="h-5 w-5 text-yellow-500 mr-2" />
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                {navigator.onLine ? 
-                  "Connected to internet but can't reach our servers. Using offline data." :
-                  "No internet connection. Using offline data."}
-              </p>
-            </div>
-            <div className="flex justify-end mt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRetry} 
-                disabled={isRetrying}
-                className="border-yellow-300 dark:border-yellow-700"
-              >
-                {isRetrying ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin mr-1" /> Connecting...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-3 w-3 mr-1" /> Try Again
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
+        <ConnectionStatus 
+          connectionStatus={connectionStatus}
+          isRetrying={isRetrying}
+          onRetry={handleRetry}
+        />
 
-        <div className="space-y-3">
-          <Label htmlFor="subject">Pick Subject</Label>
-          
-          <Select value={subject} onValueChange={setSubject}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoading || isRetrying ? (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-veno-primary mr-2" />
-                  <span>Loading subjects...</span>
-                </div>
-              ) : subjects && subjects.length > 0 ? (
-                subjects.map((subj) => (
-                  <SelectItem key={subj.name} value={subj.name}>
-                    {subj.name} ({subj.question_count} questions)
-                  </SelectItem>
-                ))
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  No subjects available
-                </div>
-              )}
-            </SelectContent>
-          </Select>
-          
-          {subjects && subjects.length > 0 && connectionStatus !== 'connected' && (
-            <p className="text-xs text-muted-foreground">
-              {connectionStatus === 'disconnected' ? 
-                'Showing cached subjects. Some may be unavailable offline.' : 
-                'Showing available subjects.'}
-            </p>
-          )}
-        </div>
+        <SubjectSelector
+          subjects={subjects}
+          subject={subject}
+          onSubjectChange={setSubject}
+          isLoading={isLoading}
+          isRetrying={isRetrying}
+          connectionStatus={connectionStatus}
+        />
 
-        <div className="space-y-3">
-          <Label>Difficulty Level</Label>
-          <RadioGroup
-            value={difficulty}
-            onValueChange={setDifficulty}
-            className="grid grid-cols-2 gap-4"
-          >
-            {difficultyOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <RadioGroupItem value={option.value} id={option.value} />
-                <Label htmlFor={option.value} className="cursor-pointer">{option.label}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
+        <DifficultySelector 
+          difficulty={difficulty}
+          onDifficultyChange={setDifficulty}
+          options={difficultyOptions}
+        />
 
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-veno-primary" />
-            <Label>Time Limit: {timeLimit} minutes</Label>
-          </div>
-          <div className="space-y-4">
-            <Slider
-              value={[timeLimit]}
-              max={40}
-              min={5}
-              step={5}
-              onValueChange={(value) => setTimeLimit(value[0])}
-              className="w-full"
-            />
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">5 min</span>
-              <span className="text-sm font-medium">{timeLimit} minutes</span>
-              <span className="text-sm text-muted-foreground">40 min</span>
-            </div>
-          </div>
-        </div>
+        <SliderControl
+          label="Time Limit"
+          value={timeLimit}
+          onValueChange={setTimeLimit}
+          min={5}
+          max={40}
+          step={5}
+          unit="minutes"
+          icon={<Clock className="h-5 w-5 text-veno-primary" />}
+        />
 
-        <div className="space-y-3">
-          <Label>Number of Questions: {questionsCount}</Label>
-          <div className="space-y-4">
-            <Slider
-              value={[questionsCount]}
-              max={40}
-              min={5}
-              step={5}
-              onValueChange={(value) => setQuestionsCount(value[0])}
-              className="w-full"
-            />
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">5</span>
-              <span className="text-sm font-medium">{questionsCount} questions</span>
-              <span className="text-sm text-muted-foreground">40</span>
-            </div>
-          </div>
-        </div>
+        <SliderControl
+          label="Number of Questions"
+          value={questionsCount}
+          onValueChange={setQuestionsCount}
+          min={5}
+          max={40}
+          step={5}
+          unit="questions"
+        />
       </CardContent>
       <CardFooter>
         <Button 
