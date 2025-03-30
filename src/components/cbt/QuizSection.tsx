@@ -16,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Input } from '@/components/ui/input';
+import { useSubjects } from '@/hooks/useSubjects';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -27,6 +27,7 @@ const difficultyOptions = [
 
 const QuizSection = () => {
   const navigate = useNavigate();
+  const { data: subjects, isLoading, isError, error, refetch } = useSubjects();
   
   const [subject, setSubject] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('all');
@@ -36,8 +37,8 @@ const QuizSection = () => {
   const handleStartQuiz = () => {
     if (!subject) {
       toast({
-        title: "No subject entered",
-        description: "Please enter a subject before starting the quiz",
+        title: "No subject selected",
+        description: "Please select a subject before starting the quiz",
         variant: "warning",
       });
       return;
@@ -65,16 +66,46 @@ const QuizSection = () => {
         <CardDescription>Configure your quiz settings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Subject Input */}
+        {/* Subject Selector */}
         <div className="space-y-3">
-          <Label htmlFor="subject">Enter Subject</Label>
-          <Input
-            id="subject"
-            placeholder="e.g. Mathematics, Science, History"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="w-full"
-          />
+          <Label htmlFor="subject">Pick Subject</Label>
+          
+          {isLoading ? (
+            <Select disabled>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Loading subjects..." />
+              </SelectTrigger>
+            </Select>
+          ) : isError ? (
+            <div className="space-y-2">
+              <Select disabled>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Failed to load subjects" />
+                </SelectTrigger>
+              </Select>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetch()}
+                className="w-full"
+              >
+                Retry loading subjects
+              </Button>
+            </div>
+          ) : (
+            <Select value={subject} onValueChange={setSubject}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a subject" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects && subjects.map((subj) => (
+                  <SelectItem key={subj.name} value={subj.name}>
+                    {subj.name} ({subj.question_count} questions)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Difficulty Level */}
