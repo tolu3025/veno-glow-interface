@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -96,13 +97,6 @@ const ManageTest = () => {
     content: () => printRef.current,
     documentTitle: `${testDetails?.title || 'Test'} - Individual Result`,
     removeAfterPrint: true,
-    pageStyle: `
-      @media print {
-        @page { margin: 0; }
-        body { margin: 1cm; }
-        header, footer, nav, button, .no-print { display: none !important; }
-      }
-    `,
   });
 
   useEffect(() => {
@@ -114,6 +108,7 @@ const ManageTest = () => {
 
       setLoading(true);
       try {
+        // Fetch test details
         const { data: testData, error: testError } = await supabase
           .from('user_tests')
           .select('*')
@@ -124,6 +119,7 @@ const ManageTest = () => {
           throw new Error('Test not found');
         }
 
+        // Verify ownership
         if (testData.creator_id !== user.id) {
           navigate('/cbt');
           toast({
@@ -136,6 +132,7 @@ const ManageTest = () => {
 
         setTestDetails(testData);
 
+        // Fetch test attempts
         const { data: attemptsData, error: attemptsError } = await supabase
           .from('test_attempts')
           .select('*')
@@ -166,6 +163,8 @@ const ManageTest = () => {
     if (!testDetails) return;
 
     try {
+      // In a real implementation, you would update a status field
+      // For now, we'll just toggle our local state
       setTestActive(!testActive);
       
       toast({
@@ -188,6 +187,8 @@ const ManageTest = () => {
     setDisqualifying(attemptId);
     
     try {
+      // In a real implementation, you would update a disqualified field
+      // For this demo, we'll just update our local state
       setTestAttempts(prevAttempts => 
         prevAttempts.map(attempt => 
           attempt.id === attemptId 
@@ -214,6 +215,8 @@ const ManageTest = () => {
 
   const reinstateParticipant = async (attemptId: string) => {
     try {
+      // In a real implementation, you would update a disqualified field
+      // For this demo, we'll just update our local state
       setTestAttempts(prevAttempts => 
         prevAttempts.map(attempt => 
           attempt.id === attemptId 
@@ -271,10 +274,12 @@ const ManageTest = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
+  // Get the selected participant's data
   const getSelectedParticipant = () => {
     return testAttempts.find(attempt => attempt.id === selectedAttemptId);
   };
 
+  // Set up the participant for printing and trigger print
   const printParticipantResult = (attemptId: string) => {
     setSelectedAttemptId(attemptId);
     setTimeout(() => {
@@ -489,10 +494,12 @@ const ManageTest = () => {
         </Card>
       )}
       
+      {/* Individual Printable Results Section (hidden until print) */}
       <div className="hidden">
-        <div ref={printRef} className="p-8 print:p-0">
-          <div className="relative bg-gradient-to-br from-veno-primary/20 via-background/90 to-veno-primary/5 p-8 rounded-lg mb-8 overflow-hidden print:bg-white">
-            <div className="absolute inset-0 opacity-10 print:opacity-0">
+        <div ref={printRef} className="p-8">
+          <div className="relative bg-gradient-to-br from-veno-primary/20 via-background/90 to-veno-primary/5 p-8 rounded-lg mb-8 overflow-hidden">
+            {/* Abstract background pattern */}
+            <div className="absolute inset-0 opacity-10">
               <div className="absolute left-0 top-0 w-40 h-40 rounded-full bg-veno-primary/30 blur-3xl"></div>
               <div className="absolute right-20 bottom-10 w-60 h-60 rounded-full bg-blue-500/20 blur-3xl"></div>
               <div className="absolute right-40 top-20 w-20 h-20 rounded-full bg-purple-500/20 blur-xl"></div>
@@ -502,26 +509,26 @@ const ManageTest = () => {
               <div className="flex items-center">
                 <VenoLogo className="h-16 w-16 mr-4" />
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-veno-primary to-blue-500 bg-clip-text text-transparent print:text-veno-primary">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-veno-primary to-blue-500 bg-clip-text text-transparent">
                     Veno Assessment
                   </h1>
                   <p className="text-sm text-muted-foreground italic">Excellence in Education</p>
                 </div>
               </div>
-              <div className="text-right bg-black/5 dark:bg-white/5 p-3 rounded-lg border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
+              <div className="text-right bg-black/5 dark:bg-white/5 p-3 rounded-lg border border-black/10 dark:border-white/10">
                 <p className="text-sm font-semibold">Certificate Generated</p>
                 <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
               </div>
             </div>
             
             <div className="relative mb-8 z-10">
-              <div className="inline-block bg-white/30 dark:bg-white/5 px-4 py-2 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
-                <h2 className="text-3xl font-bold mb-2">{testDetails?.title}</h2>
-                <p className="text-muted-foreground">{testDetails?.description || 'No description provided'}</p>
+              <div className="inline-block bg-white/30 dark:bg-white/5 px-4 py-2 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10">
+                <h2 className="text-3xl font-bold mb-2">{testDetails.title}</h2>
+                <p className="text-muted-foreground">{testDetails.description || 'No description provided'}</p>
               </div>
               
               {selectedAttemptId && (
-                <div className="mt-6 p-4 bg-white/20 dark:bg-black/20 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10 print:bg-transparent print:border-none">
+                <div className="mt-6 p-4 bg-white/20 dark:bg-black/20 rounded-lg backdrop-blur-sm border border-black/10 dark:border-white/10">
                   <h3 className="text-xl font-medium mb-2">Participant Information</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -538,7 +545,7 @@ const ManageTest = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Test Difficulty</p>
-                      <p className="font-medium capitalize">{testDetails?.difficulty}</p>
+                      <p className="font-medium capitalize">{testDetails.difficulty}</p>
                     </div>
                   </div>
                 </div>

@@ -42,7 +42,11 @@ const Certificate: React.FC<CertificateProps> = ({ userName, achievementName, da
                 <p className="text-xs text-muted-foreground">Certificate ID: VEN-{Date.now().toString().slice(-8)}</p>
               </div>
               <div>
-                <p className="font-handwriting text-2xl text-veno-primary">Veno Signature</p>
+                <img 
+                  src="/veno-logo.png" 
+                  alt="Digital Signature" 
+                  className="h-12 w-auto" 
+                />
               </div>
             </div>
           </div>

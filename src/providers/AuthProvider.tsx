@@ -2,7 +2,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
-import { toast } from "sonner";
 
 type AuthContextType = {
   user: User | null;
@@ -18,10 +17,6 @@ type AuthContextType = {
   }>;
   signOut: () => Promise<void>;
   updateUserMetadata: (metadata: Record<string, any>) => Promise<void>;
-  resetPassword: (email: string) => Promise<{
-    error: Error | null;
-    data: any | null;
-  }>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -32,7 +27,6 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => ({ error: null, data: null }),
   signOut: async () => {},
   updateUserMetadata: async () => {},
-  resetPassword: async () => ({ error: null, data: null }),
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -60,17 +54,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (currentSession && event === "SIGNED_IN") {
         setSession(currentSession);
         setUser(currentSession.user);
-        toast.success("Signed in successfully!");
       }
       
       if (event === "SIGNED_OUT") {
         setSession(null);
         setUser(null);
-        toast.info("Signed out successfully!");
-      }
-      
-      if (event === "PASSWORD_RECOVERY") {
-        toast.info("Check your email for password reset instructions");
       }
       
       if (event === "USER_UPDATED") {
@@ -114,14 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
-  const resetPassword = async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?reset=true`,
-    });
-    
-    return { data, error };
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -132,7 +112,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signUp,
         signOut,
         updateUserMetadata,
-        resetPassword,
       }}
     >
       {children}

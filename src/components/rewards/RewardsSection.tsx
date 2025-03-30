@@ -1,22 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, Award, Star, Share2 } from "lucide-react";
+import { Gift, Award, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/providers/AuthProvider";
 import { appendToUserActivities } from '@/utils/activityHelpers';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 
 interface RewardItemProps {
   id: string;
@@ -71,78 +61,39 @@ interface RewardsSectionProps {
 const RewardsSection: React.FC<RewardsSectionProps> = ({ userPoints, setUserPoints }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [showReferralDialog, setShowReferralDialog] = useState(false);
-  const [referralLink, setReferralLink] = useState('');
-  const [rewards, setRewards] = useState<Array<{
-    id: string;
-    name: string;
-    description: string;
-    points: number;
-    available: boolean;
-  }>>([]);
   
-  useEffect(() => {
-    // In a real app, these would come from Supabase
-    setRewards([
-      {
-        id: "1",
-        name: "Premium Study Materials",
-        description: "Access premium study materials for one month",
-        points: 500,
-        available: true
-      },
-      {
-        id: "2",
-        name: "Test Certificate",
-        description: "Get a certificate of completion for your tests",
-        points: 1000,
-        available: true
-      },
-      {
-        id: "3",
-        name: "Mock Exam Access",
-        description: "Access to exclusive mock exams for your subjects",
-        points: 1500,
-        available: false
-      },
-      {
-        id: "4",
-        name: "One-on-One Tutoring",
-        description: "30-minute session with a subject expert",
-        points: 2500,
-        available: false
-      }
-    ]);
-  }, []);
-
-  const handleReferralLink = () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You need to sign in to generate a referral link",
-        variant: "destructive",
-      });
-      return;
+  const mockRewards = [
+    {
+      id: "1",
+      name: "Premium Study Materials",
+      description: "Access premium study materials for one month",
+      points: 500,
+      available: true
+    },
+    {
+      id: "2",
+      name: "Test Certificate",
+      description: "Get a certificate of completion for your tests",
+      points: 1000,
+      available: true
+    },
+    {
+      id: "3",
+      name: "Mock Exam Access",
+      description: "Access to exclusive mock exams for your subjects",
+      points: 1500,
+      available: false
+    },
+    {
+      id: "4",
+      name: "One-on-One Tutoring",
+      description: "30-minute session with a subject expert",
+      points: 2500,
+      available: false
     }
-
-    // Generate a unique referral code
-    const referralCode = `${user.id.slice(0, 8)}`;
-    const baseUrl = window.location.origin;
-    const generatedLink = `${baseUrl}/signup?ref=${referralCode}`;
-    
-    setReferralLink(generatedLink);
-    setShowReferralDialog(true);
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast({
-      title: "Copied to clipboard!",
-      description: "Your referral link has been copied to the clipboard",
-    });
-  };
+  ];
   
-  const handleRedeemReward = async (rewardId: string, pointsCost: number) => {
+  const handleRedeemReward = (rewardId: string, pointsCost: number) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -161,42 +112,28 @@ const RewardsSection: React.FC<RewardsSectionProps> = ({ userPoints, setUserPoin
       return;
     }
     
-    try {
-      // Deduct points
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ points: userPoints - pointsCost })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      setUserPoints(prev => prev - pointsCost);
-      
-      // Find the reward details
-      const reward = rewards.find(r => r.id === rewardId);
-      
-      if (reward) {
-        // Log activity
-        await appendToUserActivities(user.id, {
+    // Deduct points
+    setUserPoints(prev => prev - pointsCost);
+    
+    // Find the reward details
+    const reward = mockRewards.find(r => r.id === rewardId);
+    
+    if (reward) {
+      // Log activity
+      if (user) {
+        appendToUserActivities(user.id, {
           type: "reward_redeemed",
           reward_id: rewardId,
           reward_name: reward.name,
           points_spent: pointsCost,
           timestamp: new Date().toISOString()
         });
-        
-        toast({
-          title: "Reward Redeemed!",
-          description: `You've redeemed: ${reward.name}`,
-          variant: "default",
-        });
       }
-    } catch (error) {
-      console.error("Error redeeming reward:", error);
+      
       toast({
-        title: "Error",
-        description: "Failed to redeem reward. Please try again later.",
-        variant: "destructive",
+        title: "Reward Redeemed!",
+        description: `You've redeemed: ${reward.name}`,
+        variant: "default",
       });
     }
   };
@@ -218,7 +155,7 @@ const RewardsSection: React.FC<RewardsSectionProps> = ({ userPoints, setUserPoin
       </p>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        {rewards.map((reward) => (
+        {mockRewards.map((reward) => (
           <RewardItem
             key={reward.id}
             {...reward}
@@ -227,50 +164,6 @@ const RewardsSection: React.FC<RewardsSectionProps> = ({ userPoints, setUserPoin
           />
         ))}
       </div>
-
-      <Card className="border-dashed border-2 border-veno-primary/30">
-        <CardContent className="p-6 text-center">
-          <h3 className="font-semibold mb-2 flex items-center justify-center">
-            <Share2 className="mr-2 h-5 w-5 text-veno-primary" /> 
-            Refer a Friend
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Share Veno with your friends and earn 100 points for each successful referral
-          </p>
-          <Button 
-            onClick={handleReferralLink}
-            className="bg-veno-primary hover:bg-veno-primary/90"
-          >
-            Get Referral Link
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Dialog open={showReferralDialog} onOpenChange={setShowReferralDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Your Referral Link</DialogTitle>
-            <DialogDescription>
-              Share this link with your friends. When they sign up, you'll earn 100 points!
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center space-x-2 mt-2">
-            <Input 
-              value={referralLink} 
-              readOnly 
-              className="flex-1"
-            />
-            <Button onClick={copyToClipboard}>
-              Copy
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowReferralDialog(false)} variant="outline">
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
