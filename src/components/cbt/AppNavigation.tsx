@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, PlusCircle, BarChart, BookOpen, WifiOff } from "lucide-react";
+import { Home, PlusCircle, BarChart, WifiOff, BookOpen } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -48,8 +48,8 @@ const AppNavigation = () => {
       authRequired: true
     },
     {
-      name: "Library",
-      path: "/cbt/library",
+      name: "Quiz",
+      path: "/cbt?tab=quiz",
       icon: <BookOpen size={18} />,
       authRequired: false,
       highlight: true
@@ -67,7 +67,7 @@ const AppNavigation = () => {
       return;
     }
     
-    if (isOffline && path !== '/cbt/library') {
+    if (isOffline && path !== '/cbt?tab=quiz') {
       toast({
         title: "Limited Functionality",
         description: "Some features may not work while offline",

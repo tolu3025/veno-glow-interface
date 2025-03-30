@@ -3,13 +3,29 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Loader2, AlertCircle, WifiOff, RefreshCw, DatabaseIcon } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Loader2, AlertCircle, RefreshCw, BookOpen, Clock } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAuth } from '@/providers/AuthProvider';
 import { VenoLogo } from '@/components/ui/logo';
-import QuizSettings, { QuizSettings as QuizSettingsType } from './QuizSettings';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
+const difficultyOptions = [
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+  { value: 'all', label: 'All Levels' }
+];
 
 const QuizSection = () => {
   const navigate = useNavigate();
@@ -23,8 +39,12 @@ const QuizSection = () => {
     isRefetching,
     failureCount 
   } = useSubjects();
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [difficulty, setDifficulty] = useState<string>('all');
+  const [timeLimit, setTimeLimit] = useState<number>(15);
+  const [questionsCount, setQuestionsCount] = useState<number>(10);
 
   // Monitor online status
   useEffect(() => {
@@ -50,7 +70,16 @@ const QuizSection = () => {
     }
   }, [subjects]);
 
-  const handleStartQuiz = (subject: string) => {
+  const handleStartQuiz = () => {
+    if (!selectedSubject) {
+      toast({
+        title: "No subject selected",
+        description: "Please select a subject before starting the quiz",
+        variant: "warning",
+      });
+      return;
+    }
+
     if (isOffline) {
       toast({
         title: "Network issue",
@@ -58,14 +87,15 @@ const QuizSection = () => {
         variant: "warning",
       });
     }
-    setSelectedSubject(subject);
-  };
 
-  const handleSettingsConfirm = (settings: QuizSettingsType) => {
     navigate(`/cbt/take/subject`, { 
       state: { 
         subject: selectedSubject,
-        settings
+        settings: {
+          difficulty,
+          timeLimit,
+          questionsCount
+        }
       }
     });
   };
@@ -104,9 +134,9 @@ const QuizSection = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <VenoLogo className="h-6 w-6" />
-            <CardTitle>Quiz Library</CardTitle>
+            <CardTitle>Quiz Setup</CardTitle>
           </div>
-          <CardDescription>Explore subject quizzes</CardDescription>
+          <CardDescription>Configure your quiz preferences</CardDescription>
         </CardHeader>
         <CardContent className="py-6">
           <Alert variant="destructive" className="mb-6">
@@ -145,111 +175,104 @@ const QuizSection = () => {
     );
   }
 
-  if (selectedSubject) {
-    return (
-      <QuizSettings 
-        subject={selectedSubject}
-        onStartQuiz={handleSettingsConfirm}
-        onBack={() => setSelectedSubject(null)}
-      />
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />
-          <CardTitle>Quiz Library</CardTitle>
+          <CardTitle>Quiz Setup</CardTitle>
         </div>
-        <CardDescription>
-          Explore subject quizzes from our database
-          <Button 
-            variant="link" 
-            className="text-veno-primary p-0 h-auto font-medium ml-2"
-            onClick={() => navigate('/cbt/library')}
-          >
-            Visit our Educational Library
-          </Button>
-        </CardDescription>
+        <CardDescription>Configure your quiz settings</CardDescription>
       </CardHeader>
-      <CardContent>
-        {subjects && subjects.length > 0 ? (
-          renderSubjectsGrid(subjects)
-        ) : (
-          <div className="text-center py-8">
-            <AlertCircle className="h-10 w-10 text-amber-500 mx-auto mb-3" />
-            <h3 className="text-lg font-medium mb-2">No subjects found</h3>
-            <p className="text-muted-foreground mb-4">
-              There are no subjects available in the database.
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => refetch()}
-              className="flex items-center mx-auto gap-2"
-            >
-              <RefreshCw size={16} />
-              Refresh
-            </Button>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="border-t bg-muted/50 px-6 py-4">
-        <div className="flex items-center justify-between w-full">
-          <p className="text-sm text-muted-foreground">
-            Need study materials?
-          </p>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/cbt/library')}
-            className="gap-2"
-          >
-            <BookOpen size={16} />
-            Visit Library
-          </Button>
+      <CardContent className="space-y-6">
+        {/* Subject Selection */}
+        <div className="space-y-3">
+          <Label htmlFor="subject">Select Subject</Label>
+          <Select onValueChange={setSelectedSubject} value={selectedSubject || undefined}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjects && subjects.map((subject) => (
+                <SelectItem key={subject.name} value={subject.name}>
+                  {subject.name} ({subject.question_count} questions)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Difficulty Level */}
+        <div className="space-y-3">
+          <Label>Difficulty Level</Label>
+          <RadioGroup
+            value={difficulty}
+            onValueChange={setDifficulty}
+            className="grid grid-cols-2 gap-4"
+          >
+            {difficultyOptions.map((option) => (
+              <div key={option.value} className="flex items-center space-x-2">
+                <RadioGroupItem value={option.value} id={option.value} />
+                <Label htmlFor={option.value} className="cursor-pointer">{option.label}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
+
+        {/* Time Limit */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-veno-primary" />
+            <Label>Time Limit: {timeLimit} minutes</Label>
+          </div>
+          <div className="space-y-4">
+            <Slider
+              value={[timeLimit]}
+              max={40}
+              min={5}
+              step={5}
+              onValueChange={(value) => setTimeLimit(value[0])}
+              className="w-full"
+            />
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">5 min</span>
+              <span className="text-sm font-medium">{timeLimit} minutes</span>
+              <span className="text-sm text-muted-foreground">40 min</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Number of Questions */}
+        <div className="space-y-3">
+          <Label>Number of Questions: {questionsCount}</Label>
+          <div className="space-y-4">
+            <Slider
+              value={[questionsCount]}
+              max={40}
+              min={5}
+              step={5}
+              onValueChange={(value) => setQuestionsCount(value[0])}
+              className="w-full"
+            />
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">5</span>
+              <span className="text-sm font-medium">{questionsCount} questions</span>
+              <span className="text-sm text-muted-foreground">40</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button 
+          className="w-full bg-veno-primary hover:bg-veno-primary/90"
+          onClick={handleStartQuiz}
+          disabled={!selectedSubject}
+        >
+          Start Quiz
+        </Button>
       </CardFooter>
     </Card>
   );
-
-  function renderSubjectsGrid(subjects: any[]) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {subjects.map((subject) => (
-          <Card key={subject.name} className="overflow-hidden">
-            <div className="bg-primary/10 p-2">
-              <CardHeader className="p-4">
-                <CardTitle className="text-lg">{subject.name}</CardTitle>
-                <CardDescription>
-                  {subject.question_count} Questions
-                </CardDescription>
-              </CardHeader>
-            </div>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center">
-                  <BookOpen className="mr-1 h-4 w-4 text-muted-foreground" />
-                  <span>Multiple Choice</span>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
-                  <span>15 mins</span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="border-t bg-muted/50 p-4">
-              <Button 
-                className="w-full" 
-                onClick={() => handleStartQuiz(subject.name)}
-              >
-                Start Quiz
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 };
 
 export default QuizSection;

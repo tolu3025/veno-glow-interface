@@ -39,21 +39,21 @@ export const useSubjects = () => {
       }
 
       try {
-        // First, check if the get_subjects_from_questions function exists in the database
-        const { data: functionExists, error: functionCheckError } = await supabase
+        // First, check if the questions table exists in the database
+        const { data: tableExists, error: tableCheckError } = await supabase
           .rpc('check_if_table_exists', { table_name: 'questions' });
         
-        if (functionCheckError) {
-          console.error('Error checking if questions table exists:', functionCheckError);
-          throw new Error(`Database error: ${functionCheckError.message}`);
+        if (tableCheckError) {
+          console.error('Error checking if questions table exists:', tableCheckError);
+          throw new Error(`Database error: ${tableCheckError.message}`);
         }
         
-        if (!functionExists) {
+        if (!tableExists) {
           console.error('Questions table does not exist in database');
           throw new Error('Questions table not found in database');
         }
 
-        // If the function exists, use it to get subjects
+        // If the table exists, use the get_subjects_from_questions function 
         const { data, error } = await supabase.rpc('get_subjects_from_questions');
         
         if (error) {
