@@ -8,17 +8,9 @@ export type Subject = {
   question_count: number;
 };
 
-// Demo subjects to use as fallback if network completely fails
-const demoSubjects: Subject[] = [
-  { name: 'Mathematics', question_count: 25 },
-  { name: 'Physics', question_count: 15 },
-  { name: 'Chemistry', question_count: 18 },
-  { name: 'Biology', question_count: 20 },
-  { name: 'English', question_count: 22 }
-];
-
-// Retry configuration
-const MAX_RETRIES = 2;
+// Query configuration
+const FETCH_TIMEOUT = 10000; // 10 seconds
+const MAX_RETRIES = 1;
 const RETRY_DELAY = 2000; // 2 seconds
 
 export const useSubjects = () => {
@@ -30,7 +22,7 @@ export const useSubjects = () => {
         
         // Add timeout to prevent hanging requests
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 5000);
+          setTimeout(() => reject(new Error('Request timeout')), FETCH_TIMEOUT);
         });
         
         // First try to get subjects via database function
@@ -67,40 +59,12 @@ export const useSubjects = () => {
           
           if (!questions || questions.length === 0) {
             console.log('No questions found in the questions table');
-            // Try one more fallback - checking user_test_questions
-            
-            const testQueryPromise = supabase.from('user_test_questions').select('subject');
-            const testResult = await Promise.race([testQueryPromise, timeoutPromise]);
-            const { data: testQuestions, error: testError } = testResult;
-            
-            if (testError || !testQuestions || testQuestions.length === 0) {
-              console.log('No subjects found in any tables, using demo data');
-              // If all database methods fail, return demo data
-              toast({
-                title: "Network issue detected",
-                description: "Using cached subjects. Some features may be limited.",
-                duration: 5000,
-              });
-              return demoSubjects;
-            }
-            
-            // Process test questions if available
-            const subjectCounts: Record<string, number> = {};
-            testQuestions.forEach(q => {
-              if (q.subject) {
-                subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1;
-              }
+            toast({
+              title: "No subjects available",
+              description: "No subjects could be loaded from the database.",
+              variant: "destructive",
             });
-            
-            const formattedSubjects: Subject[] = Object.keys(subjectCounts)
-              .filter(name => name)
-              .map(name => ({
-                name,
-                question_count: subjectCounts[name]
-              }))
-              .sort((a, b) => a.name.localeCompare(b.name));
-            
-            return formattedSubjects;
+            return [];
           }
           
           console.log('Questions fetched successfully:', questions.length);
@@ -132,24 +96,13 @@ export const useSubjects = () => {
         }
       } catch (error: any) {
         console.error('Error in useSubjects query:', error);
-        
-        // Provide a more helpful error message if it's a network error
-        if (error.message && (
-          error.message.includes('Failed to fetch') || 
-          error.message.includes('NetworkError') || 
-          error.message.includes('Request timeout')
-        )) {
-          console.log('Network error detected, returning fallback data');
-          toast({
-            title: "Connection to database failed",
-            description: "Using cached subjects. Please check your internet connection.",
-            variant: "destructive",
-            duration: 5000,
-          });
-          return demoSubjects;
-        }
-        
-        throw error;
+        toast({
+          title: "Failed to load subjects",
+          description: "Please check your internet connection and try again.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        return [];
       }
     },
     retry: MAX_RETRIES,

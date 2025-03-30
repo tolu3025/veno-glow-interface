@@ -156,6 +156,8 @@ const TakeTest = () => {
         ? ['beginner', 'intermediate', 'advanced'] 
         : [settingsFromState.difficulty];
       
+      console.log(`Fetching questions for subject: ${subject} with difficulty: ${difficultyFilter.join(', ')}`);
+      
       const { data, error } = await supabase
         .from('questions')
         .select('*')
@@ -163,56 +165,39 @@ const TakeTest = () => {
         .in('difficulty', difficultyFilter)
         .limit(settingsFromState.questionsCount);
         
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const formattedQuestions: QuizQuestion[] = data.map(q => ({
-          id: q.id,
-          text: q.question,
-          options: Array.isArray(q.options) ? 
-            q.options.map((opt: any) => String(opt)) : [],
-          correctOption: q.answer,
-          explanation: q.explanation
-        }));
-        
-        setQuestions(formattedQuestions);
-      } else {
-        setQuestions(generateDemoQuestions(subject, settingsFromState.difficulty));
+      if (error) {
+        console.error("Error fetching questions:", error);
+        throw error;
       }
+      
+      if (!data || data.length === 0) {
+        console.log(`No questions found for subject: ${subject}`);
+        toast.error(`No questions available for ${subject}`, {
+          description: "Please try another subject or difficulty level"
+        });
+        navigate('/cbt');
+        return;
+      }
+      
+      console.log(`Found ${data.length} questions for ${subject}`);
+      
+      const formattedQuestions: QuizQuestion[] = data.map(q => ({
+        id: q.id,
+        text: q.question,
+        options: Array.isArray(q.options) ? 
+          q.options.map((opt: any) => String(opt)) : [],
+        correctOption: q.answer,
+        explanation: q.explanation
+      }));
+      
+      setQuestions(formattedQuestions);
     } catch (error) {
       console.error("Error loading subject questions:", error);
       toast.error("Failed to load questions");
+      navigate('/cbt');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Generate demo questions for development/testing
-  const generateDemoQuestions = (subject: string, difficulty: string = 'all'): QuizQuestion[] => {
-    const difficultyLabel = difficulty === 'all' ? '' : `(${difficulty} level)`;
-    return [
-      {
-        id: '1',
-        text: `What is the capital of France? ${difficultyLabel} (Demo ${subject} question)`,
-        options: ['London', 'Paris', 'Berlin', 'Madrid'],
-        correctOption: 1,
-        explanation: `The correct answer is B: Paris.`
-      },
-      {
-        id: '2',
-        text: `Which planet is known as the Red Planet? ${difficultyLabel} (Demo ${subject} question)`,
-        options: ['Earth', 'Mars', 'Venus', 'Jupiter'],
-        correctOption: 1,
-        explanation: `The correct answer is B: Mars.`
-      },
-      {
-        id: '3',
-        text: `What is the largest mammal? ${difficultyLabel} (Demo ${subject} question)`,
-        options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'],
-        correctOption: 1,
-        explanation: `The correct answer is B: Blue Whale.`
-      },
-    ];
   };
 
   const handleTestTakerSubmit = (data: TestTakerInfo) => {
