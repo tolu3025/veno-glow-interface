@@ -1,18 +1,23 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Loader2, Clock, Trophy, AlertTriangle, CheckCircle, XCircle, HelpCircle, MailCheck, ArrowLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
-import { VenoLogo } from '@/components/ui/logo';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+// Components
 import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import LoadingState from '@/components/cbt/test/LoadingState';
+import NoQuestionsState from '@/components/cbt/test/NoQuestionsState';
+import AttemptBlockedState from '@/components/cbt/test/AttemptBlockedState';
+import SubmissionComplete from '@/components/cbt/test/SubmissionComplete';
+import TestInstructions from '@/components/cbt/test/TestInstructions';
+import QuestionDisplay from '@/components/cbt/test/QuestionDisplay';
+import TestResults from '@/components/cbt/test/TestResults';
+import AnswersReview from '@/components/cbt/test/AnswersReview';
+
+// Hooks
+import { useTestManagement } from '@/hooks/useTestManagement';
 
 type QuizQuestion = {
   id: string;
@@ -20,12 +25,6 @@ type QuizQuestion = {
   options: string[];
   correctOption: number;
   explanation?: string;
-};
-
-type UserAnswer = {
-  questionId: string;
-  selectedOption: number | null;
-  isCorrect: boolean;
 };
 
 type TestDetails = {
@@ -39,7 +38,6 @@ type TestDetails = {
 };
 
 const TakeTest = () => {
-  
   const { testId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,20 +45,10 @@ const TakeTest = () => {
   
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [showResults, setShowResults] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [testStarted, setTestStarted] = useState(false);
-  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
-  const [reviewMode, setReviewMode] = useState(false);
   const [testDetails, setTestDetails] = useState<TestDetails | null>(null);
   const [showTakerForm, setShowTakerForm] = useState(false);
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
-  const [publicResults, setPublicResults] = useState<any[]>([]);
-  const [submissionComplete, setSubmissionComplete] = useState(false);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -68,12 +56,23 @@ const TakeTest = () => {
     questionsCount: 10
   });
 
+  // Initialize test management hook
+  const testManagement = useTestManagement({
+    testId,
+    user,
+    questions,
+    testDetails,
+    testTakerInfo
+  });
+
+  // Load settings from location state if available
   useEffect(() => {
     if (location.state?.settings) {
       setSettings(location.state.settings);
     }
   }, [location.state]);
 
+  // Load test data
   useEffect(() => {
     const loadTest = async () => {
       setLoading(true);
@@ -101,6 +100,7 @@ const TakeTest = () => {
           
           setTestDetails(testData as TestDetails);
           
+          // Check for previous attempts
           if (user && testData.allow_retakes === false) {
             const { data: attempts, error: attemptsError } = await supabase
               .from('test_attempts')
@@ -113,6 +113,7 @@ const TakeTest = () => {
             }
           }
           
+          // Load questions
           const { data: questionsData, error: questionsError } = await supabase
             .from('user_test_questions')
             .select('*')
@@ -143,8 +144,9 @@ const TakeTest = () => {
     };
 
     loadTest();
-  }, [testId, user]);
+  }, [testId, user, navigate]);
 
+  // Load subject-specific quiz
   const loadSubjectQuiz = async () => {
     try {
       const subject = location.state.subject;
@@ -185,6 +187,7 @@ const TakeTest = () => {
     }
   };
 
+  // Generate demo questions for development/testing
   const generateDemoQuestions = (subject: string, difficulty: string = 'all'): QuizQuestion[] => {
     const difficultyLabel = difficulty === 'all' ? '' : `(${difficulty} level)`;
     return [
@@ -193,7 +196,7 @@ const TakeTest = () => {
         text: `What is the capital of France? ${difficultyLabel} (Demo ${subject} question)`,
         options: ['London', 'Paris', 'Berlin', 'Madrid'],
         correctOption: 1,
-        explanation: `The correct answer is A: London.`
+        explanation: `The correct answer is B: Paris.`
       },
       {
         id: '2',
@@ -207,782 +210,111 @@ const TakeTest = () => {
         text: `What is the largest mammal? ${difficultyLabel} (Demo ${subject} question)`,
         options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'],
         correctOption: 1,
-        explanation: `The correct answer is C: Blue Whale.`
+        explanation: `The correct answer is B: Blue Whale.`
       },
     ];
   };
 
-  useEffect(() => {
-    if (testStarted && timeRemaining > 0) {
-      const timer = setTimeout(() => {
-        setTimeRemaining(time => time - 1);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    } else if (testStarted && timeRemaining === 0) {
-      finishTest();
-    }
-  }, [timeRemaining, testStarted]);
-
   const handleTestTakerSubmit = (data: TestTakerInfo) => {
     setTestTakerInfo(data);
     setShowTakerForm(false);
-    startTest();
+    testManagement.startTest();
   };
 
-  const startTest = () => {
-    const timeLimit = testDetails?.time_limit || settings.timeLimit || 15;
-    setTimeRemaining(timeLimit * 60);
-    setTestStarted(true);
-  };
-
-  const handleAnswerSelect = (optionIndex: number) => {
-    setSelectedAnswer(optionIndex);
-    
-    const currentQuestionData = questions[currentQuestion];
-    if (!currentQuestionData) return;
-    
-    const isCorrect = optionIndex === currentQuestionData.correctOption;
-    
-    const updatedAnswers = [...userAnswers];
-    
-    const existingAnswerIndex = updatedAnswers.findIndex(
-      answer => answer.questionId === currentQuestionData.id
-    );
-    
-    if (existingAnswerIndex >= 0) {
-      updatedAnswers[existingAnswerIndex] = {
-        questionId: currentQuestionData.id,
-        selectedOption: optionIndex,
-        isCorrect: isCorrect
-      };
-    } else {
-      updatedAnswers[currentQuestion] = {
-        questionId: currentQuestionData.id,
-        selectedOption: optionIndex,
-        isCorrect: isCorrect
-      };
-    }
-    
-    setUserAnswers(updatedAnswers);
-  };
-
-  const goToPreviousQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-      
-      const previousAnswer = userAnswers[currentQuestion - 1];
-      if (previousAnswer) {
-        setSelectedAnswer(previousAnswer.selectedOption);
-      } else {
-        setSelectedAnswer(null);
-      }
-    }
-  };
-
-  const goToNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-      
-      const nextAnswer = userAnswers[currentQuestion + 1];
-      if (nextAnswer) {
-        setSelectedAnswer(nextAnswer.selectedOption);
-      } else {
-        setSelectedAnswer(null);
-      }
-    } else {
-      calculateScore();
-      finishTest();
-    }
-  };
-
-  const calculateScore = () => {
-    const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
-    setScore(correctAnswers);
-  };
-
-  const loadPublicResults = async () => {
-    if (!testId || testDetails?.results_visibility !== 'public') return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('test_attempts')
-        .select('*')
-        .eq('test_id', testId)
-        .order('score', { ascending: false });
-        
-      if (error) throw error;
-      
-      if (data) {
-        setPublicResults(data);
-      }
-    } catch (error) {
-      console.error("Error loading public results:", error);
-    }
-  };
-
-  const finishTest = async () => {
-    
-    calculateScore();
-    
-    try {
-      const testData = {
-        test_id: testId,
-        score: score,
-        total_questions: questions.length,
-        time_taken: (testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining,
-        user_id: user?.id || null,
-        participant_email: testTakerInfo?.email || user?.email || '',
-        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || '',
-        completed_at: new Date().toISOString(),
-      };
-      
-      await supabase.from('test_attempts').insert([testData]);
-      
-      if (testDetails?.results_visibility === 'creator_only') {
-        setSubmissionComplete(true);
-      } else {
-        setShowResults(true);
-        
-        if (testDetails?.results_visibility === 'public') {
-          loadPublicResults();
-        }
-      }
-    } catch (error) {
-      console.error("Error saving test results:", error);
-      toast.error("Could not save your results");
-      setShowResults(true);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
+  // Render appropriate UI based on current state
   if (loading) {
-    
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-veno-primary mb-4" />
-        <p className="text-muted-foreground">Loading questions...</p>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (questions.length === 0) {
-    
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>No Questions Available</CardTitle>
-          </div>
-          <CardDescription>
-            We couldn't find any questions for this test.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="py-6 text-center">
-          <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
-          <p className="mb-4">There are currently no questions available for this subject or test.</p>
-          <Button onClick={() => navigate('/cbt')}>
-            Back to Tests
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return <NoQuestionsState />;
   }
 
-  
-  if (submissionComplete) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Test Submitted Successfully!</CardTitle>
-          </div>
-          <CardDescription>
-            {testDetails?.title || "Quiz"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="py-6 text-center">
-          <MailCheck className="mx-auto h-16 w-16 text-veno-primary mb-6" />
-          <h2 className="text-2xl font-bold mb-2">Thank you for completing the test</h2>
-          <p className="text-muted-foreground mb-6">
-            Your answers have been recorded. The test creator will review your results.
-            {testTakerInfo?.email && " You may be contacted via email with your score and feedback."}
-          </p>
-          <Button onClick={() => navigate('/cbt')} className="mt-4">
-            Return to Tests
-          </Button>
-        </CardContent>
-      </Card>
-    );
+  if (testManagement.submissionComplete) {
+    return <SubmissionComplete testDetails={testDetails} testTakerInfo={testTakerInfo} />;
   }
 
-  if (!testStarted) {
+  if (!testManagement.testStarted) {
     if (previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
-      return (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <VenoLogo className="h-6 w-6" />
-              <CardTitle>Test Already Taken</CardTitle>
-            </div>
-            <CardDescription>
-              {testDetails?.title || ""}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="py-6 text-center">
-            <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
-            <p className="mb-4">
-              You have already taken this test and multiple attempts are not allowed.
-            </p>
-            <Button onClick={() => navigate('/cbt')}>
-              Back to Tests
-            </Button>
-          </CardContent>
-        </Card>
-      );
+      return <AttemptBlockedState testDetails={testDetails} />;
     }
 
     if (showTakerForm) {
       return (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <VenoLogo className="h-6 w-6" />
-              <CardTitle>Test Registration</CardTitle>
-            </div>
-            <CardDescription>
-              {testDetails?.title || location.state?.subject || "Quiz"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="py-6">
-            <TestTakerForm 
-              onSubmit={handleTestTakerSubmit} 
-              testTitle={testDetails?.title || undefined}
-            />
-          </CardContent>
-        </Card>
+        <TestTakerForm 
+          onSubmit={handleTestTakerSubmit} 
+          testTitle={testDetails?.title || undefined}
+        />
       );
     }
 
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Ready to Start?</CardTitle>
-          </div>
-          <CardDescription>
-            {testDetails?.title || location.state?.subject || testId} Quiz
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="py-6">
-          <div className="space-y-4">
-            <div className="bg-secondary/30 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">Quiz Information</h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Subject:</span>
-                  <span className="font-medium">
-                    {testDetails?.title || location.state?.subject || "General"}
-                  </span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Questions:</span>
-                  <span className="font-medium">{questions.length}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Time Limit:</span>
-                  <span className="font-medium">
-                    {testDetails?.time_limit || settings.timeLimit || 15} minutes
-                  </span>
-                </li>
-                {location.state?.settings && (
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Difficulty:</span>
-                    <span className="font-medium capitalize">
-                      {location.state.settings.difficulty === 'all' ? 'All Levels' : location.state.settings.difficulty}
-                    </span>
-                  </li>
-                )}
-                {testDetails && (
-                  <>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Multiple Attempts:</span>
-                      <span className="font-medium">{testDetails.allow_retakes ? 'Allowed' : 'Not allowed'}</span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Results Visibility:</span>
-                      <span className="font-medium">
-                        {testDetails.results_visibility === 'creator_only' 
-                          ? 'Only visible to test creator' 
-                          : testDetails.results_visibility === 'test_takers' 
-                            ? 'Visible to you after completion' 
-                            : 'Publicly visible'}
-                      </span>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </div>
-            <div className="bg-secondary/30 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">Instructions</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Read each question carefully</li>
-                <li>Select the best answer from the options</li>
-                <li>You can go back to previous questions</li>
-                <li>The test will automatically submit when time runs out</li>
-                {testDetails?.results_visibility === 'creator_only' && (
-                  <li>Your results will be available to the test creator only</li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={() => {
-            if (!user && testId !== 'subject') {
-              setShowTakerForm(true);
-            } else {
-              startTest();
-            }
-          }}>
-            Start Quiz
-          </Button>
-        </CardFooter>
-      </Card>
+      <TestInstructions
+        testDetails={testDetails}
+        questions={questions}
+        location={location}
+        previousAttempts={previousAttempts}
+        onStartTest={testManagement.startTest}
+        onShowTakerForm={() => setShowTakerForm(true)}
+        user={user}
+        testId={testId || ''}
+      />
     );
   }
 
-  if (showResults) {
-    const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
-    let resultMessage = "Good effort!";
-    let resultClass = "text-amber-500";
-    
-    if (percentage >= 80) {
-      resultMessage = "Excellent work!";
-      resultClass = "text-green-500";
-    } else if (percentage < 50) {
-      resultMessage = "Keep practicing!";
-      resultClass = "text-rose-500";
-    }
-    
-    if (reviewMode) {
+  if (testManagement.showResults) {
+    if (testManagement.reviewMode) {
       return (
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <VenoLogo className="h-6 w-6" />
-              <CardTitle>Quiz Review</CardTitle>
-            </div>
-            <CardDescription>
-              {testDetails?.title || location.state?.subject || testId} Quiz - Review your answers
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6 space-y-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-veno-primary" />
-                  <h2 className="font-semibold">Final Score: {score}/{questions.length} ({Math.round((score / questions.length) * 100)}%)</h2>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Time taken: {formatTime((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining)}
-                </div>
-              </div>
-              <Progress value={Math.round((score / questions.length) * 100)} className="h-2" />
-            </div>
-            
-            <div className="space-y-6 mt-6">
-              <h3 className="text-lg font-semibold mb-2">Question Review</h3>
-              {userAnswers.map((answer, index) => {
-                const question = questions[index];
-                if (!question) return null;
-                
-                return (
-                  <Collapsible key={question.id} className="w-full">
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={cn(
-                        "rounded-lg border p-4 transition-all hover:shadow-md", 
-                        answer.isCorrect 
-                          ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800" 
-                          : "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
-                      )}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full", 
-                            answer.isCorrect 
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
-                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                          )}>
-                            {answer.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-base">{index + 1}. {question.text}</div>
-                            
-                            <div className="mt-2 space-y-2 text-sm">
-                              {question.options.map((option, optionIndex) => (
-                                <div 
-                                  key={optionIndex}
-                                  className={cn(
-                                    "flex items-center gap-2 py-1 px-3 rounded",
-                                    optionIndex === question.correctOption 
-                                      ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
-                                      : optionIndex === answer.selectedOption && !answer.isCorrect 
-                                        ? "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
-                                        : "text-gray-600 dark:text-gray-400"
-                                  )}
-                                >
-                                  <div className={cn(
-                                    "flex items-center justify-center w-5 h-5 rounded-full text-xs border",
-                                    optionIndex === question.correctOption 
-                                      ? "border-green-500 bg-green-500 text-white" 
-                                      : optionIndex === answer.selectedOption && !answer.isCorrect
-                                        ? "border-red-500 bg-red-500 text-white"
-                                        : "border-gray-300 dark:border-gray-600"
-                                  )}>
-                                    {String.fromCharCode(65 + optionIndex)}
-                                  </div>
-                                  <span>{option}</span>
-                                  {optionIndex === question.correctOption && 
-                                    <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
-                                  }
-                                  {optionIndex === answer.selectedOption && !answer.isCorrect && 
-                                    <XCircle className="h-4 w-4 text-red-600 ml-auto" />
-                                  }
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <CollapsibleTrigger className="p-2 hover:bg-secondary/80 rounded-full transition-colors">
-                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                        </CollapsibleTrigger>
-                      </div>
-                      
-                      <CollapsibleContent className="mt-3 pt-3 border-t space-y-2">
-                        <div className="flex items-start gap-2 px-2 text-sm">
-                          <Info size={16} className="text-veno-primary mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h4 className="font-medium">Explanation</h4>
-                            <p className="text-muted-foreground">
-                              {question.explanation || 
-                                `The correct answer is ${String.fromCharCode(65 + question.correctOption)}: ${
-                                  question.options[question.correctOption]
-                                }.`}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {answer.isCorrect ? (
-                          <div className="flex items-start gap-2 px-2 bg-green-50/50 dark:bg-green-950/10 p-2 rounded text-sm">
-                            <CheckCircle size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <h4 className="font-medium text-green-700 dark:text-green-400">Correct!</h4>
-                              <p className="text-green-700/70 dark:text-green-500/70">
-                                Great job on selecting the right option.
-                              </p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-start gap-2 px-2 bg-red-50/50 dark:bg-red-950/10 p-2 rounded text-sm">
-                            <XCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <h4 className="font-medium text-red-700 dark:text-red-400">Incorrect</h4>
-                              <p className="text-red-700/70 dark:text-red-500/70">
-                                You selected {answer.selectedOption !== null ? 
-                                  `option ${String.fromCharCode(65 + answer.selectedOption)}` : 
-                                  "no answer"}.
-                                The correct answer is option {String.fromCharCode(65 + question.correctOption)}.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </CollapsibleContent>
-                    </motion.div>
-                  </Collapsible>
-                );
-              })}
-            </div>
-          </CardContent>
-          <CardFooter className="flex gap-4">
-            <Button variant="outline" className="flex-1" onClick={() => setReviewMode(false)}>
-              Back to Summary
-            </Button>
-            <Button className="flex-1 bg-veno-primary hover:bg-veno-primary/90" onClick={() => navigate('/cbt')}>
-              Finish Review
-            </Button>
-          </CardFooter>
-        </Card>
+        <AnswersReview
+          questions={questions}
+          userAnswers={testManagement.userAnswers}
+          score={testManagement.score}
+          timeRemaining={testManagement.timeRemaining}
+          testDetails={testDetails}
+          location={location}
+          onBackToSummary={() => testManagement.setReviewMode(false)}
+          onFinish={() => navigate('/cbt')}
+          formatTime={testManagement.formatTime}
+        />
       );
     }
     
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Quiz Results</CardTitle>
-          </div>
-          <CardDescription>
-            {testDetails?.title || location.state?.subject || testId} Quiz
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="py-6">
-          <div className="text-center mb-8">
-            <Trophy className="mx-auto h-12 w-12 text-veno-primary mb-4" />
-            <h2 className="text-3xl font-bold mb-2">{percentage}%</h2>
-            <p className={`text-lg font-medium ${resultClass} mb-2`}>
-              {resultMessage}
-            </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              You answered {score} out of {questions.length} questions correctly
-            </p>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2 mb-8">
-            <div className="bg-secondary/30 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">Quiz Statistics</h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Score:</span>
-                  <span className="font-medium">{score}/{questions.length}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Percentage:</span>
-                  <span className="font-medium">{percentage}%</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Correct answers:</span>
-                  <span className="font-medium text-green-600">{score}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Wrong answers:</span>
-                  <span className="font-medium text-red-600">{questions.length - score}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-muted-foreground">Time taken:</span>
-                  <span className="font-medium">
-                    {formatTime((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining)}
-                  </span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-secondary/30 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">Performance Analysis</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Accuracy</span>
-                    <span>{percentage}%</span>
-                  </div>
-                  <Progress value={percentage} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Time Efficiency</span>
-                    <span>
-                      {Math.round(((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining) / 
-                        ((testDetails?.time_limit || settings.timeLimit || 15) * 60) * 100)}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.round(((testDetails?.time_limit || settings.timeLimit || 15) * 60 - timeRemaining) / 
-                      ((testDetails?.time_limit || settings.timeLimit || 15) * 60) * 100)} 
-                    className="h-2" 
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {testDetails?.results_visibility === 'public' && publicResults.length > 0 && (
-            <div className="bg-secondary/30 p-4 rounded-lg mb-6">
-              <h3 className="font-medium mb-3">Leaderboard</h3>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Rank</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="text-right">Score</TableHead>
-                      <TableHead className="text-right">Time (min)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {publicResults.map((result, index) => (
-                      <TableRow key={result.id} className={
-                        (result.participant_email === (testTakerInfo?.email || user?.email)) 
-                          ? "bg-veno-primary/10" 
-                          : ""
-                      }>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>
-                          {result.participant_name || "Anonymous"}
-                          {(result.participant_email === (testTakerInfo?.email || user?.email)) && 
-                            " (You)"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {result.score}/{result.total_questions}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {Math.floor(result.time_taken / 60)}:{(result.time_taken % 60).toString().padStart(2, '0')}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-          
-          <div className="bg-secondary/30 p-4 rounded-lg text-center">
-            <h3 className="font-medium mb-2">Review Your Answers</h3>
-            <p className="text-sm text-muted-foreground mb-2">
-              See all questions, your answers, and the correct answers
-            </p>
-            <Button 
-              onClick={() => setReviewMode(true)}
-              variant="outline" 
-              className="text-veno-primary border-veno-primary/30"
-            >
-              <HelpCircle className="h-4 w-4 mr-2" /> 
-              View Detailed Review
-            </Button>
-          </div>
-        </CardContent>
-        <CardFooter className="flex gap-4">
-          <Button variant="outline" className="flex-1" onClick={() => navigate('/cbt')}>
-            Back to Tests
-          </Button>
-          {(testDetails?.allow_retakes || testId === 'subject') && (
-            <Button 
-              className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
-              onClick={() => {
-                setCurrentQuestion(0);
-                setSelectedAnswer(null);
-                setScore(0);
-                setShowResults(false);
-                setUserAnswers([]);
-                setTimeRemaining((testDetails?.time_limit || settings.timeLimit || 15) * 60);
-                setTestStarted(false);
-              }}
-            >
-              Try Again
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
+      <TestResults
+        score={testManagement.score}
+        questions={questions}
+        testDetails={testDetails}
+        timeRemaining={testManagement.timeRemaining}
+        location={location}
+        testId={testId || ''}
+        publicResults={testManagement.publicResults}
+        testTakerInfo={testTakerInfo}
+        user={user}
+        onReviewAnswers={() => testManagement.setReviewMode(true)}
+        onFinish={() => navigate('/cbt')}
+        onTryAgain={testManagement.resetTest}
+        formatTime={testManagement.formatTime}
+      />
     );
   }
 
-  const currentQuestionData = questions[currentQuestion];
+  const currentQuestionData = questions[testManagement.currentQuestion];
 
   if (!currentQuestionData) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Error</CardTitle>
-          </div>
-          <CardDescription>Question data not available</CardDescription>
-        </CardHeader>
-        <CardContent className="py-6 text-center">
-          <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
-          <p className="mb-4">The current question could not be loaded.</p>
-          <Button onClick={() => navigate('/cbt')}>
-            Back to Tests
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return <NoQuestionsState />;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Question {currentQuestion + 1}/{questions.length}</CardTitle>
-          </div>
-          <div className="flex items-center gap-1 bg-secondary/30 px-3 py-1 rounded-full">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm font-medium">{formatTime(timeRemaining)}</span>
-          </div>
-        </div>
-        <div className="mt-2">
-          <Progress 
-            value={((currentQuestion + 1) / questions.length) * 100} 
-            className="h-2"
-          />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-6">
-              {currentQuestionData.text}
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {currentQuestionData.options && currentQuestionData.options.map((option, index) => (
-              <div 
-                key={index}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedAnswer === index 
-                    ? 'border-veno-primary bg-veno-primary/5' 
-                    : 'hover:border-veno-primary/50'
-                }`}
-                onClick={() => handleAnswerSelect(index)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
-                    selectedAnswer === index 
-                      ? 'border-veno-primary bg-veno-primary text-white' 
-                      : 'border-gray-300'
-                  }`}>
-                    {String.fromCharCode(65 + index)}
-                  </div>
-                  <div>{option}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex gap-4 pt-6 border-t mt-6">
-        <Button 
-          variant="outline" 
-          onClick={goToPreviousQuestion}
-          disabled={currentQuestion === 0}
-          className="flex-1"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-        <Button 
-          className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
-          onClick={goToNextQuestion}
-        >
-          {currentQuestion < questions.length - 1 ? 'Next' : 'Finish'}
-        </Button>
-      </CardFooter>
-    </Card>
+    <QuestionDisplay
+      currentQuestion={testManagement.currentQuestion}
+      questions={questions}
+      timeRemaining={testManagement.timeRemaining}
+      selectedAnswer={testManagement.selectedAnswer}
+      onAnswerSelect={testManagement.handleAnswerSelect}
+      onPreviousQuestion={testManagement.goToPreviousQuestion}
+      onNextQuestion={testManagement.goToNextQuestion}
+      formatTime={testManagement.formatTime}
+    />
   );
 };
 
