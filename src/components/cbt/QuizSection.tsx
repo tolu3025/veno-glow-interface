@@ -102,7 +102,7 @@ const QuizSection = () => {
       setConnectionStatus('disconnected');
       toast({
         title: "Connection failed",
-        description: "Could not connect to the database. Using offline data.",
+        description: "Could not connect to the database.",
         variant: "destructive",
       });
     } finally {
