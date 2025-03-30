@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -148,7 +147,12 @@ const CreateTest = () => {
         throw new Error("You must be logged in to create a test");
       }
       
-      // Save test to Supabase
+      console.log("Creating test with data:", {
+        ...data,
+        questionCount: questions.length,
+        creatorId: user.id
+      });
+      
       const { data: testData, error: testError } = await supabase
         .from('user_tests')
         .insert({
@@ -162,25 +166,38 @@ const CreateTest = () => {
           results_visibility: data.resultsVisibility,
           allow_retakes: data.allowRetakes,
         })
-        .select()
-        .single();
+        .select();
         
-      if (testError) throw testError;
+      if (testError) {
+        console.error("Error inserting test:", testError);
+        throw testError;
+      }
       
-      // Save questions
+      if (!testData || testData.length === 0) {
+        throw new Error("Failed to create test: No test data returned");
+      }
+      
+      const testId = testData[0].id;
+      console.log("Test created with ID:", testId);
+      
       const questionsToInsert = questions.map(q => ({
-        test_id: testData.id,
+        test_id: testId,
         question_text: q.text,
         options: q.options,
         answer: q.correctOption,
         subject: "General", // Default subject
       }));
       
+      console.log("Inserting questions:", questionsToInsert);
+      
       const { error: questionsError } = await supabase
         .from('user_test_questions')
         .insert(questionsToInsert);
       
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        console.error("Error inserting questions:", questionsError);
+        throw questionsError;
+      }
       
       toast({
         title: "Test created",
