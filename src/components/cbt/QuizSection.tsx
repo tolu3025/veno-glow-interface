@@ -10,13 +10,14 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { BookOpen, Clock, Loader2 } from 'lucide-react';
+import { BookOpen, Clock, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSubjects } from '@/hooks/useSubjects';
+import { supabase } from '@/integrations/supabase/client';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -27,12 +28,36 @@ const difficultyOptions = [
 
 const QuizSection = () => {
   const navigate = useNavigate();
-  const { data: subjects, isLoading, error } = useSubjects();
+  const { data: subjects, isLoading, error, refetch } = useSubjects();
   
   const [subject, setSubject] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('all');
   const [timeLimit, setTimeLimit] = useState<number>(15);
   const [questionsCount, setQuestionsCount] = useState<number>(10);
+  const [isRetrying, setIsRetrying] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+
+  // Test connection to Supabase
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const result = await supabase.testConnection();
+        setConnectionStatus(result.connected ? 'connected' : 'disconnected');
+        
+        if (!result.connected) {
+          toast({
+            title: "Connection issue detected",
+            description: "Unable to connect to the database. Some features may be limited.",
+            variant: "destructive",
+          });
+        }
+      } catch (e) {
+        setConnectionStatus('disconnected');
+      }
+    };
+    
+    checkConnection();
+  }, []);
 
   // Reset subject selection if subjects change
   useEffect(() => {
@@ -51,6 +76,26 @@ const QuizSection = () => {
       });
     }
   }, [error]);
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    try {
+      await refetch();
+      await supabase.testConnection();
+      toast({
+        title: "Retry successful",
+        description: "Reconnected to the database successfully.",
+      });
+    } catch (e) {
+      toast({
+        title: "Retry failed",
+        description: "Still unable to connect to the database. Please check your internet connection.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   const handleStartQuiz = () => {
     if (!subject) {
@@ -84,6 +129,37 @@ const QuizSection = () => {
         <CardDescription>Configure your quiz settings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Connection Status */}
+        {connectionStatus === 'disconnected' && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 mb-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                Connection to database unavailable. Some subjects may not be displayed.
+              </p>
+            </div>
+            <div className="flex justify-end mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRetry} 
+                disabled={isRetrying}
+                className="border-yellow-300 dark:border-yellow-700"
+              >
+                {isRetrying ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" /> Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1" /> Retry Connection
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Subject Selector */}
         <div className="space-y-3">
           <Label htmlFor="subject">Pick Subject</Label>
@@ -93,7 +169,7 @@ const QuizSection = () => {
               <SelectValue placeholder="Select a subject" />
             </SelectTrigger>
             <SelectContent>
-              {isLoading ? (
+              {isLoading || isRetrying ? (
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="h-5 w-5 animate-spin text-veno-primary mr-2" />
                   <span>Loading subjects...</span>
@@ -177,9 +253,9 @@ const QuizSection = () => {
         <Button 
           className="w-full bg-veno-primary hover:bg-veno-primary/90"
           onClick={handleStartQuiz}
-          disabled={!subject || isLoading}
+          disabled={!subject || isLoading || isRetrying}
         >
-          {isLoading ? (
+          {isLoading || isRetrying ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Loading...

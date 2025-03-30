@@ -21,7 +21,9 @@ export const supabase = createClient<Database>(
     },
     global: {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     },
     // Add reasonable timeouts
@@ -52,6 +54,11 @@ const enableRealtimeForTables = async () => {
         event: '*', 
         schema: 'public', 
         table: 'user_test_questions'
+      }, () => {})
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'questions'
       }, () => {})
       .subscribe();
   } catch (error) {
@@ -89,3 +96,29 @@ supabase.from = function(table) {
   
   return result;
 };
+
+// Add a connection test method to check if Supabase is reachable
+supabase.testConnection = async function() {
+  try {
+    const startTime = Date.now();
+    const response = await this.from('questions').select('count', { count: 'exact', head: true });
+    const endTime = Date.now();
+    
+    const connectionInfo = {
+      connected: !response.error,
+      latency: endTime - startTime,
+      error: response.error
+    };
+    
+    console.log('Supabase connection test:', connectionInfo);
+    return connectionInfo;
+  } catch (error) {
+    console.error('Supabase connection test failed:', error);
+    return { connected: false, latency: -1, error };
+  }
+};
+
+// Run a connection test when the client loads
+setTimeout(() => {
+  supabase.testConnection();
+}, 1000);
