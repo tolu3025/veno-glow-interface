@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +5,7 @@ import { Trophy, Gift, List, UserCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from 'next-themes';
 
 import RewardsSection from '@/components/rewards/RewardsSection';
 import TasksSection from '@/components/rewards/TasksSection';
@@ -17,109 +17,54 @@ const RewardSystem = () => {
   const [userPoints, setUserPoints] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const fetchUserPoints = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+      if (!user) return;
       
       try {
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('points, activities')
+          .select('points')
           .eq('user_id', user.id)
           .single();
         
-        if (error) {
-          if (error.code === 'PGRST116') {
-            // No profile found, create one
-            const { error: insertError } = await supabase
-              .from('user_profiles')
-              .insert({
-                id: user.id, // Add this line: use user's id as the profile id
-                user_id: user.id,
-                email: user.email,
-                points: 100, // Start with some points
-                activities: [{
-                  type: 'login',
-                  description: 'First login',
-                  timestamp: new Date().toISOString(),
-                  points: 100
-                }]
-              });
-            
-            if (insertError) throw insertError;
-            
-            setUserPoints(100);
-            toast({
-              title: "Welcome to Rewards!",
-              description: "We've given you 100 points to get started.",
-            });
-          } else {
-            throw error;
-          }
-        } else if (data) {
+        if (error) throw error;
+        
+        if (data) {
           setUserPoints(data.points || 0);
+        } else {
+          // Create a profile if it doesn't exist
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: user.id, // UUID for the profile
+              user_id: user.id,
+              email: user.email,
+              points: 100, // Start with some points
+              activities: []
+            });
           
-          // Check for login activity only if profile exists
-          if (Array.isArray(data.activities)) {
-            const today = new Date().toISOString().split('T')[0];
-            const loggedInToday = data.activities.some((activity: any) => 
-              activity.type === 'login' && 
-              activity.timestamp && 
-              new Date(activity.timestamp).toISOString().split('T')[0] === today
-            );
-            
-            if (!loggedInToday) {
-              console.log("User has not logged in today yet");
-            }
-          }
+          if (insertError) throw insertError;
+          
+          setUserPoints(100);
+          toast({
+            title: "Welcome to Rewards!",
+            description: "We've given you 100 points to get started.",
+          });
         }
       } catch (error) {
         console.error("Error fetching user points:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch your reward points. Please try again later.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
       }
     };
     
     fetchUserPoints();
-    
-    // Set up subscription to listen for point changes
-    const channel = supabase.channel('user-points-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${user?.id}`,
-        },
-        (payload) => {
-          if (payload.new && typeof payload.new.points === 'number') {
-            setUserPoints(payload.new.points);
-          }
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user, toast]);
   
-  // Effect to update user points in Supabase when they change client-side
-  // This ensures persistence across sessions
+  // Effect to update user points in Supabase when they change
   useEffect(() => {
     const updateUserPoints = async () => {
-      if (!user || isLoading) return;
+      if (!user) return;
       
       try {
         const { error } = await supabase
@@ -133,11 +78,11 @@ const RewardSystem = () => {
       }
     };
     
-    // Only update if the user exists and points have loaded
-    if (user && !isLoading) {
+    // Only update if the user exists and points have been loaded
+    if (user && userPoints !== 0) {
       updateUserPoints();
     }
-  }, [userPoints, user, isLoading]);
+  }, [userPoints, user]);
   
   return (
     <div className="container mx-auto py-6">
@@ -156,14 +101,7 @@ const RewardSystem = () => {
               <p className="text-muted-foreground">Complete tasks, take quizzes, and earn rewards</p>
             </div>
             <div className="mt-4 md:mt-0">
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-veno-primary"></div>
-                  <span>Loading...</span>
-                </div>
-              ) : (
-                <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
-              )}
+              <div className="text-3xl font-bold">{userPoints} <span className="text-veno-primary">pts</span></div>
             </div>
           </div>
         </CardContent>

@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
 import ServiceCard from "@/components/ServiceCard";
@@ -99,6 +100,7 @@ const Index = () => {
     },
   ];
 
+  // Animation variants for container and items
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -128,6 +130,7 @@ const Index = () => {
 
   return (
     <div className="pb-6 relative overflow-hidden">
+      {/* 3D Transparent Water Bubbles Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
           className="bubble w-48 h-48 rounded-full absolute -top-12 left-1/4 opacity-60"
@@ -217,6 +220,7 @@ const Index = () => {
         />
       </div>
 
+      {/* Hero Banner Carousel */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -271,6 +275,7 @@ const Index = () => {
         </Carousel>
       </motion.div>
       
+      {/* Features Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -304,6 +309,7 @@ const Index = () => {
         </div>
       </motion.div>
 
+      {/* Services Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -319,7 +325,7 @@ const Index = () => {
           <Button 
             variant="outline" 
             className="mt-4 md:mt-0"
-            onClick={() => navigate("/services")}
+            onClick={() => navigate("/cbt")}
           >
             View All <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
@@ -346,6 +352,7 @@ const Index = () => {
         </motion.div>
       </motion.div>
 
+      {/* Testimonial Section with updated image and name */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -375,6 +382,7 @@ const Index = () => {
         </div>
       </motion.div>
 
+      {/* CTA Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

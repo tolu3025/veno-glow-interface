@@ -22,7 +22,6 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import UnderMaintenancePage from './pages/UnderMaintenancePage';
 import ContactPage from './pages/ContactPage';
-import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export const routes: RouteObject[] = [
@@ -38,7 +37,6 @@ export const routes: RouteObject[] = [
       { path: 'auth', element: <AuthPage /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'maintenance', element: <UnderMaintenancePage /> },
-      { path: 'services', element: <ServicesPage /> },
       { 
         path: 'profile',
         element: <ProtectedRoute><ProfilePage /></ProtectedRoute>

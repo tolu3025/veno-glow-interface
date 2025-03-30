@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Circle, ListChecks, Calendar, MessageCircle, Award, MousePointer, ShoppingCart } from "lucide-react";
+import { CheckCircle, Circle, ListChecks, Calendar, MessageSquare, Award, MousePointer, ShoppingCart } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -38,8 +39,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
-  const [lastLoginDate, setLastLoginDate] = useState<string | null>(null);
-  const [loginStreak, setLoginStreak] = useState<number>(0);
   
   useEffect(() => {
     const fetchTasks = async () => {
@@ -68,56 +67,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
           .filter(activity => activity.type === 'task_completed')
           .map(activity => activity.task_id);
         
-        // Get login history
-        const loginActivities = activities
-          .filter(activity => activity.type === 'login')
-          .sort((a, b) => {
-            return new Date(b.timestamp || '').getTime() - new Date(a.timestamp || '').getTime();
-          });
-        
-        if (loginActivities.length > 0 && loginActivities[0].timestamp) {
-          setLastLoginDate(loginActivities[0].timestamp);
-          
-          // Calculate login streak
-          let streak = 1;
-          let currentDate = new Date(loginActivities[0].timestamp);
-          
-          for (let i = 1; i < loginActivities.length; i++) {
-            if (!loginActivities[i].timestamp) continue;
-            
-            const prevDate = new Date(loginActivities[i].timestamp);
-            const timeDiff = currentDate.getTime() - prevDate.getTime();
-            const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-            
-            if (dayDiff === 1) {
-              streak++;
-              currentDate = prevDate;
-            } else if (dayDiff > 1) {
-              break;
-            }
-          }
-          
-          setLoginStreak(streak);
-        }
-        
-        // Check CBT progress
-        const { count: testAttemptCount, error: testError } = await supabase
-          .from('test_attempts')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-          
-        if (testError) console.error("Error fetching test attempts:", testError);
-        
-        // Check blog read progress
-        const blogReadCount = activities.filter(
-          (activity: Activity) => activity.type === 'blog_read'
-        ).length;
-        
-        // Check ad clicks
-        const adClickCount = activities.filter(
-          (activity: Activity) => activity.type === 'ad_click'
-        ).length;
-        
         // Define tasks with verification functions
         const tasksList: Task[] = [
           {
@@ -127,15 +76,11 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             points: 100,
             completed: completedTaskIds.includes("1"),
             type: "login",
-            progress: Math.min(loginStreak * 10, 100),
+            progress: 30,
             icon: Calendar,
             verification: async (userId: string) => {
-              // Check if user logged in today
-              const today = new Date().toISOString().split('T')[0];
-              if (!lastLoginDate) return false;
-              
-              const lastLogin = new Date(lastLoginDate).toISOString().split('T')[0];
-              return lastLogin === today && loginStreak >= 10;
+              // The user is already logged in, so this task is verified
+              return true;
             }
           },
           {
@@ -145,8 +90,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             points: 25,
             completed: completedTaskIds.includes("2"),
             type: "blog",
-            progress: Math.min(blogReadCount * 20, 100),
-            icon: MessageCircle,
+            progress: 40,
+            icon: MessageSquare,
             verification: async (userId: string) => {
               // Check if user has read blog posts
               const { data, error } = await supabase
@@ -169,7 +114,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                 (activity: Activity) => activity.type === 'blog_read'
               ).length;
               
-              return blogReads >= 5; // Require at least 5 blog reads
+              return blogReads >= 2; // Require at least 2 blog reads
             }
           },
           {
@@ -179,7 +124,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             points: 60,
             completed: completedTaskIds.includes("3"),
             type: "cbt",
-            progress: testAttemptCount ? Math.min((testAttemptCount / 3) * 100, 100) : 0,
+            progress: 33,
             icon: Award,
             verification: async (userId: string) => {
               // Check if user has completed tests
@@ -190,7 +135,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
               
               if (error) return false;
               
-              return count !== null && count >= 3; // Require at least 3 test attempts
+              return count !== null && count >= 1; // Require at least 1 test attempt
             }
           },
           {
@@ -221,31 +166,11 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             points: 50,
             completed: completedTaskIds.includes("5"),
             type: "ads",
-            progress: Math.min(adClickCount * 33.33, 100),
+            progress: 0,
             icon: MousePointer,
-            verification: async (userId: string) => {
-              // Check if user has clicked on ads
-              const { data, error } = await supabase
-                .from('user_profiles')
-                .select('activities')
-                .eq('user_id', userId)
-                .maybeSingle();
-              
-              if (error) return false;
-              
-              // Properly handle the activities array
-              let userActivities: Activity[] = [];
-              if (data?.activities && typeof data.activities === 'object') {
-                if (Array.isArray(data.activities)) {
-                  userActivities = data.activities as Activity[];
-                }
-              }
-                
-              const adClicks = userActivities.filter(
-                (activity: Activity) => activity.type === 'ad_click'
-              ).length;
-              
-              return adClicks >= 3;
+            verification: async () => {
+              // For demo purposes, we'll simulate ad clicks with a 70% success rate
+              return Math.random() > 0.3;
             }
           },
           {
@@ -283,7 +208,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             points: 100,
             completed: false,
             type: "login",
-            progress: 0,
+            progress: 30,
             icon: Calendar,
             verification: async () => true
           },
@@ -295,7 +220,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             completed: false,
             type: "blog",
             progress: 40,
-            icon: MessageCircle,
+            icon: MessageSquare,
             verification: async () => true
           },
           {
@@ -348,48 +273,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
     
     fetchTasks();
     
-    // Record login activity if user is logged in
-    if (user) {
-      const recordLoginActivity = async () => {
-        try {
-          // Check if already logged in today
-          const { data: userProfile, error } = await supabase
-            .from('user_profiles')
-            .select('activities')
-            .eq('user_id', user.id)
-            .maybeSingle();
-            
-          if (error && error.code !== 'PGRST116') throw error;
-          
-          let activities: Activity[] = [];
-          if (userProfile?.activities && Array.isArray(userProfile.activities)) {
-            activities = userProfile.activities as Activity[];
-          }
-          
-          const today = new Date().toISOString().split('T')[0];
-          const loggedInToday = activities.some(activity => 
-            activity.type === 'login' && 
-            activity.timestamp && 
-            new Date(activity.timestamp).toISOString().split('T')[0] === today
-          );
-          
-          if (!loggedInToday) {
-            // Add login activity for today
-            await appendToUserActivities(user.id, {
-              type: 'login',
-              timestamp: new Date().toISOString()
-            });
-            
-            console.log("Recorded login activity for today");
-          }
-        } catch (error) {
-          console.error("Error recording login activity:", error);
-        }
-      };
-      
-      recordLoginActivity();
-    }
-    
     // Set up realtime subscription for task updates
     if (user) {
       const channel = supabase
@@ -405,7 +288,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
         supabase.removeChannel(channel);
       };
     }
-  }, [user, lastLoginDate]);
+  }, [user]);
 
   const handleCompleteTask = async (taskId: string) => {
     if (!user) {
@@ -525,7 +408,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                       <div className="mt-2">
                         <Progress value={task.progress} className="h-2" />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Progress: {Math.round(task.progress)}%
+                          Progress: {task.progress}%
                         </p>
                       </div>
                     )}
