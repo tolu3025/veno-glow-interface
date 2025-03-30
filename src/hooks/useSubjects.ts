@@ -1,5 +1,5 @@
 
-import { supabase, testConnection } from '@/integrations/supabase/client';
+import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -40,8 +40,8 @@ export const useSubjects = () => {
     
     // Test actual Supabase connection on mount
     const checkConnection = async () => {
-      const connected = await testConnection();
-      setHasConnection(connected);
+      const result = await testSupabaseConnection();
+      setHasConnection(result.success);
       setConnectionTested(true);
     };
     

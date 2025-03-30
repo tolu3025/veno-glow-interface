@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSubjects } from '@/hooks/useSubjects';
-import { testConnection } from '@/integrations/supabase/client';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
 
 const difficultyOptions = [
   { value: 'beginner', label: 'Beginner' },
@@ -37,16 +36,14 @@ const QuizSection = () => {
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
 
-  // Check network connection
   useEffect(() => {
     const checkConnection = async () => {
       const isOnline = navigator.onLine;
       
       if (isOnline) {
-        // Even if browser says we're online, check actual connection to Supabase
         setConnectionStatus('unknown');
-        const connected = await testConnection();
-        setConnectionStatus(connected ? 'connected' : 'disconnected');
+        const result = await testSupabaseConnection();
+        setConnectionStatus(result.success ? 'connected' : 'disconnected');
       } else {
         setConnectionStatus('disconnected');
       }
@@ -66,14 +63,12 @@ const QuizSection = () => {
     };
   }, []);
 
-  // Reset subject selection if subjects change
   useEffect(() => {
     if (subjects && subjects.length > 0 && !subject) {
       setSubject('');
     }
   }, [subjects]);
 
-  // Show error toast if subjects loading fails
   useEffect(() => {
     if (isError && error) {
       toast({
@@ -89,8 +84,7 @@ const QuizSection = () => {
     setConnectionStatus('unknown');
     
     try {
-      // Test direct connection first
-      const connected = await testConnection();
+      const connected = await testSupabaseConnection();
       
       if (connected) {
         await refetch();
@@ -151,7 +145,6 @@ const QuizSection = () => {
         <CardDescription>Configure your quiz settings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Connection Status */}
         {connectionStatus === 'disconnected' && (
           <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 mb-4">
             <div className="flex items-center">
@@ -184,7 +177,6 @@ const QuizSection = () => {
           </div>
         )}
 
-        {/* Subject Selector */}
         <div className="space-y-3">
           <Label htmlFor="subject">Pick Subject</Label>
           
@@ -221,7 +213,6 @@ const QuizSection = () => {
           )}
         </div>
 
-        {/* Difficulty Level */}
         <div className="space-y-3">
           <Label>Difficulty Level</Label>
           <RadioGroup
@@ -238,7 +229,6 @@ const QuizSection = () => {
           </RadioGroup>
         </div>
 
-        {/* Time Limit */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-veno-primary" />
@@ -261,7 +251,6 @@ const QuizSection = () => {
           </div>
         </div>
 
-        {/* Number of Questions */}
         <div className="space-y-3">
           <Label>Number of Questions: {questionsCount}</Label>
           <div className="space-y-4">

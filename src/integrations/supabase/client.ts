@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -31,8 +30,7 @@ export const testSupabaseConnection = async () => {
     const { data, error } = await supabase
       .from('questions')
       .select('*')
-      .limit(1)
-      .timeout(10000); // 10-second timeout
+      .limit(1);
 
     const latency = Date.now() - start;
 
@@ -69,6 +67,9 @@ export const testSupabaseConnection = async () => {
     };
   }
 };
+
+// For backward compatibility - rename the function but keep the old name exported
+export const testConnection = testSupabaseConnection;
 
 // Export the existing auth methods
 export const { auth } = supabase;
