@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ChartPieIcon, BarChart3, Book, ShoppingCart, FileText, Bot, Award } from "lucide-react";
+import { ChartPieIcon, BarChart3, Book, ShoppingCart, FileText, Bot, Award, Trophy } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { VenoLogo } from "@/components/ui/logo";
@@ -21,6 +22,7 @@ const DashboardPage = () => {
       avgScore: 0,
       questionsAnswered: 0
     },
+    rewardPoints: 0,
     marketplaceStats: {
       purchases: 0,
       reviews: 0,
@@ -37,6 +39,7 @@ const DashboardPage = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [taskCompletedCount, setTaskCompletedCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -48,6 +51,7 @@ const DashboardPage = () => {
       setIsLoading(true);
       
       try {
+        // Fetch user test attempts
         const { data: testAttempts, error: testError } = await supabase
           .from('test_attempts')
           .select('id, score, total_questions')
@@ -57,6 +61,18 @@ const DashboardPage = () => {
           console.error('Error fetching test attempts:', testError);
         }
         
+        // Fetch reward points
+        const { data: userProfile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('points, activities')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+        }
+        
+        // Calculate CBT statistics
         let avgScore = 0;
         let questionsAnswered = 0;
         
@@ -68,24 +84,77 @@ const DashboardPage = () => {
           avgScore = Math.round(totalScorePercent / testAttempts.length);
         }
         
+        // Get blog activities
+        let articlesRead = 0;
+        let commentsPosted = 0;
+        
+        if (userProfile?.activities) {
+          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
+          
+          articlesRead = activities.filter(
+            (activity: any) => activity.type === 'blog_read'
+          ).length;
+          
+          commentsPosted = activities.filter(
+            (activity: any) => activity.type === 'blog_comment'
+          ).length;
+        }
+        
+        // Get marketplace activities
+        const { count: purchaseCount, error: purchaseError } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact' })
+          .eq('buyer_id', user.id);
+          
+        if (purchaseError) {
+          console.error('Error fetching purchase count:', purchaseError);
+        }
+
+        // Count bot activities if they exist
+        let botConversations = 0;
+        let botQueries = 0;
+
+        if (userProfile?.activities) {
+          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
+          
+          botConversations = activities.filter(
+            (activity: any) => activity.type === 'bot_conversation'
+          ).length;
+          
+          botQueries = activities.filter(
+            (activity: any) => activity.type === 'bot_query'
+          ).length;
+        }
+
+        // Count completed tasks
+        if (userProfile?.activities) {
+          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
+          const tasksCompleted = activities.filter(
+            (activity: any) => activity.type === 'task_completed'
+          ).length;
+          
+          setTaskCompletedCount(tasksCompleted);
+        }
+        
         setUserData({
           cbtStats: {
             testsCompleted: testAttempts?.length || 0,
             avgScore,
             questionsAnswered
           },
+          rewardPoints: userProfile?.points || 0,
           marketplaceStats: {
-            purchases: 5,
-            reviews: 12,
-            favoriteItems: 8
+            purchases: purchaseCount || 0,
+            reviews: 0, // Will implement when reviews table is available
+            favoriteItems: 0 // Will implement when favorites functionality is available
           },
           blogStats: {
-            articlesRead: 15,
-            commentsPosted: 7
+            articlesRead,
+            commentsPosted
           },
           botStats: {
-            conversationsStarted: 34,
-            queriesAnswered: 120
+            conversationsStarted: botConversations,
+            queriesAnswered: botQueries
           }
         });
       } catch (error) {
@@ -97,18 +166,22 @@ const DashboardPage = () => {
     
     fetchDashboardData();
     
+    // Set up realtime subscriptions for data updates
     const channel = supabase.channel('dashboard-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'test_attempts' },
-        (payload) => {
-          if (payload.new && 
-              typeof payload.new === 'object' && 
-              'user_id' in payload.new && 
-              payload.new.user_id === user.id) {
-            fetchDashboardData();
-          }
-        }
+        { event: '*', schema: 'public', table: 'test_attempts', filter: `user_id=eq.${user.id}` },
+        () => fetchDashboardData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_profiles', filter: `user_id=eq.${user.id}` },
+        () => fetchDashboardData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` },
+        () => fetchDashboardData()
       )
       .subscribe();
       
@@ -138,6 +211,48 @@ const DashboardPage = () => {
 
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Asynchronously fetch activities and filter for task completion
+  const getTaskCompletedCount = async () => {
+    if (!user) return 0;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('activities')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (error || !data) return 0;
+      
+      const activities = Array.isArray(data.activities) ? data.activities : [];
+      return activities.filter((a: any) => a.type === 'task_completed').length;
+    } catch (error) {
+      console.error('Error getting task completed count:', error);
+      return 0;
+    }
+  };
+
+  // Asynchronously fetch recent activities
+  const getRecentActivities = async () => {
+    if (!user) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('activities')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (error || !data) return [];
+      
+      const activities = Array.isArray(data.activities) ? data.activities : [];
+      return activities.slice(0, 5);
+    } catch (error) {
+      console.error('Error getting recent activities:', error);
+      return [];
+    }
+  };
+
   return (
     <div className="pb-6">
       <div className="flex items-center mb-6">
@@ -164,7 +279,7 @@ const DashboardPage = () => {
                       <p className="text-muted-foreground">
                         {isLoading 
                           ? "Loading your dashboard..." 
-                          : `You've completed ${userData.cbtStats.testsCompleted} tests with an average score of ${userData.cbtStats.avgScore}%`
+                          : `You have ${userData.rewardPoints} reward points and completed ${userData.cbtStats.testsCompleted} tests`
                         }
                       </p>
                     </div>
@@ -250,13 +365,13 @@ const DashboardPage = () => {
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center">
-                          <Bot className="h-4 w-4 mr-2 text-veno-primary" />
-                          Bot Interactions
+                          <Trophy className="h-4 w-4 mr-2 text-veno-primary" />
+                          Rewards
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-2xl font-bold">{userData.botStats.conversationsStarted}</p>
-                        <p className="text-xs text-muted-foreground">Conversations</p>
+                        <p className="text-2xl font-bold">{userData.rewardPoints}</p>
+                        <p className="text-xs text-muted-foreground">Total Points</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -288,12 +403,12 @@ const DashboardPage = () => {
                       <span>Blog</span>
                     </Button>
                     <Button 
-                      onClick={() => navigate('/bot')} 
+                      onClick={() => navigate('/rewards')} 
                       variant="outline"
                       className="h-auto py-4 flex flex-col items-center justify-center gap-2"
                     >
-                      <Bot className="h-6 w-6 text-veno-primary" />
-                      <span>Chat Bot</span>
+                      <Trophy className="h-6 w-6 text-veno-primary" />
+                      <span>Rewards</span>
                     </Button>
                   </div>
                 </TabsContent>
@@ -310,8 +425,8 @@ const DashboardPage = () => {
                       <TabsTrigger value="blog" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                         <FileText size={16} className="mr-2" /> Blog
                       </TabsTrigger>
-                      <TabsTrigger value="bot" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
-                        <Bot size={16} className="mr-2" /> Bot
+                      <TabsTrigger value="rewards" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
+                        <Trophy size={16} className="mr-2" /> Rewards
                       </TabsTrigger>
                     </TabsList>
                     
@@ -429,37 +544,37 @@ const DashboardPage = () => {
                       </Card>
                     </TabsContent>
                     
-                    <TabsContent value="bot" className="animate-fade-in">
+                    <TabsContent value="rewards" className="animate-fade-in">
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center">
-                            <Bot className="mr-2 h-5 w-5 text-veno-primary" />
-                            Bot Interactions
+                            <Trophy className="mr-2 h-5 w-5 text-veno-primary" />
+                            Rewards & Points
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-4">
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-medium">Conversations</p>
-                                <p className="text-sm font-medium">{userData.botStats.conversationsStarted}</p>
+                                <p className="text-sm font-medium">Total Points</p>
+                                <p className="text-sm font-medium">{userData.rewardPoints}</p>
                               </div>
-                              <Progress value={userData.botStats.conversationsStarted / 50 * 100} className="h-2" />
+                              <Progress value={userData.rewardPoints / 1000 * 100} className="h-2" />
                             </div>
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-medium">Queries Answered</p>
-                                <p className="text-sm font-medium">{userData.botStats.queriesAnswered}</p>
+                                <p className="text-sm font-medium">Tasks Completed</p>
+                                <p className="text-sm font-medium">{taskCompletedCount}</p>
                               </div>
-                              <Progress value={userData.botStats.queriesAnswered / 200 * 100} className="h-2" />
+                              <Progress value={taskCompletedCount / 20 * 100} className="h-2" />
                             </div>
                             <div className="flex justify-end">
                               <Button 
                                 variant="outline" 
-                                onClick={() => navigate('/bot')}
+                                onClick={() => navigate('/rewards')}
                                 className="border-veno-primary/30 text-veno-primary text-xs mt-2"
                               >
-                                Chat with Bot
+                                View Rewards
                               </Button>
                             </div>
                           </div>
@@ -470,57 +585,19 @@ const DashboardPage = () => {
                 </TabsContent>
                 
                 <TabsContent value="activity" className="animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="space-y-4">
                     <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <Book className="h-4 w-4 mr-2 text-veno-primary" />
-                          CBT Performance
-                        </CardTitle>
+                      <CardHeader>
+                        <CardTitle>Recent Activities</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-2xl font-bold">{userData.cbtStats.avgScore}%</p>
-                        <p className="text-xs text-muted-foreground">Average Test Score</p>
-                        <Progress className="mt-2 h-1" value={userData.cbtStats.avgScore} />
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <ShoppingCart className="h-4 w-4 mr-2 text-veno-primary" />
-                          Marketplace
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{userData.marketplaceStats.purchases}</p>
-                        <p className="text-xs text-muted-foreground">Total Purchases</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <FileText className="h-4 w-4 mr-2 text-veno-primary" />
-                          Blog Activity
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{userData.blogStats.articlesRead}</p>
-                        <p className="text-xs text-muted-foreground">Articles Read</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <Bot className="h-4 w-4 mr-2 text-veno-primary" />
-                          Bot Interactions
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{userData.botStats.conversationsStarted}</p>
-                        <p className="text-xs text-muted-foreground">Conversations</p>
+                        {isLoading ? (
+                          <p className="text-muted-foreground">Loading activities...</p>
+                        ) : (
+                          <React.Suspense fallback={<p className="text-muted-foreground">Loading activities...</p>}>
+                            <RecentActivities userId={user.id} />
+                          </React.Suspense>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -550,6 +627,63 @@ const DashboardPage = () => {
         </Card>
       )}
     </div>
+  );
+};
+
+// Extract the RecentActivities component to handle async data loading
+const RecentActivities = ({ userId }: { userId: string }) => {
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('activities')
+          .eq('user_id', userId)
+          .single();
+          
+        if (error) throw error;
+        
+        const activityList = Array.isArray(data?.activities) ? data.activities : [];
+        setActivities(activityList.slice(0, 5));
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, [userId]);
+
+  if (loading) {
+    return <p className="text-muted-foreground">Loading activities...</p>;
+  }
+
+  if (activities.length === 0) {
+    return <p className="text-muted-foreground">No activities yet</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {activities.map((activity: any, index: number) => (
+        <li key={index} className="p-3 border rounded-md">
+          <div className="flex justify-between">
+            <span className="font-medium">{activity.description}</span>
+            <span className="text-muted-foreground text-sm">
+              {new Date(activity.timestamp).toLocaleDateString()}
+            </span>
+          </div>
+          {activity.points && (
+            <span className="text-veno-primary text-sm">
+              +{activity.points} points
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 };
 
