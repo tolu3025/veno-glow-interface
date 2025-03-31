@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -60,10 +61,12 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    const correctAnswer = 'correctOption' in currentQuestionData 
+    // Handle both correctOption and answer properties for backward compatibility
+    const correctAnswer = currentQuestionData.correctOption !== undefined 
       ? currentQuestionData.correctOption 
       : currentQuestionData.answer;
     
+    // Check if the selected option matches the correct answer
     const isCorrect = optionIndex === correctAnswer;
     
     const updatedAnswers = [...userAnswers];
@@ -119,6 +122,7 @@ export const useTestManagement = ({
   };
 
   const calculateScore = () => {
+    // Recalculate score based on correct answers
     const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
     setScore(correctAnswers);
   };

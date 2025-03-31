@@ -16,7 +16,8 @@ import {
   Save,
   XCircle,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  Trash
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -115,16 +116,20 @@ const ManageTest = () => {
   const [isEditQuestionDialogOpen, setIsEditQuestionDialogOpen] = useState(false);
   const [currentEditQuestion, setCurrentEditQuestion] = useState<TestQuestion | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<TestAttempt | null>(null);
   
+  const certificateRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
-  
+
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: `${testDetails?.title || 'Test'} - Certificate`,
+    content: () => certificateRef.current,
+    documentTitle: `Certificate - ${testDetails?.title || 'Test'} Result`,
     removeAfterPrint: true,
     pageStyle: `
       @page { 
-        size: letter; 
+        size: letter landscape; 
         margin: 0.5cm; 
       }
       @media print {
@@ -133,14 +138,36 @@ const ManageTest = () => {
           padding: 0;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+          background-color: white;
         }
         * {
           color-adjust: exact !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
+        .certificate-container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          page-break-inside: avoid;
+        }
       }
     `,
+    onBeforeGetContent: () => {
+      const style = document.createElement('style');
+      style.innerHTML = `
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        body { background-color: white; }
+      `;
+      document.head.appendChild(style);
+      return Promise.resolve();
+    }
   });
 
   useEffect(() => {
@@ -173,6 +200,8 @@ const ManageTest = () => {
         }
 
         setTestDetails(testData);
+        const storedActiveState = localStorage.getItem(`test_active_${testId}`);
+        setTestActive(storedActiveState === null ? true : storedActiveState === 'true');
 
         const { data: attemptsData, error: attemptsError } = await supabase
           .from('test_attempts')
@@ -240,13 +269,16 @@ const ManageTest = () => {
     if (!testDetails) return;
 
     try {
-      setTestActive(!testActive);
+      const newActiveState = !testActive;
+      setTestActive(newActiveState);
+      
+      localStorage.setItem(`test_active_${testId}`, String(newActiveState));
       
       toast({
-        title: testActive ? 'Test Deactivated' : 'Test Activated',
-        description: testActive 
-          ? 'The test will no longer accept new submissions' 
-          : 'The test is now accepting submissions',
+        title: newActiveState ? 'Test Activated' : 'Test Deactivated',
+        description: newActiveState 
+          ? 'The test is now accepting submissions' 
+          : 'The test will no longer accept new submissions',
       });
     } catch (error) {
       console.error('Error toggling test status:', error);
@@ -255,6 +287,42 @@ const ManageTest = () => {
         description: 'Failed to update test status',
         variant: 'destructive',
       });
+    }
+  };
+
+  const deleteTest = async () => {
+    if (!testId || !testDetails) return;
+    
+    setDeleteLoading(true);
+    try {
+      await supabase
+        .from('test_questions')
+        .delete()
+        .eq('test_id', testId);
+      
+      const { error } = await supabase
+        .from('user_tests')
+        .delete()
+        .eq('id', testId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Test Deleted',
+        description: 'The test has been successfully deleted',
+      });
+      
+      navigate('/cbt');
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete test',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleteLoading(false);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -365,11 +433,13 @@ const ManageTest = () => {
     return `${position}th`;
   };
 
-  const printParticipantResult = (attemptId: string) => {
-    setSelectedAttemptId(attemptId);
+  const printParticipantResult = (attempt: TestAttempt) => {
+    setSelectedParticipant(attempt);
+    setSelectedAttemptId(attempt.id);
+    
     setTimeout(() => {
       handlePrint();
-    }, 300);
+    }, 100);
   };
 
   const handleEditQuestion = (question: TestQuestion) => {
@@ -471,6 +541,39 @@ const ManageTest = () => {
             <StopCircle size={16} />
             {testActive ? 'Deactivate Test' : 'Activate Test'}
           </Button>
+          
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="flex items-center gap-2">
+                <Trash size={16} />
+                Delete Test
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Test</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the test and all associated data. 
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={deleteTest}
+                  disabled={deleteLoading}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {deleteLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash className="h-4 w-4 mr-2" />
+                  )}
+                  {deleteLoading ? 'Deleting...' : 'Delete Test'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       
@@ -577,7 +680,7 @@ const ManageTest = () => {
                             variant="outline"
                             size="sm"
                             className="mr-2"
-                            onClick={() => printParticipantResult(attempt.id)}
+                            onClick={() => printParticipantResult(attempt)}
                           >
                             <FileText className="h-3.5 w-3.5 mr-1" />
                             Print
@@ -845,15 +948,15 @@ const ManageTest = () => {
       </Dialog>
       
       <div className="hidden">
-        <div ref={printRef} className="p-8">
-          {selectedAttemptId && getSelectedParticipant() && (
+        <div ref={certificateRef} className="certificate-container p-8 bg-white">
+          {selectedParticipant && (
             <Certificate 
-              userName={getSelectedParticipant()?.participant_name || 'Anonymous'} 
+              userName={selectedParticipant.participant_name || 'Anonymous'} 
               achievementName={testDetails?.title || 'Test Assessment'}
               testDescription={testDetails?.description || ''}
-              date={formatDate(getSelectedParticipant()!.completed_at)}
-              score={Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}
-              position={getParticipantPosition(selectedAttemptId)}
+              date={formatDate(selectedParticipant.completed_at)}
+              score={Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}
+              position={getParticipantPosition(selectedParticipant.id)}
             />
           )}
         </div>
