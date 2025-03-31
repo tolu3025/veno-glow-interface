@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -69,9 +70,6 @@ const CbtPage = () => {
         <h1 className="text-xl font-bold md:text-2xl">Tests & Quizzes</h1>
         
         <div className="flex gap-2">
-          <Button onClick={() => navigate("/cbt/library")} variant="outline" size={isMobile ? "sm" : "default"}>
-            <Library size={16} className="mr-1" /> Library
-          </Button>
           <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
             <Plus size={16} className="mr-1" /> Create Test
           </Button>
@@ -104,6 +102,22 @@ const CbtPage = () => {
         </Tabs>
       </motion.div>
 
+      <div className="flex justify-between my-6">
+        <Button onClick={() => navigate("/cbt/library")} variant="outline" size={isMobile ? "sm" : "default"}>
+          <Library size={16} className="mr-1" /> Library
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs border-veno-primary/30 text-veno-primary"
+          onClick={() => navigate('/cbt/analytics')}
+        >
+          <BarChart3 size={16} className="mr-2 text-veno-primary" />
+          View Analytics
+        </Button>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -121,12 +135,6 @@ const CbtPage = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Track your educational progress and test performance over time.
             </p>
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" className="text-xs border-veno-primary/30 text-veno-primary"
-                onClick={() => navigate('/cbt/analytics')}>
-                View Analytics
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </motion.div>

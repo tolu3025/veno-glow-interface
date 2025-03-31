@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { 
   ArrowLeft, 
   StopCircle, 
@@ -17,7 +19,8 @@ import {
   XCircle,
   BookOpen,
   HelpCircle,
-  Trash
+  Trash,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -121,6 +124,7 @@ const ManageTest = () => {
   const [selectedParticipant, setSelectedParticipant] = useState<TestAttempt | null>(null);
   
   const certificateRef = useRef<HTMLDivElement>(null);
+  const participantResultRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
@@ -169,6 +173,109 @@ const ManageTest = () => {
       return Promise.resolve();
     }
   });
+
+  const downloadParticipantPDF = async (attempt: TestAttempt) => {
+    if (!attempt) return;
+    
+    setSelectedParticipant(attempt);
+    setSelectedAttemptId(attempt.id);
+    
+    toast({
+      title: "Preparing PDF",
+      description: "Creating participant results PDF...",
+    });
+    
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      pdf.setFillColor(65, 84, 241);
+      pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), 20, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(14);
+      pdf.text("Test Results Summary", 105, 12, { align: 'center' });
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(16);
+      pdf.text(`${testDetails?.title || 'Test'} Results`, 105, 30, { align: 'center' });
+      
+      pdf.setFontSize(12);
+      pdf.text(`Participant: ${attempt.participant_name || 'Anonymous'}`, 20, 45);
+      pdf.text(`Email: ${attempt.participant_email || 'Not provided'}`, 20, 53);
+      pdf.text(`Date Taken: ${formatDate(attempt.completed_at)}`, 20, 61);
+      
+      pdf.setFontSize(14);
+      pdf.text(`Score: ${attempt.score}/${attempt.total_questions}`, 20, 75);
+      pdf.text(`Percentage: ${Math.round((attempt.score / attempt.total_questions) * 100)}%`, 20, 85);
+      
+      const percentage = Math.round((attempt.score / attempt.total_questions) * 100);
+      let status = "Satisfactory";
+      
+      if (percentage >= 80) {
+        status = "Excellent";
+        pdf.setTextColor(0, 128, 0);
+      } else if (percentage >= 60) {
+        status = "Good";
+        pdf.setTextColor(0, 0, 200);
+      } else if (percentage < 50) {
+        status = "Needs Improvement";
+        pdf.setTextColor(200, 0, 0);
+      }
+      
+      pdf.text(`Status: ${status}`, 20, 95);
+      pdf.setTextColor(0, 0, 0);
+      
+      const position = getParticipantPosition(attempt.id);
+      if (position) {
+        pdf.text(`Rank: ${position} position among all participants`, 20, 105);
+      }
+      
+      pdf.setDrawColor(100, 100, 100);
+      pdf.line(20, 115, 190, 115);
+      pdf.text("Notes:", 20, 125);
+      
+      for (let i = 0; i < 3; i++) {
+        pdf.setDrawColor(200, 200, 200);
+        pdf.line(20, 135 + (i * 10), 190, 135 + (i * 10));
+      }
+      
+      pdf.line(20, 240, 80, 240);
+      pdf.text("Examiner's Signature", 20, 250);
+      
+      pdf.line(120, 240, 180, 240);
+      pdf.text("Date", 145, 250);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text("Veno Education Platform", 105, 270, { align: 'center' });
+      pdf.text(`Document generated on ${new Date().toLocaleDateString()}`, 105, 275, { align: 'center' });
+      
+      if (attempt.disqualified) {
+        pdf.setGState(new pdf.GState({ opacity: 0.3 }));
+        pdf.setFont(undefined, 'bold');
+        pdf.setTextColor(220, 0, 0);
+        pdf.setFontSize(40);
+        pdf.text("DISQUALIFIED", 105, 160, { align: 'center', angle: 45 });
+      }
+      
+      pdf.save(`${attempt.participant_name || 'Participant'}_${testDetails?.title || 'Test'}_Results.pdf`);
+      
+      toast({
+        title: "PDF Generated",
+        description: "Participant results have been saved as a PDF",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchTestData = async () => {
@@ -676,69 +783,81 @@ const ManageTest = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mr-2"
-                            onClick={() => printParticipantResult(attempt)}
-                          >
-                            <FileText className="h-3.5 w-3.5 mr-1" />
-                            Print
-                          </Button>
-                          
-                          {attempt.disqualified ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="outline">
-                                  Reinstate
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will reinstate the participant's results. Are you sure?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => reinstateParticipant(attempt.id)}
-                                  >
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => printParticipantResult(attempt)}
+                              className="text-sky-600"
+                            >
+                              <Printer className="h-3.5 w-3.5 mr-1" />
+                              Print
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadParticipantPDF(attempt)}
+                              className="text-blue-600"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1" />
+                              PDF
+                            </Button>
+                            
+                            {attempt.disqualified ? (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="outline">
                                     Reinstate
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="destructive">
-                                  {disqualifying === attempt.id ? 
-                                    <Loader2 className="h-4 w-4 animate-spin" /> : 
-                                    'Disqualify'
-                                  }
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will mark the participant's results as disqualified. Are you sure?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => disqualifyParticipant(attempt.id)}
-                                    className="bg-destructive hover:bg-destructive/90"
-                                  >
-                                    Disqualify
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will reinstate the participant's results. Are you sure?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => reinstateParticipant(attempt.id)}
+                                    >
+                                      Reinstate
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            ) : (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="destructive">
+                                    {disqualifying === attempt.id ? 
+                                      <Loader2 className="h-4 w-4 animate-spin" /> : 
+                                      'Disqualify'
+                                    }
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will mark the participant's results as disqualified. Are you sure?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => disqualifyParticipant(attempt.id)}
+                                      className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                      Disqualify
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -950,14 +1069,38 @@ const ManageTest = () => {
       <div className="hidden">
         <div ref={certificateRef} className="certificate-container p-8 bg-white">
           {selectedParticipant && (
-            <Certificate 
-              userName={selectedParticipant.participant_name || 'Anonymous'} 
-              achievementName={testDetails?.title || 'Test Assessment'}
-              testDescription={testDetails?.description || ''}
-              date={formatDate(selectedParticipant.completed_at)}
-              score={Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}
-              position={getParticipantPosition(selectedParticipant.id)}
-            />
+            <div className="max-w-4xl mx-auto border-8 border-double border-blue-600 p-8 text-center">
+              <h1 className="text-3xl font-bold text-blue-800 mb-2">Certificate of Completion</h1>
+              <div className="text-lg mb-6">This certifies that</div>
+              <h2 className="text-2xl font-bold mb-6">{selectedParticipant.participant_name || 'Anonymous'}</h2>
+              <div className="text-lg mb-2">has successfully completed</div>
+              <h3 className="text-xl font-bold mb-6">{testDetails?.title || 'Assessment'}</h3>
+              <div className="mb-6">
+                <span className="text-lg font-semibold">
+                  Score: {selectedParticipant.score}/{selectedParticipant.total_questions} 
+                  ({Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}%)
+                </span>
+              </div>
+              <div className="text-sm mb-8">
+                Date: {formatDate(selectedParticipant.completed_at)}
+              </div>
+              <div className="flex justify-between items-end mt-12 pt-8">
+                <div className="text-center border-t border-gray-300 inline-block px-8">
+                  <p className="text-sm pt-1">Examiner's Signature</p>
+                </div>
+                <div className="flex items-center">
+                  <VenoLogo className="h-12 w-12 mr-2" />
+                  <span className="text-xl font-bold">Veno Education</span>
+                </div>
+              </div>
+              {selectedParticipant.disqualified && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-6xl font-bold text-red-500 opacity-40 transform rotate-45 border-8 border-red-500 px-4 py-2">
+                    DISQUALIFIED
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
