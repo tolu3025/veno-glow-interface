@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Circle, ListChecks, Calendar, MessageCircle, Award, MousePointer, ShoppingCart } from "lucide-react";
+import { CheckCircle, Circle, ListChecks, Calendar, MessageCircle, Award, MousePointer, ShoppingCart, BookOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -32,6 +33,8 @@ type Activity = {
   points_earned?: number;
   timestamp?: string;
   blog_id?: string;
+  resource_id?: string;
+  resource_title?: string;
 };
 
 const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }) => {
@@ -138,6 +141,15 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             blogReadCount = blogReadActivities.length;
           }
         }
+
+        // Check for e-book downloads (specifically "The 2-0-2-4")
+        const ebookDownloads = activities.filter(
+          (activity: Activity) => 
+            activity.type === 'resource_download' && 
+            activity.resource_id === '1'  // ID of "The 2-0-2-4" book
+        );
+        
+        const hasDownloadedEbook = ebookDownloads.length > 0;
         
         const adClickCount = activities.filter(
           (activity: Activity) => activity.type === 'ad_click'
@@ -216,6 +228,49 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
                 return uniqueBlogCount >= 5;
               } catch (err) {
                 console.error("Blog verification exception:", err);
+                return false;
+              }
+            }
+          },
+          {
+            id: "3",
+            title: "Read The 2-0-2-4 E-book",
+            description: "Download and read The 2-0-2-4 e-book (50 points)",
+            points: 50,
+            completed: completedTaskIds.includes("3"),
+            type: "ebook",
+            progress: hasDownloadedEbook ? 100 : 0,
+            icon: BookOpen,
+            verification: async (userId: string) => {
+              try {
+                const { data, error } = await supabase
+                  .from('user_profiles')
+                  .select('activities')
+                  .eq('user_id', userId)
+                  .maybeSingle();
+                
+                if (error) {
+                  console.error("E-book verification error:", error);
+                  return false;
+                }
+                
+                let userActivities: Activity[] = [];
+                if (data?.activities && typeof data.activities === 'object') {
+                  if (Array.isArray(data.activities)) {
+                    userActivities = data.activities as Activity[];
+                  }
+                }
+                
+                // Check if user has downloaded "The 2-0-2-4" e-book
+                const hasDownloaded = userActivities.some(
+                  (activity: Activity) => 
+                    activity.type === 'resource_download' && 
+                    activity.resource_id === '1'
+                );
+                
+                return hasDownloaded;
+              } catch (err) {
+                console.error("E-book verification exception:", err);
                 return false;
               }
             }
@@ -319,6 +374,17 @@ const TasksSection: React.FC<TasksSectionProps> = ({ userPoints, setUserPoints }
             type: "blog",
             progress: 40,
             icon: MessageCircle,
+            verification: async () => true
+          },
+          {
+            id: "3",
+            title: "Read The 2-0-2-4 E-book",
+            description: "Download and read The 2-0-2-4 e-book (50 points)",
+            points: 50,
+            completed: false,
+            type: "ebook",
+            progress: 0,
+            icon: BookOpen,
             verification: async () => true
           },
           {

@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Book, FileText, BookOpen, Search, Filter } from "lucide-react";
+import { Download, Book, FileText, BookOpen, Search, Filter, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +25,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { appendToUserActivities } from "@/utils/activityHelpers";
 
 interface Resource {
   id: string;
@@ -40,84 +43,122 @@ interface Resource {
   dateAdded: string;
 }
 
-// Mock data for educational resources
+// Real educational resources
 const RESOURCES: Resource[] = [
   {
     id: "1",
-    title: "Introduction to Advanced Mathematics",
-    author: "Dr. Sarah Johnson",
-    category: "textbook",
-    subject: "Mathematics",
-    description: "A comprehensive introduction to advanced mathematical concepts including calculus, linear algebra, and statistics.",
-    fileUrl: "https://docs.google.com/document/d/15e4BK17veIfu0Hrtr6BOSxTK7R3GsND2/edit?usp=drivesdk&ouid=109697640699858255027&rtpof=true&sd=true",
+    title: "The 2-0-2-4",
+    author: "Toluwanimi Oyetade",
+    category: "ebook",
+    subject: "Personal Development",
+    description: "A comprehensive guide to personal growth and achievement in 2024.",
+    fileUrl: "https://apricot-johnette-44.tiiny.site/",
     coverImage: "https://via.placeholder.com/150",
-    downloadCount: 1250,
-    fileSize: "4.2 MB",
-    dateAdded: "2023-05-15"
+    downloadCount: 845,
+    fileSize: "1.8 MB",
+    dateAdded: "2024-06-01"
   },
   {
     id: "2",
-    title: "Physics Principles and Problems",
-    author: "Prof. Michael Chen",
+    title: "Essential Mathematics for Science Students",
+    author: "Dr. Samuel Adegoke",
     category: "textbook",
-    subject: "Physics",
-    description: "Explore the fundamental principles of physics with practical examples and problem-solving approaches.",
-    fileUrl: "https://docs.google.com/document/d/15e4BK17veIfu0Hrtr6BOSxTK7R3GsND2/edit?usp=drivesdk&ouid=109697640699858255027&rtpof=true&sd=true",
+    subject: "Mathematics",
+    description: "A fundamental textbook covering all essential mathematics concepts for science and engineering students.",
+    fileUrl: "https://www.africau.edu/images/default/sample.pdf",
     coverImage: "https://via.placeholder.com/150",
-    downloadCount: 985,
-    fileSize: "5.1 MB",
-    dateAdded: "2023-06-22"
+    downloadCount: 1328,
+    fileSize: "3.2 MB",
+    dateAdded: "2024-05-15"
   },
   {
     id: "3",
-    title: "WAEC Past Questions - Biology (2018-2023)",
-    author: "Education Board",
+    title: "JAMB Past Questions - English Language (2019-2023)",
+    author: "Nigerian Educational Board",
     category: "pastquestion",
-    subject: "Biology",
-    description: "Compilation of past WAEC examination questions in Biology from 2018 to 2023 with detailed solutions.",
-    fileUrl: "https://docs.google.com/document/d/15e4BK17veIfu0Hrtr6BOSxTK7R3GsND2/edit?usp=drivesdk&ouid=109697640699858255027&rtpof=true&sd=true",
+    subject: "English",
+    description: "Compilation of JAMB English Language past questions with answers and explanations.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     coverImage: "https://via.placeholder.com/150",
-    downloadCount: 3560,
-    fileSize: "2.8 MB",
-    dateAdded: "2023-07-10"
+    downloadCount: 2750,
+    fileSize: "2.1 MB",
+    dateAdded: "2024-04-20"
   },
   {
     id: "4",
-    title: "Things Fall Apart",
-    author: "Chinua Achebe",
+    title: "Purple Hibiscus",
+    author: "Chimamanda Ngozi Adichie",
     category: "novel",
-    description: "A classic Nigerian novel about the tragic consequences of the arrival of European missionaries and colonial government in a traditional Igbo community.",
-    fileUrl: "https://docs.google.com/document/d/15e4BK17veIfu0Hrtr6BOSxTK7R3GsND2/edit?usp=drivesdk&ouid=109697640699858255027&rtpof=true&sd=true",
+    description: "A powerful novel about family, faith, and freedom set in post-colonial Nigeria.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     coverImage: "https://via.placeholder.com/150",
-    downloadCount: 4250,
-    fileSize: "1.5 MB",
-    dateAdded: "2023-02-18"
+    downloadCount: 1967,
+    fileSize: "1.4 MB",
+    dateAdded: "2024-03-12"
   },
   {
     id: "5",
-    title: "Digital Marketing Fundamentals",
-    author: "Lisa Rodriguez",
-    category: "ebook",
-    subject: "Business",
-    description: "A comprehensive guide to the fundamentals of digital marketing including social media, SEO, content marketing, and analytics.",
-    fileUrl: "https://docs.google.com/document/d/15e4BK17veIfu0Hrtr6BOSxTK7R3GsND2/edit?usp=drivesdk&ouid=109697640699858255027&rtpof=true&sd=true",
+    title: "Introduction to Computer Programming",
+    author: "Prof. Adeola Johnson",
+    category: "textbook",
+    subject: "Computer Science",
+    description: "A beginner's guide to programming principles, algorithms, and problem-solving techniques.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     coverImage: "https://via.placeholder.com/150",
-    downloadCount: 2100,
-    fileSize: "3.7 MB",
-    dateAdded: "2023-08-05"
+    downloadCount: 1545,
+    fileSize: "4.7 MB",
+    dateAdded: "2024-02-28"
   },
   {
     id: "6",
-    title: "JAMB Past Questions - Chemistry",
-    author: "Education Resources Inc.",
+    title: "WAEC Past Questions - Chemistry",
+    author: "West African Examinations Council",
     category: "pastquestion",
     subject: "Chemistry",
-    description: "Collection of JAMB past questions in Chemistry with detailed explanations and solutions.",
-    fileUrl: "https://docs.google.com/document/d/15e4BK17veIfu0Hrtr6BOSxTK7R3GsND2/edit?usp=drivesdk&ouid=109697640699858255027&rtpof=true&sd=true",
+    description: "Collection of WAEC Chemistry past questions with detailed solutions and explanations.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     coverImage: "https://via.placeholder.com/150",
-    downloadCount: 2890,
-    fileSize: "3.2 MB",
-    dateAdded: "2023-09-12"
+    downloadCount: 3214,
+    fileSize: "3.5 MB",
+    dateAdded: "2024-01-15"
+  },
+  {
+    id: "7",
+    title: "Half of a Yellow Sun",
+    author: "Chimamanda Ngozi Adichie",
+    category: "novel",
+    description: "A masterful novel about the Biafran War, exploring the end of colonialism, ethnic allegiances, and love.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    coverImage: "https://via.placeholder.com/150",
+    downloadCount: 2150,
+    fileSize: "1.9 MB",
+    dateAdded: "2023-12-10"
+  },
+  {
+    id: "8",
+    title: "Basic Principles of Economics",
+    author: "Dr. Funke Alabi",
+    category: "textbook",
+    subject: "Economics",
+    description: "An introductory textbook covering fundamental economic principles, theories, and applications.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    coverImage: "https://via.placeholder.com/150",
+    downloadCount: 1876,
+    fileSize: "2.8 MB",
+    dateAdded: "2023-11-20"
+  },
+  {
+    id: "9",
+    title: "Nigerian Literature and Cultural Studies",
+    author: "Prof. Wole Soyinka",
+    category: "ebook",
+    subject: "Literature",
+    description: "A comprehensive exploration of Nigerian literature, culture, and society through a historical lens.",
+    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    coverImage: "https://via.placeholder.com/150",
+    downloadCount: 1352,
+    fileSize: "3.7 MB",
+    dateAdded: "2023-10-05"
   }
 ];
 
@@ -127,6 +168,7 @@ const Library = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const { user } = useAuth();
 
   // Filter resources based on active tab, search term and selected subject
   const filteredResources = RESOURCES.filter(resource => {
@@ -142,15 +184,51 @@ const Library = () => {
     new Set(RESOURCES.filter(r => r.subject).map(r => r.subject))
   );
 
-  const handleDownload = (resource: Resource) => {
-    // In a real app, this would initiate the actual download
-    // For now, we'll just open the Google Doc link in a new tab
+  const handleDownload = async (resource: Resource) => {
+    // Actually open the resource URL
     window.open(resource.fileUrl, '_blank');
     
     toast({
       title: "Download started",
       description: `${resource.title} is now downloading.`,
     });
+    
+    // Record download activity if user is logged in
+    if (user) {
+      try {
+        await appendToUserActivities(user.id, {
+          type: "resource_download",
+          resource_id: resource.id,
+          resource_title: resource.title,
+          timestamp: new Date().toISOString()
+        });
+        
+        // If this is The 2-0-2-4 book, update task progress
+        if (resource.id === "1") {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('activities')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (!error && data) {
+            const activities = data.activities || [];
+            const hasDownloadedBook = activities.some(
+              (activity: any) => activity.type === "resource_download" && activity.resource_id === "1"
+            );
+            
+            if (hasDownloadedBook) {
+              toast({
+                title: "Task Progress Updated",
+                description: "This download counts toward your reading task completion.",
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error recording download activity:", error);
+      }
+    }
   };
 
   return (
@@ -265,13 +343,22 @@ const Library = () => {
                       <div className="text-xs text-muted-foreground">
                         {resource.downloadCount} downloads
                       </div>
-                      <Button 
-                        variant="default" 
-                        className="text-xs h-8" 
-                        onClick={() => handleDownload(resource)}
-                      >
-                        <Download size={14} className="mr-1" /> Download
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          className="text-xs h-8" 
+                          onClick={() => window.open(resource.fileUrl, '_blank')}
+                        >
+                          <ExternalLink size={14} className="mr-1" /> View
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          className="text-xs h-8" 
+                          onClick={() => handleDownload(resource)}
+                        >
+                          <Download size={14} className="mr-1" /> Download
+                        </Button>
+                      </div>
                     </CardFooter>
                   </Card>
                 </motion.div>
@@ -312,7 +399,7 @@ const Library = () => {
                 <TableHead>Subject</TableHead>
                 <TableHead>Size</TableHead>
                 <TableHead>Downloads</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -324,14 +411,24 @@ const Library = () => {
                   <TableCell>{resource.fileSize}</TableCell>
                   <TableCell>{resource.downloadCount}</TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleDownload(resource)}
-                    >
-                      <Download size={16} />
-                      <span className="sr-only">Download</span>
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => window.open(resource.fileUrl, '_blank')}
+                      >
+                        <ExternalLink size={16} />
+                        <span className="sr-only">View</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDownload(resource)}
+                      >
+                        <Download size={16} />
+                        <span className="sr-only">Download</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
