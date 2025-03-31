@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, PlusCircle, BarChart, WifiOff, BookOpen } from "lucide-react";
+import { Home, PlusCircle, BarChart, WifiOff, BookOpen, Library } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,12 @@ const AppNavigation = () => {
       path: "/cbt/analytics",
       icon: <BarChart size={18} />,
       authRequired: true
+    },
+    {
+      name: "Library",
+      path: "/library",
+      icon: <Library size={18} />,
+      authRequired: false,
     },
     {
       name: "Quiz",

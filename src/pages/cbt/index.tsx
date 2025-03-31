@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, BookOpen, Trophy, BarChart3 } from "lucide-react";
+import { Plus, BookOpen, Trophy, BarChart3, Library } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,9 +55,14 @@ const CbtPage = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold md:text-2xl">Tests & Quizzes</h1>
         
-        <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
-          <Plus size={16} className="mr-1" /> Create Test
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate("/library")} variant="outline" size={isMobile ? "sm" : "default"}>
+            <Library size={16} className="mr-1" /> Library
+          </Button>
+          <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">
+            <Plus size={16} className="mr-1" /> Create Test
+          </Button>
+        </div>
       </div>
       
       <motion.div

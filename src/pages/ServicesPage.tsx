@@ -137,7 +137,7 @@ const ServicesPage = () => {
       title: "Veno Library",
       description: "Digital library with a vast collection of educational resources, books, and study materials.",
       icon: BookOpen,
-      href: "/cbt",
+      href: "/library",
       features: [
         "Categorized study materials",
         "Easy search functionality",

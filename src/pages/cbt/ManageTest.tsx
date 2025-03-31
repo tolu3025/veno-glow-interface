@@ -118,22 +118,27 @@ const ManageTest = () => {
   
   const printRef = useRef<HTMLDivElement>(null);
   
-  // Fixed print handler to properly style and isolate the certificate component
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: `${testDetails?.title || 'Test'} - Certificate`,
     removeAfterPrint: true,
     pageStyle: `
-      @page { size: letter; margin: 0.5cm; }
+      @page { 
+        size: letter; 
+        margin: 0.5cm; 
+      }
       @media print {
-        body {
+        body, html { 
           margin: 0;
           padding: 0;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        .no-print { display: none !important; }
-        .print-content { display: block !important; }
+        * {
+          color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
       }
     `,
   });
@@ -840,11 +845,12 @@ const ManageTest = () => {
       </Dialog>
       
       <div className="hidden">
-        <div ref={printRef} className="p-8 print-content">
+        <div ref={printRef} className="p-8">
           {selectedAttemptId && getSelectedParticipant() && (
             <Certificate 
               userName={getSelectedParticipant()?.participant_name || 'Anonymous'} 
-              achievementName={`${testDetails?.title || 'Test'} Assessment`}
+              achievementName={testDetails?.title || 'Test Assessment'}
+              testDescription={testDetails?.description || ''}
               date={formatDate(getSelectedParticipant()!.completed_at)}
               score={Math.round((getSelectedParticipant()!.score / getSelectedParticipant()!.total_questions) * 100)}
               position={getParticipantPosition(selectedAttemptId)}
