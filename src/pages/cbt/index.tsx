@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -23,6 +22,20 @@ const CbtPage = () => {
     const params = new URLSearchParams(location.search);
     return params.get('tab') || "quiz";
   });
+  
+  // Force component to remount on initial load
+  useEffect(() => {
+    console.log("CBT Page loaded with latest version");
+    
+    // Clear any stale cache from browser
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+  }, []);
   
   const handleCreateTest = () => {
     navigate("/cbt/create");
