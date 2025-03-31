@@ -1,17 +1,35 @@
 
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     console.error(
       "404 Error: User attempted to access non-existent route:",
       location.pathname
     );
-  }, [location.pathname]);
+    
+    // Check if there's a referral code in the URL
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      console.log('Referral code found in 404 page:', refCode);
+      // Store the referral code and redirect to signup
+      sessionStorage.setItem('referralCode', refCode);
+    }
+  }, [location.pathname, searchParams]);
+
+  const handleSignUp = () => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      navigate(`/signup?ref=${refCode}`);
+    } else {
+      navigate('/signup');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
@@ -39,12 +57,34 @@ const NotFound = () => {
         <p className="text-xl text-muted-foreground mb-6">
           Oops! Page not found
         </p>
-        <button
-          onClick={() => navigate("/")}
-          className="veno-button"
-        >
-          Return to Home
-        </button>
+        {searchParams.get('ref') ? (
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              It looks like you clicked on a referral link. Would you like to sign up?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleSignUp}
+                className="veno-button bg-veno-primary text-white px-4 py-2 rounded"
+              >
+                Sign Up with Referral
+              </button>
+              <button
+                onClick={() => navigate("/")}
+                className="veno-button"
+              >
+                Return to Home
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate("/")}
+            className="veno-button"
+          >
+            Return to Home
+          </button>
+        )}
       </div>
     </div>
   );

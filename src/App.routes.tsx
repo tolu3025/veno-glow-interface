@@ -37,6 +37,7 @@ export const routes: RouteObject[] = [
       { path: 'blog', element: <BlogPage /> },
       { path: 'bot', element: <BotPage /> },
       { path: 'auth', element: <AuthPage /> },
+      { path: 'signup', element: <AuthPage initialMode="signup" /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'maintenance', element: <UnderMaintenancePage /> },
       { path: 'services', element: <ServicesPage /> },
