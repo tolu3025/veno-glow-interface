@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef, motion } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { 
