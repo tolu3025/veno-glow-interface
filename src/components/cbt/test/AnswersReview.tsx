@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, CheckCircle, XCircle, ChevronDown, Info } from 'lucide-react';
+import { Trophy, CheckCircle, XCircle, ChevronDown, Info, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -61,7 +61,11 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
         </div>
         
         <div className="space-y-6 mt-6">
-          <h3 className="text-lg font-semibold mb-2">Question Review</h3>
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-veno-primary" />
+            <h3 className="text-lg font-semibold">Question Review & Explanations</h3>
+          </div>
+          
           {userAnswers.map((answer, index) => {
             const question = questions[index];
             if (!question) return null;
@@ -137,7 +141,7 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                     <div className="flex items-start gap-2 px-2 text-sm">
                       <Info size={16} className="text-veno-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-medium">Explanation</h4>
+                        <h4 className="font-medium">Detailed Explanation</h4>
                         <p className="text-muted-foreground">
                           {question.explanation || 
                             `The correct answer is ${String.fromCharCode(65 + question.correctOption)}: ${
@@ -168,6 +172,18 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                               "no answer"}.
                             The correct answer is option {String.fromCharCode(65 + question.correctOption)}.
                           </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {question.explanation && (
+                      <div className="flex items-start gap-2 px-2 bg-blue-50/50 dark:bg-blue-950/10 p-3 mt-2 rounded-md border border-blue-200 dark:border-blue-800/40">
+                        <BookOpen size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-blue-700 dark:text-blue-400">Learning Point</h4>
+                          <div className="text-blue-700/70 dark:text-blue-400/70 prose-sm prose-p:mt-1 prose prose-headings:text-blue-700">
+                            <p>{question.explanation}</p>
+                          </div>
                         </div>
                       </div>
                     )}

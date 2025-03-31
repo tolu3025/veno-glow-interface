@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +61,7 @@ type Question = {
   text: string;
   options: string[];
   correctOption: number;
+  explanation?: string;
 };
 
 const CreateTest = () => {
@@ -72,6 +74,7 @@ const CreateTest = () => {
     text: "",
     options: ["", "", "", ""],
     correctOption: 0,
+    explanation: "",
   });
   const [saving, setSaving] = useState(false);
   
@@ -112,6 +115,7 @@ const CreateTest = () => {
       text: "",
       options: ["", "", "", ""],
       correctOption: 0,
+      explanation: "",
     });
     
     toast({
@@ -185,6 +189,7 @@ const CreateTest = () => {
         question_text: q.text,
         options: q.options,
         answer: q.correctOption,
+        explanation: q.explanation || null,
         subject: "General", // Default subject
       }));
       
@@ -374,7 +379,10 @@ const CreateTest = () => {
             transition={{ delay: 0.15 }}
             className="veno-card p-5 space-y-4"
           >
-            <h2 className="text-lg font-medium mb-2">Questions</h2>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-veno-primary" />
+              <h2 className="text-lg font-medium">Questions</h2>
+            </div>
             <p className="text-sm text-muted-foreground mb-4">
               Add questions to your test. Each question must have 4 options with 1 correct answer.
             </p>
@@ -421,6 +429,25 @@ const CreateTest = () => {
                     Select the radio button next to the correct answer
                   </p>
                 </div>
+
+                <div>
+                  <label htmlFor="explanationText" className="text-sm font-medium flex items-center gap-1">
+                    <Info size={14} className="text-veno-primary" />
+                    Explanation (Optional)
+                  </label>
+                  <Textarea
+                    id="explanationText"
+                    placeholder="Explain why the correct answer is right (will be shown after the test)"
+                    value={currentQuestion.explanation || ""}
+                    onChange={(e) => setCurrentQuestion({...currentQuestion, explanation: e.target.value})}
+                    className="resize-none mt-1"
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <HelpCircle className="inline h-3 w-3 mr-1" />
+                    Providing explanations helps test takers learn from their mistakes
+                  </p>
+                </div>
               </div>
               
               <Button
@@ -465,6 +492,11 @@ const CreateTest = () => {
                           </div>
                         ))}
                       </div>
+                      {q.explanation && (
+                        <div className="mt-2 text-xs">
+                          <span className="text-blue-600 dark:text-blue-400 font-medium">Explanation:</span> {q.explanation.substring(0, 60)}{q.explanation.length > 60 ? "..." : ""}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, motion } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { 
@@ -14,7 +13,9 @@ import {
   FileText,
   PencilIcon,
   Save,
-  XCircle
+  XCircle,
+  BookOpen,
+  HelpCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -206,11 +207,10 @@ const ManageTest = () => {
       if (error) throw error;
       
       if (data) {
-        // Transform data to match our TestQuestion type
         const questions = data.map(q => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options.map(String) : [], // Ensure options are strings
+          options: Array.isArray(q.options) ? q.options.map(String) : [],
           answer: q.answer,
           explanation: q.explanation || ''
         }));
@@ -351,7 +351,6 @@ const ManageTest = () => {
     const index = sortedAttempts.findIndex(attempt => attempt.id === attemptId);
     if (index === -1) return '';
     
-    // Convert to position (1st, 2nd, 3rd, etc.)
     const position = index + 1;
     if (position === 1) return "1st";
     if (position === 2) return "2nd";
@@ -642,7 +641,10 @@ const ManageTest = () => {
         
         <TabsContent value="questions">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-veno-primary" />
+              <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
+            </div>
           </div>
           
           {loadingQuestions ? (
@@ -662,60 +664,75 @@ const ManageTest = () => {
           ) : (
             <div className="space-y-4">
               {testQuestions.map((question, index) => (
-                <Card key={question.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex justify-between">
-                      <span>Question {index + 1}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditQuestion(question)}
-                        className="h-8 px-2"
-                      >
-                        <PencilIcon size={16} />
-                        <span className="ml-1">Edit</span>
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4">{question.question}</p>
-                    <div className="space-y-2">
-                      {question.options.map((option, optionIndex) => (
-                        <div 
-                          key={optionIndex} 
-                          className={`p-3 rounded-md border ${
-                            optionIndex === question.answer ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700'
-                          }`}
+                <motion.div 
+                  key={question.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex justify-between">
+                        <span>Question {index + 1}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEditQuestion(question)}
+                          className="h-8 px-2"
                         >
-                          <div className="flex items-center">
-                            <div className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 ${
-                              optionIndex === question.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                            }`}>
-                              {String.fromCharCode(65 + optionIndex)}
+                          <PencilIcon size={16} />
+                          <span className="ml-1">Edit</span>
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-4">{question.question}</p>
+                      <div className="space-y-2">
+                        {question.options.map((option, optionIndex) => (
+                          <div 
+                            key={optionIndex} 
+                            className={`p-3 rounded-md border ${
+                              optionIndex === question.answer ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <div className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 ${
+                                optionIndex === question.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                              }`}>
+                                {String.fromCharCode(65 + optionIndex)}
+                              </div>
+                              <span>{option}</span>
+                              {optionIndex === question.answer && (
+                                <Check size={16} className="ml-2 text-green-500" />
+                              )}
                             </div>
-                            <span>{option}</span>
-                            {optionIndex === question.answer && (
-                              <Check size={16} className="ml-2 text-green-500" />
-                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {question.explanation ? (
+                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-start gap-2">
+                            <BookOpen size={20} className="mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Explanation:</p>
+                              <p className="text-blue-700 dark:text-blue-300/90">{question.explanation}</p>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    {question.explanation && (
-                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm font-medium mb-1">Explanation:</p>
-                        <p className="text-sm">{question.explanation}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      ) : (
+                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-md border border-gray-200 dark:border-gray-700 text-muted-foreground text-sm italic">
+                          No explanation provided for this question
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
       
-      {/* Edit Question Dialog */}
       <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
@@ -770,15 +787,22 @@ const ManageTest = () => {
               </div>
               
               <div>
-                <Label htmlFor="explanation">Explanation (Optional)</Label>
+                <div className="flex items-center gap-2 mb-1">
+                  <BookOpen size={16} className="text-veno-primary" />
+                  <Label htmlFor="explanation">Explanation (Optional)</Label>
+                </div>
                 <Textarea 
                   id="explanation" 
                   value={currentEditQuestion.explanation || ''}
                   onChange={(e) => handleUpdateQuestionField('explanation', e.target.value)}
-                  rows={2}
+                  rows={4}
                   className="mt-1"
-                  placeholder="Explain why the answer is correct..."
+                  placeholder="Explain why the answer is correct. This will help test takers learn from their mistakes."
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  <HelpCircle className="inline h-3 w-3 mr-1" />
+                  A clear explanation improves the educational value of your test
+                </p>
               </div>
             </div>
           )}
