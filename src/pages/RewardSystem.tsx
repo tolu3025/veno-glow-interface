@@ -81,15 +81,27 @@ const RewardSystem = () => {
                 }]
               });
             
-            if (insertError) throw insertError;
-            
-            setUserPoints(100);
-            toast({
-              title: "Welcome to Rewards!",
-              description: "We've given you 100 points to get started.",
-            });
+            if (insertError) {
+              console.error("Error creating user profile:", insertError);
+              toast({
+                title: "No points available",
+                description: "We'll add points as you complete tasks",
+                variant: "default",
+              });
+            } else {
+              setUserPoints(100);
+              toast({
+                title: "Welcome to Rewards!",
+                description: "We've given you 100 points to get started.",
+              });
+            }
           } else {
-            throw error;
+            console.error("Error fetching user profile:", error);
+            toast({
+              title: "No points available",
+              description: "We'll add points as you complete tasks",
+              variant: "default",
+            });
           }
         } else if (data) {
           setUserPoints(data.points || 0);
@@ -111,9 +123,9 @@ const RewardSystem = () => {
       } catch (error) {
         console.error("Error fetching user points:", error);
         toast({
-          title: "Error",
-          description: "Failed to fetch your reward points. Please try again later.",
-          variant: "destructive",
+          title: "No points available",
+          description: "We'll add points as you complete tasks",
+          variant: "default",
         });
       } finally {
         setIsLoading(false);
@@ -158,7 +170,10 @@ const RewardSystem = () => {
           .update({ points: userPoints })
           .eq('user_id', user.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating user points:", error);
+          // Don't show error toast for this silent update
+        }
       } catch (error) {
         console.error("Error updating user points:", error);
       }

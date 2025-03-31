@@ -118,9 +118,9 @@ export const useSubjects = () => {
         }
         
         toast({
-          title: "Failed to load subjects",
-          description: "Check your connection and try again.",
-          variant: "destructive",
+          title: "No subjects available",
+          description: "Check your connection or try again later.",
+          variant: "default",
           duration: 5000,
         });
         
