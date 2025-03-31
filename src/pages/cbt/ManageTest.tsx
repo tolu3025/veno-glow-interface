@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -255,8 +254,7 @@ const ManageTest = () => {
       pdf.text(`Document generated on ${new Date().toLocaleDateString()}`, 105, 275, { align: 'center' });
       
       if (attempt.disqualified) {
-        // Fix: Create a GState object correctly
-        const gs = pdf.GState(new pdf.GState({ opacity: 0.3 }));
+        const gs = pdf.GState({ opacity: 0.3 });
         pdf.setGState(gs);
         pdf.setFont(undefined, 'bold');
         pdf.setTextColor(220, 0, 0);
