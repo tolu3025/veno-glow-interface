@@ -56,7 +56,7 @@ const CbtPage = () => {
         <h1 className="text-xl font-bold md:text-2xl">Tests & Quizzes</h1>
         
         <div className="flex gap-2">
-          <Button onClick={() => navigate("/library")} variant="outline" size={isMobile ? "sm" : "default"}>
+          <Button onClick={() => navigate("/cbt/library")} variant="outline" size={isMobile ? "sm" : "default"}>
             <Library size={16} className="mr-1" /> Library
           </Button>
           <Button onClick={handleCreateTest} variant="default" size={isMobile ? "sm" : "default"} className="bg-veno-primary hover:bg-veno-primary/90">

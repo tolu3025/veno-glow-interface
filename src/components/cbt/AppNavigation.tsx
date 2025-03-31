@@ -49,7 +49,7 @@ const AppNavigation = () => {
     },
     {
       name: "Library",
-      path: "/library",
+      path: "/cbt/library",
       icon: <Library size={18} />,
       authRequired: false,
     },

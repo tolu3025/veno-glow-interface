@@ -40,7 +40,6 @@ export const routes: RouteObject[] = [
       { path: 'contact', element: <ContactPage /> },
       { path: 'maintenance', element: <UnderMaintenancePage /> },
       { path: 'services', element: <ServicesPage /> },
-      { path: 'library', element: <Library /> },  // New direct library route
       { 
         path: 'profile',
         element: <ProtectedRoute><ProfilePage /></ProtectedRoute>
