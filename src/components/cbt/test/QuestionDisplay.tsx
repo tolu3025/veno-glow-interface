@@ -52,9 +52,15 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       <CardContent>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium mb-6">
+            <h3 className="text-lg font-medium mb-2">
               {currentQuestionData.text}
             </h3>
+            {/* Display explanation hint if available */}
+            {currentQuestionData.explanation && (
+              <p className="text-sm text-muted-foreground italic mb-4">
+                (This question includes an explanation that will be available after completion)
+              </p>
+            )}
           </div>
           <div className="space-y-3">
             {currentQuestionData.options && currentQuestionData.options.map((option: string, index: number) => (

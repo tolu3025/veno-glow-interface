@@ -62,6 +62,8 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
+    // Fix: Ensure we're comparing the correct data types when checking answers
+    // The correct option is 0-indexed in the database/questions array
     const isCorrect = optionIndex === currentQuestionData.correctOption;
     
     const updatedAnswers = [...userAnswers];

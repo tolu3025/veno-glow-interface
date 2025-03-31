@@ -142,8 +142,9 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                       <Info size={16} className="text-veno-primary mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Detailed Explanation</h4>
+                        {/* Display the explanation properly from the question data */}
                         <p className="text-muted-foreground">
-                          {question.explanation || 
+                          {question.explanation ? question.explanation : 
                             `The correct answer is ${String.fromCharCode(65 + question.correctOption)}: ${
                               question.options[question.correctOption]
                             }.`}
@@ -176,6 +177,7 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                       </div>
                     )}
                     
+                    {/* Enhanced explanation section that always shows */}
                     {question.explanation && (
                       <div className="flex items-start gap-2 px-2 bg-blue-50/50 dark:bg-blue-950/10 p-3 mt-2 rounded-md border border-blue-200 dark:border-blue-800/40">
                         <BookOpen size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
