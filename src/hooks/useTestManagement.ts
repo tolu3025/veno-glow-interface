@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -37,7 +36,6 @@ export const useTestManagement = ({
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [publicResults, setPublicResults] = useState<any[]>([]);
 
-  // Timer effect
   useEffect(() => {
     if (testStarted && timeRemaining > 0) {
       const timer = setTimeout(() => {
@@ -62,9 +60,11 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    // Fix: Ensure we're comparing the correct data types when checking answers
-    // The correct option is 0-indexed in the database/questions array
-    const isCorrect = optionIndex === currentQuestionData.correctOption;
+    const correctAnswer = 'correctOption' in currentQuestionData 
+      ? currentQuestionData.correctOption 
+      : currentQuestionData.answer;
+    
+    const isCorrect = optionIndex === correctAnswer;
     
     const updatedAnswers = [...userAnswers];
     

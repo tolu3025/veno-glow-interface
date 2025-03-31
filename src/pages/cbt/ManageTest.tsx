@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -119,6 +118,7 @@ const ManageTest = () => {
   
   const printRef = useRef<HTMLDivElement>(null);
   
+  // Fixed print handler to properly style and isolate the certificate component
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: `${testDetails?.title || 'Test'} - Certificate`,
