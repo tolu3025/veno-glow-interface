@@ -28,6 +28,39 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   formatTime,
 }) => {
   const currentQuestionData = questions[currentQuestion];
+  
+  // Debug output to help diagnose option rendering issues
+  console.log('Current question data:', currentQuestionData);
+  console.log('Options type:', currentQuestionData?.options ? typeof currentQuestionData.options : 'undefined');
+  console.log('Options value:', currentQuestionData?.options);
+  
+  // Ensure options are properly processed regardless of format
+  const processOptions = () => {
+    if (!currentQuestionData || !currentQuestionData.options) return [];
+    
+    const options = currentQuestionData.options;
+    
+    // Handle different option formats
+    if (Array.isArray(options)) {
+      return options;
+    } else if (typeof options === 'object') {
+      // Convert object to array if needed
+      return Object.values(options);
+    } else if (typeof options === 'string') {
+      // Try to parse JSON string
+      try {
+        const parsedOptions = JSON.parse(options);
+        return Array.isArray(parsedOptions) ? parsedOptions : Object.values(parsedOptions);
+      } catch (e) {
+        console.error('Failed to parse options string:', e);
+        return [options]; // Return as single item array as fallback
+      }
+    }
+    
+    return [];
+  };
+  
+  const questionOptions = processOptions();
 
   return (
     <Card>
@@ -53,38 +86,44 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-medium mb-2">
-              {currentQuestionData.text}
+              {currentQuestionData?.text || 'No question text available'}
             </h3>
             {/* Display explanation hint if available */}
-            {currentQuestionData.explanation && (
+            {currentQuestionData?.explanation && (
               <p className="text-sm text-muted-foreground italic mb-4">
                 (This question includes an explanation that will be available after completion)
               </p>
             )}
           </div>
           <div className="space-y-3">
-            {currentQuestionData.options && currentQuestionData.options.map((option: string, index: number) => (
-              <div 
-                key={index}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedAnswer === index 
-                    ? 'border-veno-primary bg-veno-primary/5' 
-                    : 'hover:border-veno-primary/50'
-                }`}
-                onClick={() => onAnswerSelect(index)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
+            {questionOptions.length > 0 ? (
+              questionOptions.map((option: string, index: number) => (
+                <div 
+                  key={index}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                     selectedAnswer === index 
-                      ? 'border-veno-primary bg-veno-primary text-white' 
-                      : 'border-gray-300'
-                  }`}>
-                    {String.fromCharCode(65 + index)}
+                      ? 'border-veno-primary bg-veno-primary/5' 
+                      : 'hover:border-veno-primary/50'
+                  }`}
+                  onClick={() => onAnswerSelect(index)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
+                      selectedAnswer === index 
+                        ? 'border-veno-primary bg-veno-primary text-white' 
+                        : 'border-gray-300'
+                    }`}>
+                      {String.fromCharCode(65 + index)}
+                    </div>
+                    <div>{option}</div>
                   </div>
-                  <div>{option}</div>
                 </div>
+              ))
+            ) : (
+              <div className="p-4 border rounded-lg text-center text-muted-foreground">
+                No options available for this question.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </CardContent>

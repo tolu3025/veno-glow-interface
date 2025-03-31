@@ -4,22 +4,25 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Add version timestamp for cache busting
-const VERSION = new Date().getTime();
+// Create a fixed version ID based on build time rather than runtime
+// This ensures all users get the same version number in a given deployment
+const VERSION = '__BUILD_TIMESTAMP__'; // This will be replaced during build
 console.log(`App Version: ${VERSION}`);
 
-// Force reload if this is a new version
-if (localStorage.getItem('app_version') !== VERSION.toString()) {
-  localStorage.setItem('app_version', VERSION.toString());
-  if (!window.location.href.includes('first_load')) {
-    window.location.href = window.location.href + 
-      (window.location.href.includes('?') ? '&' : '?') + 
-      'first_load=true';
+// Only force reload if this is genuinely a new version
+if (localStorage.getItem('app_version') !== VERSION) {
+  localStorage.setItem('app_version', VERSION);
+  
+  // Check if this is not the first load (avoid reload loops)
+  if (!sessionStorage.getItem('first_load')) {
+    sessionStorage.setItem('first_load', 'true');
+    console.log('New version detected, refreshing...');
+    window.location.reload();
   }
 }
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App key={VERSION} />
+    <App />
   </React.StrictMode>
 );
