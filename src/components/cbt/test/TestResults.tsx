@@ -6,10 +6,10 @@ import { Trophy, HelpCircle, FileText, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useReactToPrint } from 'react-to-print';
-import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TestResultsProps {
   score: number;
@@ -60,52 +60,39 @@ const TestResults: React.FC<TestResultsProps> = ({
   
   const resultRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
-
-  // Function to print the certificate
-  const handlePrint = useReactToPrint({
-    content: () => certificateRef.current,
-    documentTitle: `Certificate - ${testDetails?.title || 'Test'} Result`,
-    removeAfterPrint: true,
-    pageStyle: `
-      @page { 
-        size: letter landscape; 
-        margin: 0.5cm; 
-      }
-      @media print {
-        body, html { 
-          margin: 0;
-          padding: 0;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          background-color: white;
-        }
-        * {
-          color-adjust: exact !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-      }
-    `,
-  });
+  const isMobile = useIsMobile();
   
-  // Function to download detailed results as PDF
-  const downloadDetailedResultsPDF = async () => {
+  // Find participant rank (position) among all participants
+  const findRank = () => {
+    if (!publicResults || publicResults.length === 0) return "N/A";
+    
+    // Sort results by score (highest first)
+    const sortedResults = [...publicResults].sort((a, b) => 
+      (b.score / b.total_questions) - (a.score / a.total_questions)
+    );
+    
+    // Find current user's position
+    const userEmail = testTakerInfo?.email || user?.email;
+    const position = sortedResults.findIndex(result => result.participant_email === userEmail) + 1;
+    
+    if (position === 0) return "N/A";
+    if (position === 1) return "1st";
+    if (position === 2) return "2nd";
+    if (position === 3) return "3rd";
+    return `${position}th`;
+  }
+  
+  // Enhanced function to download comprehensive results PDF
+  const downloadResultsPDF = async () => {
     if (!resultRef.current) return;
     
     toast({
-      title: "Preparing PDF",
-      description: "Please wait while we generate your results...",
+      title: "Preparing Certificate",
+      description: "We're generating your results certificate...",
     });
     
     try {
-      const canvas = await html2canvas(resultRef.current, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
+      // Create a new PDF document
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -117,43 +104,73 @@ const TestResults: React.FC<TestResultsProps> = ({
       pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), 20, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(14);
-      pdf.text("Test Results Summary", 105, 12, { align: 'center' });
+      pdf.text("Test Results Certificate", 105, 12, { align: 'center' });
       
       // Add participant information
       pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(16);
+      pdf.text(`${testDetails?.title || location?.state?.subject || testId} Quiz`, 105, 30, { align: 'center' });
+      
       pdf.setFontSize(12);
-      pdf.text(`Participant: ${testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous'}`, 14, 30);
-      pdf.text(`Email: ${testTakerInfo?.email || user?.email || 'Not provided'}`, 14, 38);
-      pdf.text(`Test: ${testDetails?.title || location?.state?.subject || testId || 'Assessment'}`, 14, 46);
-      pdf.text(`Date: ${new Date().toLocaleDateString()}`, 14, 54);
-      pdf.text(`Score: ${score}/${questions.length} (${percentage}%)`, 14, 62);
-      pdf.text(`Time taken: ${formatTime(timeTaken)}`, 14, 70);
+      pdf.text(`Name: ${testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous'}`, 20, 45);
+      pdf.text(`Email: ${testTakerInfo?.email || user?.email || 'Not provided'}`, 20, 53);
+      pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 61);
+      pdf.text(`Time Taken: ${formatTime(timeTaken)}`, 20, 69);
       
-      // Add horizontal line
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(14, 74, 196, 74);
+      // Add score information
+      pdf.setFontSize(14);
+      pdf.text(`Score: ${score}/${questions.length} (${percentage}%)`, 20, 85);
       
-      // Add results image
-      const imgWidth = pdf.internal.pageSize.getWidth() - 28; // 14mm margin on each side
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 14, 80, imgWidth, imgHeight);
+      const rank = findRank();
+      if (rank !== "N/A") {
+        pdf.text(`Rank: ${rank} among all participants`, 20, 93);
+      }
       
-      // Add signature line at the bottom
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      pdf.line(14, pageHeight - 30, 70, pageHeight - 30);
-      pdf.text("Examiner's Signature", 14, pageHeight - 24);
+      // Add result message
+      let statusColor;
+      if (percentage >= 80) {
+        statusColor = [0, 128, 0]; // Green
+      } else if (percentage >= 60) {
+        statusColor = [255, 165, 0]; // Orange
+      } else {
+        statusColor = [255, 0, 0]; // Red
+      }
       
-      pdf.save(`${testDetails?.title || 'Test'}_Results.pdf`);
+      pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+      pdf.setFontSize(16);
+      pdf.text(`Status: ${resultMessage}`, 20, 105);
+      
+      // Reset color for signature
+      pdf.setTextColor(0, 0, 0);
+      
+      // Add signature line
+      pdf.setDrawColor(0, 0, 0);
+      pdf.line(20, 160, 80, 160);
+      pdf.setFontSize(12);
+      pdf.text("Examiner's Signature", 20, 170);
+      
+      // Add certificate border
+      pdf.setDrawColor(65, 84, 241);
+      pdf.setLineWidth(2);
+      pdf.rect(10, 10, pdf.internal.pageSize.getWidth() - 20, pdf.internal.pageSize.getHeight() - 20);
+      
+      // Add logo at bottom
+      pdf.setFontSize(10);
+      pdf.text("Veno Education", 105, 250, { align: 'center' });
+      pdf.text("Certificate of Achievement", 105, 255, { align: 'center' });
+      
+      // Save the PDF
+      pdf.save(`${testDetails?.title || 'Test'}_Certificate.pdf`);
       
       toast({
-        title: "PDF Downloaded",
-        description: "Your detailed results have been saved as a PDF",
+        title: "Certificate Ready",
+        description: "Your results certificate has been downloaded.",
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF. Please try again.",
+        description: "Failed to generate certificate. Please try again.",
         variant: "destructive",
       });
     }
@@ -290,38 +307,29 @@ const TestResults: React.FC<TestResultsProps> = ({
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <Button variant="outline" className="flex-1" onClick={onFinish}>
-                Back to Tests
-              </Button>
-              {(testDetails?.allow_retakes || testId === 'subject') && (
-                <Button 
-                  className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
-                  onClick={onTryAgain}
-                >
-                  Try Again
-                </Button>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <Button 
-                variant="outline" 
-                className="flex items-center justify-center" 
-                onClick={handlePrint}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Print Certificate
-              </Button>
-              
+            <div className="flex flex-col w-full gap-4">
               <Button 
                 variant="default"
-                className="flex items-center justify-center bg-blue-600 hover:bg-blue-700"
-                onClick={downloadDetailedResultsPDF}
+                className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center"
+                onClick={downloadResultsPDF}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download Results
+                <FileText className="h-4 w-4 mr-2" />
+                Download Certificate
               </Button>
+              
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button variant="outline" className="flex-1" onClick={onFinish}>
+                  Back to Tests
+                </Button>
+                {(testDetails?.allow_retakes || testId === 'subject') && (
+                  <Button 
+                    className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
+                    onClick={onTryAgain}
+                  >
+                    Try Again
+                  </Button>
+                )}
+              </div>
             </div>
           </CardFooter>
         </Card>
