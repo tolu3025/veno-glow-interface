@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Book, FileText, BookOpen, Search, Filter, ExternalLink } from "lucide-react";
@@ -212,8 +211,10 @@ const Library = () => {
             .single();
           
           if (!error && data) {
-            const activities = data.activities || [];
-            const hasDownloadedBook = activities.some(
+            const activities = Array.isArray(data.activities) ? data.activities : [];
+            
+            // Fix: Properly type check and ensure activities is an array before using 'some'
+            const hasDownloadedBook = Array.isArray(activities) && activities.some(
               (activity: any) => activity.type === "resource_download" && activity.resource_id === "1"
             );
             
