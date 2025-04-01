@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,7 +56,6 @@ const TakeTest = () => {
     questionsCount: 10
   });
 
-  // Initialize test management hook
   const testManagement = useTestManagement({
     testId,
     user,
@@ -66,14 +64,12 @@ const TakeTest = () => {
     testTakerInfo
   });
 
-  // Load settings from location state if available
   useEffect(() => {
     if (location.state?.settings) {
       setSettings(location.state.settings);
     }
   }, [location.state]);
 
-  // Load test data
   useEffect(() => {
     const loadTest = async () => {
       setLoading(true);
@@ -101,7 +97,6 @@ const TakeTest = () => {
           
           setTestDetails(testData as TestDetails);
           
-          // Check for previous attempts
           if (user && testData.allow_retakes === false) {
             const { data: attempts, error: attemptsError } = await supabase
               .from('test_attempts')
@@ -114,7 +109,6 @@ const TakeTest = () => {
             }
           }
           
-          // Load questions
           const { data: questionsData, error: questionsError } = await supabase
             .from('user_test_questions')
             .select('*')
@@ -123,12 +117,10 @@ const TakeTest = () => {
           if (questionsError) throw questionsError;
           
           if (questionsData && questionsData.length > 0) {
-            // Fix: Ensure we have consistent property names for questions
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
-              // Set both correctOption and answer to ensure compatibility
               correctOption: q.answer,
               answer: q.answer,
               explanation: q.explanation
@@ -149,9 +141,8 @@ const TakeTest = () => {
     };
 
     loadTest();
-  }, [testId, user, navigate]);
+  }, [testId, user, navigate, location.state]);
 
-  // Load subject-specific quiz
   const loadSubjectQuiz = async () => {
     try {
       const subject = location.state.subject;
@@ -186,13 +177,11 @@ const TakeTest = () => {
       
       console.log(`Found ${data.length} questions for ${subject}`);
       
-      // Fix: Ensure we have consistent property names for questions
       const formattedQuestions: QuizQuestion[] = data.map(q => ({
         id: q.id,
         text: q.question,
         options: Array.isArray(q.options) ? 
           q.options.map((opt: any) => String(opt)) : [],
-        // Set both correctOption and answer to ensure compatibility
         correctOption: q.answer,
         answer: q.answer,
         explanation: q.explanation
@@ -215,7 +204,6 @@ const TakeTest = () => {
     testManagement.startTest();
   };
 
-  // Render appropriate UI based on current state
   if (loading) {
     return <LoadingState />;
   }
@@ -225,11 +213,16 @@ const TakeTest = () => {
   }
 
   if (testManagement.submissionComplete) {
-    return <SubmissionComplete testDetails={testDetails} testTakerInfo={testTakerInfo} />;
+    return (
+      <SubmissionComplete 
+        testDetails={testDetails} 
+        testTakerInfo={testTakerInfo} 
+      />
+    );
   }
 
   if (!testManagement.testStarted) {
-    if (previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
+    if (user && previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
       return <AttemptBlockedState testDetails={testDetails} />;
     }
 

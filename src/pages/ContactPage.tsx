@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -99,7 +98,7 @@ const ContactPage = () => {
 
   const openWhatsApp = () => {
     const phoneNumber = "+2347065684718";
-    const message = encodeURIComponent("Hello! I have a question about Veno CBT.");
+    const message = encodeURIComponent("Hello! I have a question about veno.");
     
     // Create WhatsApp URL
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
@@ -218,7 +217,6 @@ const ContactPage = () => {
             </CardContent>
           </Card>
 
-          {/* FAQ Section */}
           <Card className="mt-4 md:mt-8">
             <CardHeader className="p-4 md:p-6">
               <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
@@ -286,7 +284,7 @@ const ContactPage = () => {
                     onClick={openWhatsApp}
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
-                    Chat on WhatsApp: +234 706 568 4718
+                    Chat on WhatsApp
                   </Button>
                 </div>
               </div>

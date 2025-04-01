@@ -26,19 +26,17 @@ import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Lazy load components for better performance on mobile
-const lazyLoad = (Component: React.ComponentType<any>) => {
-  // Creating a proper lazy component with type safety
+// Fix the lazy load function to fix TypeScript error
+const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   const LazyComponent = React.lazy(() => 
-    new Promise<{ default: React.ComponentType<any> }>(resolve => {
-      // Small delay to ensure smooth transitions
-      setTimeout(() => {
-        resolve({ default: Component });
-      }, 100);
-    })
+    Promise.resolve({ default: Component })
   );
   
-  return <React.Suspense fallback={<div>Loading...</div>}><LazyComponent /></React.Suspense>;
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <LazyComponent />
+    </React.Suspense>
+  );
 };
 
 export const routes: RouteObject[] = [
@@ -86,7 +84,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <CBTIndex /> },
           { path: 'create', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
-          { path: 'take/:shareCode', element: <TakeTest /> },
+          { path: 'take/:shareCode', element: <TakeTest /> }, // Removed ProtectedRoute wrapper
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },

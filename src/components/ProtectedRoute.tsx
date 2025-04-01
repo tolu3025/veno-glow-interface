@@ -1,5 +1,5 @@
 
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 
 type ProtectedRouteProps = {
@@ -8,6 +8,10 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
+  
+  // Check if the route is a test-taking route
+  const isTestRoute = location.pathname.startsWith('/cbt/take/');
 
   if (isLoading) {
     return (
@@ -15,6 +19,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
       </div>
     );
+  }
+
+  // Allow access to test routes even if user is not logged in
+  if (isTestRoute) {
+    return <>{children}</>;
   }
 
   if (!user) {
