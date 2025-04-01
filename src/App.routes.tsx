@@ -27,9 +27,10 @@ import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy load components for better performance on mobile
-const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
+const lazyLoad = (Component: React.ComponentType<any>) => {
+  // Creating a proper lazy component with type safety
   const LazyComponent = React.lazy(() => 
-    new Promise(resolve => {
+    new Promise<{ default: React.ComponentType<any> }>(resolve => {
       // Small delay to ensure smooth transitions
       setTimeout(() => {
         resolve({ default: Component });
@@ -37,7 +38,7 @@ const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
     })
   );
   
-  return <LazyComponent />;
+  return <React.Suspense fallback={<div>Loading...</div>}><LazyComponent /></React.Suspense>;
 };
 
 export const routes: RouteObject[] = [
