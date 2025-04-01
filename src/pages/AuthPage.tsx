@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VenoLogo } from '@/components/ui/logo';
 
 // Define the props for the AuthPage component
 interface AuthPageProps {
@@ -14,18 +14,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Extract referral code from URL query parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const referralCode = searchParams.get('ref');
+    const refCode = searchParams.get('ref');
     
-    if (referralCode) {
-      // Store the referral code in session storage for later use
-      sessionStorage.setItem('referralCode', referralCode);
-      console.log('Referral code detected:', referralCode);
+    if (refCode) {
+      // Store the referral code in state and session storage
+      setReferralCode(refCode);
+      sessionStorage.setItem('referralCode', refCode);
+      console.log('Referral code detected:', refCode);
       
       // If there's a referral code, default to signup mode
       setMode('signup');
@@ -49,31 +51,32 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
         navigate('/dashboard');
       } else {
         // For signup, check if there's a stored referral code
-        const referralCode = sessionStorage.getItem('referralCode');
+        const storedReferralCode = referralCode || sessionStorage.getItem('referralCode');
         
         const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              referred_by: referralCode || null,
+              referred_by: storedReferralCode || null,
             }
           }
         });
 
         if (error) throw error;
         
-        toast.success('Account created! Check your email for verification instructions.');
-        
-        // If there was a referral code, process the referral
-        if (referralCode && data.user) {
+        // Record the referral if a referral code exists
+        if (storedReferralCode && data.user) {
           try {
-            // Record the referral
-            await supabase.from('user_referrals').insert({
-              referrer_id: referralCode.slice(0, 8),  // This should match how you generate referral codes
-              referred_id: data.user.id,
-              status: 'pending'  // Will be updated to 'completed' after email verification
-            });
+            const { error: referralError } = await supabase
+              .from('user_referrals')
+              .insert({
+                referrer_id: storedReferralCode,
+                referred_id: data.user.id,
+                status: 'pending'
+              });
+            
+            if (referralError) throw referralError;
             
             console.log('Referral recorded successfully');
             // Clear the stored referral code
@@ -82,6 +85,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
             console.error('Error recording referral:', referralError);
           }
         }
+        
+        toast.success('Account created! Check your email for verification instructions.');
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');
@@ -95,6 +101,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <VenoLogo className="h-16 w-16" />
+          </div>
           <h1 className="text-2xl font-bold">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h1>
           <p className="text-muted-foreground mt-2">
             {mode === 'signin' 
