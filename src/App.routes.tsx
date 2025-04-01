@@ -89,6 +89,7 @@ export const routes: RouteObject[] = [
           { path: 'take/:shareCode', element: <TakeTest /> },
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
+          { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'library', element: <Library /> }
         ]
       },

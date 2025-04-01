@@ -97,8 +97,19 @@ const ContactPage = () => {
     }
   };
 
+  const openWhatsApp = () => {
+    const phoneNumber = "+2347065684718";
+    const message = encodeURIComponent("Hello! I have a question about Veno CBT.");
+    
+    // Create WhatsApp URL
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+    
+    // Open in new tab
+    window.open(whatsappUrl, "_blank");
+  };
+
   return (
-    <div className="container py-4 md:py-8 px-3 md:px-6">
+    <div className="container py-4 md:py-8 px-3 md:px-6 max-w-7xl mx-auto">
       <div className="flex items-center mb-4 md:mb-6">
         <Button 
           variant="ghost" 
@@ -269,39 +280,14 @@ const ContactPage = () => {
                     Need immediate help? Chat with our customer care team on WhatsApp.
                   </p>
                   
-                  <Dialog open={whatsappOpen} onOpenChange={setWhatsappOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full text-sm bg-green-600 hover:bg-green-700 text-white" size={isMobile ? "sm" : "default"}>
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Start WhatsApp Chat
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-[85vw] md:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>WhatsApp Customer Care</DialogTitle>
-                        <DialogDescription>
-                          Our WhatsApp customer care service is coming soon. We'll update this feature with our official support number shortly.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex justify-center py-3 md:py-4">
-                        <p className="text-center text-xs md:text-sm">
-                          In the meantime, please contact us via email at<br />
-                          <a href="mailto:support@venobot.online" className="text-veno-primary hover:underline">
-                            support@venobot.online
-                          </a>
-                        </p>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setWhatsappOpen(false)}
-                          size={isMobile ? "sm" : "default"}
-                        >
-                          Close
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button 
+                    className="w-full text-sm bg-green-600 hover:bg-green-700 text-white" 
+                    size={isMobile ? "sm" : "default"}
+                    onClick={openWhatsApp}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat on WhatsApp: +234 706 568 4718
+                  </Button>
                 </div>
               </div>
             </CardContent>

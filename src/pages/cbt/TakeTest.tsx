@@ -24,6 +24,7 @@ type QuizQuestion = {
   text: string;
   options: string[];
   correctOption: number;
+  answer?: number;
   explanation?: string;
 };
 
@@ -122,14 +123,18 @@ const TakeTest = () => {
           if (questionsError) throw questionsError;
           
           if (questionsData && questionsData.length > 0) {
+            // Fix: Ensure we have consistent property names for questions
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
+              // Set both correctOption and answer to ensure compatibility
               correctOption: q.answer,
+              answer: q.answer,
               explanation: q.explanation
             }));
             
+            console.log("Formatted questions:", formattedQuestions);
             setQuestions(formattedQuestions);
           } else {
             toast.error("No questions available for this test");
@@ -181,15 +186,19 @@ const TakeTest = () => {
       
       console.log(`Found ${data.length} questions for ${subject}`);
       
+      // Fix: Ensure we have consistent property names for questions
       const formattedQuestions: QuizQuestion[] = data.map(q => ({
         id: q.id,
         text: q.question,
         options: Array.isArray(q.options) ? 
           q.options.map((opt: any) => String(opt)) : [],
+        // Set both correctOption and answer to ensure compatibility
         correctOption: q.answer,
+        answer: q.answer,
         explanation: q.explanation
       }));
       
+      console.log("Subject quiz formatted questions:", formattedQuestions);
       setQuestions(formattedQuestions);
     } catch (error) {
       console.error("Error loading subject questions:", error);
