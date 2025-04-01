@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,6 +111,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
               ? 'Welcome back! Enter your details to continue.' 
               : 'Join our community and start learning today.'}
           </p>
+          {referralCode && mode === 'signup' && (
+            <p className="text-veno-primary text-sm mt-1">
+              You've been referred by a friend!
+            </p>
+          )}
         </div>
         
         <div className="bg-card border rounded-lg shadow-sm p-6">

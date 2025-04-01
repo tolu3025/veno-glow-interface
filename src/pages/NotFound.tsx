@@ -65,13 +65,13 @@ const NotFound = () => {
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleSignUp}
-                className="veno-button bg-veno-primary text-white px-4 py-2 rounded"
+                className="bg-veno-primary text-white px-4 py-2 rounded"
               >
                 Sign Up with Referral
               </button>
               <button
                 onClick={() => navigate("/")}
-                className="veno-button"
+                className="border border-veno-primary text-veno-primary px-4 py-2 rounded"
               >
                 Return to Home
               </button>
@@ -80,7 +80,7 @@ const NotFound = () => {
         ) : (
           <button
             onClick={() => navigate("/")}
-            className="veno-button"
+            className="bg-veno-primary text-white px-4 py-2 rounded"
           >
             Return to Home
           </button>
