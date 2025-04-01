@@ -144,7 +144,7 @@
   }
   
   .veno-button {
-    @apply bg-veno-primary text-white rounded-lg px-5 py-2.5 font-medium transition-all duration-200 hover:bg-veno-primary/90 active:scale-95 disabled:opacity-70 disabled:pointer-events-none;
+    @apply bg-veno-primary text-white rounded-lg px-4 py-2 text-sm md:px-5 md:py-2.5 md:text-base font-medium transition-all duration-200 hover:bg-veno-primary/90 active:scale-95 disabled:opacity-70 disabled:pointer-events-none;
   }
   
   .veno-glass {
@@ -163,17 +163,67 @@
     box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.15), 0 0 15px rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
+
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    .veno-card {
+      @apply rounded-xl;
+    }
+    
+    h1.banner-title {
+      @apply text-2xl leading-tight;
+    }
+    
+    p.banner-subtitle {
+      @apply text-sm leading-normal;
+    }
+    
+    .banner-buttons {
+      @apply flex-col w-full;
+    }
+    
+    .banner-buttons .button {
+      @apply w-full mb-2;
+    }
+  }
 }
 
 /* Add slide indicator styles for carousel */
 .embla__dots {
-  @apply flex justify-center gap-1 mt-4;
+  @apply flex justify-center gap-1 mt-2 md:mt-4;
 }
 
 .embla__dot {
-  @apply w-2 h-2 rounded-full bg-gray-300 transition-all duration-200;
+  @apply w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-gray-300 transition-all duration-200;
 }
 
 .embla__dot--selected {
-  @apply bg-veno-primary w-4;
+  @apply bg-veno-primary w-3 md:w-4;
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  .text-3xl {
+    font-size: 1.5rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.25rem;
+  }
+  
+  .text-xl {
+    font-size: 1.125rem;
+  }
+  
+  .text-lg {
+    font-size: 1rem;
+  }
+  
+  .text-base {
+    font-size: 0.9375rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+  }
 }

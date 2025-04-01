@@ -26,6 +26,20 @@ import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
+// Lazy load components for better performance on mobile
+const lazyLoad = (Component: React.ComponentType<any>) => {
+  return React.createElement(
+    React.lazy(() => 
+      new Promise(resolve => {
+        // Small delay to ensure smooth transitions
+        setTimeout(() => {
+          resolve({ default: Component });
+        }, 100);
+      })
+    )
+  );
+};
+
 export const routes: RouteObject[] = [
   {
     path: '/',
