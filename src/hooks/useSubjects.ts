@@ -125,7 +125,9 @@ export const useSubjects = () => {
         // First try to get subjects via database function with timeout
         try {
           const result = await Promise.race([
-            querySafe<Subject[]>(() => supabase.rpc('get_subjects_from_questions')),
+            querySafe<Subject[]>(async () => 
+              await supabase.rpc('get_subjects_from_questions')
+            ),
             timeoutPromise
           ]);
           
@@ -152,7 +154,9 @@ export const useSubjects = () => {
         type QuestionWithSubject = { subject: string };
         
         const result = await Promise.race([
-          querySafe<QuestionWithSubject[]>(() => supabase.from('questions').select('subject')),
+          querySafe<QuestionWithSubject[]>(async () => 
+            await supabase.from('questions').select('subject')
+          ),
           timeoutPromise
         ]);
         
