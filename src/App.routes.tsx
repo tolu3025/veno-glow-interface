@@ -26,6 +26,19 @@ import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
+// Fix the lazy load function to fix TypeScript error
+const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
+  const LazyComponent = React.lazy(() => 
+    Promise.resolve({ default: Component })
+  );
+  
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <LazyComponent />
+    </React.Suspense>
+  );
+};
+
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -37,6 +50,8 @@ export const routes: RouteObject[] = [
       { path: 'blog', element: <BlogPage /> },
       { path: 'bot', element: <BotPage /> },
       { path: 'auth', element: <AuthPage /> },
+      { path: 'signin', element: <AuthPage initialMode="signin" /> },
+      { path: 'signup', element: <AuthPage initialMode="signup" /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'maintenance', element: <UnderMaintenancePage /> },
       { path: 'services', element: <ServicesPage /> },
@@ -69,9 +84,10 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <CBTIndex /> },
           { path: 'create', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
-          { path: 'take/:shareCode', element: <TakeTest /> },
+          { path: 'take/:shareCode', element: <TakeTest /> }, // Removed ProtectedRoute wrapper
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
+          { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'library', element: <Library /> }
         ]
       },

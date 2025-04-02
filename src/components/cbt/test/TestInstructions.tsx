@@ -101,6 +101,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
       </CardContent>
       <CardFooter>
         <Button className="w-full" onClick={() => {
+          // Require user info if not logged in AND taking a formal test (not subject quiz)
           if (!user && testId !== 'subject') {
             onShowTakerForm();
           } else {
