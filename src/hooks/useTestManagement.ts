@@ -61,17 +61,10 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    // Fix: Ensure we're getting the correct answer properly, regardless of property name
-    const correctAnswer = typeof currentQuestionData.correctOption !== 'undefined' 
+    // Handle both correctOption and answer properties for backward compatibility
+    const correctAnswer = currentQuestionData.correctOption !== undefined 
       ? currentQuestionData.correctOption 
-      : (typeof currentQuestionData.answer !== 'undefined' 
-          ? currentQuestionData.answer 
-          : null);
-    
-    if (correctAnswer === null) {
-      console.error("Cannot determine correct answer for question:", currentQuestionData);
-      return;
-    }
+      : currentQuestionData.answer;
     
     // Check if the selected option matches the correct answer
     const isCorrect = optionIndex === correctAnswer;

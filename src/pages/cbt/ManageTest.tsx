@@ -784,7 +784,17 @@ const ManageTest = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex flex-col md:flex-row gap-2 justify-end">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => printParticipantResult(attempt)}
+                              className="text-sky-600"
+                            >
+                              <Printer className="h-3.5 w-3.5 mr-1" />
+                              Print
+                            </Button>
+                            
                             <Button
                               variant="outline"
                               size="sm"
@@ -792,7 +802,7 @@ const ManageTest = () => {
                               className="text-blue-600"
                             >
                               <Download className="h-3.5 w-3.5 mr-1" />
-                              Download PDF
+                              PDF
                             </Button>
                             
                             {attempt.disqualified ? (
