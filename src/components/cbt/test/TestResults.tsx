@@ -251,6 +251,13 @@ const TestResults: React.FC<TestResultsProps> = ({
     }
   };
 
+  // Get appropriate progress bar color based on score percentage
+  const getProgressColorClass = (percentage: number) => {
+    if (percentage >= 80) return "bg-green-500";
+    if (percentage >= 60) return "bg-amber-500";
+    return "bg-red-500";
+  };
+
   return (
     <div>
       <div ref={resultRef}>
@@ -352,12 +359,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                     </div>
                     <Progress 
                       value={percentage} 
-                      className="h-2"
-                      indicatorColor={
-                        percentage >= 80 ? "bg-green-500" :
-                        percentage >= 60 ? "bg-amber-500" :
-                        "bg-red-500"
-                      }
+                      className={`h-2 ${getProgressColorClass(percentage)}`}
                     />
                   </div>
                   <div>
