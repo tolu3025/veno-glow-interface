@@ -1,13 +1,36 @@
 
-import { supabase, testSupabaseConnection, isOnline, querySafe } from '@/integrations/supabase/client';
+import { supabase, testSupabaseConnection, isOnline, retryOperation } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { useEffect, useState, useCallback } from 'react';
+import { PostgrestResponse } from '@supabase/supabase-js';
 
 export type Subject = {
   name: string;
   question_count: number;
 };
+
+// Define a type-safe version of querySafe with proper TypeScript definitions
+async function querySafe<T>(
+  queryFn: () => Promise<PostgrestResponse<T>>, 
+  fallbackData: T | null = null
+): Promise<{ data: T | null; error: any; offline: boolean }> {
+  if (!isOnline()) {
+    return { data: fallbackData, error: new Error('Device is offline'), offline: true };
+  }
+  
+  try {
+    // Using await to properly handle the promise chain
+    const result = await retryOperation(async () => {
+      const response = await queryFn();
+      return response;
+    });
+    
+    return { data: result.data, error: result.error, offline: false };
+  } catch (error) {
+    return { data: fallbackData, error, offline: !isOnline() };
+  }
+}
 
 export const useSubjects = () => {
   const [connectionTested, setConnectionTested] = useState<boolean>(false);
@@ -102,7 +125,7 @@ export const useSubjects = () => {
         // First try to get subjects via database function with timeout
         try {
           const result = await Promise.race([
-            querySafe(() => supabase.rpc('get_subjects_from_questions')),
+            querySafe<Subject[]>(() => supabase.rpc('get_subjects_from_questions')),
             timeoutPromise
           ]);
           
@@ -112,7 +135,7 @@ export const useSubjects = () => {
             // Cache the results locally for offline use
             localStorage.setItem('cached_subjects', JSON.stringify(result.data));
             trackSuccess();
-            return result.data as Subject[];
+            return result.data;
           }
           
           if (result.offline) {
@@ -126,8 +149,10 @@ export const useSubjects = () => {
         console.log('RPC method failed or returned no data, querying questions table directly');
         
         // Try direct database query with timeout
+        type QuestionWithSubject = { subject: string };
+        
         const result = await Promise.race([
-          querySafe(() => supabase.from('questions').select('subject')),
+          querySafe<QuestionWithSubject[]>(() => supabase.from('questions').select('subject')),
           timeoutPromise
         ]);
         
@@ -154,7 +179,7 @@ export const useSubjects = () => {
         // Count questions by subject
         const subjectCounts: Record<string, number> = {};
         
-        result.data.forEach((q: any) => {
+        result.data.forEach((q: QuestionWithSubject) => {
           if (q.subject) {
             subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1;
           }
