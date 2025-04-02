@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { isOnline, testSupabaseConnection } from "@/integrations/supabase/client";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -12,16 +13,20 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const [offlineMode, setOfflineMode] = useState(false);
+  const [dbConnectionStatus, setDbConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
   
   // Check if the route is a test-taking route
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
 
+  // Handle online/offline status and database connectivity
   useEffect(() => {
-    const checkOnlineStatus = () => {
-      const isOnline = navigator.onLine;
+    const checkConnectivity = async () => {
+      const online = isOnline();
+      const wasOffline = offlineMode;
       
-      if (!isOnline && !offlineMode) {
+      if (!online && !offlineMode) {
         setOfflineMode(true);
+        setDbConnectionStatus('disconnected');
         
         toast({
           title: "You're offline",
@@ -29,30 +34,81 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           variant: "warning",
           duration: 5000,
         });
-      } else if (isOnline && offlineMode) {
-        setOfflineMode(false);
+      } else if (online && offlineMode) {
+        // When coming back online, test actual database connection
+        const result = await testSupabaseConnection();
         
-        toast({
-          title: "Connection restored",
-          description: "You're back online.",
-          variant: "default",
-          duration: 3000,
-        });
+        if (result.success) {
+          setOfflineMode(false);
+          setDbConnectionStatus('connected');
+          
+          toast({
+            title: "Connection restored",
+            description: "You're back online with full functionality.",
+            variant: "default",
+            duration: 3000,
+          });
+        } else {
+          // Still offline at the database level
+          setOfflineMode(true);
+          setDbConnectionStatus('disconnected');
+          
+          toast({
+            title: "Limited connectivity",
+            description: "You're online but can't reach our database. Some features will be limited.",
+            variant: "warning",
+            duration: 5000,
+          });
+        }
+      } else if (online && !wasOffline && dbConnectionStatus === 'unknown') {
+        // Initial connection test when already online
+        const result = await testSupabaseConnection();
+        setDbConnectionStatus(result.success ? 'connected' : 'disconnected');
+        
+        if (!result.success) {
+          toast({
+            title: "Database connection issue",
+            description: "Unable to connect to our database. Some features may be limited.",
+            variant: "warning",
+            duration: 5000,
+          });
+        }
       }
     };
     
     // Check initial status
-    checkOnlineStatus();
+    checkConnectivity();
     
     // Set up event listeners
-    window.addEventListener('online', checkOnlineStatus);
-    window.addEventListener('offline', checkOnlineStatus);
+    const handleOnline = () => checkConnectivity();
+    const handleOffline = () => {
+      setOfflineMode(true);
+      setDbConnectionStatus('disconnected');
+      
+      toast({
+        title: "You're offline",
+        description: "Some features may be limited until connection is restored.",
+        variant: "warning",
+        duration: 5000,
+      });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Check database connectivity every minute when online
+    const intervalId = setInterval(() => {
+      if (isOnline() && dbConnectionStatus === 'disconnected') {
+        checkConnectivity();
+      }
+    }, 60000);
     
     return () => {
-      window.removeEventListener('online', checkOnlineStatus);
-      window.removeEventListener('offline', checkOnlineStatus);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(intervalId);
     };
-  }, [offlineMode]);
+  }, [offlineMode, dbConnectionStatus]);
 
   if (isLoading) {
     return (
@@ -68,8 +124,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    // If offline, show limited functionality warning but don't redirect
-    if (!navigator.onLine) {
+    // If offline or database unreachable, show limited functionality warning but don't redirect
+    if (offlineMode || dbConnectionStatus === 'disconnected') {
       toast({
         title: "Limited functionality",
         description: "Full access requires login. Some features will be unavailable while offline.",

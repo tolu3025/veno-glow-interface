@@ -6,6 +6,10 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://oavauprgngpftanumlzs.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hdmF1cHJnbmdwZnRhbnVtbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2NjAwNzcsImV4cCI6MjA1MDIzNjA3N30.KSCyROzMVdoW0_lrknnbx6TmabgZTEdsDNVZ67zuKyg";
 
+// Maximum number of retries for operations
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 1000;
+
 // Create a standard client with enhanced configuration
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
@@ -33,17 +37,33 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Create a function to check if we're online
+export const isOnline = () => {
+  return typeof navigator !== 'undefined' && navigator.onLine;
+};
+
 // Enhanced connection testing function with retries
 export const testSupabaseConnection = async (retries = 3, delayMs = 1000) => {
   let attemptCount = 0;
   
   while (attemptCount < retries) {
     try {
+      if (!isOnline()) {
+        console.log('Device is offline, skipping connection test');
+        return {
+          success: false,
+          error: 'Device is offline',
+          latency: 0,
+          attempts: attemptCount + 1
+        };
+      }
+
       const start = Date.now();
       const { data, error } = await supabase
         .from('questions')
         .select('*')
-        .limit(1);
+        .limit(1)
+        .maybeSingle();
 
       const latency = Date.now() - start;
 
@@ -57,7 +77,7 @@ export const testSupabaseConnection = async (retries = 3, delayMs = 1000) => {
         
         // If not on final attempt, wait and retry
         if (attemptCount < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          await new Promise(resolve => setTimeout(resolve, delayMs * (attemptCount + 1))); // Exponential backoff
           attemptCount++;
           continue;
         }
@@ -72,14 +92,14 @@ export const testSupabaseConnection = async (retries = 3, delayMs = 1000) => {
 
       console.log('Supabase Connection Successful', {
         latency: `${latency}ms`,
-        dataReceived: data?.length || 0,
+        dataReceived: data ? 1 : 0,
         attempts: attemptCount + 1
       });
 
       return {
         success: true,
         latency,
-        data: data || [],
+        data: data || null,
         attempts: attemptCount + 1
       };
     } catch (err) {
@@ -87,7 +107,7 @@ export const testSupabaseConnection = async (retries = 3, delayMs = 1000) => {
       
       // If not on final attempt, wait and retry
       if (attemptCount < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise(resolve => setTimeout(resolve, delayMs * (attemptCount + 1))); // Exponential backoff
         attemptCount++;
         continue;
       }
@@ -108,6 +128,54 @@ export const testSupabaseConnection = async (retries = 3, delayMs = 1000) => {
     latency: 0,
     attempts: attemptCount
   };
+};
+
+// Create a wrapper function for retryable operations
+export const retryOperation = async <T>(
+  operation: () => Promise<T>, 
+  maxRetries: number = MAX_RETRIES, 
+  initialBackoff: number = INITIAL_BACKOFF_MS
+): Promise<T> => {
+  let retries = 0;
+  
+  while (true) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isOnline()) {
+        console.error('Connection retry failed: Device is offline');
+        throw new Error('No internet connection');
+      }
+      
+      if (retries >= maxRetries) {
+        console.error(`Operation failed after ${maxRetries} retries:`, error);
+        throw error;
+      }
+      
+      const backoff = initialBackoff * Math.pow(2, retries);
+      console.log(`Operation failed, retrying in ${backoff}ms...`, { retries: retries + 1, maxRetries });
+      
+      await new Promise(resolve => setTimeout(resolve, backoff));
+      retries++;
+    }
+  }
+};
+
+// Enhanced query function with retry and offline detection
+export const querySafe = async <T>(
+  queryFn: () => Promise<{ data: T | null, error: any }>,
+  fallbackData: T | null = null
+): Promise<{ data: T | null, error: any, offline: boolean }> => {
+  if (!isOnline()) {
+    return { data: fallbackData, error: new Error('Device is offline'), offline: true };
+  }
+  
+  try {
+    const result = await retryOperation(queryFn);
+    return { ...result, offline: false };
+  } catch (error) {
+    return { data: fallbackData, error, offline: !isOnline() };
+  }
 };
 
 // For backward compatibility - rename the function but keep the old name exported
