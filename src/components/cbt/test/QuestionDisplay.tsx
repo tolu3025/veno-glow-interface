@@ -29,21 +29,26 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 }) => {
   const currentQuestionData = questions[currentQuestion];
   
-  // Debug output to help diagnose option rendering issues
-  console.log('Current question data:', currentQuestionData);
-  console.log('Options type:', currentQuestionData?.options ? typeof currentQuestionData.options : 'undefined');
-  console.log('Options value:', currentQuestionData?.options);
+  // Enhanced debugging to help diagnose rendering issues
+  console.log('Current question details:', {
+    questionNumber: currentQuestion + 1,
+    questionId: currentQuestionData?.id,
+    question: currentQuestionData?.text || currentQuestionData?.question,
+    options: currentQuestionData?.options,
+    correctAnswer: currentQuestionData?.correctOption || currentQuestionData?.answer,
+    selectedAnswer
+  });
   
-  // Ensure options are properly processed regardless of format
+  // Improved option processing to handle more formats
   const processOptions = () => {
-    if (!currentQuestionData || !currentQuestionData.options) return [];
+    if (!currentQuestionData) return [];
     
     const options = currentQuestionData.options;
     
     // Handle different option formats
     if (Array.isArray(options)) {
       return options;
-    } else if (typeof options === 'object') {
+    } else if (typeof options === 'object' && options !== null) {
       // Convert object to array if needed
       return Object.values(options);
     } else if (typeof options === 'string') {
@@ -61,6 +66,9 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   };
   
   const questionOptions = processOptions();
+  
+  // Get question text from either text or question property
+  const questionText = currentQuestionData?.text || currentQuestionData?.question || 'No question text available';
 
   return (
     <Card>
@@ -85,9 +93,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       <CardContent>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium mb-2">
-              {currentQuestionData?.text || 'No question text available'}
-            </h3>
+            <h3 className="text-lg font-medium mb-2">{questionText}</h3>
             {/* Display explanation hint if available */}
             {currentQuestionData?.explanation && (
               <p className="text-sm text-muted-foreground italic mb-4">

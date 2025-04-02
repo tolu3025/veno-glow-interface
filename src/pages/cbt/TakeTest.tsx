@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,9 +21,10 @@ import { useTestManagement } from '@/hooks/useTestManagement';
 
 type QuizQuestion = {
   id: string;
-  text: string;
+  text?: string;
+  question?: string;
   options: string[];
-  correctOption: number;
+  correctOption?: number;
   answer?: number;
   explanation?: string;
 };
@@ -81,13 +83,19 @@ const TakeTest = () => {
       
       try {
         if (testId) {
+          // Log the process to help debugging
+          console.log(`Loading test with ID: ${testId}`);
+          
           const { data: testData, error: testError } = await supabase
             .from('user_tests')
             .select('*')
             .eq('id', testId)
             .single();
             
-          if (testError) throw testError;
+          if (testError) {
+            console.error("Error fetching test data:", testError);
+            throw testError;
+          }
           
           if (!testData) {
             toast.error("Test not found");
@@ -95,6 +103,7 @@ const TakeTest = () => {
             return;
           }
           
+          console.log("Test details loaded:", testData);
           setTestDetails(testData as TestDetails);
           
           if (user && testData.allow_retakes === false) {
@@ -114,12 +123,18 @@ const TakeTest = () => {
             .select('*')
             .eq('test_id', testId);
             
-          if (questionsError) throw questionsError;
+          if (questionsError) {
+            console.error("Error fetching questions:", questionsError);
+            throw questionsError;
+          }
           
           if (questionsData && questionsData.length > 0) {
+            console.log("Raw questions data:", questionsData);
+            
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
+              question: q.question_text, // Adding both text and question properties
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
               correctOption: q.answer,
               answer: q.answer,
@@ -129,6 +144,7 @@ const TakeTest = () => {
             console.log("Formatted questions:", formattedQuestions);
             setQuestions(formattedQuestions);
           } else {
+            console.warn("No questions found for test ID:", testId);
             toast.error("No questions available for this test");
           }
         }
@@ -176,10 +192,12 @@ const TakeTest = () => {
       }
       
       console.log(`Found ${data.length} questions for ${subject}`);
+      console.log("Raw subject questions:", data);
       
       const formattedQuestions: QuizQuestion[] = data.map(q => ({
         id: q.id,
         text: q.question,
+        question: q.question, // Adding both text and question properties
         options: Array.isArray(q.options) ? 
           q.options.map((opt: any) => String(opt)) : [],
         correctOption: q.answer,
@@ -203,6 +221,31 @@ const TakeTest = () => {
     setShowTakerForm(false);
     testManagement.startTest();
   };
+
+  // Add extensive logging to help debug
+  useEffect(() => {
+    console.log("Current test state:", {
+      testId,
+      questionsLoaded: questions.length,
+      testStarted: testManagement.testStarted,
+      showResults: testManagement.showResults,
+      reviewMode: testManagement.reviewMode,
+      submissionComplete: testManagement.submissionComplete,
+      score: testManagement.score,
+      currentQuestion: testManagement.currentQuestion,
+      selectedAnswer: testManagement.selectedAnswer
+    });
+  }, [
+    testId, 
+    questions, 
+    testManagement.testStarted, 
+    testManagement.showResults, 
+    testManagement.reviewMode,
+    testManagement.submissionComplete,
+    testManagement.score,
+    testManagement.currentQuestion,
+    testManagement.selectedAnswer
+  ]);
 
   if (loading) {
     return <LoadingState />;

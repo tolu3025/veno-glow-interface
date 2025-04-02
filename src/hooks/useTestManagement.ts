@@ -61,12 +61,21 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    // Fix: Ensure we're getting the correct answer properly, regardless of property name
-    const correctAnswer = typeof currentQuestionData.correctOption !== 'undefined' 
-      ? currentQuestionData.correctOption 
-      : (typeof currentQuestionData.answer !== 'undefined' 
-          ? currentQuestionData.answer 
-          : null);
+    // FIXED: Enhanced correct answer checking to handle different property names and formats
+    let correctAnswer: number | null = null;
+    
+    // Try all possible property names and formats
+    if (typeof currentQuestionData.correctOption !== 'undefined') {
+      correctAnswer = Number(currentQuestionData.correctOption);
+    } else if (typeof currentQuestionData.answer !== 'undefined') {
+      correctAnswer = Number(currentQuestionData.answer);
+    } else if (typeof currentQuestionData.correct_answer !== 'undefined') {
+      correctAnswer = Number(currentQuestionData.correct_answer);
+    }
+
+    console.log('Current question data:', currentQuestionData);
+    console.log('User selected option:', optionIndex);
+    console.log('Correct answer determined as:', correctAnswer);
     
     if (correctAnswer === null) {
       console.error("Cannot determine correct answer for question:", currentQuestionData);
@@ -75,6 +84,7 @@ export const useTestManagement = ({
     
     // Check if the selected option matches the correct answer
     const isCorrect = optionIndex === correctAnswer;
+    console.log('Is answer correct?', isCorrect);
     
     const updatedAnswers = [...userAnswers];
     
@@ -131,6 +141,7 @@ export const useTestManagement = ({
   const calculateScore = () => {
     // Recalculate score based on correct answers
     const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
+    console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
     setScore(correctAnswers);
   };
 
