@@ -43,13 +43,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     async function getActiveSession() {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!error && data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     }
 
     getActiveSession();
@@ -67,6 +71,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(null);
         setUser(null);
         toast.info("Signed out successfully!");
+        
+        // Clear any locally stored session data to prevent auto-login
+        localStorage.removeItem("supabase.auth.token");
       }
       
       if (event === "PASSWORD_RECOVERY") {
@@ -104,6 +111,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Force redirect to auth page after signout
+    window.location.href = '/auth';
   };
 
   const updateUserMetadata = async (metadata: Record<string, any>) => {

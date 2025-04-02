@@ -44,11 +44,26 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <MainLayout />,
     children: [
-      { index: true, element: <Index /> },
-      { path: 'cbt', element: <CbtPage /> },
-      { path: 'marketplace', element: <MarketplacePage /> },
-      { path: 'blog', element: <BlogPage /> },
-      { path: 'bot', element: <BotPage /> },
+      { 
+        index: true, 
+        element: <ProtectedRoute><Index /></ProtectedRoute> 
+      },
+      { 
+        path: 'cbt', 
+        element: <ProtectedRoute><CbtPage /></ProtectedRoute>
+      },
+      { 
+        path: 'marketplace', 
+        element: <ProtectedRoute><MarketplacePage /></ProtectedRoute>
+      },
+      { 
+        path: 'blog', 
+        element: <ProtectedRoute><BlogPage /></ProtectedRoute>
+      },
+      { 
+        path: 'bot', 
+        element: <ProtectedRoute><BotPage /></ProtectedRoute>
+      },
       { path: 'auth', element: <AuthPage /> },
       { path: 'signin', element: <AuthPage initialMode="signin" /> },
       { path: 'signup', element: <AuthPage initialMode="signup" /> },
@@ -69,7 +84,7 @@ export const routes: RouteObject[] = [
       },
       { 
         path: 'rewards',
-        element: <RewardSystem />
+        element: <ProtectedRoute><RewardSystem /></ProtectedRoute>
       },
       {
         path: 'privacy-policy',
@@ -82,13 +97,13 @@ export const routes: RouteObject[] = [
       {
         path: 'cbt',
         children: [
-          { index: true, element: <CBTIndex /> },
+          { index: true, element: <ProtectedRoute><CBTIndex /></ProtectedRoute> },
           { path: 'create', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
-          { path: 'take/:shareCode', element: <TakeTest /> }, // Removed ProtectedRoute wrapper
+          { path: 'take/:shareCode', element: <ProtectedRoute><TakeTest /></ProtectedRoute> },
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
-          { path: 'library', element: <Library /> }
+          { path: 'library', element: <ProtectedRoute><Library /></ProtectedRoute> }
         ]
       },
       { path: '*', element: <NotFound /> }

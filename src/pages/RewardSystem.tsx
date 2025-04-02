@@ -213,6 +213,16 @@ const RewardSystem = () => {
     );
   }
   
+  // Define coming soon component for tasks
+  const ComingSoonOverlay = () => (
+    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg">
+      <span className="bg-amber-500 text-white text-sm px-3 py-1 rounded-full font-medium mb-2">
+        Coming Soon
+      </span>
+      <p className="text-sm text-muted-foreground">Tasks are currently being developed</p>
+    </div>
+  );
+  
   return (
     <div className="container mx-auto py-6">
       <div className="mb-8">
@@ -264,19 +274,31 @@ const RewardSystem = () => {
         </TabsList>
         
         <TabsContent value="tasks" className="animate-fade-in">
-          <TasksSection userPoints={userPoints} setUserPoints={setUserPoints} />
+          <div className="relative">
+            <ComingSoonOverlay />
+            <TasksSection userPoints={userPoints} setUserPoints={setUserPoints} />
+          </div>
         </TabsContent>
         
         <TabsContent value="rewards" className="animate-fade-in">
-          <RewardsSection userPoints={userPoints} setUserPoints={setUserPoints} />
+          <div className="relative">
+            <ComingSoonOverlay />
+            <RewardsSection userPoints={userPoints} setUserPoints={setUserPoints} />
+          </div>
         </TabsContent>
         
         <TabsContent value="achievements" className="animate-fade-in">
-          <AchievementsSection userPoints={userPoints} />
+          <div className="relative">
+            <ComingSoonOverlay />
+            <AchievementsSection userPoints={userPoints} />
+          </div>
         </TabsContent>
         
         <TabsContent value="leaderboard" className="animate-fade-in">
-          <LeaderboardSection userPoints={userPoints} />
+          <div className="relative">
+            <ComingSoonOverlay />
+            <LeaderboardSection userPoints={userPoints} />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

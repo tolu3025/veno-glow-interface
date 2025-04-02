@@ -9,7 +9,7 @@ import './index.css';
 const VERSION = '__BUILD_TIMESTAMP__'; // This will be replaced during build
 console.log(`App Version: ${VERSION}`);
 
-// Only force reload if this is genuinely a new version
+// Check if there was a version change
 if (localStorage.getItem('app_version') !== VERSION) {
   localStorage.setItem('app_version', VERSION);
   
@@ -17,6 +17,10 @@ if (localStorage.getItem('app_version') !== VERSION) {
   if (!sessionStorage.getItem('first_load')) {
     sessionStorage.setItem('first_load', 'true');
     console.log('New version detected, refreshing...');
+    
+    // Clear any stored auth tokens to ensure proper logout
+    localStorage.removeItem('supabase.auth.token');
+    
     window.location.reload();
   }
 }
