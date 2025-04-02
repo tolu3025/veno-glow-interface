@@ -62,6 +62,13 @@ const AppNavigation = () => {
     }
   ];
 
+  const isActive = (path: string) => {
+    if (path === "/cbt/analytics") {
+      return location.pathname.startsWith("/cbt/analytics");
+    }
+    return location.pathname === path;
+  };
+
   const handleNavigation = (path: string, authRequired: boolean) => {
     if (authRequired && !user) {
       toast({
@@ -99,7 +106,7 @@ const AppNavigation = () => {
               key={item.name}
               variant={item.highlight ? "default" : "ghost"}
               className={`justify-start mb-1 ${
-                location.pathname === item.path 
+                isActive(item.path)
                   ? 'font-bold bg-primary/10 text-primary hover:bg-primary/20' 
                   : item.highlight 
                     ? 'bg-veno-primary hover:bg-veno-primary/90 text-white' 

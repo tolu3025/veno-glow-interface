@@ -61,7 +61,7 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    // FIXED: Enhanced correct answer checking to handle different property names and formats
+    // Enhanced correct answer checking to handle different property names and formats
     let correctAnswer: number | null = null;
     
     // Try all possible property names and formats
@@ -169,6 +169,7 @@ export const useTestManagement = ({
     calculateScore();
     
     try {
+      // Prepare test attempt data
       const testData = {
         test_id: testId,
         score: score,
@@ -180,15 +181,29 @@ export const useTestManagement = ({
         completed_at: new Date().toISOString(),
       };
       
+      // Save the test attempt data
       await supabase.from('test_attempts').insert([testData]);
       
-      if (testDetails?.results_visibility === 'creator_only') {
+      // Handle results based on visibility settings
+      if (!testDetails?.results_visibility) {
+        // Default to creator_only if undefined
         setSubmissionComplete(true);
       } else {
-        setShowResults(true);
-        
-        if (testDetails?.results_visibility === 'public') {
-          loadPublicResults();
+        // Follow the creator's choice for visibility
+        switch (testDetails.results_visibility) {
+          case 'creator_only':
+            setSubmissionComplete(true);
+            break;
+          case 'test_takers':
+          case 'public':
+            setShowResults(true);
+            if (testDetails.results_visibility === 'public') {
+              loadPublicResults();
+            }
+            break;
+          default:
+            // Fallback to submission complete if value is unexpected
+            setSubmissionComplete(true);
         }
       }
     } catch (error) {
