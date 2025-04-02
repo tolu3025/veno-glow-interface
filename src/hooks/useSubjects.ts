@@ -2,7 +2,7 @@
 import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export type Subject = {
   name: string;
@@ -13,22 +13,23 @@ export const useSubjects = () => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [connectionTested, setConnectionTested] = useState<boolean>(false);
   const [hasConnection, setHasConnection] = useState<boolean | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const MAX_RETRIES = 3;
 
   // Update online status
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      // When coming back online, test connection again
+      checkConnection();
+    };
+    
     const handleOffline = () => setIsOnline(false);
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
     // Test actual Supabase connection on mount
-    const checkConnection = async () => {
-      const result = await testSupabaseConnection();
-      setHasConnection(result.success);
-      setConnectionTested(true);
-    };
-    
     checkConnection();
     
     return () => {
@@ -37,12 +38,49 @@ export const useSubjects = () => {
     };
   }, []);
 
+  // Connection testing function with retry capability
+  const checkConnection = useCallback(async () => {
+    if (retryCount >= MAX_RETRIES && !navigator.onLine) {
+      console.log("Max retries exceeded and still offline, not checking connection again");
+      return;
+    }
+    
+    try {
+      setConnectionTested(false);
+      const result = await testSupabaseConnection();
+      setHasConnection(result.success);
+      
+      if (!result.success && navigator.onLine && retryCount < MAX_RETRIES) {
+        // If online but connection failed, schedule another attempt
+        console.log(`Connection test failed, scheduling retry ${retryCount + 1}/${MAX_RETRIES}`);
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          checkConnection();
+        }, 2000 * (retryCount + 1)); // Exponential backoff
+      } else if (result.success) {
+        // Reset retry count on success
+        setRetryCount(0);
+      }
+    } catch (error) {
+      console.error("Error testing connection:", error);
+      setHasConnection(false);
+    } finally {
+      setConnectionTested(true);
+    }
+  }, [retryCount]);
+
   return useQuery({
-    queryKey: ['subjects'],
+    queryKey: ['subjects', isOnline, hasConnection, retryCount],
     queryFn: async () => {
-      // If we know we're offline or connection test failed, immediately throw error
+      // If we know we're offline or connection test failed, immediately try to use cached data
       if ((!isOnline || hasConnection === false) && connectionTested) {
-        throw new Error('No connection to database');
+        console.log("Offline or database unreachable, trying cached data");
+        const cachedSubjects = localStorage.getItem('cached_subjects');
+        if (cachedSubjects) {
+          console.log('Using cached subjects from local storage');
+          return JSON.parse(cachedSubjects) as Subject[];
+        }
+        throw new Error('No connection to database and no cached data available');
       }
 
       try {
@@ -78,6 +116,14 @@ export const useSubjects = () => {
         
         if (!questions || questions.length === 0) {
           console.log('No questions found in the questions table');
+          
+          // Try to use cached data before giving up
+          const cachedSubjects = localStorage.getItem('cached_subjects');
+          if (cachedSubjects) {
+            console.log('Using cached subjects as fallback');
+            return JSON.parse(cachedSubjects) as Subject[];
+          }
+          
           throw new Error('No questions available');
         }
         
@@ -113,7 +159,7 @@ export const useSubjects = () => {
         // Try to get cached subjects from local storage
         const cachedSubjects = localStorage.getItem('cached_subjects');
         if (cachedSubjects) {
-          console.log('Using cached subjects from local storage');
+          console.log('Using cached subjects from local storage after error');
           return JSON.parse(cachedSubjects) as Subject[];
         }
         
@@ -128,7 +174,7 @@ export const useSubjects = () => {
         return [];
       }
     },
-    retry: 2,
+    retry: 3,
     retryDelay: (attemptIndex) => Math.min(2000 * (attemptIndex + 1), 8000),
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes

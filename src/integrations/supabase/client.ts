@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -19,53 +20,94 @@ export const supabase = createClient<Database>(
       headers: {
         'x-client-info': 'veno-app',
       }
+    },
+    db: {
+      schema: 'public'
+    },
+    // Add retries for network issues
+    realtime: {
+      params: {
+        eventsPerSecond: 2
+      }
     }
   }
 );
 
-// Enhanced connection testing function
-export const testSupabaseConnection = async () => {
-  try {
-    const start = Date.now();
-    const { data, error } = await supabase
-      .from('questions')
-      .select('*')
-      .limit(1);
+// Enhanced connection testing function with retries
+export const testSupabaseConnection = async (retries = 3, delayMs = 1000) => {
+  let attemptCount = 0;
+  
+  while (attemptCount < retries) {
+    try {
+      const start = Date.now();
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .limit(1);
 
-    const latency = Date.now() - start;
+      const latency = Date.now() - start;
 
-    if (error) {
-      console.error('Supabase Connection Error:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
+      if (error) {
+        console.error(`Supabase Connection Error (attempt ${attemptCount + 1}/${retries}):`, {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // If not on final attempt, wait and retry
+        if (attemptCount < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          attemptCount++;
+          continue;
+        }
+        
+        return {
+          success: false,
+          error: error.message,
+          latency,
+          attempts: attemptCount + 1
+        };
+      }
+
+      console.log('Supabase Connection Successful', {
+        latency: `${latency}ms`,
+        dataReceived: data?.length || 0,
+        attempts: attemptCount + 1
       });
+
+      return {
+        success: true,
+        latency,
+        data: data || [],
+        attempts: attemptCount + 1
+      };
+    } catch (err) {
+      console.error(`Unexpected Supabase Connection Error (attempt ${attemptCount + 1}/${retries}):`, err);
+      
+      // If not on final attempt, wait and retry
+      if (attemptCount < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        attemptCount++;
+        continue;
+      }
+      
       return {
         success: false,
-        error: error.message,
-        latency
+        error: err instanceof Error ? err.message : 'Unknown error',
+        latency: 0,
+        attempts: attemptCount + 1
       };
     }
-
-    console.log('Supabase Connection Successful', {
-      latency: `${latency}ms`,
-      dataReceived: data?.length || 0
-    });
-
-    return {
-      success: true,
-      latency,
-      data: data || []
-    };
-  } catch (err) {
-    console.error('Unexpected Supabase Connection Error:', err);
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : 'Unknown error',
-      latency: 0
-    };
   }
+  
+  // This shouldn't be reached due to the while loop, but TypeScript requires a return
+  return {
+    success: false,
+    error: 'Maximum retry attempts exceeded',
+    latency: 0,
+    attempts: attemptCount
+  };
 };
 
 // For backward compatibility - rename the function but keep the old name exported

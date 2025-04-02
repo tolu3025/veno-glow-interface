@@ -439,33 +439,6 @@ export type Database = {
         }
         Relationships: []
       }
-      phone_users: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_verified: boolean | null
-          phone: string
-          phone_email: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id: string
-          is_verified?: boolean | null
-          phone: string
-          phone_email: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_verified?: boolean | null
-          phone?: string
-          phone_email?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       products: {
         Row: {
           category: string
@@ -1038,6 +1011,42 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          points: number
+          status: string
+          task_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          points: number
+          status?: string
+          task_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          points?: number
+          status?: string
+          task_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
