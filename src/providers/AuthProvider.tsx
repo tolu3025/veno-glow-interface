@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       // Handle email confirmation
-      if (event === "EMAIL_VERIFIED") {
+      if (event === "SIGNED_IN" && currentSession?.user?.email_confirmed_at) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         toast.success("Email confirmed successfully!");
