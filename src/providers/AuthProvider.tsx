@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 type AuthContextType = {
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
       console.log("Auth state change:", event);
       
       if (currentSession && event === "SIGNED_IN") {
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       // Handle email confirmation
-      if (event === "EMAIL_CONFIRMED") {
+      if (event === "EMAIL_VERIFIED") {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         toast.success("Email confirmed successfully!");
