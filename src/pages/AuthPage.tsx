@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +20,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,7 +39,59 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
     if (isReset) {
       toast.info("Enter your new password to complete the reset process");
     }
-  }, [location]);
+    
+    // Set up auth state change listener for email confirmation
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
+      if (event === 'SIGNED_IN') {
+        console.log("User signed in:", session?.user);
+        toast.success("Successfully signed in!");
+        navigate('/dashboard');
+      } else if (event === 'USER_UPDATED') {
+        console.log("User was updated");
+        toast.success("Your profile has been updated");
+      } else if (event === 'PASSWORD_RECOVERY') {
+        toast.info("Please check your email for password reset instructions");
+      }
+    });
+    
+    // Check for email confirmation in URL
+    const handleEmailConfirmation = async () => {
+      if (location.hash && location.hash.includes('access_token')) {
+        setIsLoading(true);
+        try {
+          const hashParams = new URLSearchParams(location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (error) throw error;
+            
+            if (data.session) {
+              toast.success("Email confirmed successfully!");
+              navigate('/dashboard');
+            }
+          }
+        } catch (error: any) {
+          console.error("Error handling email confirmation:", error);
+          toast.error(error.message || "Failed to confirm email");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    handleEmailConfirmation();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [location, navigate]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -55,8 +109,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
       
       if (error) throw error;
       
-      toast.error(error.message || 'Failed to sign in with Google');
-      console.error('Google auth error:', error);
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in with Google');
       console.error('Google auth error:', error);
@@ -68,6 +120,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setConfirmMessage(null);
 
     try {
       if (mode === 'signin') {
@@ -115,6 +168,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
           }
         }
         
+        setConfirmMessage("Account created! Please check your email for verification instructions.");
         toast.success('Account created! Please check your email for verification instructions.');
       }
     } catch (error: any) {
@@ -142,6 +196,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
             <p className="text-veno-primary text-sm mt-1">
               You've been referred by a friend!
             </p>
+          )}
+          {confirmMessage && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-md">
+              {confirmMessage}
+            </div>
           )}
         </div>
         

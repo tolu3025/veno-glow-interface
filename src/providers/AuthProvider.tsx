@@ -61,6 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      console.log("Auth state change:", event);
+      
       if (currentSession && event === "SIGNED_IN") {
         setSession(currentSession);
         setUser(currentSession.user);
@@ -83,6 +85,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (event === "USER_UPDATED") {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        toast.success("Your profile has been updated");
+      }
+      
+      // Handle email confirmation
+      if (event === "EMAIL_CONFIRMED") {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        toast.success("Email confirmed successfully!");
       }
     });
 
@@ -104,7 +114,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth`,
+      }
     });
+    
+    if (!error) {
+      console.log("Signup successful, check email for confirmation link", data);
+    }
     
     return { data: data.session, error };
   };
