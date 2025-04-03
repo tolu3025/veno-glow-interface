@@ -1,14 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { VenoLogo } from '@/components/ui/logo';
-import { Eye, EyeOff, LogIn, User, UserPlus, Google } from 'lucide-react';
+import { Eye, EyeOff, LogIn, User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GoogleIcon } from '@/components/ui/GoogleIcon';
 
-// Define the props for the AuthPage component
 interface AuthPageProps {
   initialMode?: 'signin' | 'signup';
 }
@@ -23,22 +22,17 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract referral code from URL query parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const refCode = searchParams.get('ref');
     
     if (refCode) {
-      // Store the referral code in state and session storage
       setReferralCode(refCode);
       sessionStorage.setItem('referralCode', refCode);
       console.log('Referral code detected:', refCode);
-      
-      // If there's a referral code, default to signup mode
       setMode('signup');
     }
     
-    // Check if there's a reset parameter to handle password reset flow
     const isReset = searchParams.get('reset') === 'true';
     if (isReset) {
       toast.info("Enter your new password to complete the reset process");
@@ -61,7 +55,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
       
       if (error) throw error;
       
-      // The redirect is handled by Supabase OAuth
+      toast.error(error.message || 'Failed to sign in with Google');
+      console.error('Google auth error:', error);
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in with Google');
       console.error('Google auth error:', error);
@@ -86,7 +81,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
         toast.success('Welcome back!');
         navigate('/dashboard');
       } else {
-        // For signup, check if there's a stored referral code
         const storedReferralCode = referralCode || sessionStorage.getItem('referralCode');
         
         const { error, data } = await supabase.auth.signUp({
@@ -102,7 +96,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
 
         if (error) throw error;
         
-        // Record the referral if a referral code exists
         if (storedReferralCode && data.user) {
           try {
             const { error: referralError } = await supabase
@@ -116,7 +109,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
             if (referralError) throw referralError;
             
             console.log('Referral recorded successfully');
-            // Clear the stored referral code
             sessionStorage.removeItem('referralCode');
           } catch (referralError) {
             console.error('Error recording referral:', referralError);
@@ -220,7 +212,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
               onClick={handleGoogleSignIn}
               disabled={isLoading}
             >
-              <Google size={16} className="mr-2" />
+              <GoogleIcon className="mr-2" />
               {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
             </Button>
           </form>
