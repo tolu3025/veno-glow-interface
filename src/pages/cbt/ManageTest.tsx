@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -614,7 +613,6 @@ const ManageTest = () => {
     setCurrentEditQuestion({...currentEditQuestion, options: newOptions});
   };
 
-  // Fix for the type error: Convert string to number
   const saveQuestionChanges = async () => {
     if (!currentEditQuestion || !testId) return;
     
@@ -625,7 +623,6 @@ const ManageTest = () => {
         .update({
           question: currentEditQuestion.question,
           options: currentEditQuestion.options,
-          // Convert string to number for the answer field
           answer: typeof currentEditQuestion.answer === 'string' 
             ? parseInt(currentEditQuestion.answer, 10) 
             : currentEditQuestion.answer,
@@ -635,7 +632,6 @@ const ManageTest = () => {
         
       if (error) throw error;
       
-      // Make sure we maintain answer as a number in state
       setTestQuestions(prev => 
         prev.map(q => q.id === currentEditQuestion.id ? {
           ...currentEditQuestion,
