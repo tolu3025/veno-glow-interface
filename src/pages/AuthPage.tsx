@@ -4,6 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { VenoLogo } from '@/components/ui/logo';
+import { Eye, EyeOff, LogIn, User, UserPlus, Google } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Define the props for the AuthPage component
 interface AuthPageProps {
@@ -16,6 +19,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,7 +37,38 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
       // If there's a referral code, default to signup mode
       setMode('signup');
     }
+    
+    // Check if there's a reset parameter to handle password reset flow
+    const isReset = searchParams.get('reset') === 'true';
+    if (isReset) {
+      toast.info("Enter your new password to complete the reset process");
+    }
   }, [location]);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        }
+      });
+      
+      if (error) throw error;
+      
+      // The redirect is handled by Supabase OAuth
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sign in with Google');
+      console.error('Google auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +93,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
           email,
           password,
           options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
             data: {
               referred_by: storedReferralCode || null,
             }
@@ -87,8 +123,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
           }
         }
         
-        toast.success('Account created! Check your email for verification instructions.');
-        navigate('/dashboard');
+        toast.success('Account created! Please check your email for verification instructions.');
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');
@@ -122,35 +157,72 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 rounded-md border border-border bg-background"
+                className="w-full"
                 required
               />
             </div>
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 rounded-md border border-border bg-background"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             
-            <button
+            <Button
               type="submit"
-              className="w-full py-2 px-4 bg-veno-primary text-white rounded-md hover:bg-veno-primary/90 transition-colors"
+              className="w-full py-2 px-4 bg-veno-primary text-white"
               disabled={isLoading}
             >
-              {isLoading ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
-            </button>
+              {isLoading ? 'Processing...' : (
+                <span className="flex items-center justify-center">
+                  {mode === 'signin' ? (
+                    <><LogIn size={16} className="mr-2" /> Sign In</>
+                  ) : (
+                    <><UserPlus size={16} className="mr-2" /> Sign Up</>
+                  )}
+                </span>
+              )}
+            </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <Google size={16} className="mr-2" />
+              {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
+            </Button>
           </form>
           
           <div className="mt-4 text-center text-sm">
