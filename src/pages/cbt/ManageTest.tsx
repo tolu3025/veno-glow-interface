@@ -69,6 +69,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type Test = {
   id: string;
@@ -278,65 +279,61 @@ const ManageTest = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchTestData = async () => {
-      if (!user || !testId) {
+  const fetchTestData = async () => {
+    if (!user || !testId) {
+      navigate('/cbt');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from('user_tests')
+        .select('*')
+        .eq('id', testId)
+        .single();
+
+      if (testError || !testData) {
+        throw new Error('Test not found');
+      }
+
+      if (testData.creator_id !== user.id) {
         navigate('/cbt');
+        toast({
+          title: 'Access Denied',
+          description: 'You do not have permission to manage this test',
+          variant: 'destructive',
+        });
         return;
       }
 
-      setLoading(true);
-      try {
-        const { data: testData, error: testError } = await supabase
-          .from('user_tests')
-          .select('*')
-          .eq('id', testId)
-          .single();
+      setTestDetails(testData);
+      const storedActiveState = localStorage.getItem(`test_active_${testId}`);
+      setTestActive(storedActiveState === null ? true : storedActiveState === 'true');
 
-        if (testError || !testData) {
-          throw new Error('Test not found');
-        }
+      const { data: attemptsData, error: attemptsError } = await supabase
+        .from('test_attempts')
+        .select('*')
+        .eq('test_id', testId)
+        .order('completed_at', { ascending: false });
 
-        if (testData.creator_id !== user.id) {
-          navigate('/cbt');
-          toast({
-            title: 'Access Denied',
-            description: 'You do not have permission to manage this test',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        setTestDetails(testData);
-        const storedActiveState = localStorage.getItem(`test_active_${testId}`);
-        setTestActive(storedActiveState === null ? true : storedActiveState === 'true');
-
-        const { data: attemptsData, error: attemptsError } = await supabase
-          .from('test_attempts')
-          .select('*')
-          .eq('test_id', testId)
-          .order('completed_at', { ascending: false });
-
-        if (attemptsError) {
-          throw attemptsError;
-        }
-
-        setTestAttempts(attemptsData || []);
-        fetchTestQuestions();
-      } catch (error) {
-        console.error('Error fetching test data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load test data',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
+      if (attemptsError) {
+        throw attemptsError;
       }
-    };
 
-    fetchTestData();
-  }, [testId, user, navigate, toast]);
+      setTestAttempts(attemptsData || []);
+      fetchTestQuestions();
+    } catch (error) {
+      console.error('Error fetching test data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load test data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchTestQuestions = async () => {
     if (!testId) return;
@@ -559,6 +556,11 @@ const ManageTest = () => {
     if (!currentEditQuestion) return;
     setCurrentEditQuestion(prev => {
       if (!prev) return prev;
+      
+      if (field === 'answer') {
+        return {...prev, [field]: Number(value)};
+      }
+      
       return {...prev, [field]: value};
     });
   };
@@ -580,7 +582,7 @@ const ManageTest = () => {
         .update({
           question: currentEditQuestion.question,
           options: currentEditQuestion.options,
-          answer: currentEditQuestion.answer,
+          answer: Number(currentEditQuestion.answer),
           explanation: currentEditQuestion.explanation
         })
         .eq('id', currentEditQuestion.id);
@@ -609,6 +611,10 @@ const ManageTest = () => {
     }
   };
 
+  useEffect(() => {
+    fetchTestData();
+  }, [testId, user, navigate, toast]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -630,7 +636,7 @@ const ManageTest = () => {
 
   return (
     <div className="container max-w-4xl mx-auto pb-10 md:pb-6 md:pl-0 pt-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <Button 
           variant="ghost" 
           className="flex items-center gap-2" 
@@ -640,7 +646,7 @@ const ManageTest = () => {
           <span>Back to Tests</span>
         </Button>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             variant={testActive ? "destructive" : "default"}
             onClick={toggleTestStatus}
@@ -726,7 +732,7 @@ const ManageTest = () => {
         </TabsList>
         
         <TabsContent value="participants">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
             <Button 
               variant="outline" 
@@ -860,7 +866,7 @@ const ManageTest = () => {
         </TabsContent>
         
         <TabsContent value="questions">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-veno-primary" />
               <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
@@ -956,7 +962,20 @@ const ManageTest = () => {
       <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Edit Question</DialogTitle>
+            <DialogTitle className="flex justify-between items-center">
+              <span>Edit Question</span>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                className="h-8"
+                onClick={() => {
+                  setIsEditQuestionDialogOpen(false);
+                }}
+              >
+                <Trash className="h-4 w-4 mr-1" />
+                Delete Question
+              </Button>
+            </DialogTitle>
             <DialogDescription>
               Make changes to the question, options, answer, or explanation.
             </DialogDescription>
@@ -989,19 +1008,17 @@ const ManageTest = () => {
                       onChange={(e) => handleUpdateOption(index, e.target.value)}
                       className="flex-1"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className={index === currentEditQuestion.answer ? 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200' : ''}
-                      onClick={() => handleUpdateQuestionField('answer', index)}
+                    
+                    <RadioGroup 
+                      value={currentEditQuestion.answer.toString()} 
+                      onValueChange={(value) => handleUpdateQuestionField('answer', parseInt(value, 10))}
+                      className="flex"
                     >
-                      {index === currentEditQuestion.answer ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        'Set as Answer'
-                      )}
-                    </Button>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value={index.toString()} id={`answer-${index}`} />
+                        <Label htmlFor={`answer-${index}`} className="cursor-pointer">Correct Answer</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 ))}
               </div>
@@ -1027,7 +1044,7 @@ const ManageTest = () => {
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <Button 
               type="button" 
               variant="outline" 
