@@ -20,8 +20,7 @@ import {
   BookOpen,
   HelpCircle,
   Trash,
-  Download,
-  Settings
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -65,7 +64,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Certificate from '@/components/certificate/Certificate';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,7 +97,7 @@ type TestAttempt = {
 type TestQuestion = {
   id: string;
   question: string;
-  options: string[];
+  options: string[]; // This was causing the error - now explicitly string[]
   answer: number;
   explanation?: string;
 };
@@ -124,9 +122,6 @@ const ManageTest = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<TestAttempt | null>(null);
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
-  const [updatedVisibility, setUpdatedVisibility] = useState<string>('');
-  const [savingSettings, setSavingSettings] = useState(false);
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const participantResultRef = useRef<HTMLDivElement>(null);
@@ -313,7 +308,6 @@ const ManageTest = () => {
         }
 
         setTestDetails(testData);
-        setUpdatedVisibility(testData.results_visibility);
         const storedActiveState = localStorage.getItem(`test_active_${testId}`);
         setTestActive(storedActiveState === null ? true : storedActiveState === 'true');
 
@@ -437,43 +431,6 @@ const ManageTest = () => {
     } finally {
       setDeleteLoading(false);
       setIsDeleteDialogOpen(false);
-    }
-  };
-
-  const saveTestSettings = async () => {
-    if (!testId || !testDetails) return;
-    
-    setSavingSettings(true);
-    try {
-      const { error } = await supabase
-        .from('user_tests')
-        .update({
-          results_visibility: updatedVisibility
-        })
-        .eq('id', testId);
-      
-      if (error) throw error;
-      
-      setTestDetails({
-        ...testDetails,
-        results_visibility: updatedVisibility
-      });
-      
-      toast({
-        title: 'Settings Updated',
-        description: 'Test settings have been successfully updated',
-      });
-      
-      setIsSettingsDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating test settings:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update test settings',
-        variant: 'destructive',
-      });
-    } finally {
-      setSavingSettings(false);
     }
   };
 
@@ -623,9 +580,7 @@ const ManageTest = () => {
         .update({
           question: currentEditQuestion.question,
           options: currentEditQuestion.options,
-          answer: typeof currentEditQuestion.answer === 'string' 
-            ? parseInt(currentEditQuestion.answer, 10) 
-            : currentEditQuestion.answer,
+          answer: currentEditQuestion.answer,
           explanation: currentEditQuestion.explanation
         })
         .eq('id', currentEditQuestion.id);
@@ -633,12 +588,7 @@ const ManageTest = () => {
       if (error) throw error;
       
       setTestQuestions(prev => 
-        prev.map(q => q.id === currentEditQuestion.id ? {
-          ...currentEditQuestion,
-          answer: typeof currentEditQuestion.answer === 'string' 
-            ? parseInt(currentEditQuestion.answer, 10) 
-            : currentEditQuestion.answer
-        } : q)
+        prev.map(q => q.id === currentEditQuestion.id ? currentEditQuestion : q)
       );
       
       toast({
@@ -678,22 +628,9 @@ const ManageTest = () => {
     );
   }
 
-  const getVisibilityLabel = (value: string) => {
-    switch (value) {
-      case 'creator_only':
-        return 'Only you (the creator)';
-      case 'test_takers':
-        return 'Test takers and you';
-      case 'public':
-        return 'Public (everyone)';
-      default:
-        return 'Unknown';
-    }
-  };
-
   return (
-    <div className="container max-w-4xl mx-auto pb-10 md:pb-6 md:pl-0 pt-6 px-4">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+    <div className="container max-w-4xl mx-auto pb-10 md:pb-6 md:pl-0 pt-6">
+      <div className="flex items-center justify-between mb-6">
         <Button 
           variant="ghost" 
           className="flex items-center gap-2" 
@@ -703,7 +640,7 @@ const ManageTest = () => {
           <span>Back to Tests</span>
         </Button>
         
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2">
           <Button 
             variant={testActive ? "destructive" : "default"}
             onClick={toggleTestStatus}
@@ -713,59 +650,47 @@ const ManageTest = () => {
             {testActive ? 'Deactivate Test' : 'Activate Test'}
           </Button>
           
-          <Button
-            variant="outline"
-            onClick={() => setIsSettingsDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Settings size={16} />
-            Settings
-          </Button>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="flex items-center gap-2">
+                <Trash size={16} />
+                Delete Test
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Test</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the test and all associated data. 
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={deleteTest}
+                  disabled={deleteLoading}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {deleteLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash className="h-4 w-4 mr-2" />
+                  )}
+                  {deleteLoading ? 'Deleting...' : 'Delete Test'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle>{testDetails.title}</CardTitle>
-              <CardDescription>
-                {testDetails.description || 'No description'}
-              </CardDescription>
-            </div>
-            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <Trash size={16} className="mr-1" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Test</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the test and all associated data. 
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={deleteTest}
-                    disabled={deleteLoading}
-                    className="bg-destructive hover:bg-destructive/90"
-                  >
-                    {deleteLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Trash className="h-4 w-4 mr-2" />
-                    )}
-                    {deleteLoading ? 'Deleting...' : 'Delete Test'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          <CardTitle>{testDetails.title}</CardTitle>
+          <CardDescription>
+            {testDetails.description || 'No description'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -783,22 +708,9 @@ const ManageTest = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-secondary/30 p-3 rounded-md">
-              <p className="text-sm font-medium">Results Visibility</p>
-              <p className="text-lg">{getVisibilityLabel(testDetails.results_visibility)}</p>
-            </div>
-            <div className="bg-secondary/30 p-3 rounded-md">
-              <p className="text-sm font-medium">Share Code</p>
-              <p className="text-lg font-mono">{testDetails.share_code}</p>
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center border-t pt-4 mt-2">
+          <div className="flex justify-between items-center border-t pt-4 mt-4">
             <p className="text-sm text-muted-foreground">
-              Status: <span className={testActive ? "text-green-600" : "text-red-600"}>
-                {testActive ? "Active" : "Inactive"}
-              </span>
+              Share Code: <span className="font-mono bg-secondary/50 px-1 rounded">{testDetails.share_code}</span>
             </p>
             <p className="text-sm text-muted-foreground">
               Created: {formatDate(testDetails.created_at)}
@@ -842,8 +754,8 @@ const ManageTest = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="overflow-hidden rounded-md border">
-              <div className="overflow-x-auto">
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -871,7 +783,7 @@ const ManageTest = () => {
                             {Math.round((attempt.score / attempt.total_questions) * 100)}%
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <div className="flex flex-col md:flex-row gap-2 justify-end">
                             <Button
                               variant="outline"
@@ -880,7 +792,7 @@ const ManageTest = () => {
                               className="text-blue-600"
                             >
                               <Download className="h-3.5 w-3.5 mr-1" />
-                              PDF
+                              Download PDF
                             </Button>
                             
                             {attempt.disqualified ? (
@@ -942,8 +854,8 @@ const ManageTest = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
         
@@ -967,252 +879,221 @@ const ManageTest = () => {
                 <p className="text-muted-foreground mb-4">
                   No questions found for this test
                 </p>
-                <Button onClick={() => navigate('/cbt/create')}>Create Questions</Button>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
               {testQuestions.map((question, index) => (
-                <Card key={question.id} className="overflow-hidden">
-                  <CardHeader className="bg-secondary/20 pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-1">Question {index + 1}</div>
-                        <CardTitle className="text-base">{question.question}</CardTitle>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditQuestion(question)}
-                      >
-                        <PencilIcon size={14} className="mr-1" />
-                        Edit
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-3">
-                    <div className="grid gap-2">
-                      {question.options.map((option, optIndex) => (
-                        <div 
-                          key={optIndex}
-                          className={`p-2 rounded-md border ${
-                            question.answer === optIndex 
-                              ? 'bg-primary/10 border-primary/30' 
-                              : 'bg-secondary/10 border-secondary/30'
-                          }`}
+                <motion.div 
+                  key={question.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex justify-between">
+                        <span>Question {index + 1}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEditQuestion(question)}
+                          className="h-8 px-2"
                         >
-                          <div className="flex items-center">
-                            <div className="w-6 h-6 rounded-full bg-secondary/30 flex items-center justify-center mr-2">
-                              <span className="text-xs">{String.fromCharCode(65 + optIndex)}</span>
+                          <PencilIcon size={16} />
+                          <span className="ml-1">Edit</span>
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-4">{question.question}</p>
+                      <div className="space-y-2">
+                        {question.options.map((option, optionIndex) => (
+                          <div 
+                            key={optionIndex} 
+                            className={`p-3 rounded-md border ${
+                              optionIndex === question.answer ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <div className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 ${
+                                optionIndex === question.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                              }`}>
+                                {String.fromCharCode(65 + optionIndex)}
+                              </div>
+                              <span>{option}</span>
+                              {optionIndex === question.answer && (
+                                <Check size={16} className="ml-2 text-green-500" />
+                              )}
                             </div>
-                            <div>{option}</div>
-                            {question.answer === optIndex && (
-                              <Check className="h-4 w-4 ml-2 text-primary" />
-                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {question.explanation ? (
+                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-start gap-2">
+                            <BookOpen size={20} className="mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Explanation:</p>
+                              <p className="text-blue-700 dark:text-blue-300/90">{question.explanation}</p>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    
-                    {question.explanation && (
-                      <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-                        <div className="flex items-center text-sm font-medium mb-1 text-yellow-800 dark:text-yellow-200">
-                          <HelpCircle className="h-3.5 w-3.5 mr-1" />
-                          Explanation
+                      ) : (
+                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-md border border-gray-200 dark:border-gray-700 text-muted-foreground text-sm italic">
+                          No explanation provided for this question
                         </div>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                          {question.explanation}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
       
-      {/* Settings Dialog */}
-      <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Test Settings</DialogTitle>
+            <DialogTitle>Edit Question</DialogTitle>
             <DialogDescription>
-              Configure settings for your test
+              Make changes to the question, options, answer, or explanation.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <Label className="text-base">Results Visibility</Label>
-            <p className="text-sm text-muted-foreground mb-4">
-              Control who can see the results of this test
-            </p>
-            
-            <RadioGroup 
-              value={updatedVisibility} 
-              onValueChange={setUpdatedVisibility}
-              className="space-y-3"
-            >
-              <div className="flex items-start space-x-2 border p-3 rounded-md">
-                <RadioGroupItem value="creator_only" id="creator_only" />
-                <Label htmlFor="creator_only" className="font-normal cursor-pointer flex-1">
-                  <span className="font-medium">Creator Only</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Only you will be able to see test results
-                  </p>
-                </Label>
-              </div>
-              
-              <div className="flex items-start space-x-2 border p-3 rounded-md">
-                <RadioGroupItem value="test_takers" id="test_takers" />
-                <Label htmlFor="test_takers" className="font-normal cursor-pointer flex-1">
-                  <span className="font-medium">Test Takers</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Test takers will see their own results after completing the test
-                  </p>
-                </Label>
-              </div>
-              
-              <div className="flex items-start space-x-2 border p-3 rounded-md">
-                <RadioGroupItem value="public" id="public" />
-                <Label htmlFor="public" className="font-normal cursor-pointer flex-1">
-                  <span className="font-medium">Public</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Results will be visible to anyone who takes the test
-                  </p>
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-          
-          <DialogFooter className="sm:justify-end">
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button 
-              onClick={saveTestSettings}
-              disabled={savingSettings}
-              className="ml-2"
-            >
-              {savingSettings ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              {savingSettings ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Question Dialog */}
-      <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Question</DialogTitle>
-          </DialogHeader>
-          
           {currentEditQuestion && (
-            <div className="space-y-4 py-2">
+            <div className="space-y-4 my-2">
               <div>
                 <Label htmlFor="question">Question</Label>
                 <Textarea 
-                  id="question"
+                  id="question" 
                   value={currentEditQuestion.question}
                   onChange={(e) => handleUpdateQuestionField('question', e.target.value)}
-                  className="mt-1"
                   rows={3}
+                  className="mt-1"
                 />
               </div>
               
-              <div>
-                <Label>Answer Options</Label>
-                <div className="space-y-2 mt-2">
-                  {currentEditQuestion.options.map((option, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-secondary/30 flex items-center justify-center">
-                        <span className="text-xs">{String.fromCharCode(65 + index)}</span>
-                      </div>
-                      <Input 
-                        value={option}
-                        onChange={(e) => handleUpdateOption(index, e.target.value)}
-                        className="flex-1"
-                      />
+              <div className="space-y-3">
+                <Label>Options</Label>
+                {currentEditQuestion.options.map((option, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <div className={`min-w-8 h-8 flex items-center justify-center rounded-full ${
+                      index === currentEditQuestion.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}>
+                      {String.fromCharCode(65 + index)}
                     </div>
-                  ))}
+                    <Input 
+                      value={option}
+                      onChange={(e) => handleUpdateOption(index, e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={index === currentEditQuestion.answer ? 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200' : ''}
+                      onClick={() => handleUpdateQuestionField('answer', index)}
+                    >
+                      {index === currentEditQuestion.answer ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        'Set as Answer'
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <BookOpen size={16} className="text-veno-primary" />
+                  <Label htmlFor="explanation">Explanation (Optional)</Label>
                 </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="answer" className="mb-2 inline-block">Correct Answer</Label>
-                <RadioGroup 
-                  value={String(currentEditQuestion.answer)}
-                  onValueChange={(value) => handleUpdateQuestionField('answer', parseInt(value, 10))}
-                  className="space-y-2"
-                >
-                  {currentEditQuestion.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <RadioGroupItem value={String(index)} id={`answer-${index}`} />
-                      <Label htmlFor={`answer-${index}`} className="cursor-pointer">
-                        <span className="font-medium mr-2">{String.fromCharCode(65 + index)}</span>
-                        {option}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-              
-              <div>
-                <Label htmlFor="explanation">Explanation (Optional)</Label>
                 <Textarea 
-                  id="explanation"
+                  id="explanation" 
                   value={currentEditQuestion.explanation || ''}
                   onChange={(e) => handleUpdateQuestionField('explanation', e.target.value)}
+                  rows={4}
                   className="mt-1"
-                  placeholder="Explain why this is the correct answer..."
-                  rows={3}
+                  placeholder="Explain why the answer is correct. This will help test takers learn from their mistakes."
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  <HelpCircle className="inline h-3 w-3 mr-1" />
+                  A clear explanation improves the educational value of your test
+                </p>
               </div>
             </div>
           )}
           
           <DialogFooter>
-            <Button
-              variant="outline"
+            <Button 
+              type="button" 
+              variant="outline" 
               onClick={() => setIsEditQuestionDialogOpen(false)}
             >
+              <XCircle className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button
+            <Button 
+              type="button" 
               onClick={saveQuestionChanges}
               disabled={saveLoading}
-              className="ml-2"
             >
               {saveLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
               )}
-              {saveLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      <div style={{display: 'none'}}>
-        {selectedParticipant && (
-          <div ref={certificateRef}>
-            <Certificate
-              name={selectedParticipant.participant_name || "Participant"}
-              course={testDetails?.title || "Test"}
-              date={new Date(selectedParticipant.completed_at).toLocaleDateString()}
-              score={`${selectedParticipant.score}/${selectedParticipant.total_questions}`}
-            />
-          </div>
-        )}
+      <div className="hidden">
+        <div ref={certificateRef} className="certificate-container p-8 bg-white">
+          {selectedParticipant && (
+            <div className="max-w-4xl mx-auto border-8 border-double border-blue-600 p-8 text-center">
+              <h1 className="text-3xl font-bold text-blue-800 mb-2">Certificate of Completion</h1>
+              <div className="text-lg mb-6">This certifies that</div>
+              <h2 className="text-2xl font-bold mb-6">{selectedParticipant.participant_name || 'Anonymous'}</h2>
+              <div className="text-lg mb-2">has successfully completed</div>
+              <h3 className="text-xl font-bold mb-6">{testDetails?.title || 'Assessment'}</h3>
+              <div className="mb-6">
+                <span className="text-lg font-semibold">
+                  Score: {selectedParticipant.score}/{selectedParticipant.total_questions} 
+                  ({Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}%)
+                </span>
+              </div>
+              <div className="text-sm mb-8">
+                Date: {formatDate(selectedParticipant.completed_at)}
+              </div>
+              <div className="flex justify-between items-end mt-12 pt-8">
+                <div className="text-center border-t border-gray-300 inline-block px-8">
+                  <p className="text-sm pt-1">Examiner's Signature</p>
+                </div>
+                <div className="flex items-center">
+                  <VenoLogo className="h-12 w-12 mr-2" />
+                  <span className="text-xl font-bold">Veno Education</span>
+                </div>
+              </div>
+              {selectedParticipant.disqualified && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-6xl font-bold text-red-500 opacity-40 transform rotate-45 border-8 border-red-500 px-4 py-2">
+                    DISQUALIFIED
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

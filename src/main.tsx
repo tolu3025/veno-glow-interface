@@ -20,18 +20,10 @@ if (localStorage.getItem('app_version') !== VERSION) {
     
     // Clear any stored auth tokens to ensure proper logout
     localStorage.removeItem('supabase.auth.token');
-    localStorage.removeItem('sb-psapxfrunxfhhvzytfdg-auth-token');
     
     window.location.reload();
   }
 }
-
-// Clear session storage flag after the page has loaded
-window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    sessionStorage.removeItem('first_load');
-  }, 1000);
-});
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
