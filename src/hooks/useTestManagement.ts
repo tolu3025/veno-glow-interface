@@ -146,7 +146,7 @@ export const useTestManagement = ({
   };
 
   const loadPublicResults = async () => {
-    if (!testId) return;
+    if (!testId || testDetails?.results_visibility !== 'public') return;
     
     try {
       const { data, error } = await supabase
@@ -180,17 +180,16 @@ export const useTestManagement = ({
         completed_at: new Date().toISOString(),
       };
       
-      const { error } = await supabase.from('test_attempts').insert([testData]);
-      
-      if (error) throw error;
-      
-      // Fix for visibility issue - load results regardless of visibility setting
-      await loadPublicResults();
+      await supabase.from('test_attempts').insert([testData]);
       
       if (testDetails?.results_visibility === 'creator_only') {
         setSubmissionComplete(true);
       } else {
         setShowResults(true);
+        
+        if (testDetails?.results_visibility === 'public') {
+          loadPublicResults();
+        }
       }
     } catch (error) {
       console.error("Error saving test results:", error);
