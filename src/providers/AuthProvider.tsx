@@ -116,6 +116,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth`,
+        data: {
+          email_template_name: "veno-confirmation"
+        }
       }
     });
     
