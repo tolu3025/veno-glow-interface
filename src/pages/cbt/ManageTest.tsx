@@ -614,6 +614,7 @@ const ManageTest = () => {
     setCurrentEditQuestion({...currentEditQuestion, options: newOptions});
   };
 
+  // Fix for the type error: Convert string to number
   const saveQuestionChanges = async () => {
     if (!currentEditQuestion || !testId) return;
     
@@ -624,15 +625,24 @@ const ManageTest = () => {
         .update({
           question: currentEditQuestion.question,
           options: currentEditQuestion.options,
-          answer: currentEditQuestion.answer,
+          // Convert string to number for the answer field
+          answer: typeof currentEditQuestion.answer === 'string' 
+            ? parseInt(currentEditQuestion.answer, 10) 
+            : currentEditQuestion.answer,
           explanation: currentEditQuestion.explanation
         })
         .eq('id', currentEditQuestion.id);
         
       if (error) throw error;
       
+      // Make sure we maintain answer as a number in state
       setTestQuestions(prev => 
-        prev.map(q => q.id === currentEditQuestion.id ? currentEditQuestion : q)
+        prev.map(q => q.id === currentEditQuestion.id ? {
+          ...currentEditQuestion,
+          answer: typeof currentEditQuestion.answer === 'string' 
+            ? parseInt(currentEditQuestion.answer, 10) 
+            : currentEditQuestion.answer
+        } : q)
       );
       
       toast({
@@ -1144,7 +1154,7 @@ const ManageTest = () => {
                 <Label htmlFor="answer" className="mb-2 inline-block">Correct Answer</Label>
                 <RadioGroup 
                   value={String(currentEditQuestion.answer)}
-                  onValueChange={(value) => handleUpdateQuestionField('answer', parseInt(value))}
+                  onValueChange={(value) => handleUpdateQuestionField('answer', parseInt(value, 10))}
                   className="space-y-2"
                 >
                   {currentEditQuestion.options.map((option, index) => (
