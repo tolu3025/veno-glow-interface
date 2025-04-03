@@ -8,10 +8,34 @@ import { Eye, EyeOff, LogIn, User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
+import { useAuth } from '@/providers/AuthProvider';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 
 interface AuthPageProps {
   initialMode?: 'signin' | 'signup';
 }
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+});
 
 const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [email, setEmail] = useState('');
@@ -21,8 +45,17 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { resetPassword } = useAuth();
+
+  const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -179,6 +212,22 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
     }
   };
 
+  const handleForgotPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
+    try {
+      setIsLoading(true);
+      const { error } = await resetPassword(values.email);
+      if (error) throw error;
+      
+      toast.success('Password reset instructions sent to your email!');
+      setForgotPasswordOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset instructions');
+      console.error('Reset password error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
@@ -238,6 +287,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
                 </button>
               </div>
             </div>
+            
+            {mode === 'signin' && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
+                  className="text-sm text-veno-primary hover:underline"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
             
             <Button
               type="submit"
@@ -301,6 +362,44 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
           </div>
         </div>
       </div>
+      
+      <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you instructions to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...forgotPasswordForm}>
+            <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+              <FormField
+                control={forgotPasswordForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your@email.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setForgotPasswordOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Send Reset Instructions'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
