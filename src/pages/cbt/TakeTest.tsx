@@ -164,6 +164,20 @@ const TakeTest = () => {
       const subject = location.state.subject;
       const settingsFromState = location.state.settings || settings;
       
+      // Set basic test details for subject quizzes
+      const subjectTestDetails = {
+        id: 'subject',
+        title: `${subject} Quiz`,
+        description: `Test your knowledge of ${subject}`,
+        creator_id: 'system',
+        time_limit: settingsFromState.timeLimit || 15,
+        results_visibility: 'public',
+        allow_retakes: true,
+        subject: subject
+      };
+      
+      setTestDetails(subjectTestDetails as TestDetails);
+      
       const difficultyFilter = settingsFromState.difficulty === 'all' 
         ? ['beginner', 'intermediate', 'advanced'] 
         : [settingsFromState.difficulty];

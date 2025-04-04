@@ -168,14 +168,25 @@ export const useTestManagement = ({
     }
   };
 
+  // Improved saveTestAttempt function with better retry logic
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
     setSavingError(null);
     
+    // For subject-based tests, generate a consistent test_id if one isn't provided
+    if (testId === 'subject' && testData.test_id === 'subject') {
+      const subjectName = testData.subject || location?.state?.subject;
+      if (subjectName) {
+        // Create a deterministic UUID based on subject name and user
+        const userIdentifier = user?.id || testTakerInfo?.email || 'anonymous';
+        testData.test_id = `subject_${subjectName.replace(/\s+/g, '_').toLowerCase()}_${userIdentifier}`;
+      }
+    }
+    
     try {
       // Make multiple attempts with exponential backoff
       let attempts = 0;
-      const maxAttempts = 5; // Increased max attempts
+      const maxAttempts = 5; 
       
       while (attempts < maxAttempts) {
         attempts++;
@@ -210,6 +221,11 @@ export const useTestManagement = ({
         }
       }
       
+      const fallbackSave = await fallbackSaveAttempt(testData);
+      if (fallbackSave) {
+        return true;
+      }
+      
       const fallbackError = new Error(`Failed to save test results after ${maxAttempts} attempts`);
       console.error(fallbackError);
       setSavingError(fallbackError.message);
@@ -218,53 +234,70 @@ export const useTestManagement = ({
       setSaving(false);
     }
   };
+  
+  // Fallback method to try saving in a different format
+  const fallbackSaveAttempt = async (testData: any): Promise<boolean> => {
+    try {
+      console.log("Trying fallback save method...");
+      
+      // Try to save with minimal data to reduce potential issues
+      const minimalData = {
+        score: testData.score,
+        total_questions: testData.total_questions,
+        participant_email: testData.participant_email || 'anonymous',
+        participant_name: testData.participant_name || 'Anonymous User',
+        completed_at: new Date().toISOString(),
+        // For subject tests, create a different format
+        test_id: testData.test_id === 'subject' ? null : testData.test_id
+      };
+      
+      const { error } = await supabase
+        .from('test_attempts')
+        .insert([minimalData]);
+      
+      if (!error) {
+        console.log("Test results saved successfully using fallback method");
+        return true;
+      }
+      
+      console.error("Fallback save attempt failed:", error);
+      return false;
+    } catch (error) {
+      console.error("Error in fallback save:", error);
+      return false;
+    }
+  };
 
   const finishTest = async () => {
     // Calculate the final score before submission to ensure it's up to date
     const finalScore = calculateScore();
     
     try {
-      // Using the calculated score instead of the state which might not be updated yet
+      // Prepare test data for saving
       const testData = {
         test_id: testId,
         score: finalScore,
         total_questions: questions.length,
         time_taken: (testDetails?.time_limit || 15) * 60 - timeRemaining,
         user_id: user?.id || null,
-        participant_email: testTakerInfo?.email || user?.email || '',
-        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || '',
+        participant_email: testTakerInfo?.email || user?.email || 'anonymous',
+        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous User',
         completed_at: new Date().toISOString(),
+        subject: location?.state?.subject || testDetails?.subject || 'general',
       };
       
       console.log("Preparing to save test attempt with data:", testData);
       
-      const saved = await saveTestAttempt(testData);
+      // Always show results, regardless of save status
+      setShowResults(true);
       
-      // Load public results regardless of visibility setting to prepare data
-      await loadPublicResults();
-      
-      // Show appropriate screens based on settings and save status
-      if (testDetails?.results_visibility === 'creator_only') {
-        setSubmissionComplete(true);
+      // Try to save the results asynchronously
+      saveTestAttempt(testData).then((saved) => {
         if (saved) {
+          setSavingError(null);
           toast({
             title: "Test completed",
-            description: "Your results have been submitted successfully",
-            variant: "default",
-          });
-        } else {
-          toast({
-            title: "Warning",
-            description: "Your test has been completed but we couldn't save your results. Please contact support.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        setShowResults(true);
-        if (saved) {
-          toast({
-            title: "Test completed",
-            description: "View your results below",
+            description: "Your results have been saved successfully",
             variant: "default",
           });
         } else {
@@ -274,16 +307,19 @@ export const useTestManagement = ({
             variant: "destructive",
           });
         }
+      }).catch(error => {
+        console.error("Error saving test results:", error);
+        setSavingError("Could not save your results. Results are shown but may not be stored permanently.");
+      });
+      
+      // Load public results if applicable
+      if (testDetails?.results_visibility !== 'creator_only') {
+        await loadPublicResults();
       }
     } catch (error: any) {
-      console.error("Error saving test results:", error);
-      setSavingError(error.message);
+      console.error("Error finalizing test:", error);
+      setSavingError("An error occurred while finalizing your test.");
       
-      toast({
-        title: "Error",
-        description: "Could not save your results. Results will still be shown but might not be stored permanently.",
-        variant: "destructive",
-      });
       // Still show results in case of error
       setShowResults(true);
     }

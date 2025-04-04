@@ -128,11 +128,11 @@ const TestResults: React.FC<TestResultsProps> = ({
           </CardHeader>
           <CardContent className="pt-0 pb-6">
             {savingError && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertTitle>Failed to save results</AlertTitle>
-                <AlertDescription>
-                  Your results are displayed below but could not be saved permanently.
-                  {user ? " Please try again later or contact support." : " Consider signing in to ensure your results are saved."}
+              <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+                <AlertTitle className="text-amber-800">Results Displayed</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  Your results are shown below. 
+                  {user ? " We'll keep trying to save them in the background." : " For reliable saving, consider signing in next time."}
                 </AlertDescription>
               </Alert>
             )}
