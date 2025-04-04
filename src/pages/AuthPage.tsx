@@ -48,7 +48,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { resetPassword } = useAuth();
+  const { resetPassword, signIn, signUp } = useAuth();
 
   const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -157,52 +157,23 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
 
     try {
       if (mode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
+        const { error } = await signIn(email, password);
         if (error) throw error;
         
         toast.success('Welcome back!');
         navigate('/dashboard');
       } else {
+        // Sign up with custom flow
         const storedReferralCode = referralCode || sessionStorage.getItem('referralCode');
         
-        const { error, data } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth`,
-            data: {
-              referred_by: storedReferralCode || null,
-            }
-          }
-        });
+        const { error, confirmEmailSent } = await signUp(email, password);
 
         if (error) throw error;
         
-        if (storedReferralCode && data.user) {
-          try {
-            const { error: referralError } = await supabase
-              .from('user_referrals')
-              .insert({
-                referrer_id: storedReferralCode,
-                referred_id: data.user.id,
-                status: 'pending'
-              });
-            
-            if (referralError) throw referralError;
-            
-            console.log('Referral recorded successfully');
-            sessionStorage.removeItem('referralCode');
-          } catch (referralError) {
-            console.error('Error recording referral:', referralError);
-          }
+        if (confirmEmailSent) {
+          setConfirmMessage("Account created! Please check your email for verification instructions.");
+          toast.success('Account created! Please check your email for verification instructions.');
         }
-        
-        setConfirmMessage("Account created! Please check your email for verification instructions.");
-        toast.success('Account created! Please check your email for verification instructions.');
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');

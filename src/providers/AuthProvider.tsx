@@ -15,6 +15,7 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{
     error: Error | null;
     data: Session | null;
+    confirmEmailSent: boolean;
   }>;
   signOut: () => Promise<void>;
   updateUserMetadata: (metadata: Record<string, any>) => Promise<void>;
@@ -29,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isLoading: true,
   signIn: async () => ({ error: null, data: null }),
-  signUp: async () => ({ error: null, data: null }),
+  signUp: async () => ({ error: null, data: null, confirmEmailSent: false }),
   signOut: async () => {},
   updateUserMetadata: async () => {},
   resetPassword: async () => ({ error: null, data: null }),
@@ -111,22 +112,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
-        data: {
-          email_template_name: "veno-confirmation"
+    try {
+      // First register the user but don't auto-confirm their email
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          // Set email confirmation to false (we'll handle it manually)
+          emailRedirectTo: `${window.location.origin}/auth`,
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data.user) {
+        // Log the user out immediately after registration
+        await supabase.auth.signOut();
+        
+        // Generate a confirmation token for the user
+        const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
+          type: 'signup',
+          email,
+          options: {
+            redirectTo: `${window.location.origin}/auth`,
+          }
+        });
+        
+        if (tokenError) {
+          throw tokenError;
+        }
+        
+        if (tokenData?.properties?.action_link) {
+          // Send confirmation email using our Brevo edge function
+          const confirmationUrl = tokenData.properties.action_link;
+          
+          const response = await supabase.functions.invoke('brevo-email-confirmation', {
+            body: {
+              email,
+              confirmationUrl
+            }
+          });
+          
+          if (response.error) {
+            throw new Error(`Failed to send confirmation email: ${response.error.message}`);
+          }
+          
+          console.log("Confirmation email sent successfully");
+          return { data: null, error: null, confirmEmailSent: true };
+        } else {
+          throw new Error("Could not generate confirmation link");
         }
       }
-    });
-    
-    if (!error) {
-      console.log("Signup successful, check email for confirmation link", data);
+      
+      return { data: null, error: null, confirmEmailSent: false };
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      return { data: null, error, confirmEmailSent: false };
     }
-    
-    return { data: data.session, error };
   };
   
   const signOut = async () => {
