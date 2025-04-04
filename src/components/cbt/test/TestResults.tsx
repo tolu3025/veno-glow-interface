@@ -2,13 +2,11 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, HelpCircle, FileText, Award, Download, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +84,6 @@ const TestResults: React.FC<TestResultsProps> = ({
   const timeEfficiency = Math.round((timeTaken / (timeLimit * 60)) * 100);
   
   const resultRef = useRef<HTMLDivElement>(null);
-  const certificateRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
   const findRank = () => {
@@ -105,151 +102,6 @@ const TestResults: React.FC<TestResultsProps> = ({
     if (position === 3) return "3rd 🥉";
     return `${position}th`;
   }
-  
-  const downloadResultsPDF = async () => {
-    if (!resultRef.current) return;
-    
-    toast({
-      title: "Preparing Certificate",
-      description: "We're generating your results certificate...",
-    });
-    
-    try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
-      // Enhanced PDF design
-      // Header
-      doc.setFillColor(65, 84, 241);
-      doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text("Test Results Certificate", 105, 15, { align: 'center' });
-      
-      // Add logo placeholder
-      doc.setFillColor(255, 255, 255);
-      doc.circle(20, 12, 8, 'F');
-      doc.setFillColor(65, 84, 241);
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(255, 255, 255);
-      doc.text("V", 20, 15, { align: 'center' });
-      
-      // Title & Date
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(20);
-      doc.setFont("helvetica", "bold");
-      doc.text(`${testDetails?.title || location?.state?.subject || testId} Quiz`, 105, 40, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Completed on: ${new Date().toLocaleDateString()}`, 105, 48, { align: 'center' });
-      
-      // Participant Info Box
-      doc.setFillColor(245, 246, 250);
-      doc.roundedRect(20, 55, 170, 40, 3, 3, 'F');
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Participant Information", 30, 65);
-      
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Name: ${testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous'}`, 30, 75);
-      doc.text(`Email: ${testTakerInfo?.email || user?.email || 'Not provided'}`, 30, 83);
-      doc.text(`Time Taken: ${Math.floor(timeTaken / 60)} minutes ${timeTaken % 60} seconds`, 30, 91);
-      
-      // Results Section
-      doc.setFillColor(65, 84, 241);
-      doc.rect(0, 105, doc.internal.pageSize.getWidth(), 0.5, 'F');
-      
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text("Test Results", 105, 115, { align: 'center' });
-      
-      // Score Circle
-      const scoreCircleX = 105;
-      const scoreCircleY = 140;
-      const radius = 20;
-      
-      // Outer circle
-      doc.setDrawColor(65, 84, 241);
-      doc.setLineWidth(0.5);
-      doc.circle(scoreCircleX, scoreCircleY, radius, 'S');
-      
-      // Inner colored circle based on score
-      let scoreColor;
-      if (percentage >= 80) {
-        scoreColor = [46, 204, 113]; // green
-      } else if (percentage >= 60) {
-        scoreColor = [241, 196, 15]; // yellow
-      } else {
-        scoreColor = [231, 76, 60]; // red
-      }
-      
-      doc.setFillColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-      doc.circle(scoreCircleX, scoreCircleY, radius - 1, 'F');
-      
-      // Score text
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text(`${percentage}%`, scoreCircleX, scoreCircleY, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(`${score}/${questions.length}`, scoreCircleX, scoreCircleY + 8, { align: 'center' });
-      
-      // Performance Text
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text(resultMessage, 105, 170, { align: 'center' });
-      
-      // Detailed stats
-      doc.setFillColor(245, 246, 250);
-      doc.roundedRect(20, 180, 170, 60, 3, 3, 'F');
-      
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Performance Analysis", 30, 190);
-      
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Correct Answers: ${score}`, 30, 200);
-      doc.text(`Incorrect Answers: ${questions.length - score}`, 30, 208);
-      doc.text(`Accuracy: ${percentage}%`, 30, 216);
-      doc.text(`Time Efficiency: ${timeEfficiency}%`, 30, 224);
-      
-      const rank = findRank();
-      if (rank !== "N/A") {
-        doc.text(`Rank: ${rank}`, 30, 232);
-      }
-      
-      // Footer
-      doc.setFillColor(65, 84, 241);
-      doc.rect(0, doc.internal.pageSize.getHeight() - 12, doc.internal.pageSize.getWidth(), 12, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.text("Powered by Veno Education", 105, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
-      
-      doc.save(`${testDetails?.title || 'Test'}_Certificate.pdf`);
-      
-      toast({
-        title: "Certificate Ready",
-        description: "Your results certificate has been downloaded.",
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate certificate. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Get appropriate progress bar color based on score percentage
   const getProgressColorClass = (percentage: number) => {
@@ -290,16 +142,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                 </p>
               </div>
               
-              <div className="grid gap-4">
-                <Button 
-                  onClick={downloadResultsPDF}
-                  variant="outline" 
-                  className="w-full flex justify-center items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download Certificate</span>
-                </Button>
-              </div>
+              {/* Download certificate button has been removed */}
             </div>
             
             <div className="grid gap-6 md:grid-cols-2 mb-8">

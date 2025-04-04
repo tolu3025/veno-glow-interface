@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,7 +96,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error]);
 
   const fetchTestAttempts = async (testId: string) => {
     setAttemptsLoading(true);
@@ -122,6 +121,8 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
         .order('completed_at', { ascending: false });
         
       if (error) throw error;
+      
+      console.log("Fetched test attempts:", data);
       setTestAttempts(data || []);
     } catch (error) {
       console.error('Error fetching test attempts:', error);

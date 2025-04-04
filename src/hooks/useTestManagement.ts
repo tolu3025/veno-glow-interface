@@ -143,6 +143,7 @@ export const useTestManagement = ({
     const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
     console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
     setScore(correctAnswers);
+    return correctAnswers; // Return the score for immediate use
   };
 
   const loadPublicResults = async () => {
@@ -166,12 +167,14 @@ export const useTestManagement = ({
   };
 
   const finishTest = async () => {
-    calculateScore();
+    // Calculate the final score before submission to ensure it's up to date
+    const finalScore = calculateScore();
     
     try {
+      // Using the calculated score instead of the state which might not be updated yet
       const testData = {
         test_id: testId,
-        score: score,
+        score: finalScore,
         total_questions: questions.length,
         time_taken: (testDetails?.time_limit || 15) * 60 - timeRemaining,
         user_id: user?.id || null,
@@ -180,25 +183,44 @@ export const useTestManagement = ({
         completed_at: new Date().toISOString(),
       };
       
+      console.log("Saving test attempt with data:", testData);
+      
       const { error } = await supabase.from('test_attempts').insert([testData]);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error in supabase insert:", error);
+        throw error;
+      }
       
-      // Fix for visibility issue - load results regardless of visibility setting
+      console.log("Test results saved successfully");
+      
+      // Load public results regardless of visibility setting to prepare data
       await loadPublicResults();
       
+      // Show appropriate screens based on settings
       if (testDetails?.results_visibility === 'creator_only') {
         setSubmissionComplete(true);
+        toast({
+          title: "Test completed",
+          description: "Your results have been submitted successfully",
+          variant: "default",
+        });
       } else {
         setShowResults(true);
+        toast({
+          title: "Test completed",
+          description: "View your results below",
+          variant: "default",
+        });
       }
     } catch (error) {
       console.error("Error saving test results:", error);
       toast({
         title: "Error",
-        description: "Could not save your results",
+        description: "Could not save your results. Results will still be shown but might not be stored permanently.",
         variant: "destructive",
       });
+      // Still show results in case of error
       setShowResults(true);
     }
   };
