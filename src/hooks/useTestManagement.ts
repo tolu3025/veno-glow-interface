@@ -36,6 +36,8 @@ export const useTestManagement = ({
   const [reviewMode, setReviewMode] = useState(false);
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [publicResults, setPublicResults] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [savingError, setSavingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (testStarted && timeRemaining > 0) {
@@ -166,6 +168,57 @@ export const useTestManagement = ({
     }
   };
 
+  const saveTestAttempt = async (testData: any): Promise<boolean> => {
+    setSaving(true);
+    setSavingError(null);
+    
+    try {
+      // Make multiple attempts with exponential backoff
+      let attempts = 0;
+      const maxAttempts = 5; // Increased max attempts
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`Saving test attempt: Attempt ${attempts} of ${maxAttempts}`);
+        
+        try {
+          const { error: insertError } = await supabase
+            .from('test_attempts')
+            .insert([testData]);
+          
+          if (!insertError) {
+            console.log(`Test results saved successfully on attempt ${attempts}`);
+            return true;
+          }
+          
+          console.error(`Error on attempt ${attempts}:`, insertError);
+          
+          // Wait before retrying (exponential backoff)
+          if (attempts < maxAttempts) {
+            const delay = 1000 * Math.pow(2, attempts - 1);
+            console.log(`Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        } catch (e: any) {
+          console.error(`Exception on attempt ${attempts}:`, e);
+          
+          if (attempts < maxAttempts) {
+            const delay = 1000 * Math.pow(2, attempts - 1);
+            console.log(`Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+      
+      const fallbackError = new Error(`Failed to save test results after ${maxAttempts} attempts`);
+      console.error(fallbackError);
+      setSavingError(fallbackError.message);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const finishTest = async () => {
     // Calculate the final score before submission to ensure it's up to date
     const finalScore = calculateScore();
@@ -183,66 +236,49 @@ export const useTestManagement = ({
         completed_at: new Date().toISOString(),
       };
       
-      console.log("Saving test attempt with data:", testData);
+      console.log("Preparing to save test attempt with data:", testData);
       
-      // Make multiple attempts with exponential backoff
-      let attempts = 0;
-      let maxAttempts = 3;
-      let error = null;
-      
-      while (attempts < maxAttempts) {
-        attempts++;
-        try {
-          const { error: insertError } = await supabase.from('test_attempts').insert([testData]);
-          
-          if (!insertError) {
-            error = null;
-            console.log(`Test results saved successfully on attempt ${attempts}`);
-            break;
-          }
-          
-          error = insertError;
-          console.error(`Error on attempt ${attempts}:`, insertError);
-          
-          // Wait before retrying (exponential backoff)
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempts - 1)));
-          }
-        } catch (e) {
-          error = e;
-          console.error(`Exception on attempt ${attempts}:`, e);
-          
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempts - 1)));
-          }
-        }
-      }
-      
-      if (error) {
-        throw error;
-      }
+      const saved = await saveTestAttempt(testData);
       
       // Load public results regardless of visibility setting to prepare data
       await loadPublicResults();
       
-      // Show appropriate screens based on settings
+      // Show appropriate screens based on settings and save status
       if (testDetails?.results_visibility === 'creator_only') {
         setSubmissionComplete(true);
-        toast({
-          title: "Test completed",
-          description: "Your results have been submitted successfully",
-          variant: "default",
-        });
+        if (saved) {
+          toast({
+            title: "Test completed",
+            description: "Your results have been submitted successfully",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Warning",
+            description: "Your test has been completed but we couldn't save your results. Please contact support.",
+            variant: "destructive",
+          });
+        }
       } else {
         setShowResults(true);
-        toast({
-          title: "Test completed",
-          description: "View your results below",
-          variant: "default",
-        });
+        if (saved) {
+          toast({
+            title: "Test completed",
+            description: "View your results below",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Warning",
+            description: "We're showing your results but couldn't save them to your history. Please take a screenshot if needed.",
+            variant: "destructive",
+          });
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving test results:", error);
+      setSavingError(error.message);
+      
       toast({
         title: "Error",
         description: "Could not save your results. Results will still be shown but might not be stored permanently.",
@@ -261,6 +297,7 @@ export const useTestManagement = ({
     setUserAnswers([]);
     setTimeRemaining((testDetails?.time_limit || 15) * 60);
     setTestStarted(false);
+    setSavingError(null);
   };
 
   const formatTime = (seconds: number) => {
@@ -280,6 +317,8 @@ export const useTestManagement = ({
     reviewMode,
     submissionComplete,
     publicResults,
+    saving,
+    savingError,
     startTest,
     handleAnswerSelect,
     goToPreviousQuestion,

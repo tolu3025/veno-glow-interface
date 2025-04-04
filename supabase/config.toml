@@ -1,5 +1,2 @@
 
 project_id = "oavauprgngpftanumlzs"
-
-[functions.brevo-email-confirmation]
-verify_jwt = false

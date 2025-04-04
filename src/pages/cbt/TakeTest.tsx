@@ -233,7 +233,8 @@ const TakeTest = () => {
       submissionComplete: testManagement.submissionComplete,
       score: testManagement.score,
       currentQuestion: testManagement.currentQuestion,
-      selectedAnswer: testManagement.selectedAnswer
+      selectedAnswer: testManagement.selectedAnswer,
+      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete'
     });
   }, [
     testId, 
@@ -244,7 +245,9 @@ const TakeTest = () => {
     testManagement.submissionComplete,
     testManagement.score,
     testManagement.currentQuestion,
-    testManagement.selectedAnswer
+    testManagement.selectedAnswer,
+    testManagement.saving,
+    testManagement.savingError
   ]);
 
   if (loading) {
@@ -324,6 +327,7 @@ const TakeTest = () => {
         onFinish={() => navigate('/cbt')}
         onTryAgain={testManagement.resetTest}
         formatTime={testManagement.formatTime}
+        savingError={testManagement.savingError}
       />
     );
   }

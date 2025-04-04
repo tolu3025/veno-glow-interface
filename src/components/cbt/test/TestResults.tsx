@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface TestResultsProps {
   score: number;
@@ -25,6 +26,7 @@ interface TestResultsProps {
   onFinish: () => void;
   onTryAgain: () => void;
   formatTime: (seconds: number) => string;
+  savingError?: string | null;
 }
 
 const TestResults: React.FC<TestResultsProps> = ({
@@ -41,6 +43,7 @@ const TestResults: React.FC<TestResultsProps> = ({
   onFinish,
   onTryAgain,
   formatTime,
+  savingError,
 }) => {
   const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   
@@ -124,6 +127,16 @@ const TestResults: React.FC<TestResultsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-6">
+            {savingError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTitle>Failed to save results</AlertTitle>
+                <AlertDescription>
+                  Your results are displayed below but could not be saved permanently.
+                  {user ? " Please try again later or contact support." : " Consider signing in to ensure your results are saved."}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {/* Result Summary Card */}
             <div className="bg-card border rounded-lg p-6 mb-8">
               <div className="text-center mb-6">

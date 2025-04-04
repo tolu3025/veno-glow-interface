@@ -113,12 +113,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const signUp = async (email: string, password: string) => {
     try {
-      // First register the user but don't auto-confirm their email
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          // Set email confirmation to false (we'll handle it manually)
           emailRedirectTo: `${window.location.origin}/auth`,
         }
       });
@@ -127,47 +125,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       
-      if (data.user) {
-        // Log the user out immediately after registration
-        await supabase.auth.signOut();
-        
-        // Generate a confirmation token for the user
-        const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
-          type: 'signup',
-          email,
-          password, // Provide the password for signup link generation
-          options: {
-            redirectTo: `${window.location.origin}/auth`,
-          }
-        });
-        
-        if (tokenError) {
-          throw tokenError;
-        }
-        
-        if (tokenData?.properties?.action_link) {
-          // Send confirmation email using our Brevo edge function
-          const confirmationUrl = tokenData.properties.action_link;
-          
-          const response = await supabase.functions.invoke('brevo-email-confirmation', {
-            body: {
-              email,
-              confirmationUrl
-            }
-          });
-          
-          if (response.error) {
-            throw new Error(`Failed to send confirmation email: ${response.error.message}`);
-          }
-          
-          console.log("Confirmation email sent successfully");
-          return { data: null, error: null, confirmEmailSent: true };
-        } else {
-          throw new Error("Could not generate confirmation link");
-        }
-      }
-      
-      return { data: null, error: null, confirmEmailSent: false };
+      return { 
+        data: data.session, 
+        error: null, 
+        confirmEmailSent: data.user && !data.session 
+      };
     } catch (error: any) {
       console.error("Signup error:", error);
       return { data: null, error, confirmEmailSent: false };
