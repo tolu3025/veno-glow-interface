@@ -905,6 +905,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_verified: boolean | null
           points: number | null
           updated_at: string | null
           user_id: string | null
@@ -914,6 +915,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
+          is_verified?: boolean | null
           points?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -923,6 +925,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_verified?: boolean | null
           points?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -1137,6 +1140,30 @@ export type Database = {
           time_limit?: number | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_verifications: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          user_id?: string
         }
         Relationships: []
       }
