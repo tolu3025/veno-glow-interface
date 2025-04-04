@@ -61,7 +61,7 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    // FIXED: Enhanced correct answer checking to handle different property names and formats
+    // Enhanced correct answer checking to handle different property names and formats
     let correctAnswer: number | null = null;
     
     // Try all possible property names and formats
@@ -185,14 +185,42 @@ export const useTestManagement = ({
       
       console.log("Saving test attempt with data:", testData);
       
-      const { error } = await supabase.from('test_attempts').insert([testData]);
+      // Make multiple attempts with exponential backoff
+      let attempts = 0;
+      let maxAttempts = 3;
+      let error = null;
       
-      if (error) {
-        console.error("Error in supabase insert:", error);
-        throw error;
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          const { error: insertError } = await supabase.from('test_attempts').insert([testData]);
+          
+          if (!insertError) {
+            error = null;
+            console.log(`Test results saved successfully on attempt ${attempts}`);
+            break;
+          }
+          
+          error = insertError;
+          console.error(`Error on attempt ${attempts}:`, insertError);
+          
+          // Wait before retrying (exponential backoff)
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempts - 1)));
+          }
+        } catch (e) {
+          error = e;
+          console.error(`Exception on attempt ${attempts}:`, e);
+          
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempts - 1)));
+          }
+        }
       }
       
-      console.log("Test results saved successfully");
+      if (error) {
+        throw error;
+      }
       
       // Load public results regardless of visibility setting to prepare data
       await loadPublicResults();

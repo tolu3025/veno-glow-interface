@@ -135,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: tokenData, error: tokenError } = await supabase.auth.admin.generateLink({
           type: 'signup',
           email,
+          password, // Provide the password for signup link generation
           options: {
             redirectTo: `${window.location.origin}/auth`,
           }
