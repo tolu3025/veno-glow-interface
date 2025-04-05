@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
 
-interface LocationWithState extends Location {
+// Define a correct custom Location type
+type LocationWithState = Location & {
   state?: {
     subject?: string;
     settings?: {
@@ -12,7 +14,7 @@ interface LocationWithState extends Location {
       questionsCount?: number;
     };
   };
-}
+};
 
 interface UseTestManagementProps {
   testId: string | undefined;
