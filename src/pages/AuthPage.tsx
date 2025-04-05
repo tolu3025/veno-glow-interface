@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
-import GoogleIcon from '@/components/ui/GoogleIcon';
+import { GoogleIcon } from '@/components/ui/GoogleIcon';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import Logo from '@/components/ui/logo';
+import { VenoLogo as Logo } from '@/components/ui/logo';
 import Spline from '@splinetool/react-spline';
 
 interface AuthPageProps {
@@ -26,7 +27,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
   const referralCode = searchParams.get('ref') || sessionStorage.getItem('referralCode') || null;
   
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   
   // Redirect if already logged in
   useEffect(() => {
@@ -58,7 +59,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
     
     try {
       setIsLoading(true);
-      const { error } = await signIn({ email, password });
+      const { error } = await signIn(email, password);
       
       if (error) {
         throw error;
@@ -108,16 +109,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
         throw new Error('This email is already registered. Please sign in instead.');
       }
       
-      const { error } = await signUp({ 
-        email, 
-        password, 
-        options: { 
-          data: { 
-            full_name: name,
-            referral_code: referralCode
-          } 
-        } 
-      });
+      const { error } = await signUp(email, password);
       
       if (error) {
         throw error;
@@ -145,7 +137,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      // Since signInWithGoogle is not available in the AuthContext, we'll use Supabase directly
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) throw error;
       // The redirect will happen automatically
     } catch (error: any) {
       console.error('Google sign in error:', error);

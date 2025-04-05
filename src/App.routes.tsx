@@ -65,7 +65,7 @@ export const routes: RouteObject[] = [
         element: <ProtectedRoute><BotPage /></ProtectedRoute>
       },
       { path: 'auth', element: <AuthPage /> },
-      { path: 'signin', element: <AuthPage initialMode="signin" /> },
+      { path: 'signin', element: <AuthPage initialMode="login" /> },
       { path: 'signup', element: <AuthPage initialMode="signup" /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'maintenance', element: <UnderMaintenancePage /> },
