@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Trophy, Clock, PieChartIcon, ArrowUp, BookOpen, Calendar } from 'lucide-react';
+import { BarChart3, Trophy, Clock, PieChart as PieChartIcon, ArrowUp, BookOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
@@ -38,7 +39,6 @@ const AnalyticsPage = () => {
   const [subjectDistribution, setSubjectDistribution] = useState<{ name: string, value: number }[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
-  const [totalQuizzes, setTotalQuizzes] = useState(0);
 
   // Setup realtime subscription
   useEffect(() => {
@@ -48,8 +48,7 @@ const AnalyticsPage = () => {
       await Promise.all([
         fetchTopTests(),
         fetchUserTestAttempts(),
-        fetchSubjectDistribution(),
-        fetchTotalQuizzes()
+        fetchSubjectDistribution()
       ]);
       setIsLoading(false);
     };
@@ -67,7 +66,6 @@ const AnalyticsPage = () => {
           fetchUserTestAttempts();
           fetchTopTests();
           fetchSubjectDistribution();
-          fetchTotalQuizzes();
         }
       )
       .subscribe();
@@ -76,23 +74,6 @@ const AnalyticsPage = () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  const fetchTotalQuizzes = async () => {
-    try {
-      const { count, error } = await supabase
-        .from('test_attempts')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) {
-        console.error('Error fetching total quizzes:', error);
-        return;
-      }
-      
-      setTotalQuizzes(count || 0);
-    } catch (error) {
-      console.error('Error in total quizzes workflow:', error);
-    }
-  };
 
   const fetchTopTests = async () => {
     try {
@@ -343,21 +324,6 @@ const AnalyticsPage = () => {
                 </Card>
               </motion.div>
             </div>
-            
-            {/* Total Quizzes Card */}
-            <motion.div variants={itemVariants}>
-              <Card className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-background border-veno-primary/20">
-                <CardContent className="p-6 flex items-center">
-                  <div className="bg-veno-primary/10 p-3 rounded-full mr-4">
-                    <Calendar className="h-8 w-8 text-veno-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Quizzes Completed</p>
-                    <h3 className="text-2xl font-bold">{totalQuizzes}</h3>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
             
             {/* Charts Section */}
             <div className="grid md:grid-cols-2 gap-6">

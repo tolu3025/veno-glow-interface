@@ -1,349 +1,376 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { VenoLogo } from '@/components/ui/logo';
+import { Eye, EyeOff, LogIn, User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { VenoLogo as Logo } from '@/components/ui/logo';
-import Spline from '@splinetool/react-spline';
+import { useAuth } from '@/providers/AuthProvider';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 
 interface AuthPageProps {
-  initialMode?: 'login' | 'signup';
+  initialMode?: 'signin' | 'signup';
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+});
+
+const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>(initialMode);
-  const [searchParams] = useSearchParams();
-  const referralCode = searchParams.get('ref') || sessionStorage.getItem('referralCode') || null;
-  
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signUp, user } = useAuth();
-  
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
-  
-  // Handle referral code from URL
-  useEffect(() => {
-    if (referralCode) {
-      console.log('Referral code detected:', referralCode);
-      sessionStorage.setItem('referralCode', referralCode);
-      setActiveTab('signup');
-    }
-  }, [referralCode]);
+  const location = useLocation();
+  const { resetPassword, signIn, signUp } = useAuth();
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Please enter both email and password",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      setIsLoading(true);
-      const { error } = await signIn(email, password);
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: "Success",
-        description: "You have successfully signed in",
-      });
-      
-      navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Sign in error:', error);
-      toast({
-        title: "Sign in failed",
-        description: error.message || "Please check your credentials and try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const refCode = searchParams.get('ref');
     
-    if (!email || !password || !name) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
-      return;
+    if (refCode) {
+      setReferralCode(refCode);
+      sessionStorage.setItem('referralCode', refCode);
+      console.log('Referral code detected:', refCode);
+      setMode('signup');
     }
     
-    try {
-      setIsLoading(true);
-      
-      // Check if the email is already in use
-      const { data: existingUsers } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
-        
-      if (existingUsers) {
-        throw new Error('This email is already registered. Please sign in instead.');
-      }
-      
-      const { error } = await signUp(email, password);
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: "Success",
-        description: "Please check your email to confirm your account",
-      });
-      
-      // Automatically switch to login tab after successful signup
-      setActiveTab('login');
-    } catch (error: any) {
-      console.error('Sign up error:', error);
-      toast({
-        title: "Sign up failed",
-        description: error.message || "An error occurred during sign up",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const isReset = searchParams.get('reset') === 'true';
+    if (isReset) {
+      toast.info("Enter your new password to complete the reset process");
     }
+    
+    // Set up auth state change listener for email confirmation
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
+      if (event === 'SIGNED_IN') {
+        console.log("User signed in:", session?.user);
+        toast.success("Successfully signed in!");
+        navigate('/dashboard');
+      } else if (event === 'USER_UPDATED') {
+        console.log("User was updated");
+        toast.success("Your profile has been updated");
+      } else if (event === 'PASSWORD_RECOVERY') {
+        toast.info("Please check your email for password reset instructions");
+      }
+    });
+    
+    // Check for email confirmation in URL
+    const handleEmailConfirmation = async () => {
+      if (location.hash && location.hash.includes('access_token')) {
+        setIsLoading(true);
+        try {
+          const hashParams = new URLSearchParams(location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (error) throw error;
+            
+            if (data.session) {
+              toast.success("Email confirmed successfully!");
+              navigate('/dashboard');
+            }
+          }
+        } catch (error: any) {
+          console.error("Error handling email confirmation:", error);
+          toast.error(error.message || "Failed to confirm email");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    handleEmailConfirmation();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [location, navigate]);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      // Since signInWithGoogle is not available in the AuthContext, we'll use Supabase directly
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
         }
       });
       
       if (error) throw error;
-      // The redirect will happen automatically
+      
     } catch (error: any) {
-      console.error('Google sign in error:', error);
-      toast({
-        title: "Google sign in failed",
-        description: error.message || "An error occurred during Google sign in",
-        variant: "destructive",
-      });
+      toast.error(error.message || 'Failed to sign in with Google');
+      console.error('Google auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setConfirmMessage(null);
+
+    try {
+      if (mode === 'signin') {
+        const { error } = await signIn(email, password);
+        if (error) throw error;
+        
+        toast.success('Welcome back!');
+        navigate('/dashboard');
+      } else {
+        // Sign up with custom flow
+        const storedReferralCode = referralCode || sessionStorage.getItem('referralCode');
+        
+        const { error, confirmEmailSent } = await signUp(email, password);
+
+        if (error) throw error;
+        
+        if (confirmEmailSent) {
+          setConfirmMessage("Account created! Please check your email for verification instructions.");
+          toast.success('Account created! Please check your email for verification instructions.');
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Authentication failed');
+      console.error('Auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
+    try {
+      setIsLoading(true);
+      const { error } = await resetPassword(values.email);
+      if (error) throw error;
+      
+      toast.success('Password reset instructions sent to your email!');
+      setForgotPasswordOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset instructions');
+      console.error('Reset password error:', error);
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-veno-primary/5 to-background">
-      <div className="container relative flex-1 flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-        <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-          <div className="absolute inset-0 bg-veno-primary/90" />
-          <div className="relative z-20 flex items-center text-lg font-medium">
-            <Logo className="h-10 w-auto" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <VenoLogo className="h-16 w-16" />
           </div>
-          <div className="relative z-20 mt-auto">
-            <blockquote className="space-y-2">
-              <p className="text-lg">
-                "The best educational platform I've ever used. It has transformed how I study and prepare for exams."
-              </p>
-              <footer className="text-sm">Sofia Davis</footer>
-            </blockquote>
-          </div>
-          <div className="relative z-10 h-full w-full">
-            <Spline scene="https://prod.spline.design/LMc58EcjolE2ESOx/scene.splinecode" />
-          </div>
+          <h1 className="text-2xl font-bold">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h1>
+          <p className="text-muted-foreground mt-2">
+            {mode === 'signin' 
+              ? 'Welcome back! Enter your details to continue.' 
+              : 'Join our community and start learning today.'}
+          </p>
+          {referralCode && mode === 'signup' && (
+            <p className="text-veno-primary text-sm mt-1">
+              You've been referred by a friend!
+            </p>
+          )}
+          {confirmMessage && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-md">
+              {confirmMessage}
+            </div>
+          )}
         </div>
         
-        <div className="lg:p-8">
-          <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-            <div className="flex flex-col space-y-2 text-center">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {activeTab === 'login' ? 'Welcome back' : 'Create an account'}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {activeTab === 'login' 
-                  ? 'Enter your credentials to sign in to your account' 
-                  : 'Enter your information to create an account'}
-              </p>
+        <div className="bg-card border rounded-lg shadow-sm p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full"
+                required
+              />
             </div>
             
-            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Login</CardTitle>
-                    <CardDescription>
-                      Enter your credentials to access your account
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <form onSubmit={handleEmailSignIn}>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
-                          <Input 
-                            id="email" 
-                            type="email" 
-                            placeholder="m@example.com" 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="password">Password</Label>
-                            <Button 
-                              variant="link" 
-                              className="px-0 text-xs font-normal h-auto"
-                              onClick={() => toast({
-                                title: "Password Reset",
-                                description: "Please contact support to reset your password",
-                              })}
-                            >
-                              Forgot password?
-                            </Button>
-                          </div>
-                          <Input 
-                            id="password" 
-                            type="password" 
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                          {isLoading ? "Signing in..." : "Sign In"}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={handleGoogleSignIn}
-                      disabled={isLoading}
-                    >
-                      <GoogleIcon className="mr-2 h-4 w-4" />
-                      Sign in with Google
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create an account</CardTitle>
-                    <CardDescription>
-                      Enter your information to create an account
-                      {referralCode && (
-                        <div className="mt-2 text-xs text-veno-primary">
-                          You were referred by a friend! (Code: {referralCode})
-                        </div>
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <form onSubmit={handleEmailSignUp}>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input 
-                            id="name" 
-                            placeholder="John Doe" 
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email-signup">Email</Label>
-                          <Input 
-                            id="email-signup" 
-                            type="email" 
-                            placeholder="m@example.com" 
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="password-signup">Password</Label>
-                          <Input 
-                            id="password-signup" 
-                            type="password" 
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                          {isLoading ? "Creating account..." : "Create Account"}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={handleGoogleSignIn}
-                      disabled={isLoading}
-                    >
-                      <GoogleIcon className="mr-2 h-4 w-4" />
-                      Sign up with Google
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
             
-            <p className="px-8 text-center text-sm text-muted-foreground">
-              By clicking continue, you agree to our{" "}
-              <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/terms-of-service')}>
-                Terms of Service
-              </Button>{" "}
-              and{" "}
-              <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/privacy-policy')}>
-                Privacy Policy
-              </Button>
-              .
-            </p>
+            {mode === 'signin' && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
+                  className="text-sm text-veno-primary hover:underline"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
+            
+            <Button
+              type="submit"
+              className="w-full py-2 px-4 bg-veno-primary text-white"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Processing...' : (
+                <span className="flex items-center justify-center">
+                  {mode === 'signin' ? (
+                    <><LogIn size={16} className="mr-2" /> Sign In</>
+                  ) : (
+                    <><UserPlus size={16} className="mr-2" /> Sign Up</>
+                  )}
+                </span>
+              )}
+            </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <GoogleIcon className="mr-2" />
+              {mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
+            </Button>
+          </form>
+          
+          <div className="mt-4 text-center text-sm">
+            {mode === 'signin' ? (
+              <p>
+                Don't have an account?{' '}
+                <button 
+                  onClick={() => setMode('signup')} 
+                  className="text-veno-primary hover:underline"
+                >
+                  Sign up
+                </button>
+              </p>
+            ) : (
+              <p>
+                Already have an account?{' '}
+                <button 
+                  onClick={() => setMode('signin')} 
+                  className="text-veno-primary hover:underline"
+                >
+                  Sign in
+                </button>
+              </p>
+            )}
           </div>
         </div>
       </div>
+      
+      <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you instructions to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...forgotPasswordForm}>
+            <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+              <FormField
+                control={forgotPasswordForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your@email.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setForgotPasswordOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Send Reset Instructions'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
