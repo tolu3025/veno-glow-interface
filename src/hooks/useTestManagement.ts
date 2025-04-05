@@ -1,8 +1,18 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Location } from 'react-router-dom';
+
+interface LocationWithState extends Location {
+  state?: {
+    subject?: string;
+    settings?: {
+      difficulty?: string;
+      timeLimit?: number;
+      questionsCount?: number;
+    };
+  };
+}
 
 interface UseTestManagementProps {
   testId: string | undefined;
@@ -26,6 +36,7 @@ export const useTestManagement = ({
   testTakerInfo 
 }: UseTestManagementProps) => {
   const navigate = useNavigate();
+  const location = useLocation() as LocationWithState;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -63,10 +74,8 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
-    // Enhanced correct answer checking to handle different property names and formats
     let correctAnswer: number | null = null;
     
-    // Try all possible property names and formats
     if (typeof currentQuestionData.correctOption !== 'undefined') {
       correctAnswer = Number(currentQuestionData.correctOption);
     } else if (typeof currentQuestionData.answer !== 'undefined') {
@@ -84,7 +93,6 @@ export const useTestManagement = ({
       return;
     }
     
-    // Check if the selected option matches the correct answer
     const isCorrect = optionIndex === correctAnswer;
     console.log('Is answer correct?', isCorrect);
     
@@ -141,11 +149,10 @@ export const useTestManagement = ({
   };
 
   const calculateScore = () => {
-    // Recalculate score based on correct answers
     const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
     console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
     setScore(correctAnswers);
-    return correctAnswers; // Return the score for immediate use
+    return correctAnswers;
   };
 
   const loadPublicResults = async () => {
@@ -168,86 +175,74 @@ export const useTestManagement = ({
     }
   };
 
-  // Improved saveTestAttempt function with better retry logic
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
     setSavingError(null);
     
-    // For subject-based tests, generate a consistent test_id if one isn't provided
     if (testId === 'subject' && testData.test_id === 'subject') {
       const subjectName = testData.subject || location?.state?.subject;
       if (subjectName) {
-        // Create a deterministic UUID based on subject name and user
         const userIdentifier = user?.id || testTakerInfo?.email || 'anonymous';
         testData.test_id = `subject_${subjectName.replace(/\s+/g, '_').toLowerCase()}_${userIdentifier}`;
       }
     }
     
-    try {
-      // Make multiple attempts with exponential backoff
-      let attempts = 0;
-      const maxAttempts = 5; 
+    let attempts = 0;
+    const maxAttempts = 5; 
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      console.log(`Saving test attempt: Attempt ${attempts} of ${maxAttempts}`);
       
-      while (attempts < maxAttempts) {
-        attempts++;
-        console.log(`Saving test attempt: Attempt ${attempts} of ${maxAttempts}`);
+      try {
+        const { error: insertError } = await supabase
+          .from('test_attempts')
+          .insert([testData]);
+          
+        if (!insertError) {
+          console.log(`Test results saved successfully on attempt ${attempts}`);
+          return true;
+        }
         
-        try {
-          const { error: insertError } = await supabase
-            .from('test_attempts')
-            .insert([testData]);
-          
-          if (!insertError) {
-            console.log(`Test results saved successfully on attempt ${attempts}`);
-            return true;
-          }
-          
-          console.error(`Error on attempt ${attempts}:`, insertError);
-          
-          // Wait before retrying (exponential backoff)
-          if (attempts < maxAttempts) {
-            const delay = 1000 * Math.pow(2, attempts - 1);
-            console.log(`Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        } catch (e: any) {
-          console.error(`Exception on attempt ${attempts}:`, e);
-          
-          if (attempts < maxAttempts) {
-            const delay = 1000 * Math.pow(2, attempts - 1);
-            console.log(`Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
+        console.error(`Error on attempt ${attempts}:`, insertError);
+        
+        if (attempts < maxAttempts) {
+          const delay = 1000 * Math.pow(2, attempts - 1);
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } catch (e: any) {
+        console.error(`Exception on attempt ${attempts}:`, e);
+        
+        if (attempts < maxAttempts) {
+          const delay = 1000 * Math.pow(2, attempts - 1);
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
-      
-      const fallbackSave = await fallbackSaveAttempt(testData);
-      if (fallbackSave) {
-        return true;
-      }
-      
-      const fallbackError = new Error(`Failed to save test results after ${maxAttempts} attempts`);
-      console.error(fallbackError);
-      setSavingError(fallbackError.message);
-      return false;
-    } finally {
-      setSaving(false);
     }
+    
+    const fallbackSave = await fallbackSaveAttempt(testData);
+    if (fallbackSave) {
+      return true;
+    }
+    
+    const fallbackError = new Error(`Failed to save test results after ${maxAttempts} attempts`);
+    console.error(fallbackError);
+    setSavingError(fallbackError.message);
+    return false;
   };
-  
-  // Fallback method to try saving in a different format
+
   const fallbackSaveAttempt = async (testData: any): Promise<boolean> => {
     try {
       console.log("Trying fallback save method...");
       
-      // Try to save with minimal data to reduce potential issues
       const minimalData = {
         score: testData.score,
         total_questions: testData.total_questions,
         participant_email: testData.participant_email || 'anonymous',
         participant_name: testData.participant_name || 'Anonymous User',
         completed_at: new Date().toISOString(),
-        // For subject tests, create a different format
         test_id: testData.test_id === 'subject' ? null : testData.test_id
       };
       
@@ -269,11 +264,9 @@ export const useTestManagement = ({
   };
 
   const finishTest = async () => {
-    // Calculate the final score before submission to ensure it's up to date
     const finalScore = calculateScore();
     
     try {
-      // Prepare test data for saving
       const testData = {
         test_id: testId,
         score: finalScore,
@@ -288,10 +281,8 @@ export const useTestManagement = ({
       
       console.log("Preparing to save test attempt with data:", testData);
       
-      // Always show results, regardless of save status
       setShowResults(true);
       
-      // Try to save the results asynchronously
       saveTestAttempt(testData).then((saved) => {
         if (saved) {
           setSavingError(null);
@@ -312,7 +303,6 @@ export const useTestManagement = ({
         setSavingError("Could not save your results. Results are shown but may not be stored permanently.");
       });
       
-      // Load public results if applicable
       if (testDetails?.results_visibility !== 'creator_only') {
         await loadPublicResults();
       }
@@ -320,7 +310,6 @@ export const useTestManagement = ({
       console.error("Error finalizing test:", error);
       setSavingError("An error occurred while finalizing your test.");
       
-      // Still show results in case of error
       setShowResults(true);
     }
   };
