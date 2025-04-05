@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -68,7 +67,7 @@ type Question = {
   explanation?: string;
 };
 
-// Define a type for bank questions
+// Define a type for bank questions with string[] options
 type BankQuestion = {
   id: string;
   question: string;
@@ -83,7 +82,8 @@ const CreateTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { subjects } = useSubjects();
+  const subjectsQuery = useSubjects();
+  const subjects = subjectsQuery.data || [];
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: crypto.randomUUID(),
@@ -139,10 +139,12 @@ const CreateTest = () => {
       }
       
       if (data) {
-        const formattedQuestions = data.map(q => ({
+        const formattedQuestions: BankQuestion[] = data.map(q => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options : [],
+          options: Array.isArray(q.options) 
+            ? q.options.map(opt => String(opt))
+            : [],
           answer: q.answer,
           subject: q.subject,
           explanation: q.explanation,
