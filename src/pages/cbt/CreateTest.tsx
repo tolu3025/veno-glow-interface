@@ -1,8 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info } from "lucide-react";
+import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info, Database, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +30,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useSubjects } from "@/hooks/useSubjects";
 
 const testFormSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -40,6 +43,7 @@ const testFormSchema = z.object({
     required_error: "Please select who can view results" 
   }),
   allowRetakes: z.boolean().default(false),
+  subject: z.string().min(1, { message: "Please select a subject" }),
 });
 
 type TestFormValues = z.infer<typeof testFormSchema>;
@@ -64,10 +68,22 @@ type Question = {
   explanation?: string;
 };
 
+// Define a type for bank questions
+type BankQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  answer: number;
+  subject: string;
+  explanation?: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+};
+
 const CreateTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { subjects } = useSubjects();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     id: crypto.randomUUID(),
@@ -77,6 +93,13 @@ const CreateTest = () => {
     explanation: "",
   });
   const [saving, setSaving] = useState(false);
+  const [questionMode, setQuestionMode] = useState<'create' | 'bank'>('create');
+  const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
+  const [loadingBankQuestions, setLoadingBankQuestions] = useState(false);
+  const [selectedBankQuestions, setSelectedBankQuestions] = useState<{[key: string]: boolean}>({});
+  const [subjectFilter, setSubjectFilter] = useState<string>('');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   const form = useForm<TestFormValues>({
     resolver: zodResolver(testFormSchema),
@@ -87,8 +110,58 @@ const CreateTest = () => {
       timeLimit: "",
       resultsVisibility: "creator_only",
       allowRetakes: false,
+      subject: "",
     },
   });
+
+  // Get the selected subject from the form
+  const selectedSubject = form.watch('subject');
+
+  // Load questions from the bank when subject changes
+  useEffect(() => {
+    if (questionMode === 'bank' && selectedSubject) {
+      fetchBankQuestions(selectedSubject);
+    }
+  }, [questionMode, selectedSubject]);
+
+  const fetchBankQuestions = async (subject: string) => {
+    if (!subject) return;
+    
+    setLoadingBankQuestions(true);
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('subject', subject);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        const formattedQuestions = data.map(q => ({
+          id: q.id,
+          question: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+          answer: q.answer,
+          subject: q.subject,
+          explanation: q.explanation,
+          difficulty: q.difficulty
+        }));
+        
+        setBankQuestions(formattedQuestions);
+      }
+    } catch (error) {
+      console.error("Error fetching bank questions:", error);
+      toast({
+        title: "Error loading questions",
+        description: "Failed to load questions from the bank",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingBankQuestions(false);
+    }
+  };
 
   const addQuestion = () => {
     if (!currentQuestion.text.trim()) {
@@ -133,6 +206,58 @@ const CreateTest = () => {
   const removeQuestion = (id: string) => {
     setQuestions(questions.filter((q) => q.id !== id));
   };
+
+  const toggleBankQuestion = (id: string) => {
+    setSelectedBankQuestions({
+      ...selectedBankQuestions,
+      [id]: !selectedBankQuestions[id]
+    });
+  };
+
+  const addSelectedBankQuestions = () => {
+    const selectedIds = Object.entries(selectedBankQuestions)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([id]) => id);
+      
+    if (selectedIds.length === 0) {
+      toast({
+        title: "No questions selected",
+        description: "Please select at least one question to add",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const questionsToAdd = bankQuestions
+      .filter(q => selectedIds.includes(q.id))
+      .map(q => ({
+        id: crypto.randomUUID(),
+        text: q.question,
+        options: q.options,
+        correctOption: q.answer,
+        explanation: q.explanation || '',
+      }));
+      
+    setQuestions([...questions, ...questionsToAdd]);
+    setSelectedBankQuestions({});
+    
+    toast({
+      title: "Questions added",
+      description: `${questionsToAdd.length} question(s) have been added to your test`,
+    });
+  };
+
+  const filteredBankQuestions = bankQuestions.filter(q => {
+    const matchesSearch = searchQuery 
+      ? q.question.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+      
+    const matchesDifficulty = difficultyFilter === 'all' 
+      ? true 
+      : q.difficulty === difficultyFilter;
+      
+    return matchesSearch && matchesDifficulty;
+  });
   
   const onSubmit = async (data: TestFormValues) => {
     if (questions.length === 0) {
@@ -165,7 +290,7 @@ const CreateTest = () => {
           difficulty: data.difficulty as any,
           time_limit: data.timeLimit ? parseInt(data.timeLimit) : null,
           creator_id: user.id,
-          subject: "General", // Default subject
+          subject: data.subject,
           question_count: questions.length,
           results_visibility: data.resultsVisibility,
           allow_retakes: data.allowRetakes,
@@ -190,7 +315,7 @@ const CreateTest = () => {
         options: q.options,
         answer: q.correctOption,
         explanation: q.explanation || null,
-        subject: "General", // Default subject
+        subject: data.subject,
       }));
       
       console.log("Inserting questions:", questionsToInsert);
@@ -275,6 +400,34 @@ const CreateTest = () => {
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subject</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subjects.map((subject) => (
+                          <SelectItem key={subject.name} value={subject.name}>
+                            {subject.name} ({subject.question_count} questions available)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               <FormField
                 control={form.control}
                 name="difficulty"
@@ -382,83 +535,194 @@ const CreateTest = () => {
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-veno-primary" />
               <h2 className="text-lg font-medium">Questions</h2>
+              <div className="ml-auto">
+                <Tabs value={questionMode} onValueChange={(v) => setQuestionMode(v as 'create' | 'bank')}>
+                  <TabsList>
+                    <TabsTrigger value="create">Create Questions</TabsTrigger>
+                    <TabsTrigger value="bank" disabled={!selectedSubject}>
+                      Use Question Bank
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add questions to your test. Each question must have 4 options with 1 correct answer.
-            </p>
             
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <div>
-                  <label htmlFor="questionText" className="text-sm font-medium">
-                    Question Text
-                  </label>
-                  <Textarea
-                    id="questionText"
-                    placeholder="Enter your question"
-                    value={currentQuestion.text}
-                    onChange={(e) => setCurrentQuestion({...currentQuestion, text: e.target.value})}
-                    className="resize-none mt-1"
-                  />
-                </div>
+            {questionMode === 'create' ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add questions to your test. Each question must have 4 options with 1 correct answer.
+                </p>
                 
-                <div>
-                  <label className="text-sm font-medium">Options</label>
-                  <div className="space-y-2 mt-1">
-                    {currentQuestion.options.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="correctOption"
-                          value={index}
-                          checked={currentQuestion.correctOption === index}
-                          onChange={() => setCurrentQuestion({...currentQuestion, correctOption: index})}
-                          className="w-4 h-4 text-veno-primary"
-                        />
-                        <Input
-                          placeholder={`Option ${index + 1}`}
-                          value={option}
-                          onChange={(e) => updateOption(index, e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    ))}
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="questionText" className="text-sm font-medium">
+                      Question Text
+                    </label>
+                    <Textarea
+                      id="questionText"
+                      placeholder="Enter your question"
+                      value={currentQuestion.text}
+                      onChange={(e) => setCurrentQuestion({...currentQuestion, text: e.target.value})}
+                      className="resize-none mt-1"
+                    />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    <HelpCircle className="inline h-3 w-3 mr-1" />
-                    Select the radio button next to the correct answer
-                  </p>
-                </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Options</label>
+                    <div className="space-y-2 mt-1">
+                      {currentQuestion.options.map((option, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="correctOption"
+                            value={index}
+                            checked={currentQuestion.correctOption === index}
+                            onChange={() => setCurrentQuestion({...currentQuestion, correctOption: index})}
+                            className="w-4 h-4 text-veno-primary"
+                          />
+                          <Input
+                            placeholder={`Option ${index + 1}`}
+                            value={option}
+                            onChange={(e) => updateOption(index, e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <HelpCircle className="inline h-3 w-3 mr-1" />
+                      Select the radio button next to the correct answer
+                    </p>
+                  </div>
 
-                <div>
-                  <label htmlFor="explanationText" className="text-sm font-medium flex items-center gap-1">
-                    <Info size={14} className="text-veno-primary" />
-                    Explanation (Optional)
-                  </label>
-                  <Textarea
-                    id="explanationText"
-                    placeholder="Explain why the correct answer is right (will be shown after the test)"
-                    value={currentQuestion.explanation || ""}
-                    onChange={(e) => setCurrentQuestion({...currentQuestion, explanation: e.target.value})}
-                    className="resize-none mt-1"
-                    rows={3}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    <HelpCircle className="inline h-3 w-3 mr-1" />
-                    Providing explanations helps test takers learn from their mistakes
-                  </p>
+                  <div>
+                    <label htmlFor="explanationText" className="text-sm font-medium flex items-center gap-1">
+                      <Info size={14} className="text-veno-primary" />
+                      Explanation (Optional)
+                    </label>
+                    <Textarea
+                      id="explanationText"
+                      placeholder="Explain why the correct answer is right (will be shown after the test)"
+                      value={currentQuestion.explanation || ""}
+                      onChange={(e) => setCurrentQuestion({...currentQuestion, explanation: e.target.value})}
+                      className="resize-none mt-1"
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <HelpCircle className="inline h-3 w-3 mr-1" />
+                      Providing explanations helps test takers learn from their mistakes
+                    </p>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addQuestion}
+                    className="w-full border-dashed border-veno-primary/40 text-veno-primary"
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+                  </Button>
                 </div>
               </div>
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addQuestion}
-                className="w-full border-dashed border-veno-primary/40 text-veno-primary"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Question
-              </Button>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4 text-veno-primary" />
+                    <span className="text-sm font-medium">Question Bank</span>
+                    <span className="text-sm text-muted-foreground ml-auto">
+                      {loadingBankQuestions ? "Loading..." : `${bankQuestions.length} questions available`}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search questions..."
+                        className="pl-8"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <Select
+                      value={difficultyFilter}
+                      onValueChange={setDifficultyFilter}
+                    >
+                      <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Filter by difficulty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Difficulties</SelectItem>
+                        <SelectItem value="beginner">Beginner</SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="border rounded-md divide-y max-h-[400px] overflow-y-auto">
+                  {loadingBankQuestions ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      Loading questions from the bank...
+                    </div>
+                  ) : filteredBankQuestions.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No questions found. Try a different subject or search term.
+                    </div>
+                  ) : (
+                    filteredBankQuestions.map((question) => (
+                      <div key={question.id} className="p-3 hover:bg-secondary/40">
+                        <div className="flex items-start gap-2">
+                          <Checkbox
+                            id={`question-${question.id}`}
+                            checked={!!selectedBankQuestions[question.id]}
+                            onCheckedChange={() => toggleBankQuestion(question.id)}
+                          />
+                          <div className="flex-1">
+                            <label
+                              htmlFor={`question-${question.id}`}
+                              className="text-sm font-medium cursor-pointer"
+                            >
+                              {question.question}
+                            </label>
+                            <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-1 text-xs text-muted-foreground">
+                              {question.options.map((option, i) => (
+                                <div key={i} className={i === question.answer ? "font-medium text-veno-primary" : ""}>
+                                  {String.fromCharCode(65 + i)}. {option}
+                                  {i === question.answer && " ✓"}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center mt-1 text-xs">
+                              <span className={`px-1.5 py-0.5 rounded-full ${
+                                question.difficulty === 'beginner' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                question.difficulty === 'intermediate' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' :
+                                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>
+                                {question.difficulty}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addSelectedBankQuestions}
+                  disabled={Object.values(selectedBankQuestions).filter(Boolean).length === 0}
+                  className="w-full border-dashed border-veno-primary/40 text-veno-primary"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> 
+                  Add Selected Questions ({Object.values(selectedBankQuestions).filter(Boolean).length})
+                </Button>
+              </div>
+            )}
             
             {questions.length > 0 && (
               <div className="mt-6">

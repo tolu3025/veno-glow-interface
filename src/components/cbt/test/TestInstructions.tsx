@@ -3,6 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TestInstructionsProps {
   testDetails: any;
@@ -25,6 +27,13 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
   user,
   testId,
 }) => {
+  const copyShareCode = () => {
+    if (testDetails?.share_code) {
+      navigator.clipboard.writeText(testDetails.share_code);
+      toast.success("Share code copied to clipboard");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -44,7 +53,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
               <li className="flex justify-between">
                 <span className="text-muted-foreground">Subject:</span>
                 <span className="font-medium">
-                  {testDetails?.title || location?.state?.subject || "General"}
+                  {testDetails?.subject || location?.state?.subject || "General"}
                 </span>
               </li>
               <li className="flex justify-between">
@@ -81,6 +90,23 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                           : 'Publicly visible'}
                     </span>
                   </li>
+                  {testDetails.share_code && user && (
+                    <li className="flex justify-between items-center mt-2">
+                      <span className="text-muted-foreground">Share Code:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono bg-primary/10 px-2 py-1 rounded text-sm">
+                          {testDetails.share_code}
+                        </span>
+                        <button 
+                          onClick={copyShareCode} 
+                          className="p-1 text-muted-foreground hover:text-foreground"
+                          title="Copy share code"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  )}
                 </>
               )}
             </ul>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +36,7 @@ type TestDetails = {
   time_limit: number | null;
   results_visibility: 'creator_only' | 'test_takers' | 'public';
   allow_retakes: boolean;
+  share_code?: string;
 };
 
 const TakeTest = () => {
@@ -51,6 +51,8 @@ const TakeTest = () => {
   const [showTakerForm, setShowTakerForm] = useState(false);
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
+  const [validatingShareCode, setValidatingShareCode] = useState(false);
+  const [shareCodeVerified, setShareCodeVerified] = useState(false);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -71,6 +73,38 @@ const TakeTest = () => {
       setSettings(location.state.settings);
     }
   }, [location.state]);
+
+  const verifyShareCode = async (shareCode: string) => {
+    if (!shareCode) return false;
+    
+    try {
+      setValidatingShareCode(true);
+      
+      const { data, error } = await supabase
+        .from('user_tests')
+        .select('id')
+        .eq('share_code', shareCode)
+        .single();
+        
+      if (error || !data) {
+        toast.error("Invalid share code");
+        return false;
+      }
+      
+      if (testId !== data.id) {
+        navigate(`/cbt/take/${data.id}`);
+      }
+      
+      setShareCodeVerified(true);
+      return true;
+    } catch (error) {
+      console.error("Error verifying share code:", error);
+      toast.error("Failed to verify share code");
+      return false;
+    } finally {
+      setValidatingShareCode(false);
+    }
+  };
 
   useEffect(() => {
     const loadTest = async () => {
@@ -230,13 +264,17 @@ const TakeTest = () => {
     }
   };
 
-  const handleTestTakerSubmit = (data: TestTakerInfo) => {
+  const handleTestTakerSubmit = async (data: TestTakerInfo) => {
+    if (data.shareCode && !shareCodeVerified) {
+      const verified = await verifyShareCode(data.shareCode);
+      if (!verified) return;
+    }
+    
     setTestTakerInfo(data);
     setShowTakerForm(false);
     testManagement.startTest();
   };
 
-  // Add extensive logging to help debug
   useEffect(() => {
     console.log("Current test state:", {
       testId,
@@ -291,6 +329,7 @@ const TakeTest = () => {
         <TestTakerForm 
           onSubmit={handleTestTakerSubmit} 
           testTitle={testDetails?.title || undefined}
+          requireShareCode={testId !== 'subject' && !user}
         />
       );
     }
