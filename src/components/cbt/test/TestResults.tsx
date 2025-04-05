@@ -1,5 +1,4 @@
-
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock } from 'lucide-react';
@@ -88,6 +87,16 @@ const TestResults: React.FC<TestResultsProps> = ({
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
+  useEffect(() => {
+    console.log("TestResults rendered with:", {
+      testDetails,
+      resultsVisibility: testDetails?.results_visibility,
+      isPublic: testDetails?.results_visibility === 'public',
+      publicResultsCount: publicResults?.length,
+      testTakerInfo
+    });
+  }, [testDetails, publicResults, testTakerInfo]);
+  
   const findRank = () => {
     if (!publicResults || publicResults.length === 0) return "N/A";
     
@@ -111,6 +120,8 @@ const TestResults: React.FC<TestResultsProps> = ({
     if (percentage >= 60) return "bg-amber-500";
     return "bg-red-500";
   };
+
+  const shouldShowLeaderboard = testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0;
 
   return (
     <div>
@@ -260,7 +271,7 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
-            {testDetails?.results_visibility === 'public' && publicResults.length > 0 && (
+            {shouldShowLeaderboard && (
               <div className="bg-secondary/30 p-4 rounded-lg mb-6">
                 <h3 className="font-medium mb-3">Leaderboard</h3>
                 <div className="overflow-x-auto">

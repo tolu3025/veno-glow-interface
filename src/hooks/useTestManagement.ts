@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -163,16 +162,26 @@ export const useTestManagement = ({
     if (!testId) return;
     
     try {
+      console.log("Loading public results for test ID:", testId);
+      console.log("Test details visibility:", testDetails?.results_visibility);
+      
       const { data, error } = await supabase
         .from('test_attempts')
         .select('*')
         .eq('test_id', testId)
         .order('score', { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading public results:", error);
+        throw error;
+      }
       
       if (data) {
+        console.log("Public results loaded:", data.length, "results found");
         setPublicResults(data);
+      } else {
+        console.log("No public results found");
+        setPublicResults([]);
       }
     } catch (error) {
       console.error("Error loading public results:", error);
@@ -300,6 +309,15 @@ export const useTestManagement = ({
             description: "Your results have been saved successfully",
             variant: "default",
           });
+          
+          // Load public results after saving the attempt, regardless of visibility setting
+          // This ensures we have the freshest data including the current attempt
+          if (testDetails?.results_visibility === 'public') {
+            console.log("Test is public, loading public results");
+            loadPublicResults();
+          } else {
+            console.log("Test is not public, skipping public results");
+          }
         } else {
           // Silently handle save failure without showing error to user
           console.error("Failed to save test results but not showing error to user");
@@ -308,10 +326,6 @@ export const useTestManagement = ({
         console.error("Error saving test results:", error);
         // Silently handle save error
       });
-      
-      if (testDetails?.results_visibility !== 'creator_only') {
-        await loadPublicResults();
-      }
     } catch (error: any) {
       console.error("Error finalizing test:", error);
       // Silently handle error without showing to user

@@ -138,6 +138,7 @@ const TakeTest = () => {
           }
           
           console.log("Test details loaded:", testData);
+          console.log("Results visibility setting:", testData.results_visibility);
           setTestDetails(testData as TestDetails);
           
           if (user && testData.allow_retakes === false) {
@@ -364,6 +365,13 @@ const TakeTest = () => {
         />
       );
     }
+    
+    useEffect(() => {
+      if (testManagement.showResults && testDetails?.results_visibility === 'public') {
+        console.log("Loading public results on test results page display");
+        testManagement.loadPublicResults();
+      }
+    }, [testManagement.showResults, testDetails?.results_visibility]);
     
     return (
       <TestResults
