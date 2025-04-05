@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -51,7 +50,7 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingError, setSavingError] = useState<string | null>(null);
-  const [testFinished, setTestFinished] = useState(false); // Add this to track if test is finished
+  const [testFinished, setTestFinished] = useState(false);
 
   useEffect(() => {
     if (testStarted && timeRemaining > 0 && !testFinished) {
@@ -184,7 +183,7 @@ export const useTestManagement = ({
     setSavingError(null);
     
     if (testId === 'subject' && testData.test_id === 'subject') {
-      const subjectName = testData.subject || location?.state?.subject;
+      const subjectName = testData.subject || (location as LocationWithState)?.state?.subject;
       if (subjectName) {
         const userIdentifier = user?.id || testTakerInfo?.email || 'anonymous';
         testData.test_id = `subject_${subjectName.replace(/\s+/g, '_').toLowerCase()}_${userIdentifier}`;
@@ -285,7 +284,7 @@ export const useTestManagement = ({
         participant_email: testTakerInfo?.email || user?.email || 'anonymous',
         participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous User',
         completed_at: new Date().toISOString(),
-        subject: location?.state?.subject || testDetails?.subject || 'general',
+        subject: (location as LocationWithState)?.state?.subject || testDetails?.subject || 'general',
       };
       
       console.log("Preparing to save test attempt with data:", testData);
