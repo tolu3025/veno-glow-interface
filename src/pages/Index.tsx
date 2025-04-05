@@ -1,19 +1,16 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { CardContent, Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { BookOpen, BookText, BookMarked, GraduationCap, AwardIcon, TrendingUp } from "lucide-react";
-import TestimonialSlider from '@/components/TestimonialSlider';
-import ServiceCard from '@/components/ServiceCard';
-import Spline from '@splinetool/react-spline';
+import { useNavigate } from "react-router-dom";
+import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
+import ServiceCard from "@/components/ServiceCard";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/providers/AuthProvider";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const HomePage = () => {
+const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-
+  
   const bannerSlides = [
     {
       title: "Learn Anywhere, Anytime",
@@ -51,12 +48,12 @@ const HomePage = () => {
       secondaryButton: { text: "Learn More", link: "/bot" }
     }
   ];
-
+  
   const services = [
     {
       title: "Veno CBT",
       description: "Interactive educational platform for effective learning and assessment.",
-      icon: BookOpen,
+      icon: Book,
       href: "/cbt",
     },
     {
@@ -83,7 +80,7 @@ const HomePage = () => {
     {
       title: "Interactive Learning",
       description: "Engage with dynamic content and interactive assessments for better knowledge retention.",
-      icon: BookText,
+      icon: Book,
     },
     {
       title: "Personalized Experience",
@@ -130,180 +127,275 @@ const HomePage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-veno-primary/10 via-background to-background">
-          <div className="container px-4 md:px-6 flex flex-col lg:flex-row items-center space-y-8 lg:space-y-0 lg:space-x-8">
-            <div className="space-y-4 lg:space-y-6 lg:w-1/2">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter">
-                  Your Learning Journey <span className="text-veno-primary">Reimagined</span>
-                </h1>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <p className="text-muted-foreground md:text-xl">
-                  Comprehensive Educational Testing Platform with AI-Powered Assistance and Analytics
-                </p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="flex flex-col md:flex-row gap-4"
-              >
-                <Button size="lg" onClick={handleGetStarted} className="bg-veno-primary hover:bg-veno-primary/90">
-                  Get Started
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/cbt')}>
-                  Explore Tests
-                </Button>
-              </motion.div>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="lg:w-1/2 h-[300px] md:h-[400px] w-full relative"
-            >
-              <Spline scene="https://prod.spline.design/LMc58EcjolE2ESOx/scene.splinecode" />
-            </motion.div>
-          </div>
-        </section>
-
+    <div className="pb-6 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="bubble w-48 h-48 rounded-full absolute -top-12 left-1/4 opacity-60"
+          style={{ 
+            background: "radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1))",
+            boxShadow: "inset 0 0 20px rgba(255, 255, 255, 0.5)",
+            border: "1px solid rgba(255, 255, 255, 0.2)"
+          }}
+          animate={{ 
+            y: [0, -40, -10, 0],
+            x: [0, 30, -20, 0],
+            rotate: [0, 10, -5, 0],
+            scale: [1, 1.05, 0.98, 1]
+          }}
+          transition={{ 
+            duration: 15, 
+            ease: "easeInOut", 
+            repeat: Infinity,
+            repeatType: "reverse" 
+          }}
+        />
+        
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <div className="text-center max-w-3xl mx-auto mb-10">
-            <h2 className="text-3xl font-bold tracking-tight font-heading mb-4">Transform Your Learning Experience</h2>
-            <p className="text-muted-foreground text-lg">Discover how Veno's innovative approach to education can help you achieve your goals.</p>
-          </div>
-          
-          <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="veno-card p-6 h-full flex flex-col">
-                  <div className="rounded-full bg-veno-primary/10 w-12 h-12 flex items-center justify-center mb-4">
-                    <feature.icon className="text-veno-primary h-6 w-6" />
+          className="bubble w-32 h-32 rounded-full absolute top-1/3 -right-10 opacity-50"
+          style={{ 
+            background: "radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1))",
+            boxShadow: "inset 0 0 15px rgba(255, 255, 255, 0.3)",
+            border: "1px solid rgba(255, 255, 255, 0.2)"
+          }}
+          animate={{
+            y: [0, 30, -20, 0],
+            x: [0, -20, 10, 0],
+            rotate: [0, -5, 10, 0],
+            scale: [1, 0.95, 1.02, 1]
+          }}
+          transition={{
+            duration: 18,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse",
+            delay: 2
+          }}
+        />
+        
+        <motion.div
+          className="bubble w-40 h-40 rounded-full absolute bottom-20 left-10 opacity-40"
+          style={{ 
+            background: "radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1))",
+            boxShadow: "inset 0 0 18px rgba(255, 255, 255, 0.4)",
+            border: "1px solid rgba(255, 255, 255, 0.2)"
+          }}
+          animate={{
+            y: [0, -30, 20, 0],
+            x: [0, 20, -30, 0],
+            rotate: [0, -10, 5, 0],
+            scale: [1, 1.04, 0.97, 1]
+          }}
+          transition={{
+            duration: 20,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse",
+            delay: 1
+          }}
+        />
+        
+        <motion.div
+          className="bubble w-24 h-24 rounded-full absolute top-1/2 left-1/4 opacity-30"
+          style={{ 
+            background: "radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05))",
+            boxShadow: "inset 0 0 10px rgba(255, 255, 255, 0.3)",
+            border: "1px solid rgba(255, 255, 255, 0.15)"
+          }}
+          animate={{
+            y: [0, 20, -15, 0],
+            x: [0, -15, 25, 0],
+            rotate: [0, 8, -12, 0],
+            scale: [1, 0.98, 1.03, 1]
+          }}
+          transition={{
+            duration: 17,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse",
+            delay: 3
+          }}
+        />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative rounded-2xl overflow-hidden mb-10"
+      >
+        <Carousel autoplay={true} autoplayInterval={5000} showControls={false} className="h-[400px] md:h-[500px]">
+          <CarouselContent>
+            {bannerSlides.map((slide, index) => (
+              <CarouselItem key={index}>
+                <div className={`${slide.background} h-[400px] md:h-[500px] flex items-center`}>
+                  <div className="container relative z-20">
+                    <div className="max-w-xl text-white">
+                      <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <h1 className="text-4xl md:text-6xl font-bold mb-4 font-heading">
+                          {slide.title.split(' ').map((word, i) => (
+                            <span key={i} className={i % 2 === 1 ? "text-veno-accent" : ""}>
+                              {word}{' '}
+                            </span>
+                          ))}
+                        </h1>
+                        <p className="text-lg md:text-xl opacity-90 mb-8 leading-relaxed">
+                          {slide.subtitle}
+                        </p>
+                        <div className="flex flex-wrap gap-4">
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate(slide.primaryButton.link)}
+                            className="bg-white text-veno-primary hover:bg-white/90"
+                          >
+                            {slide.primaryButton.text}
+                          </Button>
+                          <Button 
+                            size="lg"
+                            variant="outline"
+                            onClick={() => navigate(slide.secondaryButton.link)}
+                            className="bg-transparent border-white text-white hover:bg-white/20"
+                          >
+                            {slide.secondaryButton.text}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground flex-grow">{feature.description}</p>
                 </div>
-              </motion.div>
+              </CarouselItem>
             ))}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight font-heading">Our Services</h2>
-              <p className="text-muted-foreground mt-2">Discover what Veno has to offer.</p>
-            </div>
-            <Button 
-              variant="outline" 
-              className="mt-4 md:mt-0"
-              onClick={() => navigate("/services")}
+          </CarouselContent>
+        </Carousel>
+      </motion.div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+        className="mb-16"
+      >
+        <div className="text-center max-w-3xl mx-auto mb-10">
+          <h2 className="text-3xl font-bold tracking-tight font-heading mb-4">Transform Your Learning Experience</h2>
+          <p className="text-muted-foreground text-lg">Discover how Veno's innovative approach to education can help you achieve your goals.</p>
+        </div>
+        
+        <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              viewport={{ once: true }}
             >
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+              <div className="veno-card p-6 h-full flex flex-col">
+                <div className="rounded-full bg-veno-primary/10 w-12 h-12 flex items-center justify-center mb-4">
+                  <feature.icon className="text-veno-primary h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground flex-grow">{feature.description}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid gap-4 grid-cols-1 md:grid-cols-2"
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+        className="mb-16"
+      >
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight font-heading">Our Services</h2>
+            <p className="text-muted-foreground mt-2">Discover what Veno has to offer.</p>
+          </div>
+          <Button 
+            variant="outline" 
+            className="mt-4 md:mt-0"
+            onClick={() => navigate("/services")}
           >
-            {services.map((service) => (
-              <motion.div key={service.title} variants={itemVariants}>
-                <ServiceCard
-                  title={service.title}
-                  description={service.description}
-                  icon={service.icon}
-                  href={service.href}
-                  onClick={() => navigate(service.href)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
+            View All <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
-          className="mb-16"
+          className="grid gap-4 grid-cols-1 md:grid-cols-2"
         >
-          <div className="veno-card bg-gradient-to-br from-veno-primary/5 to-veno-secondary/5">
-            <div className="p-8 md:p-12">
-              <div className="max-w-3xl mx-auto text-center">
-                <p className="text-lg font-handwriting text-veno-secondary mb-6">What Our Users Say</p>
-                <blockquote className="text-xl md:text-2xl italic mb-6">
-                  "Veno has transformed how I approach learning and assessment. The interactive tools and personalized feedback have significantly improved my study efficiency and outcomes."
-                </blockquote>
-                <div className="flex items-center justify-center">
-                  <Avatar className="w-12 h-12 rounded-full border-2 border-veno-primary mr-4">
-                    <AvatarImage src="/lovable-uploads/cb8d05cb-602f-45e9-a069-f187aee51c74.png" alt="Toluwanimi Oyetade" />
-                    <AvatarFallback>TO</AvatarFallback>
-                  </Avatar>
-                  <div className="text-left">
-                    <p className="font-semibold">Toluwanimi Oyetade</p>
-                    <p className="text-sm text-muted-foreground">University Student</p>
-                  </div>
+          {services.map((service) => (
+            <motion.div key={service.title} variants={itemVariants}>
+              <ServiceCard
+                title={service.title}
+                description={service.description}
+                icon={service.icon}
+                href={service.href}
+                onClick={() => navigate(service.href)}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+        className="mb-16"
+      >
+        <div className="veno-card bg-gradient-to-br from-veno-primary/5 to-veno-secondary/5">
+          <div className="p-8 md:p-12">
+            <div className="max-w-3xl mx-auto text-center">
+              <p className="text-lg font-handwriting text-veno-secondary mb-6">What Our Users Say</p>
+              <blockquote className="text-xl md:text-2xl italic mb-6">
+                "Veno has transformed how I approach learning and assessment. The interactive tools and personalized feedback have significantly improved my study efficiency and outcomes."
+              </blockquote>
+              <div className="flex items-center justify-center">
+                <Avatar className="w-12 h-12 rounded-full border-2 border-veno-primary mr-4">
+                  <AvatarImage src="/lovable-uploads/cb8d05cb-602f-45e9-a069-f187aee51c74.png" alt="Toluwanimi Oyetade" />
+                  <AvatarFallback>TO</AvatarFallback>
+                </Avatar>
+                <div className="text-left">
+                  <p className="font-semibold">Toluwanimi Oyetade</p>
+                  <p className="text-sm text-muted-foreground">University Student</p>
                 </div>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading">Ready to Transform Your Learning Experience?</h2>
-            <p className="text-muted-foreground text-lg mb-8">Join thousands of students who are already using Veno to achieve their educational goals.</p>
-            <Button 
-              size="lg" 
-              className="bg-veno-primary hover:bg-veno-primary/90"
-              onClick={handleGetStarted}
-            >
-              {user ? "Go to Dashboard" : "Get Started for Free"}
-            </Button>
-          </div>
-        </motion.div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+        className="text-center"
+      >
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading">Ready to Transform Your Learning Experience?</h2>
+          <p className="text-muted-foreground text-lg mb-8">Join thousands of students who are already using Veno to achieve their educational goals.</p>
+          <Button 
+            size="lg" 
+            className="bg-veno-primary hover:bg-veno-primary/90"
+            onClick={handleGetStarted}
+          >
+            {user ? "Go to Dashboard" : "Get Started for Free"}
+          </Button>
+        </div>
+      </motion.div>
     </div>
   );
 };
 
-export default HomePage;
+export default Index;
