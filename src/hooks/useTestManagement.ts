@@ -51,23 +51,25 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingError, setSavingError] = useState<string | null>(null);
+  const [testFinished, setTestFinished] = useState(false); // Add this to track if test is finished
 
   useEffect(() => {
-    if (testStarted && timeRemaining > 0) {
+    if (testStarted && timeRemaining > 0 && !testFinished) {
       const timer = setTimeout(() => {
         setTimeRemaining(time => time - 1);
       }, 1000);
       
       return () => clearTimeout(timer);
-    } else if (testStarted && timeRemaining === 0) {
+    } else if (testStarted && timeRemaining === 0 && !testFinished) {
       finishTest();
     }
-  }, [timeRemaining, testStarted]);
+  }, [timeRemaining, testStarted, testFinished]);
 
   const startTest = () => {
     const timeLimit = testDetails?.time_limit || 15;
     setTimeRemaining(timeLimit * 60);
     setTestStarted(true);
+    setTestFinished(false);
   };
 
   const handleAnswerSelect = (optionIndex: number) => {
@@ -203,6 +205,7 @@ export const useTestManagement = ({
           
         if (!insertError) {
           console.log(`Test results saved successfully on attempt ${attempts}`);
+          setSaving(false);
           return true;
         }
         
@@ -226,12 +229,12 @@ export const useTestManagement = ({
     
     const fallbackSave = await fallbackSaveAttempt(testData);
     if (fallbackSave) {
+      setSaving(false);
       return true;
     }
     
-    const fallbackError = new Error(`Failed to save test results after ${maxAttempts} attempts`);
-    console.error(fallbackError);
-    setSavingError(fallbackError.message);
+    setSaving(false);
+    setSavingError(null); // Suppress error message
     return false;
   };
 
@@ -245,7 +248,8 @@ export const useTestManagement = ({
         participant_email: testData.participant_email || 'anonymous',
         participant_name: testData.participant_name || 'Anonymous User',
         completed_at: new Date().toISOString(),
-        test_id: testData.test_id === 'subject' ? null : testData.test_id
+        test_id: testData.test_id === 'subject' ? null : testData.test_id,
+        subject: testData.subject
       };
       
       const { error } = await supabase
@@ -266,6 +270,9 @@ export const useTestManagement = ({
   };
 
   const finishTest = async () => {
+    // Stop the timer by marking test as finished
+    setTestFinished(true);
+    
     const finalScore = calculateScore();
     
     try {
@@ -294,15 +301,12 @@ export const useTestManagement = ({
             variant: "default",
           });
         } else {
-          toast({
-            title: "Warning",
-            description: "We're showing your results but couldn't save them to your history. Please take a screenshot if needed.",
-            variant: "destructive",
-          });
+          // Silently handle save failure without showing error to user
+          console.error("Failed to save test results but not showing error to user");
         }
       }).catch(error => {
         console.error("Error saving test results:", error);
-        setSavingError("Could not save your results. Results are shown but may not be stored permanently.");
+        // Silently handle save error
       });
       
       if (testDetails?.results_visibility !== 'creator_only') {
@@ -310,7 +314,7 @@ export const useTestManagement = ({
       }
     } catch (error: any) {
       console.error("Error finalizing test:", error);
-      setSavingError("An error occurred while finalizing your test.");
+      // Silently handle error without showing to user
       
       setShowResults(true);
     }
@@ -324,6 +328,7 @@ export const useTestManagement = ({
     setUserAnswers([]);
     setTimeRemaining((testDetails?.time_limit || 15) * 60);
     setTestStarted(false);
+    setTestFinished(false);
     setSavingError(null);
   };
 

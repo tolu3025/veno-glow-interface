@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface TestResultsProps {
   score: number;
@@ -127,16 +126,6 @@ const TestResults: React.FC<TestResultsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-6">
-            {savingError && (
-              <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
-                <AlertTitle className="text-amber-800">Results Displayed</AlertTitle>
-                <AlertDescription className="text-amber-700">
-                  Your results are shown below. 
-                  {user ? " We'll keep trying to save them in the background." : " For reliable saving, consider signing in next time."}
-                </AlertDescription>
-              </Alert>
-            )}
-            
             {/* Result Summary Card */}
             <div className="bg-card border rounded-lg p-6 mb-8">
               <div className="text-center mb-6">
