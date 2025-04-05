@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
 
-// Define a correct custom Location type
+// Define a correct custom Location type using intersection instead of extension
 type LocationWithState = Location & {
   state?: {
     subject?: string;
@@ -359,5 +360,6 @@ export const useTestManagement = ({
     setReviewMode,
     formatTime,
     loadPublicResults,
+    testFinished,
   };
 };

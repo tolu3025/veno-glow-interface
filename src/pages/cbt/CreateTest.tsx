@@ -1,8 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info } from "lucide-react";
+import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info, Database, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,9 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -64,6 +67,16 @@ type Question = {
   explanation?: string;
 };
 
+type BankQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  answer: number;
+  subject: string;
+  explanation?: string | null;
+  difficulty?: string;
+};
+
 const CreateTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -76,6 +89,12 @@ const CreateTest = () => {
     correctOption: 0,
     explanation: "",
   });
+  const [selectedQuestionTab, setSelectedQuestionTab] = useState<"create" | "bank">("create");
+  const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
+  const [loadingBankQuestions, setLoadingBankQuestions] = useState(false);
+  const [selectedBankQuestions, setSelectedBankQuestions] = useState<string[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   
   const form = useForm<TestFormValues>({
@@ -89,6 +108,105 @@ const CreateTest = () => {
       allowRetakes: false,
     },
   });
+
+  // Fetch available subjects for filtering bank questions
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('questions')
+          .select('subject')
+          .order('subject');
+        
+        if (error) throw error;
+        
+        if (data) {
+          const uniqueSubjects = [...new Set(data.map(item => item.subject))];
+          setAvailableSubjects(uniqueSubjects);
+        }
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+      }
+    };
+    
+    fetchSubjects();
+  }, []);
+
+  // Fetch questions from bank based on selected subject
+  const fetchQuestionsFromBank = async () => {
+    if (!selectedSubject) {
+      toast({
+        title: "No subject selected",
+        description: "Please select a subject to view questions",
+        variant: "warning",
+      });
+      return;
+    }
+    
+    setLoadingBankQuestions(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('id, question, options, answer, subject, explanation, difficulty')
+        .eq('subject', selectedSubject)
+        .limit(50);
+      
+      if (error) throw error;
+      
+      if (data) {
+        setBankQuestions(data);
+      }
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      toast({
+        title: "Error loading questions",
+        description: "Failed to load questions from the question bank",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingBankQuestions(false);
+    }
+  };
+
+  const toggleBankQuestion = (questionId: string) => {
+    setSelectedBankQuestions(prev => {
+      if (prev.includes(questionId)) {
+        return prev.filter(id => id !== questionId);
+      } else {
+        return [...prev, questionId];
+      }
+    });
+  };
+
+  const addSelectedBankQuestions = () => {
+    if (selectedBankQuestions.length === 0) {
+      toast({
+        title: "No questions selected",
+        description: "Please select at least one question from the bank",
+        variant: "warning",
+      });
+      return;
+    }
+    
+    const selectedQuestions = bankQuestions
+      .filter(q => selectedBankQuestions.includes(q.id))
+      .map(q => ({
+        id: crypto.randomUUID(), // Generate new ID for the test question
+        text: q.question,
+        options: Array.isArray(q.options) ? q.options : [], // Ensure options is an array
+        correctOption: q.answer,
+        explanation: q.explanation || undefined,
+      }));
+    
+    setQuestions(prev => [...prev, ...selectedQuestions]);
+    setSelectedBankQuestions([]);
+    
+    toast({
+      title: "Questions added",
+      description: `${selectedQuestions.length} questions have been added to your test`,
+    });
+  };
 
   const addQuestion = () => {
     if (!currentQuestion.text.trim()) {
@@ -383,82 +501,238 @@ const CreateTest = () => {
               <BookOpen className="h-5 w-5 text-veno-primary" />
               <h2 className="text-lg font-medium">Questions</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add questions to your test. Each question must have 4 options with 1 correct answer.
-            </p>
             
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <div>
-                  <label htmlFor="questionText" className="text-sm font-medium">
-                    Question Text
-                  </label>
-                  <Textarea
-                    id="questionText"
-                    placeholder="Enter your question"
-                    value={currentQuestion.text}
-                    onChange={(e) => setCurrentQuestion({...currentQuestion, text: e.target.value})}
-                    className="resize-none mt-1"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Options</label>
-                  <div className="space-y-2 mt-1">
-                    {currentQuestion.options.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="correctOption"
-                          value={index}
-                          checked={currentQuestion.correctOption === index}
-                          onChange={() => setCurrentQuestion({...currentQuestion, correctOption: index})}
-                          className="w-4 h-4 text-veno-primary"
-                        />
-                        <Input
-                          placeholder={`Option ${index + 1}`}
-                          value={option}
-                          onChange={(e) => updateOption(index, e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    <HelpCircle className="inline h-3 w-3 mr-1" />
-                    Select the radio button next to the correct answer
-                  </p>
-                </div>
-
-                <div>
-                  <label htmlFor="explanationText" className="text-sm font-medium flex items-center gap-1">
-                    <Info size={14} className="text-veno-primary" />
-                    Explanation (Optional)
-                  </label>
-                  <Textarea
-                    id="explanationText"
-                    placeholder="Explain why the correct answer is right (will be shown after the test)"
-                    value={currentQuestion.explanation || ""}
-                    onChange={(e) => setCurrentQuestion({...currentQuestion, explanation: e.target.value})}
-                    className="resize-none mt-1"
-                    rows={3}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    <HelpCircle className="inline h-3 w-3 mr-1" />
-                    Providing explanations helps test takers learn from their mistakes
-                  </p>
-                </div>
-              </div>
+            <Tabs 
+              defaultValue="create" 
+              value={selectedQuestionTab}
+              onValueChange={(value) => setSelectedQuestionTab(value as "create" | "bank")}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="create">Create Questions</TabsTrigger>
+                <TabsTrigger value="bank">Question Bank</TabsTrigger>
+              </TabsList>
               
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addQuestion}
-                className="w-full border-dashed border-veno-primary/40 text-veno-primary"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Question
-              </Button>
-            </div>
+              <TabsContent value="create" className="space-y-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add custom questions to your test. Each question must have 4 options with 1 correct answer.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <div>
+                      <label htmlFor="questionText" className="text-sm font-medium">
+                        Question Text
+                      </label>
+                      <Textarea
+                        id="questionText"
+                        placeholder="Enter your question"
+                        value={currentQuestion.text}
+                        onChange={(e) => setCurrentQuestion({...currentQuestion, text: e.target.value})}
+                        className="resize-none mt-1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Options</label>
+                      <div className="space-y-2 mt-1">
+                        {currentQuestion.options.map((option, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              name="correctOption"
+                              value={index}
+                              checked={currentQuestion.correctOption === index}
+                              onChange={() => setCurrentQuestion({...currentQuestion, correctOption: index})}
+                              className="w-4 h-4 text-veno-primary"
+                            />
+                            <Input
+                              placeholder={`Option ${index + 1}`}
+                              value={option}
+                              onChange={(e) => updateOption(index, e.target.value)}
+                              className="flex-1"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        <HelpCircle className="inline h-3 w-3 mr-1" />
+                        Select the radio button next to the correct answer
+                      </p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="explanationText" className="text-sm font-medium flex items-center gap-1">
+                        <Info size={14} className="text-veno-primary" />
+                        Explanation (Optional)
+                      </label>
+                      <Textarea
+                        id="explanationText"
+                        placeholder="Explain why the correct answer is right (will be shown after the test)"
+                        value={currentQuestion.explanation || ""}
+                        onChange={(e) => setCurrentQuestion({...currentQuestion, explanation: e.target.value})}
+                        className="resize-none mt-1"
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <HelpCircle className="inline h-3 w-3 mr-1" />
+                        Providing explanations helps test takers learn from their mistakes
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addQuestion}
+                    className="w-full border-dashed border-veno-primary/40 text-veno-primary"
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="bank" className="space-y-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select questions from our question bank to add to your test.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <label htmlFor="subject" className="text-sm font-medium">
+                        Select Subject
+                      </label>
+                      <Select 
+                        value={selectedSubject} 
+                        onValueChange={setSelectedSubject}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSubjects.map((subject) => (
+                            <SelectItem key={subject} value={subject}>
+                              {subject}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        onClick={fetchQuestionsFromBank}
+                        className="w-full md:w-auto bg-veno-primary hover:bg-veno-primary/90"
+                        disabled={!selectedSubject || loadingBankQuestions}
+                      >
+                        {loadingBankQuestions ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <Database className="mr-2 h-4 w-4" />
+                            Load Questions
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {bankQuestions.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">
+                          Available Questions ({bankQuestions.length})
+                        </span>
+                        <span className="text-sm text-veno-primary font-medium">
+                          Selected: {selectedBankQuestions.length}
+                        </span>
+                      </div>
+                      
+                      <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+                        {bankQuestions.map((question) => (
+                          <div 
+                            key={question.id} 
+                            className={`p-3 rounded-md border ${
+                              selectedBankQuestions.includes(question.id) 
+                                ? "border-veno-primary bg-veno-primary/5" 
+                                : "border-border bg-secondary/40"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <Checkbox 
+                                id={`q-${question.id}`}
+                                checked={selectedBankQuestions.includes(question.id)}
+                                onCheckedChange={() => toggleBankQuestion(question.id)}
+                                className="mt-1"
+                              />
+                              <div className="space-y-2 flex-1">
+                                <label 
+                                  htmlFor={`q-${question.id}`}
+                                  className="text-sm font-medium cursor-pointer"
+                                >
+                                  {question.question}
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-xs text-muted-foreground">
+                                  {Array.isArray(question.options) && question.options.map((option, idx) => (
+                                    <div key={idx} className="flex items-center">
+                                      <span className={idx === question.answer ? "text-veno-primary font-medium" : ""}>
+                                        {String.fromCharCode(65 + idx)}. {option}
+                                        {idx === question.answer && " ✓"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {question.difficulty && (
+                                  <div className="text-xs">
+                                    <span className="text-muted-foreground">Difficulty:</span>{" "}
+                                    <span className={`font-medium ${
+                                      question.difficulty === "beginner" ? "text-green-600" :
+                                      question.difficulty === "intermediate" ? "text-orange-500" : 
+                                      "text-red-500"
+                                    }`}>
+                                      {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        onClick={addSelectedBankQuestions}
+                        disabled={selectedBankQuestions.length === 0}
+                        className="w-full border-veno-primary/40 text-veno-primary"
+                        variant="outline"
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" /> 
+                        Add {selectedBankQuestions.length} Selected Question{selectedBankQuestions.length !== 1 ? 's' : ''}
+                      </Button>
+                    </div>
+                  ) : loadingBankQuestions ? (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-8 w-8 text-veno-primary animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center py-8 space-y-2">
+                      <Database className="h-10 w-10 text-muted-foreground opacity-40" />
+                      <p className="text-muted-foreground">
+                        {selectedSubject 
+                          ? "Click 'Load Questions' to browse questions" 
+                          : "Select a subject to browse questions"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
             
             {questions.length > 0 && (
               <div className="mt-6">
