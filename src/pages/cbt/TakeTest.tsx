@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,7 +108,6 @@ const TakeTest = () => {
     }
   }, [testManagement.showResults, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
 
-  // Add effect to load test data on component mount
   useEffect(() => {
     loadTest();
   }, [testId]);
@@ -342,7 +340,8 @@ const TakeTest = () => {
       resultsVisibility: testDetails?.results_visibility,
       isCreator: user?.id === testDetails?.creator_id,
       loading,
-      loadingError
+      loadingError,
+      publicResultsCount: testManagement.publicResults?.length
     });
   }, [
     testId, 
@@ -361,7 +360,8 @@ const TakeTest = () => {
     user?.id,
     testDetails?.creator_id,
     loading,
-    loadingError
+    loadingError,
+    testManagement.publicResults
   ]);
 
   if (loading) {

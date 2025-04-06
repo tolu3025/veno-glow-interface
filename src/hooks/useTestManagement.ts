@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -63,6 +62,56 @@ export const useTestManagement = ({
       finishTest();
     }
   }, [timeRemaining, testStarted, testFinished]);
+
+  const loadPublicResults = useCallback(async () => {
+    if (!testId) return;
+    
+    try {
+      console.log("Loading results for test ID:", testId);
+      console.log("Test details visibility:", testDetails?.results_visibility);
+      console.log("Is user the creator?", user?.id === testDetails?.creator_id);
+      
+      const isCreator = user?.id === testDetails?.creator_id;
+      
+      if (!isCreator && testDetails?.results_visibility === 'creator_only') {
+        console.log("Results are set to creator_only and current user is not the creator");
+        setPublicResults([]);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('test_attempts')
+        .select('*')
+        .eq('test_id', testId)
+        .order('score', { ascending: false });
+        
+      if (error) {
+        console.error("Error loading results:", error);
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        console.log(`Found ${data.length} results for test ID ${testId}:`, data);
+        setPublicResults(data);
+      } else {
+        console.log(`No results found for test ID ${testId}`);
+        setPublicResults([]);
+      }
+    } catch (error) {
+      console.error("Error loading results:", error);
+      toast({
+        title: "Error loading results",
+        description: "Could not load test results. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
+
+  useEffect(() => {
+    if (showResults && testId) {
+      loadPublicResults();
+    }
+  }, [showResults, testId, loadPublicResults]);
 
   const startTest = () => {
     const timeLimit = testDetails?.time_limit || 15;
@@ -158,46 +207,6 @@ export const useTestManagement = ({
     return correctAnswers;
   };
 
-  const loadPublicResults = useCallback(async () => {
-    if (!testId) return;
-    
-    try {
-      console.log("Loading results for test ID:", testId);
-      console.log("Test details visibility:", testDetails?.results_visibility);
-      console.log("Is user the creator?", user?.id === testDetails?.creator_id);
-      
-      const isCreator = user?.id === testDetails?.creator_id;
-      
-      // Creator always sees results, regardless of visibility setting
-      if (!isCreator && testDetails?.results_visibility === 'creator_only') {
-        console.log("Results are set to creator_only and current user is not the creator");
-        setPublicResults([]);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('test_attempts')
-        .select('*')
-        .eq('test_id', testId)
-        .order('score', { ascending: false });
-        
-      if (error) {
-        console.error("Error loading results:", error);
-        throw error;
-      }
-      
-      if (data) {
-        console.log("Results loaded:", data.length, "results found");
-        setPublicResults(data);
-      } else {
-        console.log("No results found");
-        setPublicResults([]);
-      }
-    } catch (error) {
-      console.error("Error loading results:", error);
-    }
-  }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
-
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
     setSavingError(null);
@@ -268,7 +277,8 @@ export const useTestManagement = ({
         participant_name: testData.participant_name || 'Anonymous User',
         completed_at: new Date().toISOString(),
         test_id: testData.test_id === 'subject' ? null : testData.test_id,
-        subject: testData.subject
+        subject: testData.subject,
+        time_taken: testData.time_taken
       };
       
       const { error } = await supabase
@@ -319,7 +329,6 @@ export const useTestManagement = ({
             variant: "default",
           });
           
-          // Always load results after saving, the visibility check will happen inside loadPublicResults
           loadPublicResults();
         } else {
           console.error("Failed to save test results but not showing error to user");

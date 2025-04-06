@@ -19,21 +19,25 @@ const LoadingState: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-veno-primary mb-4" />
-      <p className="text-muted-foreground mb-2">Loading questions...</p>
+      <p className="text-muted-foreground mb-2">Loading test content...</p>
       <p className="text-sm text-muted-foreground mb-4">({loadingTime}s)</p>
       
-      {loadingTime > 15 && (
+      {loadingTime > 10 && (
         <div className="mt-4 flex flex-col items-center">
           <p className="text-sm text-amber-500 mb-4">
-            Loading is taking longer than expected. You can wait or return to the tests page.
+            {loadingTime > 20 ? 
+              "This is taking longer than expected. There may be a connection issue." : 
+              "Loading is taking a bit longer than usual. Please wait..."}
           </p>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/cbt')}
-            className="px-4"
-          >
-            Return to Tests
-          </Button>
+          {loadingTime > 15 && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/cbt')}
+              className="px-4"
+            >
+              Return to Tests
+            </Button>
+          )}
         </div>
       )}
     </div>

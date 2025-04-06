@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -120,7 +121,7 @@ const TestResults: React.FC<TestResultsProps> = ({
   };
 
   const isCreator = user?.id === testDetails?.creator_id;
-  const shouldShowLeaderboard = true;
+  const shouldShowLeaderboard = publicResults && publicResults.length > 0;
 
   return (
     <div>
@@ -268,7 +269,7 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
-            {publicResults && publicResults.length > 0 && (
+            {shouldShowLeaderboard ? (
               <div className="bg-secondary/30 p-4 rounded-lg mb-6">
                 <h3 className="font-medium mb-3">Leaderboard</h3>
                 <div className="overflow-x-auto">
@@ -311,16 +312,14 @@ const TestResults: React.FC<TestResultsProps> = ({
                   </Table>
                 </div>
               </div>
-            )}
-            
-            {!publicResults || publicResults.length === 0 ? (
+            ) : (
               <div className="bg-secondary/30 p-4 rounded-lg mb-6 text-center">
                 <h3 className="font-medium mb-2">No Participants Yet</h3>
                 <p className="text-sm text-muted-foreground">
                   There are no other participants who have taken this test yet.
                 </p>
               </div>
-            ) : null}
+            )}
             
             <div className="bg-secondary/30 p-4 rounded-lg text-center">
               <h3 className="font-medium mb-2">Review Your Answers</h3>
