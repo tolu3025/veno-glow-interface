@@ -45,7 +45,6 @@ const TestResults: React.FC<TestResultsProps> = ({
 }) => {
   const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   
-  // Enhanced feedback messages based on score
   let resultMessage = "Good effort!";
   let resultClass = "text-amber-500";
   let resultEmoji = "🎯";
@@ -91,11 +90,11 @@ const TestResults: React.FC<TestResultsProps> = ({
     console.log("TestResults rendered with:", {
       testDetails,
       resultsVisibility: testDetails?.results_visibility,
-      isPublic: testDetails?.results_visibility === 'public',
+      isCreator: user?.id === testDetails?.creator_id,
       publicResultsCount: publicResults?.length,
       testTakerInfo
     });
-  }, [testDetails, publicResults, testTakerInfo]);
+  }, [testDetails, publicResults, testTakerInfo, user]);
   
   const findRank = () => {
     if (!publicResults || publicResults.length === 0) return "N/A";
@@ -114,14 +113,16 @@ const TestResults: React.FC<TestResultsProps> = ({
     return `${position}th`;
   }
 
-  // Get appropriate progress bar color based on score percentage
   const getProgressColorClass = (percentage: number) => {
     if (percentage >= 80) return "bg-green-500";
     if (percentage >= 60) return "bg-amber-500";
     return "bg-red-500";
   };
 
-  const shouldShowLeaderboard = testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0;
+  const shouldShowLeaderboard = 
+    (testDetails?.results_visibility === 'public') || 
+    (testDetails?.results_visibility === 'test_takers' && testTakerInfo) || 
+    (user?.id === testDetails?.creator_id);
 
   return (
     <div>
@@ -137,7 +138,6 @@ const TestResults: React.FC<TestResultsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-6">
-            {/* Result Summary Card */}
             <div className="bg-card border rounded-lg p-6 mb-8">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-secondary/20 rounded-full mb-4">
@@ -226,7 +226,6 @@ const TestResults: React.FC<TestResultsProps> = ({
                     <Progress value={timeEfficiency} className="h-2" />
                   </div>
                   
-                  {/* Performance indicators */}
                   <div className="pt-2">
                     <Separator className="my-2" />
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -271,7 +270,7 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
-            {shouldShowLeaderboard && (
+            {shouldShowLeaderboard && publicResults && publicResults.length > 0 && (
               <div className="bg-secondary/30 p-4 rounded-lg mb-6">
                 <h3 className="font-medium mb-3">Leaderboard</h3>
                 <div className="overflow-x-auto">

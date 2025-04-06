@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,13 +74,23 @@ const TakeTest = () => {
     }
   }, [location.state]);
   
-  // Move the useEffect for loading public results outside the conditional rendering
   useEffect(() => {
-    if (testManagement.showResults && testDetails?.results_visibility === 'public') {
-      console.log("Loading public results on test results page display");
-      testManagement.loadPublicResults();
+    if (testManagement.showResults) {
+      const isCreator = user?.id === testDetails?.creator_id;
+      if (isCreator || testDetails?.results_visibility !== 'creator_only') {
+        console.log("Loading results on test results page display");
+        console.log("Is creator:", isCreator);
+        console.log("Results visibility:", testDetails?.results_visibility);
+        testManagement.loadPublicResults();
+      }
     }
-  }, [testManagement.showResults, testDetails?.results_visibility, testManagement.loadPublicResults]);
+  }, [
+    testManagement.showResults, 
+    testDetails?.results_visibility, 
+    testManagement.loadPublicResults, 
+    user?.id, 
+    testDetails?.creator_id
+  ]);
 
   const verifyShareCode = async (shareCode: string) => {
     if (!shareCode) return false;
@@ -126,7 +135,6 @@ const TakeTest = () => {
       
       try {
         if (testId) {
-          // Log the process to help debugging
           console.log(`Loading test with ID: ${testId}`);
           
           const { data: testData, error: testError } = await supabase
@@ -178,7 +186,7 @@ const TakeTest = () => {
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
-              question: q.question_text, // Adding both text and question properties
+              question: q.question_text,
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
               correctOption: q.answer,
               answer: q.answer,
@@ -208,7 +216,6 @@ const TakeTest = () => {
       const subject = location.state.subject;
       const settingsFromState = location.state.settings || settings;
       
-      // Set basic test details for subject quizzes
       const subjectTestDetails = {
         id: 'subject',
         title: `${subject} Quiz`,
@@ -255,7 +262,7 @@ const TakeTest = () => {
       const formattedQuestions: QuizQuestion[] = data.map(q => ({
         id: q.id,
         text: q.question,
-        question: q.question, // Adding both text and question properties
+        question: q.question,
         options: Array.isArray(q.options) ? 
           q.options.map((opt: any) => String(opt)) : [],
         correctOption: q.answer,
@@ -374,8 +381,6 @@ const TakeTest = () => {
         />
       );
     }
-    
-    // The useEffect for loading public results was moved outside the conditional rendering
     
     return (
       <TestResults

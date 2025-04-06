@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
 
-// Define a correct custom Location type
 type LocationWithState = Location & {
   state?: {
     subject?: string;
@@ -50,7 +49,7 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingError, setSavingError] = useState<string | null>(null);
-  const [testFinished, setTestFinished] = useState(false); // Add this to track if test is finished
+  const [testFinished, setTestFinished] = useState(false);
 
   useEffect(() => {
     if (testStarted && timeRemaining > 0 && !testFinished) {
@@ -162,8 +161,17 @@ export const useTestManagement = ({
     if (!testId) return;
     
     try {
-      console.log("Loading public results for test ID:", testId);
+      console.log("Loading results for test ID:", testId);
       console.log("Test details visibility:", testDetails?.results_visibility);
+      console.log("Is user the creator?", user?.id === testDetails?.creator_id);
+      
+      const isCreator = user?.id === testDetails?.creator_id;
+      
+      if (!isCreator && testDetails?.results_visibility === 'creator_only') {
+        console.log("Results are set to creator_only and current user is not the creator");
+        setPublicResults([]);
+        return;
+      }
       
       const { data, error } = await supabase
         .from('test_attempts')
@@ -172,21 +180,21 @@ export const useTestManagement = ({
         .order('score', { ascending: false });
         
       if (error) {
-        console.error("Error loading public results:", error);
+        console.error("Error loading results:", error);
         throw error;
       }
       
       if (data) {
-        console.log("Public results loaded:", data.length, "results found");
+        console.log("Results loaded:", data.length, "results found");
         setPublicResults(data);
       } else {
-        console.log("No public results found");
+        console.log("No results found");
         setPublicResults([]);
       }
     } catch (error) {
-      console.error("Error loading public results:", error);
+      console.error("Error loading results:", error);
     }
-  }, [testId, testDetails?.results_visibility]);
+  }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
 
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
@@ -243,7 +251,7 @@ export const useTestManagement = ({
     }
     
     setSaving(false);
-    setSavingError(null); // Suppress error message
+    setSavingError(null);
     return false;
   };
 
@@ -279,7 +287,6 @@ export const useTestManagement = ({
   };
 
   const finishTest = async () => {
-    // Stop the timer by marking test as finished
     setTestFinished(true);
     
     const finalScore = calculateScore();
@@ -310,25 +317,15 @@ export const useTestManagement = ({
             variant: "default",
           });
           
-          // Load public results after saving the attempt, regardless of visibility setting
-          // This ensures we have the freshest data including the current attempt
-          if (testDetails?.results_visibility === 'public') {
-            console.log("Test is public, loading public results");
-            loadPublicResults();
-          } else {
-            console.log("Test is not public, skipping public results");
-          }
+          loadPublicResults();
         } else {
-          // Silently handle save failure without showing error to user
           console.error("Failed to save test results but not showing error to user");
         }
       }).catch(error => {
         console.error("Error saving test results:", error);
-        // Silently handle save error
       });
     } catch (error: any) {
       console.error("Error finalizing test:", error);
-      // Silently handle error without showing to user
       
       setShowResults(true);
     }
@@ -373,6 +370,6 @@ export const useTestManagement = ({
     resetTest,
     setReviewMode,
     formatTime,
-    loadPublicResults,  // Export the loadPublicResults function
+    loadPublicResults,
   };
 };
