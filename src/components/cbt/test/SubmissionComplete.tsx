@@ -21,7 +21,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />
-          <CardTitle>Test Submitted Successfully!</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Test Submitted Successfully!</CardTitle>
         </div>
         <CardDescription>
           {testDetails?.title || "Quiz"}
@@ -31,7 +31,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
         {isCreatorOnly ? (
           <>
             <Award className="mx-auto h-16 w-16 text-veno-primary mb-6" />
-            <h2 className="text-2xl font-bold mb-2">Thank you for completing the test</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">Thank you for completing the test</h2>
             <p className="text-muted-foreground mb-6">
               Your answers have been recorded. The test creator will review your results 
               and your score will be announced soon.
@@ -41,7 +41,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
         ) : (
           <>
             <MailCheck className="mx-auto h-16 w-16 text-veno-primary mb-6" />
-            <h2 className="text-2xl font-bold mb-2">Thank you for completing the test</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">Thank you for completing the test</h2>
             <p className="text-muted-foreground mb-6">
               Your answers have been recorded. The test creator will review your results.
               {testTakerInfo?.email && " You may be contacted via email with your score and feedback."}
