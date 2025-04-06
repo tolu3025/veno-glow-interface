@@ -253,7 +253,7 @@ const RewardSystem = () => {
         </CardContent>
       </Card>
       
-      <Tabs defaultValue="tasks" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-6">
           <TabsTrigger value="tasks" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
             <List className="h-4 w-4 mr-2" />
