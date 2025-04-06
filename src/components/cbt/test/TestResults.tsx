@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -119,10 +120,13 @@ const TestResults: React.FC<TestResultsProps> = ({
     return "bg-red-500";
   };
 
+  // Test creator can always see results, regardless of visibility settings
+  const isCreator = user?.id === testDetails?.creator_id;
+  
   const shouldShowLeaderboard = 
+    isCreator || 
     (testDetails?.results_visibility === 'public') || 
-    (testDetails?.results_visibility === 'test_takers' && testTakerInfo) || 
-    (user?.id === testDetails?.creator_id);
+    (testDetails?.results_visibility === 'test_takers' && testTakerInfo);
 
   return (
     <div>

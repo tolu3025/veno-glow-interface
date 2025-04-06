@@ -53,6 +53,7 @@ const TakeTest = () => {
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
   const [validatingShareCode, setValidatingShareCode] = useState(false);
   const [shareCodeVerified, setShareCodeVerified] = useState(false);
+  const [showSubmissionComplete, setShowSubmissionComplete] = useState(false);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -92,6 +93,19 @@ const TakeTest = () => {
     testDetails?.creator_id
   ]);
 
+  useEffect(() => {
+    if (testManagement.showResults) {
+      const isCreator = user?.id === testDetails?.creator_id;
+      const isCreatorOnly = testDetails?.results_visibility === 'creator_only';
+      
+      if (isCreatorOnly && !isCreator) {
+        setShowSubmissionComplete(true);
+      } else {
+        setShowSubmissionComplete(false);
+      }
+    }
+  }, [testManagement.showResults, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
+
   const verifyShareCode = async (shareCode: string) => {
     if (!shareCode) return false;
     
@@ -124,92 +138,88 @@ const TakeTest = () => {
     }
   };
 
-  useEffect(() => {
-    const loadTest = async () => {
-      setLoading(true);
+  const loadTest = async () => {
+    setLoading(true);
 
-      if (testId === 'subject' && location.state?.subject) {
-        loadSubjectQuiz();
-        return;
-      }
-      
-      try {
-        if (testId) {
-          console.log(`Loading test with ID: ${testId}`);
+    if (testId === 'subject' && location.state?.subject) {
+      loadSubjectQuiz();
+      return;
+    }
+    
+    try {
+      if (testId) {
+        console.log(`Loading test with ID: ${testId}`);
+        
+        const { data: testData, error: testError } = await supabase
+          .from('user_tests')
+          .select('*')
+          .eq('id', testId)
+          .single();
           
-          const { data: testData, error: testError } = await supabase
-            .from('user_tests')
-            .select('*')
-            .eq('id', testId)
-            .single();
+        if (testError) {
+          console.error("Error fetching test data:", testError);
+          throw testError;
+        }
+        
+        if (!testData) {
+          toast.error("Test not found");
+          navigate('/cbt');
+          return;
+        }
+        
+        console.log("Test details loaded:", testData);
+        console.log("Results visibility setting:", testData.results_visibility);
+        setTestDetails(testData as TestDetails);
+        
+        if (user && testData.allow_retakes === false) {
+          const { data: attempts, error: attemptsError } = await supabase
+            .from('test_attempts')
+            .select('*', { count: 'exact' })
+            .eq('test_id', testId)
+            .eq('user_id', user.id);
             
-          if (testError) {
-            console.error("Error fetching test data:", testError);
-            throw testError;
-          }
-          
-          if (!testData) {
-            toast.error("Test not found");
-            navigate('/cbt');
-            return;
-          }
-          
-          console.log("Test details loaded:", testData);
-          console.log("Results visibility setting:", testData.results_visibility);
-          setTestDetails(testData as TestDetails);
-          
-          if (user && testData.allow_retakes === false) {
-            const { data: attempts, error: attemptsError } = await supabase
-              .from('test_attempts')
-              .select('*', { count: 'exact' })
-              .eq('test_id', testId)
-              .eq('user_id', user.id);
-              
-            if (!attemptsError && attempts && attempts.length > 0) {
-              setPreviousAttempts(attempts.length);
-            }
-          }
-          
-          const { data: questionsData, error: questionsError } = await supabase
-            .from('user_test_questions')
-            .select('*')
-            .eq('test_id', testId);
-            
-          if (questionsError) {
-            console.error("Error fetching questions:", questionsError);
-            throw questionsError;
-          }
-          
-          if (questionsData && questionsData.length > 0) {
-            console.log("Raw questions data:", questionsData);
-            
-            const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
-              id: q.id,
-              text: q.question_text,
-              question: q.question_text,
-              options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
-              correctOption: q.answer,
-              answer: q.answer,
-              explanation: q.explanation
-            }));
-            
-            console.log("Formatted questions:", formattedQuestions);
-            setQuestions(formattedQuestions);
-          } else {
-            console.warn("No questions found for test ID:", testId);
-            toast.error("No questions available for this test");
+          if (!attemptsError && attempts && attempts.length > 0) {
+            setPreviousAttempts(attempts.length);
           }
         }
-      } catch (error) {
-        console.error("Error loading test:", error);
-        toast.error("Failed to load test");
-      } finally {
-        setLoading(false);
+        
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('user_test_questions')
+          .select('*')
+          .eq('test_id', testId);
+          
+        if (questionsError) {
+          console.error("Error fetching questions:", questionsError);
+          throw questionsError;
+        }
+        
+        if (questionsData && questionsData.length > 0) {
+          console.log("Raw questions data:", questionsData);
+          
+          const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
+            id: q.id,
+            text: q.question_text,
+            question: q.question_text,
+            options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
+            correctOption: q.answer,
+            answer: q.answer,
+            explanation: q.explanation
+          }));
+          
+          console.log("Formatted questions:", formattedQuestions);
+          setQuestions(formattedQuestions);
+        } else {
+          console.warn("No questions found for test ID:", testId);
+          toast.error("No questions available for this test");
+        }
       }
-    };
-
-    loadTest();
-  }, [testId, user, navigate, location.state]);
+    } catch (error) {
+      console.error("Error loading test:", error);
+      toast.error("Failed to load test");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSubjectQuiz = async () => {
     try {
@@ -300,10 +310,13 @@ const TakeTest = () => {
       showResults: testManagement.showResults,
       reviewMode: testManagement.reviewMode,
       submissionComplete: testManagement.submissionComplete,
+      showSubmissionComplete: showSubmissionComplete,
       score: testManagement.score,
       currentQuestion: testManagement.currentQuestion,
       selectedAnswer: testManagement.selectedAnswer,
-      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete'
+      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete',
+      resultsVisibility: testDetails?.results_visibility,
+      isCreator: user?.id === testDetails?.creator_id
     });
   }, [
     testId, 
@@ -316,7 +329,11 @@ const TakeTest = () => {
     testManagement.currentQuestion,
     testManagement.selectedAnswer,
     testManagement.saving,
-    testManagement.savingError
+    testManagement.savingError,
+    showSubmissionComplete,
+    testDetails?.results_visibility,
+    user?.id,
+    testDetails?.creator_id
   ]);
 
   if (loading) {
@@ -366,6 +383,15 @@ const TakeTest = () => {
   }
 
   if (testManagement.showResults) {
+    if (showSubmissionComplete) {
+      return (
+        <SubmissionComplete 
+          testDetails={testDetails} 
+          testTakerInfo={testTakerInfo} 
+        />
+      );
+    }
+    
     if (testManagement.reviewMode) {
       return (
         <AnswersReview

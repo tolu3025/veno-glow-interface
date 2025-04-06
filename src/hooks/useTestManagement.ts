@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -167,6 +168,7 @@ export const useTestManagement = ({
       
       const isCreator = user?.id === testDetails?.creator_id;
       
+      // Creator always sees results, regardless of visibility setting
       if (!isCreator && testDetails?.results_visibility === 'creator_only') {
         console.log("Results are set to creator_only and current user is not the creator");
         setPublicResults([]);
@@ -317,6 +319,7 @@ export const useTestManagement = ({
             variant: "default",
           });
           
+          // Always load results after saving, the visibility check will happen inside loadPublicResults
           loadPublicResults();
         } else {
           console.error("Failed to save test results but not showing error to user");
