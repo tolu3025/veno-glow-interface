@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +74,14 @@ const TakeTest = () => {
       setSettings(location.state.settings);
     }
   }, [location.state]);
+  
+  // Move the useEffect for loading public results outside the conditional rendering
+  useEffect(() => {
+    if (testManagement.showResults && testDetails?.results_visibility === 'public') {
+      console.log("Loading public results on test results page display");
+      testManagement.loadPublicResults();
+    }
+  }, [testManagement.showResults, testDetails?.results_visibility, testManagement.loadPublicResults]);
 
   const verifyShareCode = async (shareCode: string) => {
     if (!shareCode) return false;
@@ -366,12 +375,7 @@ const TakeTest = () => {
       );
     }
     
-    useEffect(() => {
-      if (testManagement.showResults && testDetails?.results_visibility === 'public') {
-        console.log("Loading public results on test results page display");
-        testManagement.loadPublicResults();
-      }
-    }, [testManagement.showResults, testDetails?.results_visibility]);
+    // The useEffect for loading public results was moved outside the conditional rendering
     
     return (
       <TestResults

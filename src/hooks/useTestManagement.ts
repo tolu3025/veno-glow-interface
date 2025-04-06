@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
@@ -158,7 +158,7 @@ export const useTestManagement = ({
     return correctAnswers;
   };
 
-  const loadPublicResults = async () => {
+  const loadPublicResults = useCallback(async () => {
     if (!testId) return;
     
     try {
@@ -186,7 +186,7 @@ export const useTestManagement = ({
     } catch (error) {
       console.error("Error loading public results:", error);
     }
-  };
+  }, [testId, testDetails?.results_visibility]);
 
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
@@ -373,6 +373,6 @@ export const useTestManagement = ({
     resetTest,
     setReviewMode,
     formatTime,
-    loadPublicResults,
+    loadPublicResults,  // Export the loadPublicResults function
   };
 };
