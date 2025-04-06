@@ -17,7 +17,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
   const isCreatorOnly = testDetails?.results_visibility === 'creator_only';
 
   return (
-    <Card>
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />

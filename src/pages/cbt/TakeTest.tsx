@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +55,7 @@ const TakeTest = () => {
   const [validatingShareCode, setValidatingShareCode] = useState(false);
   const [shareCodeVerified, setShareCodeVerified] = useState(false);
   const [showSubmissionComplete, setShowSubmissionComplete] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -106,6 +108,11 @@ const TakeTest = () => {
     }
   }, [testManagement.showResults, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
 
+  // Add effect to load test data on component mount
+  useEffect(() => {
+    loadTest();
+  }, [testId]);
+
   const verifyShareCode = async (shareCode: string) => {
     if (!shareCode) return false;
     
@@ -139,7 +146,15 @@ const TakeTest = () => {
   };
 
   const loadTest = async () => {
+    if (!testId) {
+      setLoadingError("No test ID provided");
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
+    setLoadingError(null);
+    console.log("Loading test with ID:", testId);
 
     if (testId === 'subject' && location.state?.subject) {
       loadSubjectQuiz();
@@ -158,11 +173,13 @@ const TakeTest = () => {
           
         if (testError) {
           console.error("Error fetching test data:", testError);
+          setLoadingError("Error loading test details");
           throw testError;
         }
         
         if (!testData) {
           toast.error("Test not found");
+          setLoadingError("Test not found");
           navigate('/cbt');
           return;
         }
@@ -190,6 +207,7 @@ const TakeTest = () => {
           
         if (questionsError) {
           console.error("Error fetching questions:", questionsError);
+          setLoadingError("Error loading test questions");
           throw questionsError;
         }
         
@@ -210,11 +228,13 @@ const TakeTest = () => {
           setQuestions(formattedQuestions);
         } else {
           console.warn("No questions found for test ID:", testId);
+          setLoadingError("No questions available for this test");
           toast.error("No questions available for this test");
         }
       }
     } catch (error) {
       console.error("Error loading test:", error);
+      setLoadingError("Failed to load test");
       toast.error("Failed to load test");
     } finally {
       setLoading(false);
@@ -254,11 +274,13 @@ const TakeTest = () => {
         
       if (error) {
         console.error("Error fetching questions:", error);
+        setLoadingError("Error loading subject questions");
         throw error;
       }
       
       if (!data || data.length === 0) {
         console.log(`No questions found for subject: ${subject}`);
+        setLoadingError(`No questions available for ${subject}`);
         toast.error(`No questions available for ${subject}`, {
           description: "Please try another subject or difficulty level"
         });
@@ -284,6 +306,7 @@ const TakeTest = () => {
       setQuestions(formattedQuestions);
     } catch (error) {
       console.error("Error loading subject questions:", error);
+      setLoadingError("Failed to load questions");
       toast.error("Failed to load questions");
       navigate('/cbt');
     } finally {
@@ -316,7 +339,9 @@ const TakeTest = () => {
       selectedAnswer: testManagement.selectedAnswer,
       savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete',
       resultsVisibility: testDetails?.results_visibility,
-      isCreator: user?.id === testDetails?.creator_id
+      isCreator: user?.id === testDetails?.creator_id,
+      loading,
+      loadingError
     });
   }, [
     testId, 
@@ -333,11 +358,27 @@ const TakeTest = () => {
     showSubmissionComplete,
     testDetails?.results_visibility,
     user?.id,
-    testDetails?.creator_id
+    testDetails?.creator_id,
+    loading,
+    loadingError
   ]);
 
   if (loading) {
     return <LoadingState />;
+  }
+
+  if (loadingError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-red-500 mb-4 text-xl">
+          Error Loading Test
+        </div>
+        <p className="text-muted-foreground mb-6">{loadingError}</p>
+        <Button onClick={() => navigate('/cbt')}>
+          Return to Tests
+        </Button>
+      </div>
+    );
   }
 
   if (questions.length === 0) {

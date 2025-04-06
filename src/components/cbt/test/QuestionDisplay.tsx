@@ -5,6 +5,7 @@ import { VenoLogo } from '@/components/ui/logo';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface QuestionDisplayProps {
   currentQuestion: number;
@@ -93,7 +94,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       <CardContent>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium mb-2">{questionText}</h3>
+            <h3 className="text-lg font-medium mb-4">{questionText}</h3>
             {/* Display explanation hint if available */}
             {currentQuestionData?.explanation && (
               <p className="text-sm text-muted-foreground italic mb-4">
