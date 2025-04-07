@@ -16,7 +16,7 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
       rehypePlugins={[rehypeKatex]}
       components={{
         // Custom rendering for code blocks
-        code: ({node, inline, className, children, ...props}) => {
+        code: ({className, children, ...props}) => {
           const match = /language-(\w+)/.exec(className || '');
           const isEquation = match && match[1] === 'math';
           
