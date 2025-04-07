@@ -62,21 +62,16 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      // Use proper type casting for the query builder
+      // Create the base query
       let query = supabase.from('questions').select('*');
       
+      // Apply filters if provided
       if (selectedSubject) {
-        // Use an explicit cast to string for the column name
-        query = query.eq('subject' as string, selectedSubject);
+        query = query.ilike('subject', selectedSubject);
       }
       
       if (difficulty) {
-        // Cast the difficulty to the appropriate enum type
-        type DifficultyType = "beginner" | "intermediate" | "advanced" | null;
-        const difficultyValue = difficulty as DifficultyType;
-        if (difficultyValue) {
-          query = query.eq('difficulty' as string, difficultyValue);
-        }
+        query = query.eq('difficulty', difficulty as any);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
