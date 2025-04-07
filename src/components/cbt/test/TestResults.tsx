@@ -1,8 +1,7 @@
-
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 
 interface TestResultsProps {
   score: number;
@@ -46,7 +46,6 @@ const TestResults: React.FC<TestResultsProps> = ({
 }) => {
   const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   
-  // Enhanced feedback messages based on score
   let resultMessage = "Good effort!";
   let resultClass = "text-amber-500";
   let resultEmoji = "🎯";
@@ -105,7 +104,6 @@ const TestResults: React.FC<TestResultsProps> = ({
     return `${position}th`;
   }
 
-  // Get appropriate progress bar color based on score percentage
   const getProgressColorClass = (percentage: number) => {
     if (percentage >= 80) return "bg-green-500";
     if (percentage >= 60) return "bg-amber-500";
@@ -126,7 +124,6 @@ const TestResults: React.FC<TestResultsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-6">
-            {/* Result Summary Card */}
             <div className="bg-card border rounded-lg p-6 mb-8">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-secondary/20 rounded-full mb-4">
@@ -215,7 +212,6 @@ const TestResults: React.FC<TestResultsProps> = ({
                     <Progress value={timeEfficiency} className="h-2" />
                   </div>
                   
-                  {/* Performance indicators */}
                   <div className="pt-2">
                     <Separator className="my-2" />
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -301,6 +297,17 @@ const TestResults: React.FC<TestResultsProps> = ({
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+                <div className="mt-4 flex justify-center">
+                  <Link to={`/cbt/leaderboard/${testId}`}>
+                    <Button 
+                      variant="outline" 
+                      className="text-veno-primary border-veno-primary/30"
+                    >
+                      <BarChart2 className="h-4 w-4 mr-2" /> 
+                      View Full Leaderboard
+                    </Button>
+                  </Link>
                 </div>
               </div>
             )}

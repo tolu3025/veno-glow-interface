@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,6 +13,7 @@ import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
+import Leaderboard from "./pages/cbt/Leaderboard";
 import MarketplacePage from "./pages/MarketplacePage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
@@ -32,22 +32,18 @@ import UnderMaintenancePage from "./pages/UnderMaintenancePage";
 import ContactPage from "./pages/ContactPage";
 import ServicesPage from "./pages/ServicesPage";
 
-// Import our RPC function setup
 import "./functions/appendToActivities";
 
 const queryClient = new QueryClient();
 
-// Wrap Route handling in a component that can access hooks
 const AppRoutes = () => {
   const location = useLocation();
   
-  // Check for referral parameter to handle redirects
   React.useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const referralCode = searchParams.get('ref');
     
     if (referralCode && location.pathname === '/') {
-      // If there's a referral code on the home page, store it and redirect to signup
       sessionStorage.setItem('referralCode', referralCode);
       console.log('Storing referral code and redirecting to signup');
       window.location.href = '/signup?ref=' + referralCode;
@@ -86,6 +82,12 @@ const AppRoutes = () => {
         <Route path="/cbt/take/:testId" element={
           <ProtectedRoute>
             <TakeTest />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/cbt/leaderboard/:testId" element={
+          <ProtectedRoute>
+            <Leaderboard />
           </ProtectedRoute>
         } />
         
