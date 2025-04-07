@@ -10,6 +10,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
+import QuestionBank from "./pages/cbt/QuestionBank";
 import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
@@ -78,6 +79,12 @@ const AppRoutes = () => {
         <Route path="/cbt" element={
           <ProtectedRoute>
             <CbtPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/cbt/question-bank" element={
+          <ProtectedRoute>
+            <QuestionBank />
           </ProtectedRoute>
         } />
         
