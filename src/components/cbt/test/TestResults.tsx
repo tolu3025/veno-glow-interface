@@ -86,7 +86,7 @@ const TestResults: React.FC<TestResultsProps> = ({
   
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-
+  
   const findRank = () => {
     if (!publicResults || publicResults.length === 0) return "N/A";
     
@@ -109,9 +109,6 @@ const TestResults: React.FC<TestResultsProps> = ({
     if (percentage >= 60) return "bg-amber-500";
     return "bg-red-500";
   };
-
-  console.log('TestResults rendering with publicResults:', publicResults?.length || 0);
-  console.log('Test visibility:', testDetails?.results_visibility);
 
   return (
     <div>
