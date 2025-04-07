@@ -47,7 +47,8 @@ const BotPage = () => {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
 
-  const apiKey = "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";
+  // Updated API key
+  const apiKey = "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";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -146,7 +147,7 @@ const BotPage = () => {
     await saveMessageToHistory(userMessage);
     
     try {
-      // Call the API directly using fetch
+      // Call the API directly using fetch with the new API key
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -154,7 +155,7 @@ const BotPage = () => {
           "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4o",
+          model: "gpt-4o", // Using the latest GPT-4o model
           messages: [
             {
               role: "system",

@@ -32,7 +32,9 @@ const Leaderboard = () => {
           .single();
           
         if (testError) {
-          throw testError;
+          console.error('Error fetching test details:', testError);
+          toast.error('Failed to load test details');
+          return;
         }
         
         if (!testData) {
@@ -42,15 +44,10 @@ const Leaderboard = () => {
         }
         
         setTestDetails(testData);
+        console.log('Test details loaded:', testData);
         
-        // Only proceed if the test results are set to public
-        if (testData.results_visibility !== 'public') {
-          toast.error('This test does not have public results');
-          navigate('/cbt');
-          return;
-        }
-        
-        // Fetch leaderboard data from test_attempts table
+        // Always fetch leaderboard data regardless of visibility setting
+        // We'll handle the display logic in the UI
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
@@ -58,9 +55,12 @@ const Leaderboard = () => {
           .order('score', { ascending: false });
           
         if (error) {
-          throw error;
+          console.error('Error fetching leaderboard data:', error);
+          toast.error('Failed to load leaderboard data');
+          return;
         }
         
+        console.log('Leaderboard data loaded:', data);
         setLeaderboard(data || []);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
@@ -129,10 +129,10 @@ const Leaderboard = () => {
                     </div>
                     <Badge className="mb-1 bg-blue-500">2nd Place</Badge>
                     <h3 className="font-medium text-sm truncate">
-                      {leaderboard[1].participant_name || "Anonymous"}
+                      {leaderboard[1]?.participant_name || "Anonymous"}
                     </h3>
                     <p className="text-2xl font-bold">
-                      {Math.round((leaderboard[1].score / leaderboard[1].total_questions) * 100)}%
+                      {Math.round((leaderboard[1]?.score / leaderboard[1]?.total_questions) * 100)}%
                     </p>
                   </div>
 
@@ -145,10 +145,10 @@ const Leaderboard = () => {
                     </div>
                     <Badge className="mb-1 bg-veno-primary">1st Place</Badge>
                     <h3 className="font-medium truncate">
-                      {leaderboard[0].participant_name || "Anonymous"}
+                      {leaderboard[0]?.participant_name || "Anonymous"}
                     </h3>
                     <p className="text-3xl font-bold">
-                      {Math.round((leaderboard[0].score / leaderboard[0].total_questions) * 100)}%
+                      {Math.round((leaderboard[0]?.score / leaderboard[0]?.total_questions) * 100)}%
                     </p>
                   </div>
 
@@ -161,10 +161,10 @@ const Leaderboard = () => {
                     </div>
                     <Badge className="mb-1 bg-amber-500">3rd Place</Badge>
                     <h3 className="font-medium text-sm truncate">
-                      {leaderboard[2].participant_name || "Anonymous"}
+                      {leaderboard[2]?.participant_name || "Anonymous"}
                     </h3>
                     <p className="text-2xl font-bold">
-                      {Math.round((leaderboard[2].score / leaderboard[2].total_questions) * 100)}%
+                      {Math.round((leaderboard[2]?.score / leaderboard[2]?.total_questions) * 100)}%
                     </p>
                   </div>
                 </div>
