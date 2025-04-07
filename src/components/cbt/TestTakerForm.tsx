@@ -1,35 +1,60 @@
 
 import React from 'react';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { VenoLogo } from '@/components/ui/logo';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { AlertTriangle } from 'lucide-react';
 
-const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  shareCode: z.string().optional(),
-});
-
-export type TestTakerInfo = z.infer<typeof formSchema>;
+export interface TestTakerInfo {
+  name: string;
+  email: string;
+  shareCode?: string;
+}
 
 interface TestTakerFormProps {
   onSubmit: (data: TestTakerInfo) => void;
   testTitle?: string;
   requireShareCode?: boolean;
+  shareCodeError?: string | null;
 }
 
-const TestTakerForm: React.FC<TestTakerFormProps> = ({ onSubmit, testTitle, requireShareCode }) => {
-  const form = useForm<TestTakerInfo>({
+const TestTakerForm: React.FC<TestTakerFormProps> = ({ 
+  onSubmit, 
+  testTitle = 'Test',
+  requireShareCode = false,
+  shareCodeError = null
+}) => {
+  // Create form schema based on whether share code is required
+  const formSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Please enter a valid email address'),
+    shareCode: requireShareCode 
+      ? z.string().min(1, 'Share code is required') 
+      : z.string().optional(),
+  });
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -38,71 +63,89 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({ onSubmit, testTitle, requ
     },
   });
 
-  const handleSubmit = (data: TestTakerInfo) => {
+  const handleSubmit = (data: z.infer<typeof formSchema>) => {
     onSubmit(data);
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-medium">Please enter your information</h3>
-        <p className="text-sm text-muted-foreground">
-          Your details are required before you can start the test
-        </p>
-      </div>
-      
+    <Card className="w-full max-w-xl mx-auto">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <VenoLogo className="h-6 w-6" />
+          <CardTitle>Take {testTitle}</CardTitle>
+        </div>
+        <CardDescription>
+          Please enter your information to proceed
+        </CardDescription>
+      </CardHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your full name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email Address</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="Enter your email address" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          {requireShareCode && (
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <CardContent className="space-y-4">
             <FormField
               control={form.control}
-              name="shareCode"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Share Code</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter test share code" {...field} />
+                    <Input placeholder="Your name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          )}
-          
-          <Button type="submit" className="w-full">
-            Start Test{testTitle ? `: ${testTitle}` : ''}
-          </Button>
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your email address" type="email" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This is where your test results will be sent
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {requireShareCode && (
+              <FormField
+                control={form.control}
+                name="shareCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Share Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter share code" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Enter the share code provided by the test creator
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {shareCodeError && (
+              <div className="bg-destructive/10 p-3 rounded-md flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-sm text-destructive">{shareCodeError}</p>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full">
+              Start Test
+            </Button>
+          </CardFooter>
         </form>
       </Form>
-    </div>
+    </Card>
   );
 };
 

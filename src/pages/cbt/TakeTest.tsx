@@ -291,7 +291,7 @@ const TakeTest = () => {
     return <NoQuestionsState />;
   }
 
-  if (testManagement.submissionComplete && testDetails?.results_visibility === 'creator_only') {
+  if (testManagement.submissionComplete) {
     return (
       <SubmissionComplete 
         testDetails={testDetails} 
@@ -311,6 +311,7 @@ const TakeTest = () => {
           onSubmit={handleTestTakerSubmit} 
           testTitle={testDetails?.title || undefined}
           requireShareCode={shareCodeRequired}
+          shareCodeError={shareCodeError}
         />
       );
     }

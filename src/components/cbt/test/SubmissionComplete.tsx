@@ -14,6 +14,15 @@ interface SubmissionCompleteProps {
 const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, testTakerInfo }) => {
   const navigate = useNavigate();
 
+  const getCompletionMessage = () => {
+    if (testDetails?.results_visibility === 'creator_only') {
+      return "Your answers have been recorded. The test creator will review your results" +
+        (testTakerInfo?.email ? " and may contact you via email with your score and feedback." : ".");
+    } else {
+      return "Your answers have been recorded. You can view your results on this platform once the test period is complete.";
+    }
+  };
+
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
@@ -29,8 +38,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
         <MailCheck className="mx-auto h-16 w-16 text-veno-primary mb-6" />
         <h2 className="text-2xl font-bold mb-2">Thank you for completing the test</h2>
         <p className="text-muted-foreground mb-6">
-          Your answers have been recorded. The test creator will review your results
-          {testTakerInfo?.email && " and may contact you via email with your score and feedback."}
+          {getCompletionMessage()}
         </p>
         <Button onClick={() => navigate('/cbt')} className="mt-4">
           Return to Tests

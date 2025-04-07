@@ -51,7 +51,7 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingError, setSavingError] = useState<string | null>(null);
-  const [testFinished, setTestFinished] = useState(false); // Add this to track if test is finished
+  const [testFinished, setTestFinished] = useState(false); // This tracks if test is finished
 
   useEffect(() => {
     if (testStarted && timeRemaining > 0 && !testFinished) {
@@ -87,10 +87,6 @@ export const useTestManagement = ({
     } else if (typeof currentQuestionData.correct_answer !== 'undefined') {
       correctAnswer = Number(currentQuestionData.correct_answer);
     }
-
-    console.log('Current question data:', currentQuestionData);
-    console.log('User selected option:', optionIndex);
-    console.log('Correct answer determined as:', correctAnswer);
     
     if (correctAnswer === null) {
       console.error("Cannot determine correct answer for question:", currentQuestionData);
@@ -98,7 +94,6 @@ export const useTestManagement = ({
     }
     
     const isCorrect = optionIndex === correctAnswer;
-    console.log('Is answer correct?', isCorrect);
     
     const updatedAnswers = [...userAnswers];
     
@@ -154,7 +149,6 @@ export const useTestManagement = ({
 
   const calculateScore = () => {
     const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
-    console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
     setScore(correctAnswers);
     return correctAnswers;
   };
@@ -163,16 +157,19 @@ export const useTestManagement = ({
     if (!testId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('test_attempts')
-        .select('*')
-        .eq('test_id', testId)
-        .order('score', { ascending: false });
+      // Use the get_test_leaderboard function if results are public
+      if (testDetails?.results_visibility === 'public') {
+        const { data, error } = await supabase
+          .from('test_attempts')
+          .select('*')
+          .eq('test_id', testId)
+          .order('score', { ascending: false });
+          
+        if (error) throw error;
         
-      if (error) throw error;
-      
-      if (data) {
-        setPublicResults(data);
+        if (data) {
+          setPublicResults(data);
+        }
       }
     } catch (error) {
       console.error("Error loading public results:", error);
@@ -191,80 +188,44 @@ export const useTestManagement = ({
       }
     }
     
-    let attempts = 0;
-    const maxAttempts = 5; 
-    
-    while (attempts < maxAttempts) {
-      attempts++;
-      console.log(`Saving test attempt: Attempt ${attempts} of ${maxAttempts}`);
+    try {
+      // First, save to test_attempts table
+      const { error: insertError } = await supabase
+        .from('test_attempts')
+        .insert([testData]);
+        
+      if (insertError) {
+        console.error("Error saving test attempt:", insertError);
+        throw insertError;
+      }
       
-      try {
-        const { error: insertError } = await supabase
-          .from('test_attempts')
-          .insert([testData]);
+      // If results visibility is public, also save to participant_results
+      if (testDetails?.results_visibility === 'public') {
+        const publicResultData = {
+          score: testData.score,
+          test_id: testData.test_id,
+          participant_email: testData.participant_email,
+          participant_name: testData.participant_name,
+          total_questions: testData.total_questions,
+          completed_at: testData.completed_at
+        };
+        
+        const { error: publicResultError } = await supabase
+          .from('participant_results')
+          .insert([publicResultData]);
           
-        if (!insertError) {
-          console.log(`Test results saved successfully on attempt ${attempts}`);
-          setSaving(false);
-          return true;
-        }
-        
-        console.error(`Error on attempt ${attempts}:`, insertError);
-        
-        if (attempts < maxAttempts) {
-          const delay = 1000 * Math.pow(2, attempts - 1);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      } catch (e: any) {
-        console.error(`Exception on attempt ${attempts}:`, e);
-        
-        if (attempts < maxAttempts) {
-          const delay = 1000 * Math.pow(2, attempts - 1);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+        if (publicResultError) {
+          console.error("Error saving public result:", publicResultError);
+          // Continue even if this fails - it's not critical
         }
       }
-    }
-    
-    const fallbackSave = await fallbackSaveAttempt(testData);
-    if (fallbackSave) {
+      
       setSaving(false);
       return true;
-    }
-    
-    setSaving(false);
-    setSavingError(null); // Suppress error message
-    return false;
-  };
-
-  const fallbackSaveAttempt = async (testData: any): Promise<boolean> => {
-    try {
-      console.log("Trying fallback save method...");
-      
-      const minimalData = {
-        score: testData.score,
-        total_questions: testData.total_questions,
-        participant_email: testData.participant_email || 'anonymous',
-        participant_name: testData.participant_name || 'Anonymous User',
-        completed_at: new Date().toISOString(),
-        test_id: testData.test_id === 'subject' ? null : testData.test_id,
-        subject: testData.subject
-      };
-      
-      const { error } = await supabase
-        .from('test_attempts')
-        .insert([minimalData]);
-      
-      if (!error) {
-        console.log("Test results saved successfully using fallback method");
-        return true;
-      }
-      
-      console.error("Fallback save attempt failed:", error);
-      return false;
     } catch (error) {
-      console.error("Error in fallback save:", error);
+      console.error("Failed to save test results:", error);
+      setSaving(false);
+      setSavingError(null); // We don't show error to user
       return false;
     }
   };
@@ -288,44 +249,31 @@ export const useTestManagement = ({
         subject: location?.state?.subject || testDetails?.subject || 'general',
       };
       
-      console.log("Preparing to save test attempt with data:", testData);
-      
       // Determine what to display based on results_visibility setting
       const isCreator = user?.id === testDetails?.creator_id;
       
-      if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
-        // Show results to creator, test takers (if allowed), or everyone (if public)
+      if (isCreator) {
+        // Creator can always see results
         setShowResults(true);
+      } else if (testDetails?.results_visibility === 'test_takers') {
+        // Test takers can see their own results
+        setShowResults(true);
+      } else if (testDetails?.results_visibility === 'public') {
+        // Everyone can see results
+        setShowResults(true);
+        await loadPublicResults();
       } else {
-        // For 'creator_only' setting, show submission complete page for non-creators
+        // For 'creator_only' setting, show submission complete page
         setSubmissionComplete(true);
       }
       
-      saveTestAttempt(testData).then((saved) => {
-        if (saved) {
-          setSavingError(null);
-          toast({
-            title: "Test completed",
-            description: "Your results have been saved successfully",
-            variant: "default",
-          });
-        } else {
-          // Silently handle save failure without showing error to user
-          console.error("Failed to save test results but not showing error to user");
-        }
-      }).catch(error => {
-        console.error("Error saving test results:", error);
-        // Silently handle save error
-      });
+      // Save the test attempt
+      await saveTestAttempt(testData);
       
-      if (testDetails?.results_visibility === 'public') {
-        await loadPublicResults();
-      }
     } catch (error: any) {
       console.error("Error finalizing test:", error);
-      // Silently handle error without showing to user
       
-      // Still set showResults or submissionComplete based on visibility setting
+      // Still determine what to show based on visibility setting
       const isCreator = user?.id === testDetails?.creator_id;
       if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
         setShowResults(true);
