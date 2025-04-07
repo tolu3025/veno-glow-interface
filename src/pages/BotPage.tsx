@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +28,12 @@ interface ChatHistoryRecord {
   created_at: string;
 }
 
+interface OpenAIConfig {
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+}
+
 const BotPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -45,6 +50,7 @@ const BotPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [aiConfig, setAiConfig] = useState<OpenAIConfig | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,6 +119,31 @@ const BotPage = () => {
     }
   };
 
+  const getOpenAIConfig = async (): Promise<OpenAIConfig> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-openai-key');
+      
+      if (error) {
+        console.error("Error fetching OpenAI config:", error);
+        throw error;
+      }
+      
+      if (!data || !data.apiKey) {
+        throw new Error("No API key returned from server");
+      }
+      
+      return {
+        apiKey: data.apiKey,
+        model: data.model || "gpt-4o",
+        systemPrompt: data.systemPrompt || "You are a helpful, friendly assistant."
+      };
+    } catch (error) {
+      console.error("Failed to get OpenAI API config:", error);
+      toast.error("Failed to connect to AI service");
+      throw error;
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -139,18 +170,25 @@ const BotPage = () => {
     await saveMessageToHistory(userMessage);
     
     try {
+      if (!aiConfig) {
+        const config = await getOpenAIConfig();
+        setAiConfig(config);
+      }
+      
+      const config = aiConfig || await getOpenAIConfig();
+      
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${await getOpenAIKey()}`
+          "Authorization": `Bearer ${config.apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4o", 
+          model: config.model, 
           messages: [
             {
               role: "system",
-              content: "You are a helpful, friendly assistant. Keep your responses clear and concise but still friendly. When explaining concepts that benefit from mathematical formulas, use LaTeX notation. For inline math use $...$ and for display math use $$...$$."
+              content: config.systemPrompt
             },
             ...messages.map(msg => ({
               role: msg.role,
@@ -160,7 +198,7 @@ const BotPage = () => {
           ],
           stream: true,
           temperature: 0.7,
-          max_tokens: 1000
+          max_tokens: 1500
         })
       });
       
@@ -215,28 +253,6 @@ const BotPage = () => {
       setIsStreaming(false);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Function to get the OpenAI API key from Supabase edge function
-  const getOpenAIKey = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-openai-key');
-      
-      if (error) {
-        console.error("Error fetching OpenAI key:", error);
-        throw error;
-      }
-      
-      if (!data || !data.apiKey) {
-        throw new Error("No API key returned from server");
-      }
-      
-      return data.apiKey;
-    } catch (error) {
-      console.error("Failed to get OpenAI API key:", error);
-      toast.error("Failed to connect to AI service");
-      throw error;
     }
   };
 
@@ -456,7 +472,7 @@ const BotPage = () => {
 
       <div className="flex justify-center mt-2">
         <span className="text-xs text-muted-foreground flex items-center gap-1">
-          Powered by <Sparkles size={12} className="text-primary" /> OpenAI
+          Powered by <Sparkles size={12} className="text-primary" /> {aiConfig?.model || 'GPT-4o'}
         </span>
       </div>
     </div>
