@@ -366,13 +366,6 @@ export const useTestManagement = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const calculateScore = () => {
-    const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
-    console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
-    setScore(correctAnswers);
-    return correctAnswers;
-  };
-
   return {
     currentQuestion,
     selectedAnswer,
