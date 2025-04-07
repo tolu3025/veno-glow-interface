@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,7 +14,6 @@ import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
-import Leaderboard from "./pages/cbt/Leaderboard";
 import MarketplacePage from "./pages/MarketplacePage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
@@ -82,12 +82,6 @@ const AppRoutes = () => {
         <Route path="/cbt/take/:testId" element={
           <ProtectedRoute>
             <TakeTest />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/leaderboard/:testId" element={
-          <ProtectedRoute>
-            <Leaderboard />
           </ProtectedRoute>
         } />
         
