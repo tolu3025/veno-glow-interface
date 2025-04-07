@@ -264,6 +264,10 @@ const TakeTest = () => {
       selectedAnswer: testManagement.selectedAnswer,
       savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete'
     });
+
+    if (testManagement.showResults && testDetails?.results_visibility === 'public' && !testManagement.publicResults.length) {
+      testManagement.loadPublicResults();
+    }
   }, [
     testId, 
     questions, 

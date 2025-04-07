@@ -1,8 +1,8 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2 } from 'lucide-react';
+import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface TestResultsProps {
   score: number;
@@ -256,6 +257,121 @@ const TestResults: React.FC<TestResultsProps> = ({
                 </div>
               </div>
             </div>
+            
+            {/* Leaderboard Section - Only show when results_visibility is public */}
+            {testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0 && (
+              <div className="bg-secondary/30 p-4 rounded-lg mb-8">
+                <h3 className="font-medium mb-3 flex items-center">
+                  <Trophy className="h-4 w-4 mr-2 text-veno-primary" />
+                  Leaderboard
+                </h3>
+                
+                {/* Top 3 performers highlight (if at least 3 participants) */}
+                {publicResults.length >= 3 && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    {/* 2nd place */}
+                    <div className="bg-secondary/30 rounded-lg p-3 text-center order-2 md:order-1">
+                      <div className="flex justify-center mb-1">
+                        <div className="bg-secondary/50 rounded-full p-2">
+                          <Medal className="h-5 w-5 text-blue-500" />
+                        </div>
+                      </div>
+                      <Badge className="mb-1 bg-blue-500">2nd Place</Badge>
+                      <h3 className="font-medium text-sm truncate mt-1">
+                        {publicResults[1]?.participant_name || "Anonymous"}
+                      </h3>
+                      <p className="text-xl font-bold">
+                        {Math.round((publicResults[1]?.score / publicResults[1]?.total_questions) * 100)}%
+                      </p>
+                    </div>
+
+                    {/* 1st place */}
+                    <div className="bg-secondary/30 rounded-lg p-3 text-center order-1 md:order-2 ring-2 ring-primary/20">
+                      <div className="flex justify-center mb-1">
+                        <div className="bg-primary/20 rounded-full p-2">
+                          <Trophy className="h-6 w-6 text-primary" />
+                        </div>
+                      </div>
+                      <Badge className="mb-1 bg-primary">1st Place</Badge>
+                      <h3 className="font-medium truncate mt-1">
+                        {publicResults[0]?.participant_name || "Anonymous"}
+                      </h3>
+                      <p className="text-2xl font-bold">
+                        {Math.round((publicResults[0]?.score / publicResults[0]?.total_questions) * 100)}%
+                      </p>
+                    </div>
+
+                    {/* 3rd place */}
+                    <div className="bg-secondary/30 rounded-lg p-3 text-center order-3">
+                      <div className="flex justify-center mb-1">
+                        <div className="bg-secondary/50 rounded-full p-2">
+                          <Medal className="h-5 w-5 text-amber-500" />
+                        </div>
+                      </div>
+                      <Badge className="mb-1 bg-amber-500">3rd Place</Badge>
+                      <h3 className="font-medium text-sm truncate mt-1">
+                        {publicResults[2]?.participant_name || "Anonymous"}
+                      </h3>
+                      <p className="text-xl font-bold">
+                        {Math.round((publicResults[2]?.score / publicResults[2]?.total_questions) * 100)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Full Leaderboard */}
+                <div className="rounded-lg border overflow-hidden mt-2">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Rank</TableHead>
+                        <TableHead>Participant</TableHead>
+                        <TableHead className="text-right">Score</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {publicResults.slice(0, 10).map((entry, index) => (
+                        <TableRow key={entry.id} className={entry.participant_email === (testTakerInfo?.email || user?.email) ? "bg-primary/10" : ""}>
+                          <TableCell className="font-medium">
+                            {index + 1}
+                            {index === 0 && " 🥇"}
+                            {index === 1 && " 🥈"}
+                            {index === 2 && " 🥉"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback>
+                                  {entry.participant_name?.[0]?.toUpperCase() || "A"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="truncate">{entry.participant_name || "Anonymous"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {Math.round((entry.score / entry.total_questions) * 100)}%
+                          </TableCell>
+                          <TableCell className="text-right hidden sm:table-cell">
+                            {entry.time_taken ? formatTime(entry.time_taken) : "N/A"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                {publicResults.length > 10 && (
+                  <div className="text-center mt-3">
+                    <Link to={`/cbt/leaderboard/${testId}`}>
+                      <Button variant="link" size="sm" className="text-primary">
+                        View Full Leaderboard
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
             
             <div className="bg-secondary/30 p-4 rounded-lg text-center">
               <h3 className="font-medium mb-2">Review Your Answers</h3>
