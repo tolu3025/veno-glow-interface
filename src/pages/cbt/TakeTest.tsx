@@ -81,18 +81,19 @@ const TakeTest = () => {
   useEffect(() => {
     if (testManagement.showResults && testDetails) {
       const isCreator = user?.id === testDetails.creator_id;
+      const visibilitySetting = testDetails.results_visibility || 'creator_only';
       
       // Determine if results should be shown based on visibility settings
       if (isCreator) {
         // Creators always see results
         setShouldShowResults(true);
         testManagement.loadPublicResults();
-      } else if (testDetails.results_visibility === 'creator_only') {
-        // Only creators should see results
+      } else if (visibilitySetting === 'creator_only') {
+        // For creator_only, test takers should not see results
         setShouldShowResults(false);
         setShowSubmissionComplete(true);
-      } else if (testDetails.results_visibility === 'test_takers' || testDetails.results_visibility === 'public') {
-        // Test takers can see their own results
+      } else if (visibilitySetting === 'test_takers' || visibilitySetting === 'public') {
+        // For test_takers and public, test takers can see results
         setShouldShowResults(true);
         testManagement.loadPublicResults();
       }
@@ -104,6 +105,12 @@ const TakeTest = () => {
     testDetails?.creator_id,
     testManagement.loadPublicResults
   ]);
+
+  useEffect(() => {
+    if (testManagement.submissionComplete) {
+      setShowSubmissionComplete(true);
+    }
+  }, [testManagement.submissionComplete]);
 
   useEffect(() => {
     if (testManagement.showResults) {
@@ -396,7 +403,7 @@ const TakeTest = () => {
     return <NoQuestionsState />;
   }
 
-  if (testManagement.submissionComplete) {
+  if (testManagement.submissionComplete || showSubmissionComplete) {
     return (
       <SubmissionComplete 
         testDetails={testDetails} 
@@ -405,45 +412,7 @@ const TakeTest = () => {
     );
   }
 
-  if (!testManagement.testStarted) {
-    if (user && previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
-      return <AttemptBlockedState testDetails={testDetails} />;
-    }
-
-    if (showTakerForm) {
-      return (
-        <TestTakerForm 
-          onSubmit={handleTestTakerSubmit} 
-          testTitle={testDetails?.title || undefined}
-          requireShareCode={testId !== 'subject' && !user}
-        />
-      );
-    }
-
-    return (
-      <TestInstructions
-        testDetails={testDetails}
-        questions={questions}
-        location={location}
-        previousAttempts={previousAttempts}
-        onStartTest={testManagement.startTest}
-        onShowTakerForm={() => setShowTakerForm(true)}
-        user={user}
-        testId={testId || ''}
-      />
-    );
-  }
-
   if (testManagement.showResults) {
-    if (showSubmissionComplete) {
-      return (
-        <SubmissionComplete 
-          testDetails={testDetails} 
-          testTakerInfo={testTakerInfo} 
-        />
-      );
-    }
-    
     if (!shouldShowResults) {
       return (
         <SubmissionComplete 

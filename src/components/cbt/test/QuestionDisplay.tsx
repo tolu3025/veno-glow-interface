@@ -41,82 +41,91 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const progressPercentage = ((currentQuestion + 1) / totalQuestions) * 100;
 
   return (
-    <div className="container max-w-2xl mx-auto py-4 px-4 min-h-screen flex flex-col">
-      <div className="bg-black/90 text-white rounded-lg p-6 flex-1 flex flex-col">
-        {/* Header with logo */}
-        <div className="flex justify-between items-center mb-8">
-          <VenoLogo className="h-6 w-6" />
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            <span className="text-lg font-medium">{formatTime(timeRemaining)}</span>
+    <div className="bg-black min-h-screen flex flex-col">
+      <header className="px-6 py-4 flex items-center justify-between">
+        <div className="text-white text-2xl font-bold">Veno</div>
+        <div className="flex items-center gap-4">
+          <div className="text-white">
+            <Clock className="h-6 w-6" />
+          </div>
+          <div className="text-white text-xl flex gap-2">
+            <span className="sr-only">Time remaining:</span>
+            {formatTime(timeRemaining)}
           </div>
         </div>
-        
-        {/* Question header with question number and progress */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="text-veno-primary">
+      </header>
+      
+      <main className="flex-1 px-4 py-6">
+        <div className="max-w-xl mx-auto">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="text-green-500">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM16.95 9.1L11.53 14.92C11.38 15.08 11.19 15.15 11 15.15C10.81 15.15 10.62 15.08 10.47 14.92L7.05 11.28C6.75 10.96 6.75 10.44 7.05 10.12C7.35 9.8 7.85 9.8 8.15 10.12L11 13.15L15.85 7.98C16.15 7.66 16.65 7.68 16.95 8C17.25 8.32 17.25 8.78 16.95 9.1Z" fill="#4ADE80"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#4ADE80"/>
               </svg>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">Question {currentQuestion + 1}/{totalQuestions}</h2>
+            <div className="text-white text-xl font-bold">
+              Question {currentQuestion + 1}/{totalQuestions}
             </div>
           </div>
-          <Progress value={progressPercentage} className="h-2 bg-gray-700">
-            <div className="h-full bg-veno-primary rounded-full" style={{ width: `${progressPercentage}%` }} />
-          </Progress>
-        </div>
-        
-        {/* Question text */}
-        <div className="mb-8">
-          <h3 className="text-xl sm:text-2xl font-semibold mb-2">{questionText}</h3>
+          
+          <div className="mb-6">
+            <Progress value={progressPercentage} className="h-2 bg-gray-700">
+              <div className="h-full bg-green-500 rounded-full" style={{ width: `${progressPercentage}%` }} />
+            </Progress>
+          </div>
+          
+          <div className="text-white text-2xl font-bold mb-4">
+            {questionText}
+          </div>
+          
           {explanation && (
-            <p className="text-gray-400 text-sm italic">
+            <div className="text-gray-400 text-sm italic mb-6">
               (This question includes an explanation that will be available after completion)
-            </p>
-          )}
-        </div>
-        
-        {/* Answer options */}
-        <div className="space-y-4 flex-1">
-          {options.map((option: string, index: number) => (
-            <div
-              key={index}
-              className={`border rounded-lg p-4 flex items-start gap-4 cursor-pointer transition-all
-                ${selectedAnswer === index 
-                  ? 'border-veno-primary bg-veno-primary/10 text-white' 
-                  : 'border-gray-700 hover:border-gray-500 text-white/90'}`}
-              onClick={() => handleOptionSelect(index)}
-            >
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-                ${selectedAnswer === index ? 'bg-veno-primary text-black' : 'bg-gray-800 text-white'}`}>
-                {alphabet[index]}
-              </div>
-              <span className="text-lg">{option}</span>
             </div>
-          ))}
+          )}
+          
+          <div className="space-y-4 mt-8">
+            {options.map((option: string, index: number) => (
+              <div
+                key={index}
+                className={`border rounded-lg p-4 flex items-center gap-4 cursor-pointer transition-all
+                  ${selectedAnswer === index 
+                    ? 'border-green-500 bg-green-500/10' 
+                    : 'border-gray-700 hover:border-gray-500'}`}
+                onClick={() => handleOptionSelect(index)}
+              >
+                <div 
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium
+                    ${selectedAnswer === index ? 'bg-green-500 text-black' : 'bg-transparent border border-white/70 text-white'}`}
+                >
+                  {alphabet[index]}
+                </div>
+                <span className="text-white text-lg">{option}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        
-        {/* Navigation buttons */}
-        <div className="flex justify-between mt-8">
+      </main>
+      
+      <footer className="p-4 mt-auto">
+        <div className="max-w-xl mx-auto flex justify-between">
           <button
-            className="flex items-center gap-2 px-6 py-3 rounded-lg border border-gray-700 hover:bg-gray-800 text-white disabled:opacity-50"
+            className="bg-black border border-gray-700 rounded-lg px-8 py-3 text-white flex items-center gap-2 hover:bg-gray-900"
             onClick={onPreviousQuestion}
             disabled={currentQuestion === 0}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
             Previous
           </button>
+          
           <button
-            className="px-8 py-3 rounded-lg bg-veno-primary hover:bg-veno-primary/90 text-black font-medium"
+            className="bg-green-500 hover:bg-green-600 rounded-lg px-10 py-3 text-black font-medium"
             onClick={onNextQuestion}
           >
             {isLastQuestion ? 'Finish' : 'Next'}
           </button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

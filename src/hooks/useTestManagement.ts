@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -376,7 +377,17 @@ export const useTestManagement = ({
       
       console.log("Preparing to save test attempt with data:", testData);
       
-      setShowResults(true);
+      // Determine if we should show results based on visibility settings
+      const isCreator = user?.id === testDetails?.creator_id;
+      const visibilitySetting = testDetails?.results_visibility || 'creator_only';
+      
+      if (visibilitySetting === 'creator_only' && !isCreator) {
+        // For creator_only, test takers should see completion screen instead of results
+        setSubmissionComplete(true);
+      } else {
+        // For other visibility settings or if user is creator, show results
+        setShowResults(true);
+      }
       
       saveTestAttempt(testData).then((saved) => {
         if (saved) {
@@ -397,6 +408,7 @@ export const useTestManagement = ({
     } catch (error: any) {
       console.error("Error finalizing test:", error);
       
+      // If there's an error, default to showing results for better UX
       setShowResults(true);
     }
   };
