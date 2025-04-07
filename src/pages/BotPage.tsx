@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -43,8 +44,6 @@ const BotPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-
-  const apiKey = "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";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -143,7 +142,7 @@ const BotPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
+          "Authorization": `Bearer ${await getOpenAIKey()}`
         },
         body: JSON.stringify({
           model: "gpt-4o", 
@@ -215,6 +214,28 @@ const BotPage = () => {
       setIsStreaming(false);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Function to get the OpenAI API key from Supabase edge function
+  const getOpenAIKey = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-openai-key');
+      
+      if (error) {
+        console.error("Error fetching OpenAI key:", error);
+        throw error;
+      }
+      
+      if (!data || !data.apiKey) {
+        throw new Error("No API key returned from server");
+      }
+      
+      return data.apiKey;
+    } catch (error) {
+      console.error("Failed to get OpenAI API key:", error);
+      toast.error("Failed to connect to AI service");
+      throw error;
     }
   };
 

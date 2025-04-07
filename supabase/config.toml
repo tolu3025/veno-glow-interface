@@ -25,3 +25,6 @@ refresh_token_reuse_interval = 10
 
 [functions]
 timeout_seconds = 30
+
+[functions.get-openai-key]
+verify_jwt = true
