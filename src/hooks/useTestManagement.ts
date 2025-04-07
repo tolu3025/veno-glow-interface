@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -71,14 +72,17 @@ export const useTestManagement = ({
       console.log("Test details visibility:", testDetails?.results_visibility);
       console.log("Is user the creator?", user?.id === testDetails?.creator_id);
       
+      // Always allow the creator to see results regardless of visibility setting
       const isCreator = user?.id === testDetails?.creator_id;
       
+      // Only check visibility restrictions for non-creators
       if (!isCreator && testDetails?.results_visibility === 'creator_only') {
         console.log("Results are set to creator_only and current user is not the creator");
         setPublicResults([]);
         return;
       }
       
+      // For test creators, always show all results
       const { data, error } = await supabase
         .from('test_attempts')
         .select('*')
@@ -109,6 +113,7 @@ export const useTestManagement = ({
 
   useEffect(() => {
     if (showResults && testId) {
+      // Always load results when results should be shown
       loadPublicResults();
     }
   }, [showResults, testId, loadPublicResults]);
@@ -359,6 +364,13 @@ export const useTestManagement = ({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const calculateScore = () => {
+    const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
+    console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
+    setScore(correctAnswers);
+    return correctAnswers;
   };
 
   return {
