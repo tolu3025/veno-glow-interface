@@ -7,7 +7,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
-import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Award, Settings, User, LayoutDashboard, Share2 } from "lucide-react";
+import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Award, Settings, User, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 interface MobileMenuProps {
@@ -45,15 +45,9 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
       requiresAuth: true
     },
     {
-      name: 'Question Bank',
-      path: '/cbt/library',
-      icon: BookOpen,
-      requiresAuth: true
-    },
-    {
-      name: 'Referrals',
+      name: 'Rewards',
       path: '/rewards',
-      icon: Share2,
+      icon: Award,
       requiresAuth: true
     },
     {
