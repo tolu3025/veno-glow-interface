@@ -9,6 +9,7 @@ import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
 import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Settings, User, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface MobileMenuProps {
   mainLinks: { name: string; path: string }[];
@@ -139,8 +140,17 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
           <div className="border-t py-4">
             {user ? (
               <div className="space-y-2">
-                <div className="px-4 text-sm text-muted-foreground">
-                  {user.email}
+                <div className="flex items-center gap-3 px-4 mb-2">
+                  <Avatar className="h-10 w-10 border">
+                    {user.user_metadata?.avatar_url ? (
+                      <AvatarImage src={user.user_metadata.avatar_url} alt={user.email || ""} />
+                    ) : (
+                      <AvatarFallback>{user.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="text-sm text-muted-foreground">
+                    {user.email}
+                  </div>
                 </div>
                 <Button
                   variant="ghost"

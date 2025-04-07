@@ -13,6 +13,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import 'katex/dist/katex.min.css';
+import { VenoLogo } from "@/components/ui/logo";
 
 interface Message {
   role: "user" | "assistant";
@@ -354,11 +355,15 @@ const BotPage = () => {
               >
                 {message.role === "assistant" ? (
                   <Avatar className="h-10 w-10 border-2 border-primary shadow-lg">
-                    <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                    <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                   </Avatar>
                 ) : (
-                  <Avatar className="h-8 w-8 bg-secondary shadow-sm">
-                    <AvatarFallback>U</AvatarFallback>
+                  <Avatar className="h-8 w-8 shadow-sm">
+                    {user.user_metadata?.avatar_url ? (
+                      <AvatarImage src={user.user_metadata.avatar_url} alt={user.email || ""} />
+                    ) : (
+                      <AvatarFallback>{user.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                    )}
                   </Avatar>
                 )}
                 
@@ -389,7 +394,7 @@ const BotPage = () => {
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
                 <Avatar className="h-10 w-10 border-2 border-primary shadow-lg">
-                  <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                  <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                 </Avatar>
                 <div className="rounded-lg p-3 bg-muted border border-muted-foreground/10">
                   <div className="text-sm whitespace-pre-wrap">
@@ -413,7 +418,7 @@ const BotPage = () => {
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
                 <Avatar className="h-10 w-10 border-2 border-primary shadow-lg">
-                  <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                  <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                 </Avatar>
                 <div className="rounded-lg p-3 bg-muted border border-muted-foreground/10 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />

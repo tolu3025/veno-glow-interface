@@ -11,16 +11,42 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import LoadingState from '@/components/cbt/test/LoadingState';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
+interface TestAttempt {
+  id: string;
+  participant_name: string;
+  participant_email: string;
+  score: number;
+  total_questions: number;
+  time_taken: number | null;
+  completed_at: string;
+  disqualified: boolean;
+}
+
+interface TestDetails {
+  id: string;
+  title: string;
+  creator_id: string;
+  question_count: number;
+  results_visibility: string;
+}
 
 const Leaderboard = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [testDetails, setTestDetails] = useState<any>(null);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [testDetails, setTestDetails] = useState<TestDetails | null>(null);
+  const [leaderboard, setLeaderboard] = useState<TestAttempt[]>([]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
+      if (!testId) {
+        toast.error('Invalid test ID');
+        navigate('/cbt');
+        return;
+      }
+
       try {
         setLoading(true);
         
@@ -46,8 +72,7 @@ const Leaderboard = () => {
         setTestDetails(testData);
         console.log('Test details loaded:', testData);
         
-        // Always fetch leaderboard data regardless of visibility setting
-        // We'll handle the display logic in the UI
+        // Fetch leaderboard data
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
@@ -128,6 +153,13 @@ const Leaderboard = () => {
                       </div>
                     </div>
                     <Badge className="mb-1 bg-blue-500">2nd Place</Badge>
+                    <div className="flex justify-center mb-1">
+                      <Avatar className="h-12 w-12 mb-1">
+                        <AvatarFallback>
+                          {leaderboard[1]?.participant_name?.[0]?.toUpperCase() || "A"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
                     <h3 className="font-medium text-sm truncate">
                       {leaderboard[1]?.participant_name || "Anonymous"}
                     </h3>
@@ -137,13 +169,20 @@ const Leaderboard = () => {
                   </div>
 
                   {/* 1st place */}
-                  <div className="bg-secondary/30 rounded-lg p-4 text-center order-1 md:order-2 ring-2 ring-veno-primary/20">
+                  <div className="bg-secondary/30 rounded-lg p-4 text-center order-1 md:order-2 ring-2 ring-primary/20">
                     <div className="flex justify-center mb-2">
-                      <div className="bg-veno-primary/20 rounded-full p-3">
-                        <Trophy className="h-8 w-8 text-veno-primary" />
+                      <div className="bg-primary/20 rounded-full p-3">
+                        <Trophy className="h-8 w-8 text-primary" />
                       </div>
                     </div>
-                    <Badge className="mb-1 bg-veno-primary">1st Place</Badge>
+                    <Badge className="mb-1 bg-primary">1st Place</Badge>
+                    <div className="flex justify-center mb-1">
+                      <Avatar className="h-14 w-14 mb-1">
+                        <AvatarFallback>
+                          {leaderboard[0]?.participant_name?.[0]?.toUpperCase() || "A"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
                     <h3 className="font-medium truncate">
                       {leaderboard[0]?.participant_name || "Anonymous"}
                     </h3>
@@ -160,6 +199,13 @@ const Leaderboard = () => {
                       </div>
                     </div>
                     <Badge className="mb-1 bg-amber-500">3rd Place</Badge>
+                    <div className="flex justify-center mb-1">
+                      <Avatar className="h-12 w-12 mb-1">
+                        <AvatarFallback>
+                          {leaderboard[2]?.participant_name?.[0]?.toUpperCase() || "A"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
                     <h3 className="font-medium text-sm truncate">
                       {leaderboard[2]?.participant_name || "Anonymous"}
                     </h3>
@@ -193,8 +239,15 @@ const Leaderboard = () => {
                           {index === 1 && " 🥈"}
                           {index === 2 && " 🥉"}
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {entry.participant_name || "Anonymous"}
+                        <TableCell className="max-w-[200px]">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback>
+                                {entry.participant_name?.[0]?.toUpperCase() || "A"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{entry.participant_name || "Anonymous"}</span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           {Math.round((entry.score / entry.total_questions) * 100)}%
