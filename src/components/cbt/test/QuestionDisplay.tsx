@@ -1,17 +1,14 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { VenoLogo } from '@/components/ui/logo';
+import { Clock, ChevronLeft } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Clock } from 'lucide-react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface QuestionDisplayProps {
   currentQuestion: number;
   questions: any[];
   timeRemaining: number;
   selectedAnswer: number | null;
-  onAnswerSelect: (optionIndex: number) => void;
+  onAnswerSelect: (index: number) => void;
   onPreviousQuestion: () => void;
   onNextQuestion: () => void;
   formatTime: (seconds: number) => string;
@@ -27,130 +24,112 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   onNextQuestion,
   formatTime,
 }) => {
+  const totalQuestions = questions.length;
   const currentQuestionData = questions[currentQuestion];
-  
-  // Enhanced debugging to help diagnose rendering issues
-  console.log('Current question details:', {
-    questionNumber: currentQuestion + 1,
-    questionId: currentQuestionData?.id,
-    question: currentQuestionData?.text || currentQuestionData?.question,
-    options: currentQuestionData?.options,
-    correctAnswer: currentQuestionData?.correctOption || currentQuestionData?.answer,
-    selectedAnswer
-  });
-  
-  // Improved option processing to handle more formats
-  const processOptions = () => {
-    if (!currentQuestionData) return [];
-    
-    const options = currentQuestionData.options;
-    
-    // Handle different option formats
-    if (Array.isArray(options)) {
-      return options;
-    } else if (typeof options === 'object' && options !== null) {
-      // Convert object to array if needed
-      return Object.values(options);
-    } else if (typeof options === 'string') {
-      // Try to parse JSON string
-      try {
-        const parsedOptions = JSON.parse(options);
-        return Array.isArray(parsedOptions) ? parsedOptions : Object.values(parsedOptions);
-      } catch (e) {
-        console.error('Failed to parse options string:', e);
-        return [options]; // Return as single item array as fallback
-      }
-    }
-    
-    return [];
+  const questionText = currentQuestionData?.text || currentQuestionData?.question || 'Question not available';
+  const options = currentQuestionData?.options || [];
+  const isLastQuestion = currentQuestion === totalQuestions - 1;
+  const explanation = currentQuestionData?.explanation;
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  const handleOptionSelect = (index: number) => {
+    onAnswerSelect(index);
   };
-  
-  const questionOptions = processOptions();
-  
-  // Get question text from either text or question property
-  const questionText = currentQuestionData?.text || currentQuestionData?.question || 'No question text available';
+
+  // Calculate progress percentage
+  const progressPercentage = ((currentQuestion + 1) / totalQuestions) * 100;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <VenoLogo className="h-6 w-6" />
-            <CardTitle>Question {currentQuestion + 1}/{questions.length}</CardTitle>
-          </div>
-          <div className="flex items-center gap-1 bg-secondary/30 px-3 py-1 rounded-full">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm font-medium">{formatTime(timeRemaining)}</span>
+    <div className="bg-black min-h-screen flex flex-col">
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="text-white text-xl sm:text-2xl font-bold">Veno</div>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-full">
+            <Clock className="h-4 w-4 text-green-500" />
+            <div className="text-white text-sm sm:text-base font-medium">
+              {formatTime(timeRemaining)}
+            </div>
           </div>
         </div>
-        <div className="mt-2">
-          <Progress 
-            value={((currentQuestion + 1) / questions.length) * 100} 
-            className="h-2"
-          />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-2">{questionText}</h3>
-            {/* Display explanation hint if available */}
-            {currentQuestionData?.explanation && (
-              <p className="text-sm text-muted-foreground italic mb-4">
-                (This question includes an explanation that will be available after completion)
-              </p>
-            )}
-          </div>
-          <div className="space-y-3">
-            {questionOptions.length > 0 ? (
-              questionOptions.map((option: string, index: number) => (
-                <div 
-                  key={index}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedAnswer === index 
-                      ? 'border-veno-primary bg-veno-primary/5' 
-                      : 'hover:border-veno-primary/50'
-                  }`}
-                  onClick={() => onAnswerSelect(index)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
-                      selectedAnswer === index 
-                        ? 'border-veno-primary bg-veno-primary text-white' 
-                        : 'border-gray-300'
-                    }`}>
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                    <div>{option}</div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 border rounded-lg text-center text-muted-foreground">
-                No options available for this question.
+      </header>
+      
+      <main className="flex-1 px-4 py-6">
+        <div className="max-w-xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="text-green-500">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#4ADE80"/>
+                </svg>
               </div>
-            )}
+              <div className="text-white text-lg sm:text-xl font-bold">
+                Question {currentQuestion + 1} of {totalQuestions}
+              </div>
+            </div>
+            <div className="text-white text-sm">
+              <span className="font-semibold">{Math.round(progressPercentage)}%</span> Complete
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <Progress value={progressPercentage} className="h-2 bg-gray-700">
+              <div className="h-full bg-green-500 rounded-full" style={{ width: `${progressPercentage}%` }} />
+            </Progress>
+          </div>
+          
+          <div className="text-white text-xl sm:text-2xl font-bold mb-6">
+            {questionText}
+          </div>
+          
+          {explanation && (
+            <div className="text-gray-400 text-sm italic mb-6">
+              (This question includes an explanation that will be available after completion)
+            </div>
+          )}
+          
+          <div className="space-y-4 mt-8">
+            {options.map((option: string, index: number) => (
+              <div
+                key={index}
+                className={`border rounded-lg p-4 flex items-center gap-4 cursor-pointer transition-all
+                  ${selectedAnswer === index 
+                    ? 'border-green-500 bg-green-500/10' 
+                    : 'border-gray-700 hover:border-gray-500'}`}
+                onClick={() => handleOptionSelect(index)}
+              >
+                <div 
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium
+                    ${selectedAnswer === index ? 'bg-green-500 text-black' : 'bg-transparent border border-white/70 text-white'}`}
+                >
+                  {alphabet[index]}
+                </div>
+                <span className="text-white text-lg">{option}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </CardContent>
-      <CardFooter className="flex gap-4 pt-6 border-t mt-6">
-        <Button 
-          variant="outline" 
-          onClick={onPreviousQuestion}
-          disabled={currentQuestion === 0}
-          className="flex-1"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-        <Button 
-          className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
-          onClick={onNextQuestion}
-        >
-          {currentQuestion < questions.length - 1 ? 'Next' : 'Finish'}
-        </Button>
-      </CardFooter>
-    </Card>
+      </main>
+      
+      <footer className="p-4 mt-auto">
+        <div className="max-w-xl mx-auto flex justify-between">
+          <button
+            className="bg-black border border-gray-700 rounded-lg px-6 py-3 text-white flex items-center gap-2 hover:bg-gray-900"
+            onClick={onPreviousQuestion}
+            disabled={currentQuestion === 0}
+          >
+            <ChevronLeft className="h-5 w-5" />
+            Previous
+          </button>
+          
+          <button
+            className="bg-green-500 hover:bg-green-600 rounded-lg px-8 py-3 text-black font-medium"
+            onClick={onNextQuestion}
+          >
+            {isLastQuestion ? 'Finish' : 'Next'}
+          </button>
+        </div>
+      </footer>
+    </div>
   );
 };
 

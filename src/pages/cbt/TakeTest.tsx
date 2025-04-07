@@ -4,6 +4,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
+import { Button } from '@/components/ui/button';
 
 // Components
 import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
@@ -37,6 +38,7 @@ type TestDetails = {
   time_limit: number | null;
   results_visibility: 'creator_only' | 'test_takers' | 'public';
   allow_retakes: boolean;
+  share_code?: string;
 };
 
 const TakeTest = () => {
@@ -51,6 +53,11 @@ const TakeTest = () => {
   const [showTakerForm, setShowTakerForm] = useState(false);
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
+  const [validatingShareCode, setValidatingShareCode] = useState(false);
+  const [shareCodeVerified, setShareCodeVerified] = useState(false);
+  const [showSubmissionComplete, setShowSubmissionComplete] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [shouldShowResults, setShouldShowResults] = useState(false);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -71,100 +78,191 @@ const TakeTest = () => {
       setSettings(location.state.settings);
     }
   }, [location.state]);
+  
+  useEffect(() => {
+    if (testManagement.showResults && testDetails) {
+      const isCreator = user?.id === testDetails.creator_id;
+      const visibilitySetting = testDetails.results_visibility || 'creator_only';
+      
+      // Determine if results should be shown based on visibility settings
+      if (isCreator) {
+        // Creators always see results
+        setShouldShowResults(true);
+        testManagement.loadPublicResults();
+      } else if (visibilitySetting === 'creator_only') {
+        // For creator_only, test takers should not see results
+        setShouldShowResults(false);
+        setShowSubmissionComplete(true);
+      } else if (visibilitySetting === 'test_takers' || visibilitySetting === 'public') {
+        // For test_takers and public, test takers can see results
+        setShouldShowResults(true);
+        testManagement.loadPublicResults();
+      }
+    }
+  }, [
+    testManagement.showResults, 
+    testDetails?.results_visibility, 
+    user?.id, 
+    testDetails?.creator_id,
+    testManagement.loadPublicResults
+  ]);
 
   useEffect(() => {
-    const loadTest = async () => {
-      setLoading(true);
+    if (testManagement.submissionComplete) {
+      setShowSubmissionComplete(true);
+    }
+  }, [testManagement.submissionComplete]);
 
-      if (testId === 'subject' && location.state?.subject) {
-        loadSubjectQuiz();
-        return;
+  useEffect(() => {
+    if (testManagement.showResults) {
+      const isCreator = user?.id === testDetails?.creator_id;
+      const isCreatorOnly = testDetails?.results_visibility === 'creator_only';
+      
+      if (isCreatorOnly && !isCreator) {
+        setShowSubmissionComplete(true);
+      } else {
+        setShowSubmissionComplete(false);
+      }
+    }
+  }, [testManagement.showResults, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
+
+  useEffect(() => {
+    loadTest();
+  }, [testId]);
+
+  const verifyShareCode = async (shareCode: string) => {
+    if (!shareCode) return false;
+    
+    try {
+      setValidatingShareCode(true);
+      
+      const { data, error } = await supabase
+        .from('user_tests')
+        .select('id')
+        .eq('share_code', shareCode)
+        .single();
+        
+      if (error || !data) {
+        toast.error("Invalid share code");
+        return false;
       }
       
-      try {
-        if (testId) {
-          // Log the process to help debugging
-          console.log(`Loading test with ID: ${testId}`);
+      if (testId !== data.id) {
+        navigate(`/cbt/take/${data.id}`);
+      }
+      
+      setShareCodeVerified(true);
+      return true;
+    } catch (error) {
+      console.error("Error verifying share code:", error);
+      toast.error("Failed to verify share code");
+      return false;
+    } finally {
+      setValidatingShareCode(false);
+    }
+  };
+
+  const loadTest = async () => {
+    if (!testId) {
+      setLoadingError("No test ID provided");
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    setLoadingError(null);
+    console.log("Loading test with ID:", testId);
+
+    if (testId === 'subject' && location.state?.subject) {
+      loadSubjectQuiz();
+      return;
+    }
+    
+    try {
+      if (testId) {
+        console.log(`Loading test with ID: ${testId}`);
+        
+        const { data: testData, error: testError } = await supabase
+          .from('user_tests')
+          .select('*')
+          .eq('id', testId)
+          .single();
           
-          const { data: testData, error: testError } = await supabase
-            .from('user_tests')
-            .select('*')
-            .eq('id', testId)
-            .single();
+        if (testError) {
+          console.error("Error fetching test data:", testError);
+          setLoadingError("Error loading test details");
+          throw testError;
+        }
+        
+        if (!testData) {
+          toast.error("Test not found");
+          setLoadingError("Test not found");
+          navigate('/cbt');
+          return;
+        }
+        
+        console.log("Test details loaded:", testData);
+        console.log("Results visibility setting:", testData.results_visibility);
+        setTestDetails(testData as TestDetails);
+        
+        if (user && testData.allow_retakes === false) {
+          const { data: attempts, error: attemptsError } = await supabase
+            .from('test_attempts')
+            .select('*', { count: 'exact' })
+            .eq('test_id', testId)
+            .eq('user_id', user.id);
             
-          if (testError) {
-            console.error("Error fetching test data:", testError);
-            throw testError;
-          }
-          
-          if (!testData) {
-            toast.error("Test not found");
-            navigate('/cbt');
-            return;
-          }
-          
-          console.log("Test details loaded:", testData);
-          setTestDetails(testData as TestDetails);
-          
-          if (user && testData.allow_retakes === false) {
-            const { data: attempts, error: attemptsError } = await supabase
-              .from('test_attempts')
-              .select('*', { count: 'exact' })
-              .eq('test_id', testId)
-              .eq('user_id', user.id);
-              
-            if (!attemptsError && attempts && attempts.length > 0) {
-              setPreviousAttempts(attempts.length);
-            }
-          }
-          
-          const { data: questionsData, error: questionsError } = await supabase
-            .from('user_test_questions')
-            .select('*')
-            .eq('test_id', testId);
-            
-          if (questionsError) {
-            console.error("Error fetching questions:", questionsError);
-            throw questionsError;
-          }
-          
-          if (questionsData && questionsData.length > 0) {
-            console.log("Raw questions data:", questionsData);
-            
-            const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
-              id: q.id,
-              text: q.question_text,
-              question: q.question_text, // Adding both text and question properties
-              options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
-              correctOption: q.answer,
-              answer: q.answer,
-              explanation: q.explanation
-            }));
-            
-            console.log("Formatted questions:", formattedQuestions);
-            setQuestions(formattedQuestions);
-          } else {
-            console.warn("No questions found for test ID:", testId);
-            toast.error("No questions available for this test");
+          if (!attemptsError && attempts && attempts.length > 0) {
+            setPreviousAttempts(attempts.length);
           }
         }
-      } catch (error) {
-        console.error("Error loading test:", error);
-        toast.error("Failed to load test");
-      } finally {
-        setLoading(false);
+        
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('user_test_questions')
+          .select('*')
+          .eq('test_id', testId);
+          
+        if (questionsError) {
+          console.error("Error fetching questions:", questionsError);
+          setLoadingError("Error loading test questions");
+          throw questionsError;
+        }
+        
+        if (questionsData && questionsData.length > 0) {
+          console.log("Raw questions data:", questionsData);
+          
+          const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
+            id: q.id,
+            text: q.question_text,
+            question: q.question_text,
+            options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
+            correctOption: q.answer,
+            answer: q.answer,
+            explanation: q.explanation
+          }));
+          
+          console.log("Formatted questions:", formattedQuestions);
+          setQuestions(formattedQuestions);
+        } else {
+          console.warn("No questions found for test ID:", testId);
+          setLoadingError("No questions available for this test");
+          toast.error("No questions available for this test");
+        }
       }
-    };
-
-    loadTest();
-  }, [testId, user, navigate, location.state]);
+    } catch (error) {
+      console.error("Error loading test:", error);
+      setLoadingError("Failed to load test");
+      toast.error("Failed to load test");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSubjectQuiz = async () => {
     try {
       const subject = location.state.subject;
       const settingsFromState = location.state.settings || settings;
       
-      // Set basic test details for subject quizzes
       const subjectTestDetails = {
         id: 'subject',
         title: `${subject} Quiz`,
@@ -193,11 +291,13 @@ const TakeTest = () => {
         
       if (error) {
         console.error("Error fetching questions:", error);
+        setLoadingError("Error loading subject questions");
         throw error;
       }
       
       if (!data || data.length === 0) {
         console.log(`No questions found for subject: ${subject}`);
+        setLoadingError(`No questions available for ${subject}`);
         toast.error(`No questions available for ${subject}`, {
           description: "Please try another subject or difficulty level"
         });
@@ -211,7 +311,7 @@ const TakeTest = () => {
       const formattedQuestions: QuizQuestion[] = data.map(q => ({
         id: q.id,
         text: q.question,
-        question: q.question, // Adding both text and question properties
+        question: q.question,
         options: Array.isArray(q.options) ? 
           q.options.map((opt: any) => String(opt)) : [],
         correctOption: q.answer,
@@ -223,6 +323,7 @@ const TakeTest = () => {
       setQuestions(formattedQuestions);
     } catch (error) {
       console.error("Error loading subject questions:", error);
+      setLoadingError("Failed to load questions");
       toast.error("Failed to load questions");
       navigate('/cbt');
     } finally {
@@ -230,13 +331,17 @@ const TakeTest = () => {
     }
   };
 
-  const handleTestTakerSubmit = (data: TestTakerInfo) => {
+  const handleTestTakerSubmit = async (data: TestTakerInfo) => {
+    if (data.shareCode && !shareCodeVerified) {
+      const verified = await verifyShareCode(data.shareCode);
+      if (!verified) return;
+    }
+    
     setTestTakerInfo(data);
     setShowTakerForm(false);
     testManagement.startTest();
   };
 
-  // Add extensive logging to help debug
   useEffect(() => {
     console.log("Current test state:", {
       testId,
@@ -245,10 +350,16 @@ const TakeTest = () => {
       showResults: testManagement.showResults,
       reviewMode: testManagement.reviewMode,
       submissionComplete: testManagement.submissionComplete,
+      showSubmissionComplete: showSubmissionComplete,
       score: testManagement.score,
       currentQuestion: testManagement.currentQuestion,
       selectedAnswer: testManagement.selectedAnswer,
-      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete'
+      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete',
+      resultsVisibility: testDetails?.results_visibility,
+      isCreator: user?.id === testDetails?.creator_id,
+      loading,
+      loadingError,
+      publicResultsCount: testManagement.publicResults?.length
     });
   }, [
     testId, 
@@ -261,18 +372,75 @@ const TakeTest = () => {
     testManagement.currentQuestion,
     testManagement.selectedAnswer,
     testManagement.saving,
-    testManagement.savingError
+    testManagement.savingError,
+    showSubmissionComplete,
+    testDetails?.results_visibility,
+    user?.id,
+    testDetails?.creator_id,
+    loading,
+    loadingError,
+    testManagement.publicResults
   ]);
 
   if (loading) {
     return <LoadingState />;
   }
 
+  if (loadingError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-red-500 mb-4 text-xl">
+          Error Loading Test
+        </div>
+        <p className="text-muted-foreground mb-6">{loadingError}</p>
+        <Button onClick={() => navigate('/cbt')}>
+          Return to Tests
+        </Button>
+      </div>
+    );
+  }
+
   if (questions.length === 0) {
     return <NoQuestionsState />;
   }
 
-  if (testManagement.submissionComplete) {
+  // If the user has already completed the test and can't retake
+  if (previousAttempts > 0 && testDetails?.allow_retakes === false) {
+    return <AttemptBlockedState />;
+  }
+
+  // IMPORTANT: Show test taker form if required
+  if (!testManagement.testStarted && !testManagement.showResults && !showSubmissionComplete) {
+    if (showTakerForm) {
+      return (
+        <div className="max-w-md mx-auto mt-8">
+          <TestTakerForm
+            onSubmit={handleTestTakerSubmit}
+            testTitle={testDetails?.title}
+            requireShareCode={!!testDetails?.share_code && !shareCodeVerified}
+          />
+        </div>
+      );
+    }
+    
+    // Show test instructions when not started and form not showing
+    return (
+      <div className="max-w-md mx-auto mt-8">
+        <TestInstructions
+          testDetails={testDetails}
+          questions={questions}
+          location={location}
+          previousAttempts={previousAttempts}
+          onStartTest={testManagement.startTest}
+          onShowTakerForm={() => setShowTakerForm(true)}
+          user={user}
+          testId={testId || ''}
+        />
+      </div>
+    );
+  }
+
+  if (testManagement.submissionComplete || showSubmissionComplete) {
     return (
       <SubmissionComplete 
         testDetails={testDetails} 
@@ -281,35 +449,16 @@ const TakeTest = () => {
     );
   }
 
-  if (!testManagement.testStarted) {
-    if (user && previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
-      return <AttemptBlockedState testDetails={testDetails} />;
-    }
-
-    if (showTakerForm) {
+  if (testManagement.showResults) {
+    if (!shouldShowResults) {
       return (
-        <TestTakerForm 
-          onSubmit={handleTestTakerSubmit} 
-          testTitle={testDetails?.title || undefined}
+        <SubmissionComplete 
+          testDetails={testDetails} 
+          testTakerInfo={testTakerInfo} 
         />
       );
     }
-
-    return (
-      <TestInstructions
-        testDetails={testDetails}
-        questions={questions}
-        location={location}
-        previousAttempts={previousAttempts}
-        onStartTest={testManagement.startTest}
-        onShowTakerForm={() => setShowTakerForm(true)}
-        user={user}
-        testId={testId || ''}
-      />
-    );
-  }
-
-  if (testManagement.showResults) {
+    
     if (testManagement.reviewMode) {
       return (
         <AnswersReview

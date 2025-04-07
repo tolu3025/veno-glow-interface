@@ -42,17 +42,17 @@ const AppNavigation = () => {
       authRequired: true
     },
     {
-      name: "Quiz Analytics",
-      path: "/cbt/analytics",
-      icon: <BarChart size={18} />,
-      authRequired: true,
-      highlight: true
-    },
-    {
       name: "Library",
       path: "/cbt/library",
       icon: <Library size={18} />,
       authRequired: true,
+    },
+    {
+      name: "Analytics",
+      path: "/cbt/analytics",
+      icon: <BarChart size={18} />,
+      authRequired: true,
+      highlight: true
     },
     {
       name: "Quiz",
