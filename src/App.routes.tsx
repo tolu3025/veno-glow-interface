@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -19,6 +18,7 @@ import TakeTest from './pages/cbt/TakeTest';
 import ManageTest from './pages/cbt/ManageTest';
 import Analytics from './pages/cbt/Analytics';
 import Library from './pages/cbt/Library';
+import Leaderboard from './pages/cbt/Leaderboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import UnderMaintenancePage from './pages/UnderMaintenancePage';
@@ -26,7 +26,6 @@ import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Fix the lazy load function to fix TypeScript error
 const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   const LazyComponent = React.lazy(() => 
     Promise.resolve({ default: Component })
@@ -103,7 +102,8 @@ export const routes: RouteObject[] = [
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
-          { path: 'library', element: <ProtectedRoute><Library /></ProtectedRoute> }
+          { path: 'library', element: <ProtectedRoute><Library /></ProtectedRoute> },
+          { path: 'leaderboard/:testId', element: <ProtectedRoute><Leaderboard /></ProtectedRoute> }
         ]
       },
       { path: '*', element: <NotFound /> }

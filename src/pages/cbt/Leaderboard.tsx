@@ -50,7 +50,7 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data
+        // Fetch leaderboard data from test_attempts table
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
