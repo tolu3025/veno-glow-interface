@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -11,7 +12,6 @@ import NotFound from './pages/NotFound';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
-import RewardSystem from './pages/RewardSystem';
 import CBTIndex from './pages/cbt/index';
 import CreateTest from './pages/cbt/CreateTest';
 import TakeTest from './pages/cbt/TakeTest';
@@ -80,10 +80,6 @@ export const routes: RouteObject[] = [
       { 
         path: 'dashboard',
         element: <ProtectedRoute><DashboardPage /></ProtectedRoute>
-      },
-      { 
-        path: 'rewards',
-        element: <ProtectedRoute><RewardSystem /></ProtectedRoute>
       },
       {
         path: 'privacy-policy',

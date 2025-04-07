@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,7 +22,6 @@ import NotFound from "./pages/NotFound";
 import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import RewardSystem from "./pages/RewardSystem";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
@@ -124,12 +124,6 @@ const AppRoutes = () => {
         <Route path="/cbt/library" element={
           <ProtectedRoute>
             <Library />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/rewards" element={
-          <ProtectedRoute>
-            <RewardSystem />
           </ProtectedRoute>
         } />
         
