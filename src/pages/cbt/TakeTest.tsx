@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -401,6 +402,42 @@ const TakeTest = () => {
 
   if (questions.length === 0) {
     return <NoQuestionsState />;
+  }
+
+  // If the user has already completed the test and can't retake
+  if (previousAttempts > 0 && testDetails?.allow_retakes === false) {
+    return <AttemptBlockedState />;
+  }
+
+  // IMPORTANT: Show test taker form if required
+  if (!testManagement.testStarted && !testManagement.showResults && !showSubmissionComplete) {
+    if (showTakerForm) {
+      return (
+        <div className="max-w-md mx-auto mt-8">
+          <TestTakerForm
+            onSubmit={handleTestTakerSubmit}
+            testTitle={testDetails?.title}
+            requireShareCode={!!testDetails?.share_code && !shareCodeVerified}
+          />
+        </div>
+      );
+    }
+    
+    // Show test instructions when not started and form not showing
+    return (
+      <div className="max-w-md mx-auto mt-8">
+        <TestInstructions
+          testDetails={testDetails}
+          questions={questions}
+          location={location}
+          previousAttempts={previousAttempts}
+          onStartTest={testManagement.startTest}
+          onShowTakerForm={() => setShowTakerForm(true)}
+          user={user}
+          testId={testId || ''}
+        />
+      </div>
+    );
   }
 
   if (testManagement.submissionComplete || showSubmissionComplete) {

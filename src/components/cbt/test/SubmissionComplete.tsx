@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MailCheck, Award, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
   const testTitle = testDetails?.title || "Quiz";
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />

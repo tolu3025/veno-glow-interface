@@ -157,11 +157,6 @@ export const useTestManagement = ({
       }
     } catch (error) {
       console.error("Error loading results:", error);
-      toast({
-        title: "Error loading results",
-        description: "Could not load test results. Please try again.",
-        variant: "destructive",
-      });
     }
   }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id, testTakerInfo?.email, user?.email]);
 
@@ -254,7 +249,6 @@ export const useTestManagement = ({
         setSelectedAnswer(null);
       }
     } else {
-      calculateScore();
       finishTest();
     }
   };
@@ -392,15 +386,7 @@ export const useTestManagement = ({
       saveTestAttempt(testData).then((saved) => {
         if (saved) {
           setSavingError(null);
-          toast({
-            title: "Test completed",
-            description: "Your results have been saved successfully",
-            variant: "default",
-          });
-          
           loadPublicResults();
-        } else {
-          console.error("Failed to save test results but not showing error to user");
         }
       }).catch(error => {
         console.error("Error saving test results:", error);

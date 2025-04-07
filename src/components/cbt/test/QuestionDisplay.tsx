@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Clock, ChevronLeft } from 'lucide-react';
-import { VenoLogo } from '@/components/ui/logo';
 import { Progress } from '@/components/ui/progress';
 
 interface QuestionDisplayProps {
@@ -31,7 +30,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   const options = currentQuestionData?.options || [];
   const isLastQuestion = currentQuestion === totalQuestions - 1;
   const explanation = currentQuestionData?.explanation;
-  const alphabet = 'ABCD';
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   const handleOptionSelect = (index: number) => {
     onAnswerSelect(index);
@@ -42,29 +41,33 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
   return (
     <div className="bg-black min-h-screen flex flex-col">
-      <header className="px-6 py-4 flex items-center justify-between">
-        <div className="text-white text-2xl font-bold">Veno</div>
-        <div className="flex items-center gap-4">
-          <div className="text-white">
-            <Clock className="h-6 w-6" />
-          </div>
-          <div className="text-white text-xl flex gap-2">
-            <span className="sr-only">Time remaining:</span>
-            {formatTime(timeRemaining)}
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="text-white text-xl sm:text-2xl font-bold">Veno</div>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-full">
+            <Clock className="h-4 w-4 text-green-500" />
+            <div className="text-white text-sm sm:text-base font-medium">
+              {formatTime(timeRemaining)}
+            </div>
           </div>
         </div>
       </header>
       
       <main className="flex-1 px-4 py-6">
         <div className="max-w-xl mx-auto">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="text-green-500">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#4ADE80"/>
-              </svg>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="text-green-500">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#4ADE80"/>
+                </svg>
+              </div>
+              <div className="text-white text-lg sm:text-xl font-bold">
+                Question {currentQuestion + 1} of {totalQuestions}
+              </div>
             </div>
-            <div className="text-white text-xl font-bold">
-              Question {currentQuestion + 1}/{totalQuestions}
+            <div className="text-white text-sm">
+              <span className="font-semibold">{Math.round(progressPercentage)}%</span> Complete
             </div>
           </div>
           
@@ -74,7 +77,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
             </Progress>
           </div>
           
-          <div className="text-white text-2xl font-bold mb-4">
+          <div className="text-white text-xl sm:text-2xl font-bold mb-6">
             {questionText}
           </div>
           
@@ -110,7 +113,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       <footer className="p-4 mt-auto">
         <div className="max-w-xl mx-auto flex justify-between">
           <button
-            className="bg-black border border-gray-700 rounded-lg px-8 py-3 text-white flex items-center gap-2 hover:bg-gray-900"
+            className="bg-black border border-gray-700 rounded-lg px-6 py-3 text-white flex items-center gap-2 hover:bg-gray-900"
             onClick={onPreviousQuestion}
             disabled={currentQuestion === 0}
           >
@@ -119,7 +122,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           </button>
           
           <button
-            className="bg-green-500 hover:bg-green-600 rounded-lg px-10 py-3 text-black font-medium"
+            className="bg-green-500 hover:bg-green-600 rounded-lg px-8 py-3 text-black font-medium"
             onClick={onNextQuestion}
           >
             {isLastQuestion ? 'Finish' : 'Next'}
