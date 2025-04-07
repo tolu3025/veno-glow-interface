@@ -1,8 +1,13 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+
+// Add manifest link
+const manifestLink = document.createElement('link');
+manifestLink.rel = 'manifest';
+manifestLink.href = '/manifest.json';
+document.head.appendChild(manifestLink);
 
 // Create a fixed version ID based on build time rather than runtime
 // This ensures all users get the same version number in a given deployment
