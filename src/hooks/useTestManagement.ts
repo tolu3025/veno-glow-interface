@@ -290,7 +290,16 @@ export const useTestManagement = ({
       
       console.log("Preparing to save test attempt with data:", testData);
       
-      setShowResults(true);
+      // Determine what to display based on results_visibility setting
+      const isCreator = user?.id === testDetails?.creator_id;
+      
+      if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
+        // Show results to creator, test takers (if allowed), or everyone (if public)
+        setShowResults(true);
+      } else {
+        // For 'creator_only' setting, show submission complete page for non-creators
+        setSubmissionComplete(true);
+      }
       
       saveTestAttempt(testData).then((saved) => {
         if (saved) {
@@ -309,14 +318,20 @@ export const useTestManagement = ({
         // Silently handle save error
       });
       
-      if (testDetails?.results_visibility !== 'creator_only') {
+      if (testDetails?.results_visibility === 'public') {
         await loadPublicResults();
       }
     } catch (error: any) {
       console.error("Error finalizing test:", error);
       // Silently handle error without showing to user
       
-      setShowResults(true);
+      // Still set showResults or submissionComplete based on visibility setting
+      const isCreator = user?.id === testDetails?.creator_id;
+      if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
+        setShowResults(true);
+      } else {
+        setSubmissionComplete(true);
+      }
     }
   };
 
@@ -330,6 +345,7 @@ export const useTestManagement = ({
     setTestStarted(false);
     setTestFinished(false);
     setSavingError(null);
+    setSubmissionComplete(false);
   };
 
   const formatTime = (seconds: number) => {

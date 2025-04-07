@@ -14,7 +14,7 @@ const AttemptBlockedState: React.FC<AttemptBlockedStateProps> = ({ testDetails }
   const navigate = useNavigate();
 
   return (
-    <Card>
+    <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />
