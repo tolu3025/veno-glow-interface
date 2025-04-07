@@ -62,7 +62,7 @@ const QuestionBank = () => {
       
       // Fetch questions from the database
       const { data, error } = await supabase
-        .from('question_bank')
+        .from('questions')
         .select('*');
       
       if (error) {
@@ -70,9 +70,15 @@ const QuestionBank = () => {
       }
       
       if (data) {
-        // Add selected property to each question
-        const formattedQuestions = data.map(q => ({
-          ...q,
+        // Map the database fields to QuestionBankItem format
+        const formattedQuestions: QuestionBankItem[] = data.map(q => ({
+          id: q.id,
+          question_text: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+          answer: q.answer,
+          explanation: q.explanation,
+          subject: q.subject,
+          difficulty: q.difficulty || 'intermediate',
           selected: false
         }));
         
