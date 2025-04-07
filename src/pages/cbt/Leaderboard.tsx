@@ -50,7 +50,7 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data
+        // Fetch leaderboard data from test_attempts which is the correct table
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
@@ -61,6 +61,7 @@ const Leaderboard = () => {
           throw error;
         }
         
+        console.log('Fetched leaderboard data:', data);
         setLeaderboard(data || []);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
@@ -216,7 +217,7 @@ const Leaderboard = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center mb-6">
+        <CardFooter className="flex justify-center">
           <Button 
             variant="outline" 
             className="flex items-center gap-2"

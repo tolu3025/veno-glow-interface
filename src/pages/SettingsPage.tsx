@@ -1,55 +1,22 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/providers/ThemeProvider";
-import { Moon, Sun, Bell, Volume2, Clock, ScreenShare, Key } from "lucide-react";
+import { Moon, Sun, Bell, Volume2, Clock, ScreenShare } from "lucide-react";
 import { VenoLogo } from "@/components/ui/logo";
 import AppNavigation from "@/components/cbt/AppNavigation";
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/providers/AuthProvider';
-import { toast } from 'sonner';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
-  const { user } = useAuth();
   const [notifications, setNotifications] = React.useState(true);
   const [sound, setSound] = React.useState(true);
   const [autoStart, setAutoStart] = React.useState(false);
   const [shareResults, setShareResults] = React.useState(true);
   const [timeLimit, setTimeLimit] = React.useState([15]);
-  
-  // Save API key
-  const saveAPIKey = async () => {
-    if (!user) {
-      toast.error("You must be logged in to save settings");
-      return;
-    }
-    
-    try {
-      // Update the OpenAI API key in user profiles
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          openai_api_key: "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" 
-        })
-        .eq('user_id', user.id);
-        
-      if (error) {
-        console.error("Error saving API key:", error);
-        toast.error("Failed to save API key");
-        return;
-      }
-      
-      toast.success("OpenAI API key updated successfully");
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("An error occurred while saving settings");
-    }
-  };
   
   return (
     <div className="pb-20 md:pb-6 md:pl-64">
@@ -81,27 +48,6 @@ const SettingsPage = () => {
                 />
                 <span className="text-sm text-muted-foreground">Dark</span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>API Settings</CardTitle>
-            <CardDescription>Manage API keys and external integrations</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Key className="h-5 w-5" />
-                <Label>OpenAI API Key</Label>
-              </div>
-              <Button 
-                onClick={saveAPIKey}
-                className="bg-veno-primary hover:bg-veno-primary/90"
-              >
-                Update API Key
-              </Button>
             </div>
           </CardContent>
         </Card>
