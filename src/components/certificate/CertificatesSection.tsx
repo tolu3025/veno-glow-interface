@@ -67,35 +67,7 @@ const CertificatesSection = () => {
             };
           }) || [];
           
-          // Add reward-based certificates (from user_profiles)
-          const { data: profileData, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('activities')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (profileError && profileError.code !== 'PGRST116') {
-            // PGRST116 is "no rows returned" - not an error in this context
-            throw profileError;
-          }
-          
-          const activities = profileData?.activities || [];
-          
-          // Fix: Check if activities is an array before calling filter
-          let rewardCertificates: CertificateItem[] = [];
-          if (Array.isArray(activities)) {
-            rewardCertificates = activities
-              .filter((activity: any) => activity.type === 'reward_redeemed' && activity.reward_name?.includes('Certificate'))
-              .map((activity: any) => ({
-                id: activity.reward_id || `reward-${Date.now()}`,
-                name: activity.reward_name || 'Achievement Certificate',
-                date: activity.timestamp || new Date().toISOString(),
-                score: 100,
-                unlocked: true
-              }));
-          }
-          
-          setCertificates([...userCertificates, ...rewardCertificates]);
+          setCertificates(userCertificates);
         } else {
           setCertificates([]);
         }
@@ -169,7 +141,7 @@ const CertificatesSection = () => {
       </div>
       
       <p className="text-muted-foreground">
-        Earn certificates by completing tests and achieving milestones.
+        Earn certificates by completing tests with high scores (80% or above).
       </p>
       
       {isLoading ? (
@@ -182,7 +154,7 @@ const CertificatesSection = () => {
             <Award className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No Certificates Yet</h3>
             <p className="text-muted-foreground mb-4">
-              Complete tests with high scores or redeem rewards to earn certificates.
+              Complete at least 50 tests with a score of 100% to earn certificates.
             </p>
             <Button 
               onClick={() => window.location.href="/cbt"}
