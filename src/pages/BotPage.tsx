@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +13,6 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import 'katex/dist/katex.min.css';
 
-// Define the types we need
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -46,8 +44,7 @@ const BotPage = () => {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
 
-  // API key
-  const apiKey = "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";
+  const apiKey = "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";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,7 +54,6 @@ const BotPage = () => {
     scrollToBottom();
   }, [messages, streamingMessage]);
 
-  // Load chat history when user logs in
   useEffect(() => {
     const loadChatHistory = async () => {
       if (!user) {
@@ -78,7 +74,6 @@ const BotPage = () => {
         }
         
         if (data && data.length > 0) {
-          // Convert the chat history records to Message format
           const formattedMessages = data.map((item: ChatHistoryRecord) => ({
             role: item.role as "user" | "assistant",
             content: item.content,
@@ -97,7 +92,6 @@ const BotPage = () => {
     loadChatHistory();
   }, [user]);
 
-  // Save message to database
   const saveMessageToHistory = async (message: Message) => {
     if (!user) return;
     
@@ -142,11 +136,9 @@ const BotPage = () => {
     setIsStreaming(true);
     setStreamingMessage("");
     
-    // Save user message to history
     await saveMessageToHistory(userMessage);
     
     try {
-      // Call the OpenAI API
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -177,7 +169,6 @@ const BotPage = () => {
         throw new Error(errorData.error?.message || "Failed to get a response");
       }
       
-      // Handle the streamed response
       const reader = response.body!.getReader();
       const decoder = new TextDecoder("utf-8");
       let fullContent = "";
@@ -189,7 +180,6 @@ const BotPage = () => {
           
           const chunk = decoder.decode(value);
           
-          // Parse the chunk to extract content
           const lines = chunk.split("\n");
           for (const line of lines) {
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
@@ -208,7 +198,6 @@ const BotPage = () => {
       } catch (error) {
         console.error("Error processing stream:", error);
       } finally {
-        // When streaming is done, add the complete message
         const botMessage = { 
           role: "assistant" as const, 
           content: fullContent,
@@ -218,7 +207,6 @@ const BotPage = () => {
         setMessages((prev) => [...prev, botMessage]);
         setIsStreaming(false);
         
-        // Save bot message to history
         await saveMessageToHistory(botMessage);
       }
     } catch (error) {
@@ -233,7 +221,6 @@ const BotPage = () => {
   const handleClearChat = async () => {
     if (user) {
       try {
-        // Delete all chat history for this user
         const { error } = await supabase
           .from('chat_history')
           .delete()
@@ -275,7 +262,6 @@ const BotPage = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Redirect if not logged in
   if (!user) {
     navigate("/auth");
     return null;
@@ -294,7 +280,6 @@ const BotPage = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] relative">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <button
@@ -330,7 +315,6 @@ const BotPage = () => {
         </div>
       </div>
 
-      {/* Conversation Area */}
       <Card 
         className="flex-1 overflow-y-auto p-4 mb-4 bg-gradient-to-b from-background to-background/80 backdrop-blur-sm border-1 shadow-md"
       >
@@ -380,7 +364,6 @@ const BotPage = () => {
             </div>
           ))}
           
-          {/* Streaming message */}
           {isStreaming && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
@@ -405,7 +388,6 @@ const BotPage = () => {
             </div>
           )}
           
-          {/* Loading indicator (only shown when not streaming) */}
           {isLoading && !isStreaming && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
@@ -423,7 +405,6 @@ const BotPage = () => {
         </div>
       </Card>
 
-      {/* Input Area */}
       <form onSubmit={handleSendMessage} className="flex gap-2 relative">
         <Input
           value={prompt}
@@ -447,7 +428,6 @@ const BotPage = () => {
         </div>
       </form>
 
-      {/* Powered by Indicator */}
       <div className="flex justify-center mt-2">
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           Powered by <Sparkles size={12} className="text-primary" /> OpenAI
