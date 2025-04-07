@@ -20,8 +20,7 @@ import {
   BookOpen,
   HelpCircle,
   Trash,
-  Download,
-  Database
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -71,7 +70,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import QuestionBankPanel from '@/components/cbt/QuestionBankPanel';
 
 type Test = {
   id: string;
@@ -613,23 +611,6 @@ const ManageTest = () => {
     }
   };
 
-  const handleQuestionsAdded = () => {
-    fetchTestQuestions();
-    
-    if (testId) {
-      supabase
-        .from('user_tests')
-        .select('*')
-        .eq('id', testId)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data) {
-            setTestDetails(data);
-          }
-        });
-    }
-  };
-
   useEffect(() => {
     fetchTestData();
   }, [testId, user, navigate, toast]);
@@ -748,10 +729,6 @@ const ManageTest = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="participants">Participants</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>
-          <TabsTrigger value="question-bank" className="flex items-center gap-1">
-            <Database size={14} />
-            Question Bank
-          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="participants">
@@ -979,33 +956,6 @@ const ManageTest = () => {
               ))}
             </div>
           )}
-        </TabsContent>
-        
-        <TabsContent value="question-bank">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-veno-primary" />
-              <h2 className="text-xl font-bold">Question Bank</h2>
-            </div>
-          </div>
-          
-          <Card className="mb-4">
-            <CardContent className="p-4">
-              <p className="text-sm mb-2">
-                Browse and select questions from our question bank to add to your test. You can filter by subject and difficulty.
-              </p>
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded p-3 text-sm text-amber-800 dark:text-amber-300 mt-2">
-                <p className="flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                  <span>
-                    Adding questions will increase your test's question count. Selected questions will be copied to your test.
-                  </span>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {testId && <QuestionBankPanel testId={testId} onQuestionsAdded={handleQuestionsAdded} />}
         </TabsContent>
       </Tabs>
       

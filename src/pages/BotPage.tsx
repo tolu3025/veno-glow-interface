@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +43,8 @@ const BotPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  const apiKey = "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";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,30 +53,6 @@ const BotPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingMessage]);
-
-  // Fetch API key from Supabase
-  useEffect(() => {
-    const fetchApiKey = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("get-openai-key", {
-          method: "GET",
-        });
-        
-        if (error) {
-          console.error("Error fetching API key:", error);
-          return;
-        }
-        
-        if (data && data.apiKey) {
-          setApiKey(data.apiKey);
-        }
-      } catch (error) {
-        console.error("Failed to fetch API key:", error);
-      }
-    };
-    
-    fetchApiKey();
-  }, []);
 
   useEffect(() => {
     const loadChatHistory = async () => {
@@ -147,11 +123,6 @@ const BotPage = () => {
     }
     
     if (!prompt.trim()) return;
-    
-    if (!apiKey) {
-      toast.error("API key not available. Please try again later.");
-      return;
-    }
     
     const userMessage = { 
       role: "user" as const, 
@@ -439,13 +410,13 @@ const BotPage = () => {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Ask something..."
-          disabled={isLoading || !apiKey}
+          disabled={isLoading}
           className="flex-1 pr-10 py-6 rounded-full shadow-sm border-muted-foreground/20"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
           <Button 
             type="submit" 
-            disabled={isLoading || !prompt.trim() || !apiKey} 
+            disabled={isLoading || !prompt.trim()} 
             size="icon"
             className="rounded-full h-8 w-8 bg-primary hover:bg-primary/90"
           >
