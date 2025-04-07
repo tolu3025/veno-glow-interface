@@ -36,9 +36,11 @@ import "./functions/appendToActivities";
 
 const queryClient = new QueryClient();
 
+// Convert the AppRoutes to a proper React function component
 const AppRoutes = () => {
   const location = useLocation();
   
+  // useEffect hook inside the functional component
   React.useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const referralCode = searchParams.get('ref');
