@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
-import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Award, Settings, User, LayoutDashboard } from "lucide-react";
+import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Settings, User, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 interface MobileMenuProps {
@@ -42,12 +41,6 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
       name: 'Analytics',
       path: '/cbt/analytics',
       icon: Trophy,
-      requiresAuth: true
-    },
-    {
-      name: 'Rewards',
-      path: '/rewards',
-      icon: Award,
       requiresAuth: true
     },
     {
