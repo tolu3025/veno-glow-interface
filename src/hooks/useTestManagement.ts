@@ -1,9 +1,10 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
 
+// Define a correct custom Location type
 type LocationWithState = Location & {
   state?: {
     subject?: string;
@@ -50,7 +51,7 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingError, setSavingError] = useState<string | null>(null);
-  const [testFinished, setTestFinished] = useState(false);
+  const [testFinished, setTestFinished] = useState(false); // Add this to track if test is finished
 
   useEffect(() => {
     if (testStarted && timeRemaining > 0 && !testFinished) {
@@ -63,109 +64,6 @@ export const useTestManagement = ({
       finishTest();
     }
   }, [timeRemaining, testStarted, testFinished]);
-
-  const loadPublicResults = useCallback(async () => {
-    if (!testId) return;
-    
-    try {
-      console.log("Loading results for test ID:", testId);
-      console.log("Test details visibility:", testDetails?.results_visibility);
-      console.log("Is user the creator?", user?.id === testDetails?.creator_id);
-      
-      // Determine user role and visibility settings
-      const isCreator = user?.id === testDetails?.creator_id;
-      const visibilitySetting = testDetails?.results_visibility || 'creator_only';
-      
-      // Creator always sees all results
-      if (isCreator) {
-        const { data, error } = await supabase
-          .from('test_attempts')
-          .select('*')
-          .eq('test_id', testId)
-          .order('score', { ascending: false });
-          
-        if (error) {
-          console.error("Error loading results:", error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          console.log(`Found ${data.length} results for test ID ${testId}:`, data);
-          setPublicResults(data);
-        } else {
-          console.log(`No results found for test ID ${testId}`);
-          setPublicResults([]);
-        }
-        return;
-      }
-      
-      // If results are set to creator_only and user is not creator
-      if (visibilitySetting === 'creator_only') {
-        console.log("Results are set to creator_only and current user is not the creator");
-        setPublicResults([]);
-        return;
-      }
-      
-      // For 'test_takers' setting, only show the current user's result
-      if (visibilitySetting === 'test_takers') {
-        const userEmail = testTakerInfo?.email || user?.email;
-        if (!userEmail) {
-          setPublicResults([]);
-          return;
-        }
-        
-        const { data, error } = await supabase
-          .from('test_attempts')
-          .select('*')
-          .eq('test_id', testId)
-          .eq('participant_email', userEmail);
-          
-        if (error) {
-          console.error("Error loading user results:", error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          console.log(`Found user's results for test ID ${testId}:`, data);
-          setPublicResults(data);
-        } else {
-          setPublicResults([]);
-        }
-        return;
-      }
-      
-      // For public visibility, show all results
-      if (visibilitySetting === 'public') {
-        const { data, error } = await supabase
-          .from('test_attempts')
-          .select('*')
-          .eq('test_id', testId)
-          .order('score', { ascending: false });
-          
-        if (error) {
-          console.error("Error loading results:", error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          console.log(`Found ${data.length} results for test ID ${testId}:`, data);
-          setPublicResults(data);
-        } else {
-          console.log(`No results found for test ID ${testId}`);
-          setPublicResults([]);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading results:", error);
-    }
-  }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id, testTakerInfo?.email, user?.email]);
-
-  useEffect(() => {
-    if (showResults && testId) {
-      // Always load results when results should be shown
-      loadPublicResults();
-    }
-  }, [showResults, testId, loadPublicResults]);
 
   const startTest = () => {
     const timeLimit = testDetails?.time_limit || 15;
@@ -249,6 +147,7 @@ export const useTestManagement = ({
         setSelectedAnswer(null);
       }
     } else {
+      calculateScore();
       finishTest();
     }
   };
@@ -258,6 +157,26 @@ export const useTestManagement = ({
     console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
     setScore(correctAnswers);
     return correctAnswers;
+  };
+
+  const loadPublicResults = async () => {
+    if (!testId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('test_attempts')
+        .select('*')
+        .eq('test_id', testId)
+        .order('score', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        setPublicResults(data);
+      }
+    } catch (error) {
+      console.error("Error loading public results:", error);
+    }
   };
 
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
@@ -315,7 +234,7 @@ export const useTestManagement = ({
     }
     
     setSaving(false);
-    setSavingError(null);
+    setSavingError(null); // Suppress error message
     return false;
   };
 
@@ -330,8 +249,7 @@ export const useTestManagement = ({
         participant_name: testData.participant_name || 'Anonymous User',
         completed_at: new Date().toISOString(),
         test_id: testData.test_id === 'subject' ? null : testData.test_id,
-        subject: testData.subject,
-        time_taken: testData.time_taken
+        subject: testData.subject
       };
       
       const { error } = await supabase
@@ -352,6 +270,7 @@ export const useTestManagement = ({
   };
 
   const finishTest = async () => {
+    // Stop the timer by marking test as finished
     setTestFinished(true);
     
     const finalScore = calculateScore();
@@ -371,30 +290,32 @@ export const useTestManagement = ({
       
       console.log("Preparing to save test attempt with data:", testData);
       
-      // Determine if we should show results based on visibility settings
-      const isCreator = user?.id === testDetails?.creator_id;
-      const visibilitySetting = testDetails?.results_visibility || 'creator_only';
-      
-      if (visibilitySetting === 'creator_only' && !isCreator) {
-        // For creator_only, test takers should see completion screen instead of results
-        setSubmissionComplete(true);
-      } else {
-        // For other visibility settings or if user is creator, show results
-        setShowResults(true);
-      }
+      setShowResults(true);
       
       saveTestAttempt(testData).then((saved) => {
         if (saved) {
           setSavingError(null);
-          loadPublicResults();
+          toast({
+            title: "Test completed",
+            description: "Your results have been saved successfully",
+            variant: "default",
+          });
+        } else {
+          // Silently handle save failure without showing error to user
+          console.error("Failed to save test results but not showing error to user");
         }
       }).catch(error => {
         console.error("Error saving test results:", error);
+        // Silently handle save error
       });
+      
+      if (testDetails?.results_visibility !== 'creator_only') {
+        await loadPublicResults();
+      }
     } catch (error: any) {
       console.error("Error finalizing test:", error);
+      // Silently handle error without showing to user
       
-      // If there's an error, default to showing results for better UX
       setShowResults(true);
     }
   };
