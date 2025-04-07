@@ -85,7 +85,6 @@ const TakeTest = () => {
       
       try {
         if (testId) {
-          // Log the process to help debugging
           console.log(`Loading test with ID: ${testId}`);
           
           const { data: testData, error: testError } = await supabase
@@ -108,7 +107,6 @@ const TakeTest = () => {
           console.log("Test details loaded:", testData);
           setTestDetails(testData as TestDetails);
           
-          // Check if this test requires a share code
           setShareCodeRequired(!!testData.share_code && !user);
           
           if (user && testData.allow_retakes === false) {
@@ -139,7 +137,7 @@ const TakeTest = () => {
             const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
               id: q.id,
               text: q.question_text,
-              question: q.question_text, // Adding both text and question properties
+              question: q.question_text,
               options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
               correctOption: q.answer,
               answer: q.answer,
@@ -169,7 +167,6 @@ const TakeTest = () => {
       const subject = location.state.subject;
       const settingsFromState = location.state.settings || settings;
       
-      // Set basic test details for subject quizzes
       const subjectTestDetails = {
         id: 'subject',
         title: `${subject} Quiz`,
@@ -216,7 +213,7 @@ const TakeTest = () => {
       const formattedQuestions: QuizQuestion[] = data.map(q => ({
         id: q.id,
         text: q.question,
-        question: q.question, // Adding both text and question properties
+        question: q.question,
         options: Array.isArray(q.options) ? 
           q.options.map((opt: any) => String(opt)) : [],
         correctOption: q.answer,
@@ -236,7 +233,6 @@ const TakeTest = () => {
   };
 
   const handleTestTakerSubmit = async (data: TestTakerInfo) => {
-    // Verify share code if required
     if (shareCodeRequired && testDetails?.share_code) {
       if (!data.shareCode) {
         setShareCodeError("Share code is required");
@@ -254,7 +250,6 @@ const TakeTest = () => {
     testManagement.startTest();
   };
 
-  // Add extensive logging to help debug
   useEffect(() => {
     console.log("Current test state:", {
       testId,
@@ -348,17 +343,19 @@ const TakeTest = () => {
 
     if (testManagement.reviewMode) {
       return (
-        <AnswersReview
-          questions={questions}
-          userAnswers={testManagement.userAnswers}
-          score={testManagement.score}
-          timeRemaining={testManagement.timeRemaining}
-          testDetails={testDetails}
-          location={location}
-          onBackToSummary={() => testManagement.setReviewMode(false)}
-          onFinish={() => navigate('/cbt')}
-          formatTime={testManagement.formatTime}
-        />
+        <div className="pb-10">
+          <AnswersReview
+            questions={questions}
+            userAnswers={testManagement.userAnswers}
+            score={testManagement.score}
+            timeRemaining={testManagement.timeRemaining}
+            testDetails={testDetails}
+            location={location}
+            onBackToSummary={() => testManagement.setReviewMode(false)}
+            onFinish={() => navigate('/cbt')}
+            formatTime={testManagement.formatTime}
+          />
+        </div>
       );
     }
     

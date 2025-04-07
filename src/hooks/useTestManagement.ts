@@ -156,18 +156,23 @@ export const useTestManagement = ({
     if (!testId) return;
     
     try {
-      // Use the get_test_leaderboard function if results are public
+      console.log('Loading public results for test:', testId);
+      console.log('Result visibility:', testDetails?.results_visibility);
+      
+      // Use the test_attempts table to load results
       if (testDetails?.results_visibility === 'public') {
-        // Use the test_attempts table instead of participant_results
-        // This fixes the TypeScript error
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
           .eq('test_id', testId)
           .order('score', { ascending: false });
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error loading public results:", error);
+          throw error;
+        }
         
+        console.log('Public results loaded:', data?.length || 0);
         if (data) {
           setPublicResults(data);
         }
@@ -198,27 +203,6 @@ export const useTestManagement = ({
       if (insertError) {
         console.error("Error saving test attempt:", insertError);
         throw insertError;
-      }
-      
-      // If results visibility is public, also save to participant_results
-      if (testDetails?.results_visibility === 'public') {
-        const publicResultData = {
-          score: testData.score,
-          test_id: testData.test_id,
-          participant_email: testData.participant_email,
-          participant_name: testData.participant_name,
-          total_questions: testData.total_questions,
-          completed_at: testData.completed_at
-        };
-        
-        const { error: publicResultError } = await supabase
-          .from('participant_results')
-          .insert([publicResultData]);
-          
-        if (publicResultError) {
-          console.error("Error saving public result:", publicResultError);
-          // Continue even if this fails - it's not critical
-        }
       }
       
       setSaving(false);
@@ -253,6 +237,9 @@ export const useTestManagement = ({
       // Determine what to display based on results_visibility setting
       const isCreator = user?.id === testDetails?.creator_id;
       
+      // Save the test attempt
+      await saveTestAttempt(testData);
+      
       if (isCreator) {
         // Creator can always see results
         setShowResults(true);
@@ -262,14 +249,12 @@ export const useTestManagement = ({
       } else if (testDetails?.results_visibility === 'public') {
         // Everyone can see results
         setShowResults(true);
+        // Load leaderboard data
         await loadPublicResults();
       } else {
         // For 'creator_only' setting, show submission complete page
         setSubmissionComplete(true);
       }
-      
-      // Save the test attempt
-      await saveTestAttempt(testData);
       
     } catch (error: any) {
       console.error("Error finalizing test:", error);
@@ -278,6 +263,9 @@ export const useTestManagement = ({
       const isCreator = user?.id === testDetails?.creator_id;
       if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
         setShowResults(true);
+        if (testDetails?.results_visibility === 'public') {
+          await loadPublicResults();
+        }
       } else {
         setSubmissionComplete(true);
       }

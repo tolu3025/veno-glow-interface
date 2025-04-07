@@ -256,59 +256,65 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
-            {testDetails?.results_visibility === 'public' && publicResults.length > 0 && (
+            {testDetails?.results_visibility === 'public' && (
               <div className="bg-secondary/30 p-4 rounded-lg mb-6">
                 <h3 className="font-medium mb-3">Leaderboard</h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Rank</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="text-right">Score</TableHead>
-                        <TableHead className="text-right">Time (min)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {publicResults.map((result, index) => (
-                        <TableRow key={result.id} className={
-                          (result.participant_email === (testTakerInfo?.email || user?.email)) 
-                            ? "bg-veno-primary/10" 
-                            : ""
-                        }>
-                          <TableCell className="font-medium">
-                            {index + 1}
-                            {index === 0 && " 🥇"}
-                            {index === 1 && " 🥈"}
-                            {index === 2 && " 🥉"}
-                          </TableCell>
-                          <TableCell>
-                            {result.participant_name || "Anonymous"}
-                            {(result.participant_email === (testTakerInfo?.email || user?.email)) && 
-                              " (You)"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {Math.round((result.score / result.total_questions) * 100)}%
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {Math.floor(result.time_taken / 60)}:{(result.time_taken % 60).toString().padStart(2, '0')}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="mt-4 flex justify-center">
-                  <Link to={`/cbt/leaderboard/${testId}`}>
-                    <Button 
-                      variant="outline" 
-                      className="text-veno-primary border-veno-primary/30"
-                    >
-                      <BarChart2 className="h-4 w-4 mr-2" /> 
-                      View Full Leaderboard
-                    </Button>
-                  </Link>
-                </div>
+                {publicResults && publicResults.length > 0 ? (
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Rank</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead className="text-right">Score</TableHead>
+                            <TableHead className="text-right">Time (min)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {publicResults.slice(0, 5).map((result, index) => (
+                            <TableRow key={result.id} className={
+                              (result.participant_email === (testTakerInfo?.email || user?.email)) 
+                                ? "bg-veno-primary/10" 
+                                : ""
+                            }>
+                              <TableCell className="font-medium">
+                                {index + 1}
+                                {index === 0 && " 🥇"}
+                                {index === 1 && " 🥈"}
+                                {index === 2 && " 🥉"}
+                              </TableCell>
+                              <TableCell>
+                                {result.participant_name || "Anonymous"}
+                                {(result.participant_email === (testTakerInfo?.email || user?.email)) && 
+                                  " (You)"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {Math.round((result.score / result.total_questions) * 100)}%
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {Math.floor(result.time_taken / 60)}:{(result.time_taken % 60).toString().padStart(2, '0')}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="mt-4 flex justify-center">
+                      <Link to={`/cbt/leaderboard/${testId}`}>
+                        <Button 
+                          variant="outline" 
+                          className="text-veno-primary border-veno-primary/30"
+                        >
+                          <BarChart2 className="h-4 w-4 mr-2" /> 
+                          View Full Leaderboard
+                        </Button>
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center text-muted-foreground py-2">No leaderboard data available yet.</p>
+                )}
               </div>
             )}
             
