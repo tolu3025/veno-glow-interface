@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Book, FileText, BookOpen, Search, Filter, ExternalLink } from "lucide-react";
@@ -42,7 +43,7 @@ interface Resource {
   dateAdded: string;
 }
 
-// Real educational resources
+// Updated resources with the provided Google Drive links
 const RESOURCES: Resource[] = [
   {
     id: "1",
@@ -51,7 +52,7 @@ const RESOURCES: Resource[] = [
     category: "ebook",
     subject: "Personal Development",
     description: "A comprehensive guide to personal growth and achievement in 2024.",
-    fileUrl: "https://apricot-johnette-44.tiiny.site/",
+    fileUrl: "https://drive.google.com/file/d/1Xo17gRDAmCUSGssGO1EWVRdMwR9PclSQ/view?usp=drivesdk",
     coverImage: "https://via.placeholder.com/150",
     downloadCount: 845,
     fileSize: "1.8 MB",
@@ -59,12 +60,12 @@ const RESOURCES: Resource[] = [
   },
   {
     id: "2",
-    title: "Essential Mathematics for Science Students",
+    title: "Essential Mathematics",
     author: "Dr. Samuel Adegoke",
     category: "textbook",
     subject: "Mathematics",
     description: "A fundamental textbook covering all essential mathematics concepts for science and engineering students.",
-    fileUrl: "https://www.africau.edu/images/default/sample.pdf",
+    fileUrl: "https://drive.google.com/file/d/1ENgMGn_PWP-uunlUkx9O4zqL85OjxNck/view?usp=drivesdk",
     coverImage: "https://via.placeholder.com/150",
     downloadCount: 1328,
     fileSize: "3.2 MB",
@@ -72,12 +73,12 @@ const RESOURCES: Resource[] = [
   },
   {
     id: "3",
-    title: "JAMB Past Questions - English Language (2019-2023)",
+    title: "JAMB Past Questions",
     author: "Nigerian Educational Board",
     category: "pastquestion",
     subject: "English",
     description: "Compilation of JAMB English Language past questions with answers and explanations.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    fileUrl: "https://drive.google.com/file/d/1hG_q5aCmeVcJjrseljZTTVBiq-SWHPb3/view?usp=drivesdk",
     coverImage: "https://via.placeholder.com/150",
     downloadCount: 2750,
     fileSize: "2.1 MB",
@@ -85,79 +86,16 @@ const RESOURCES: Resource[] = [
   },
   {
     id: "4",
-    title: "Purple Hibiscus",
-    author: "Chimamanda Ngozi Adichie",
-    category: "novel",
-    description: "A powerful novel about family, faith, and freedom set in post-colonial Nigeria.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    title: "Chemistry Guide",
+    author: "Prof. Adeola Johnson",
+    category: "textbook",
+    subject: "Chemistry",
+    description: "Comprehensive chemistry guide for students.",
+    fileUrl: "https://drive.google.com/file/d/1Jcw2ja2gff1ANgaVNeIoAu-PM2IaetSL/view?usp=drivesdk",
     coverImage: "https://via.placeholder.com/150",
     downloadCount: 1967,
     fileSize: "1.4 MB",
     dateAdded: "2024-03-12"
-  },
-  {
-    id: "5",
-    title: "Introduction to Computer Programming",
-    author: "Prof. Adeola Johnson",
-    category: "textbook",
-    subject: "Computer Science",
-    description: "A beginner's guide to programming principles, algorithms, and problem-solving techniques.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    coverImage: "https://via.placeholder.com/150",
-    downloadCount: 1545,
-    fileSize: "4.7 MB",
-    dateAdded: "2024-02-28"
-  },
-  {
-    id: "6",
-    title: "WAEC Past Questions - Chemistry",
-    author: "West African Examinations Council",
-    category: "pastquestion",
-    subject: "Chemistry",
-    description: "Collection of WAEC Chemistry past questions with detailed solutions and explanations.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    coverImage: "https://via.placeholder.com/150",
-    downloadCount: 3214,
-    fileSize: "3.5 MB",
-    dateAdded: "2024-01-15"
-  },
-  {
-    id: "7",
-    title: "Half of a Yellow Sun",
-    author: "Chimamanda Ngozi Adichie",
-    category: "novel",
-    description: "A masterful novel about the Biafran War, exploring the end of colonialism, ethnic allegiances, and love.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    coverImage: "https://via.placeholder.com/150",
-    downloadCount: 2150,
-    fileSize: "1.9 MB",
-    dateAdded: "2023-12-10"
-  },
-  {
-    id: "8",
-    title: "Basic Principles of Economics",
-    author: "Dr. Funke Alabi",
-    category: "textbook",
-    subject: "Economics",
-    description: "An introductory textbook covering fundamental economic principles, theories, and applications.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    coverImage: "https://via.placeholder.com/150",
-    downloadCount: 1876,
-    fileSize: "2.8 MB",
-    dateAdded: "2023-11-20"
-  },
-  {
-    id: "9",
-    title: "Nigerian Literature and Cultural Studies",
-    author: "Prof. Wole Soyinka",
-    category: "ebook",
-    subject: "Literature",
-    description: "A comprehensive exploration of Nigerian literature, culture, and society through a historical lens.",
-    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    coverImage: "https://via.placeholder.com/150",
-    downloadCount: 1352,
-    fileSize: "3.7 MB",
-    dateAdded: "2023-10-05"
   }
 ];
 

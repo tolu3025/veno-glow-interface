@@ -15,6 +15,7 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{
     error: Error | null;
     data: Session | null;
+    confirmEmailSent: boolean;
   }>;
   signOut: () => Promise<void>;
   updateUserMetadata: (metadata: Record<string, any>) => Promise<void>;
@@ -29,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isLoading: true,
   signIn: async () => ({ error: null, data: null }),
-  signUp: async () => ({ error: null, data: null }),
+  signUp: async () => ({ error: null, data: null, confirmEmailSent: false }),
   signOut: async () => {},
   updateUserMetadata: async () => {},
   resetPassword: async () => ({ error: null, data: null }),
@@ -111,22 +112,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
-        data: {
-          email_template_name: "veno-confirmation"
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
         }
+      });
+      
+      if (error) {
+        throw error;
       }
-    });
-    
-    if (!error) {
-      console.log("Signup successful, check email for confirmation link", data);
+      
+      return { 
+        data: data.session, 
+        error: null, 
+        confirmEmailSent: data.user && !data.session 
+      };
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      return { data: null, error, confirmEmailSent: false };
     }
-    
-    return { data: data.session, error };
   };
   
   const signOut = async () => {
