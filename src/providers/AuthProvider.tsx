@@ -113,6 +113,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const signUp = async (email: string, password: string) => {
     try {
+      // First check if the email already exists
+      const { data: userExists } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+
+      if (userExists) {
+        toast.error("This email is already registered. Please sign in instead.");
+        return { 
+          data: null, 
+          error: new Error("Email already registered"), 
+          confirmEmailSent: false
+        };
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -131,6 +148,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Get the confirmation URL from Supabase's session data
           const confirmUrl = `${window.location.origin}/auth?confirmation=true&email=${encodeURIComponent(email)}`;
           
+          console.log("Sending confirmation email to:", email);
+          console.log("With confirmation URL:", confirmUrl);
+          
           // Call our custom email function
           const response = await supabase.functions.invoke('brevo-email-confirmation', {
             body: {
@@ -139,6 +159,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               confirmationUrl: confirmUrl
             }
           });
+
+          console.log("Email function response:", response);
 
           if (response.error) {
             console.error('Error sending confirmation email:', response.error);

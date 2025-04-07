@@ -29,6 +29,13 @@ serve(async (req) => {
     console.log("Sending confirmation email to:", email);
     console.log("Confirmation URL:", confirmationUrl);
     
+    // Check if SMTP password is set
+    const smtpPassword = Deno.env.get("BREVO_SMTP_PASSWORD");
+    if (!smtpPassword) {
+      console.error("BREVO_SMTP_PASSWORD is not set in environment variables");
+      throw new Error("SMTP configuration is incomplete");
+    }
+    
     // Setup SMTP client with Brevo settings
     const client = new SMTPClient({
       connection: {
@@ -37,7 +44,7 @@ serve(async (req) => {
         tls: true,
         auth: {
           username: "89756a003@smtp-brevo.com",
-          password: Deno.env.get("BREVO_SMTP_PASSWORD") || "",
+          password: smtpPassword,
         },
       },
     });

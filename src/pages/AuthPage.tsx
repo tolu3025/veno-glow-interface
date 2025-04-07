@@ -73,6 +73,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
       toast.info("Enter your new password to complete the reset process");
     }
     
+    const isConfirmation = searchParams.get('confirmation') === 'true';
+    if (isConfirmation) {
+      const confirmEmail = searchParams.get('email');
+      if (confirmEmail) {
+        setEmail(confirmEmail);
+        setMode('signin');
+        setConfirmMessage("Your email is being confirmed. Please sign in to continue.");
+      }
+    }
+    
     // Set up auth state change listener for email confirmation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth event:", event);
@@ -168,9 +178,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
         
         const { error, confirmEmailSent } = await signUp(email, password);
 
-        if (error) throw error;
-        
-        if (confirmEmailSent) {
+        if (error) {
+          if (error.message.includes("already registered")) {
+            setMode('signin');
+            setConfirmMessage("This email is already registered. Please sign in instead.");
+          } else {
+            throw error;
+          }
+        } else if (confirmEmailSent) {
           setConfirmMessage("Account created! Please check your email for verification instructions.");
           toast.success('Account created! Please check your email for verification instructions.');
         }

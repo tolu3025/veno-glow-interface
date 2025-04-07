@@ -31,4 +31,3 @@ verify_jwt = true
 
 [functions.brevo-email-confirmation]
 verify_jwt = false
-
