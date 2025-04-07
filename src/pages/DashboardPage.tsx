@@ -22,7 +22,6 @@ const DashboardPage = () => {
       avgScore: 0,
       questionsAnswered: 0
     },
-    rewardPoints: 0,
     marketplaceStats: {
       purchases: 0,
       reviews: 0,
@@ -39,7 +38,6 @@ const DashboardPage = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [taskCompletedCount, setTaskCompletedCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -61,10 +59,10 @@ const DashboardPage = () => {
           console.error('Error fetching test attempts:', testError);
         }
         
-        // Fetch reward points
+        // Fetch user profile
         const { data: userProfile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('points, activities')
+          .select('activities')
           .eq('user_id', user.id)
           .single();
           
@@ -125,16 +123,6 @@ const DashboardPage = () => {
             (activity: any) => activity.type === 'bot_query'
           ).length;
         }
-
-        // Count completed tasks
-        if (userProfile?.activities) {
-          const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
-          const tasksCompleted = activities.filter(
-            (activity: any) => activity.type === 'task_completed'
-          ).length;
-          
-          setTaskCompletedCount(tasksCompleted);
-        }
         
         setUserData({
           cbtStats: {
@@ -142,7 +130,6 @@ const DashboardPage = () => {
             avgScore,
             questionsAnswered
           },
-          rewardPoints: userProfile?.points || 0,
           marketplaceStats: {
             purchases: purchaseCount || 0,
             reviews: 0, // Will implement when reviews table is available
@@ -211,27 +198,6 @@ const DashboardPage = () => {
 
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Asynchronously fetch activities and filter for task completion
-  const getTaskCompletedCount = async () => {
-    if (!user) return 0;
-    
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('activities')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (error || !data) return 0;
-      
-      const activities = Array.isArray(data.activities) ? data.activities : [];
-      return activities.filter((a: any) => a.type === 'task_completed').length;
-    } catch (error) {
-      console.error('Error getting task completed count:', error);
-      return 0;
-    }
-  };
-
   // Asynchronously fetch recent activities
   const getRecentActivities = async () => {
     if (!user) return [];
@@ -279,7 +245,7 @@ const DashboardPage = () => {
                       <p className="text-muted-foreground">
                         {isLoading 
                           ? "Loading your dashboard..." 
-                          : `You have ${userData.rewardPoints} reward points and completed ${userData.cbtStats.testsCompleted} tests`
+                          : `You have completed ${userData.cbtStats.testsCompleted} tests`
                         }
                       </p>
                     </div>
@@ -291,12 +257,6 @@ const DashboardPage = () => {
                       >
                         View Profile
                       </Button>
-                      <Button 
-                        onClick={() => navigate('/rewards')}
-                        className="bg-veno-primary hover:bg-veno-primary/90"
-                      >
-                        Rewards
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -304,15 +264,12 @@ const DashboardPage = () => {
             </motion.div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 mb-6">
                 <TabsTrigger value="overview" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                   <ChartPieIcon size={16} className="mr-2" /> Overview
                 </TabsTrigger>
                 <TabsTrigger value="stats" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                   <BarChart3 size={16} className="mr-2" /> Stats
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
-                  <Book size={16} className="mr-2" /> Activity
                 </TabsTrigger>
                 <TabsTrigger value="certificates" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                   <Award size={16} className="mr-2" /> Certificates
@@ -321,7 +278,7 @@ const DashboardPage = () => {
 
               <motion.div variants={itemVariants}>
                 <TabsContent value="overview" className="animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center">
@@ -361,19 +318,6 @@ const DashboardPage = () => {
                         <p className="text-xs text-muted-foreground">Articles Read</p>
                       </CardContent>
                     </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <Trophy className="h-4 w-4 mr-2 text-veno-primary" />
-                          Rewards
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{userData.rewardPoints}</p>
-                        <p className="text-xs text-muted-foreground">Total Points</p>
-                      </CardContent>
-                    </Card>
                   </div>
 
                   <h2 className="text-xl font-medium mb-4">Quick Access</h2>
@@ -402,20 +346,12 @@ const DashboardPage = () => {
                       <FileText className="h-6 w-6 text-veno-primary" />
                       <span>Blog</span>
                     </Button>
-                    <Button 
-                      onClick={() => navigate('/rewards')} 
-                      variant="outline"
-                      className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    >
-                      <Trophy className="h-6 w-6 text-veno-primary" />
-                      <span>Rewards</span>
-                    </Button>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="stats" className="animate-fade-in">
                   <Tabs defaultValue="cbt" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 mb-6">
+                    <TabsList className="grid w-full grid-cols-3 mb-6">
                       <TabsTrigger value="cbt" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                         <Book size={16} className="mr-2" /> CBT
                       </TabsTrigger>
@@ -424,9 +360,6 @@ const DashboardPage = () => {
                       </TabsTrigger>
                       <TabsTrigger value="blog" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                         <FileText size={16} className="mr-2" /> Blog
-                      </TabsTrigger>
-                      <TabsTrigger value="rewards" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
-                        <Trophy size={16} className="mr-2" /> Rewards
                       </TabsTrigger>
                     </TabsList>
                     
@@ -543,64 +476,7 @@ const DashboardPage = () => {
                         </CardContent>
                       </Card>
                     </TabsContent>
-                    
-                    <TabsContent value="rewards" className="animate-fade-in">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center">
-                            <Trophy className="mr-2 h-5 w-5 text-veno-primary" />
-                            Rewards & Points
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-medium">Total Points</p>
-                                <p className="text-sm font-medium">{userData.rewardPoints}</p>
-                              </div>
-                              <Progress value={userData.rewardPoints / 1000 * 100} className="h-2" />
-                            </div>
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-medium">Tasks Completed</p>
-                                <p className="text-sm font-medium">{taskCompletedCount}</p>
-                              </div>
-                              <Progress value={taskCompletedCount / 20 * 100} className="h-2" />
-                            </div>
-                            <div className="flex justify-end">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => navigate('/rewards')}
-                                className="border-veno-primary/30 text-veno-primary text-xs mt-2"
-                              >
-                                View Rewards
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
                   </Tabs>
-                </TabsContent>
-                
-                <TabsContent value="activity" className="animate-fade-in">
-                  <div className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Recent Activities</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {isLoading ? (
-                          <p className="text-muted-foreground">Loading activities...</p>
-                        ) : (
-                          <React.Suspense fallback={<p className="text-muted-foreground">Loading activities...</p>}>
-                            <RecentActivities userId={user.id} />
-                          </React.Suspense>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
                 </TabsContent>
                 
                 <TabsContent value="certificates" className="animate-fade-in">
@@ -676,11 +552,6 @@ const RecentActivities = ({ userId }: { userId: string }) => {
               {new Date(activity.timestamp).toLocaleDateString()}
             </span>
           </div>
-          {activity.points && (
-            <span className="text-veno-primary text-sm">
-              +{activity.points} points
-            </span>
-          )}
         </li>
       ))}
     </ul>
