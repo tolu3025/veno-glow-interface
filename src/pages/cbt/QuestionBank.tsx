@@ -70,11 +70,14 @@ const QuestionBank = () => {
       }
       
       if (data) {
-        // Map the database fields to QuestionBankItem format
+        // Map the database fields to QuestionBankItem format and ensure correct types
         const formattedQuestions: QuestionBankItem[] = data.map(q => ({
           id: q.id,
           question_text: q.question,
-          options: Array.isArray(q.options) ? q.options : [],
+          // Make sure options is converted to string[] - handle various possible formats
+          options: Array.isArray(q.options) 
+            ? q.options.map(opt => String(opt)) 
+            : [],
           answer: q.answer,
           explanation: q.explanation,
           subject: q.subject,
