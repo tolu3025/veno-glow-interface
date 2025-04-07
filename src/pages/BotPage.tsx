@@ -36,18 +36,17 @@ const BotPage = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm Veno Bot. How can I assist you today?",
+      content: "Hello! I'm your AI assistant. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const conversationRef = useRef<HTMLDivElement>(null);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
 
-  // Updated API key
+  // API key
   const apiKey = "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";
 
   const scrollToBottom = () => {
@@ -124,7 +123,7 @@ const BotPage = () => {
     e.preventDefault();
     
     if (!user) {
-      toast.error("Please log in to chat with Veno Bot");
+      toast.error("Please log in to use the chatbot");
       navigate("/auth");
       return;
     }
@@ -147,7 +146,7 @@ const BotPage = () => {
     await saveMessageToHistory(userMessage);
     
     try {
-      // Call the API directly using fetch with the new API key
+      // Call the OpenAI API
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -155,11 +154,11 @@ const BotPage = () => {
           "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4o", // Using the latest GPT-4o model
+          model: "gpt-4o", 
           messages: [
             {
               role: "system",
-              content: "You are Veno Bot, a helpful assistant that provides concise, accurate information. When explaining mathematical concepts, use LaTeX notation wrapped in dollar signs for proper formatting. For example, write fractions as \\frac{numerator}{denominator} inside dollar signs. For inline math use single dollar signs like $\\frac{1}{2}$ and for display math use double dollar signs like $$\\frac{1}{2}$$. Ensure all mathematical expressions are properly formatted with LaTeX. Always provide complete responses gradually rather than all at once."
+              content: "You are a helpful, friendly assistant. Keep your responses clear and concise but still friendly. When explaining concepts that benefit from mathematical formulas, use LaTeX notation. For inline math use $...$ and for display math use $$...$$."
             },
             ...messages.map(msg => ({
               role: msg.role,
@@ -255,7 +254,7 @@ const BotPage = () => {
     
     setMessages([{
       role: "assistant",
-      content: "Hello! I'm Veno Bot. How can I assist you today?",
+      content: "Hello! I'm your AI assistant. How can I help you today?",
       timestamp: new Date(),
     }]);
     setStreamingMessage("");
@@ -264,14 +263,14 @@ const BotPage = () => {
 
   const handleDownloadChat = () => {
     const chatContent = messages.map(msg => 
-      `[${msg.timestamp.toLocaleTimeString()}] ${msg.role === 'user' ? 'You' : 'Veno Bot'}: ${msg.content}`
+      `[${msg.timestamp.toLocaleTimeString()}] ${msg.role === 'user' ? 'You' : 'Assistant'}: ${msg.content}`
     ).join('\n\n');
     
     const blob = new Blob([chatContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `veno-chat-${new Date().toISOString().slice(0,10)}.txt`;
+    a.download = `chat-export-${new Date().toISOString().slice(0,10)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -305,7 +304,7 @@ const BotPage = () => {
             <ArrowLeft size={18} />
           </button>
           <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-            <Bot className="text-veno-primary" size={24} /> Veno Bot
+            <Bot className="text-primary" size={24} /> AI Chat
           </h1>
         </div>
 
@@ -334,7 +333,6 @@ const BotPage = () => {
       {/* Conversation Area */}
       <Card 
         className="flex-1 overflow-y-auto p-4 mb-4 bg-gradient-to-b from-background to-background/80 backdrop-blur-sm border-1 shadow-md"
-        ref={conversationRef}
       >
         <div className="space-y-6">
           {messages.map((message, i) => (
@@ -350,9 +348,8 @@ const BotPage = () => {
                 }`}
               >
                 {message.role === "assistant" ? (
-                  <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
-                    <AvatarImage src="/lovable-uploads/34e0db81-e319-4c25-ad83-614442e23537.png" alt="Veno AI" />
-                    <AvatarFallback className="bg-veno-primary text-white">V</AvatarFallback>
+                  <Avatar className="h-10 w-10 border-2 border-primary shadow-lg">
+                    <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
                   </Avatar>
                 ) : (
                   <Avatar className="h-8 w-8 bg-secondary shadow-sm">
@@ -387,9 +384,8 @@ const BotPage = () => {
           {isStreaming && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
-                <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
-                  <AvatarImage src="/lovable-uploads/34e0db81-e319-4c25-ad83-614442e23537.png" alt="Veno AI" />
-                  <AvatarFallback className="bg-veno-primary text-white">V</AvatarFallback>
+                <Avatar className="h-10 w-10 border-2 border-primary shadow-lg">
+                  <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
                 </Avatar>
                 <div className="rounded-lg p-3 bg-muted border border-muted-foreground/10">
                   <div className="text-sm whitespace-pre-wrap">
@@ -413,9 +409,8 @@ const BotPage = () => {
           {isLoading && !isStreaming && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[85%]">
-                <Avatar className="h-10 w-10 border-2 border-veno-primary shadow-lg">
-                  <AvatarImage src="/lovable-uploads/34e0db81-e319-4c25-ad83-614442e23537.png" alt="Veno AI" />
-                  <AvatarFallback className="bg-veno-primary text-white">V</AvatarFallback>
+                <Avatar className="h-10 w-10 border-2 border-primary shadow-lg">
+                  <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
                 </Avatar>
                 <div className="rounded-lg p-3 bg-muted border border-muted-foreground/10 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -433,7 +428,7 @@ const BotPage = () => {
         <Input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ask Veno Bot something..."
+          placeholder="Ask something..."
           disabled={isLoading}
           className="flex-1 pr-10 py-6 rounded-full shadow-sm border-muted-foreground/20"
         />
@@ -442,7 +437,7 @@ const BotPage = () => {
             type="submit" 
             disabled={isLoading || !prompt.trim()} 
             size="icon"
-            className="rounded-full h-8 w-8 bg-veno-primary hover:bg-veno-primary/90"
+            className="rounded-full h-8 w-8 bg-primary hover:bg-primary/90"
           >
             {isLoading ? 
               <Loader2 className="h-4 w-4 animate-spin" /> : 
@@ -455,7 +450,7 @@ const BotPage = () => {
       {/* Powered by Indicator */}
       <div className="flex justify-center mt-2">
         <span className="text-xs text-muted-foreground flex items-center gap-1">
-          Powered by <Sparkles size={12} className="text-veno-primary" /> OpenAI
+          Powered by <Sparkles size={12} className="text-primary" /> OpenAI
         </span>
       </div>
     </div>
