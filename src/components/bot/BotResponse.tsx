@@ -15,18 +15,25 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
       remarkPlugins={[remarkMath]}
       rehypePlugins={[rehypeKatex]}
       components={{
-        // Custom rendering for math blocks
-        math: ({ value }) => (
-          <span className="math math-display">
-            {`$$${value}$$`}
-          </span>
-        ),
-        // Custom rendering for inline math
-        inlineMath: ({ value }) => (
-          <span className="math math-inline">
-            {`$${value}$`}
-          </span>
-        )
+        // Custom rendering for code blocks
+        code: ({node, inline, className, children, ...props}) => {
+          const match = /language-(\w+)/.exec(className || '');
+          const isEquation = match && match[1] === 'math';
+          
+          if (isEquation) {
+            return (
+              <span className="math math-display">
+                {String(children).replace(/\n$/, '')}
+              </span>
+            );
+          }
+          
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        }
       }}
     >
       {message}
