@@ -17,7 +17,6 @@ import {
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
   email: z.string().email({ message: 'Please enter a valid email address' }),
-  shareCode: z.string().optional(),
 });
 
 export type TestTakerInfo = z.infer<typeof formSchema>;
@@ -25,16 +24,14 @@ export type TestTakerInfo = z.infer<typeof formSchema>;
 interface TestTakerFormProps {
   onSubmit: (data: TestTakerInfo) => void;
   testTitle?: string;
-  requireShareCode?: boolean;
 }
 
-const TestTakerForm: React.FC<TestTakerFormProps> = ({ onSubmit, testTitle, requireShareCode }) => {
+const TestTakerForm: React.FC<TestTakerFormProps> = ({ onSubmit, testTitle }) => {
   const form = useForm<TestTakerInfo>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
-      shareCode: '',
     },
   });
 
@@ -80,22 +77,6 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({ onSubmit, testTitle, requ
               </FormItem>
             )}
           />
-          
-          {requireShareCode && (
-            <FormField
-              control={form.control}
-              name="shareCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Share Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter test share code" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
           
           <Button type="submit" className="w-full">
             Start Test{testTitle ? `: ${testTitle}` : ''}

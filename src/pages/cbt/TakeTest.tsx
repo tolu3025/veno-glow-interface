@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +37,6 @@ type TestDetails = {
   time_limit: number | null;
   results_visibility: 'creator_only' | 'test_takers' | 'public';
   allow_retakes: boolean;
-  share_code?: string;
 };
 
 const TakeTest = () => {
@@ -51,8 +51,6 @@ const TakeTest = () => {
   const [showTakerForm, setShowTakerForm] = useState(false);
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
-  const [shareCodeRequired, setShareCodeRequired] = useState(false);
-  const [shareCodeError, setShareCodeError] = useState<string | null>(null);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -107,9 +105,6 @@ const TakeTest = () => {
           
           console.log("Test details loaded:", testData);
           setTestDetails(testData as TestDetails);
-          
-          // Check if this test requires a share code
-          setShareCodeRequired(!!testData.share_code && !user);
           
           if (user && testData.allow_retakes === false) {
             const { data: attempts, error: attemptsError } = await supabase
@@ -169,20 +164,6 @@ const TakeTest = () => {
       const subject = location.state.subject;
       const settingsFromState = location.state.settings || settings;
       
-      // Set basic test details for subject quizzes
-      const subjectTestDetails = {
-        id: 'subject',
-        title: `${subject} Quiz`,
-        description: `Test your knowledge of ${subject}`,
-        creator_id: 'system',
-        time_limit: settingsFromState.timeLimit || 15,
-        results_visibility: 'public',
-        allow_retakes: true,
-        subject: subject
-      };
-      
-      setTestDetails(subjectTestDetails as TestDetails);
-      
       const difficultyFilter = settingsFromState.difficulty === 'all' 
         ? ['beginner', 'intermediate', 'advanced'] 
         : [settingsFromState.difficulty];
@@ -235,20 +216,7 @@ const TakeTest = () => {
     }
   };
 
-  const handleTestTakerSubmit = async (data: TestTakerInfo) => {
-    // Verify share code if required
-    if (shareCodeRequired && testDetails?.share_code) {
-      if (!data.shareCode) {
-        setShareCodeError("Share code is required");
-        return;
-      }
-      
-      if (data.shareCode !== testDetails.share_code) {
-        setShareCodeError("Invalid share code for this test");
-        return;
-      }
-    }
-    
+  const handleTestTakerSubmit = (data: TestTakerInfo) => {
     setTestTakerInfo(data);
     setShowTakerForm(false);
     testManagement.startTest();
@@ -263,11 +231,9 @@ const TakeTest = () => {
       showResults: testManagement.showResults,
       reviewMode: testManagement.reviewMode,
       submissionComplete: testManagement.submissionComplete,
-      resultsVisibility: testDetails?.results_visibility,
       score: testManagement.score,
       currentQuestion: testManagement.currentQuestion,
-      selectedAnswer: testManagement.selectedAnswer,
-      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete'
+      selectedAnswer: testManagement.selectedAnswer
     });
   }, [
     testId, 
@@ -275,12 +241,10 @@ const TakeTest = () => {
     testManagement.testStarted, 
     testManagement.showResults, 
     testManagement.reviewMode,
-    testDetails,
+    testManagement.submissionComplete,
     testManagement.score,
     testManagement.currentQuestion,
-    testManagement.selectedAnswer,
-    testManagement.saving,
-    testManagement.savingError
+    testManagement.selectedAnswer
   ]);
 
   if (loading) {
@@ -291,7 +255,7 @@ const TakeTest = () => {
     return <NoQuestionsState />;
   }
 
-  if (testManagement.submissionComplete && testDetails?.results_visibility === 'creator_only') {
+  if (testManagement.submissionComplete) {
     return (
       <SubmissionComplete 
         testDetails={testDetails} 
@@ -310,7 +274,6 @@ const TakeTest = () => {
         <TestTakerForm 
           onSubmit={handleTestTakerSubmit} 
           testTitle={testDetails?.title || undefined}
-          requireShareCode={shareCodeRequired}
         />
       );
     }
@@ -330,21 +293,6 @@ const TakeTest = () => {
   }
 
   if (testManagement.showResults) {
-    const isCreator = user?.id === testDetails?.creator_id;
-    const canViewResults = 
-      isCreator || 
-      testDetails?.results_visibility === 'test_takers' || 
-      testDetails?.results_visibility === 'public';
-    
-    if (!canViewResults) {
-      return (
-        <SubmissionComplete 
-          testDetails={testDetails} 
-          testTakerInfo={testTakerInfo} 
-        />
-      );
-    }
-
     if (testManagement.reviewMode) {
       return (
         <AnswersReview
@@ -376,7 +324,6 @@ const TakeTest = () => {
         onFinish={() => navigate('/cbt')}
         onTryAgain={testManagement.resetTest}
         formatTime={testManagement.formatTime}
-        savingError={testManagement.savingError}
       />
     );
   }

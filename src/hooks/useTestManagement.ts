@@ -2,19 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate, useLocation, Location } from 'react-router-dom';
-
-// Define a correct custom Location type
-type LocationWithState = Location & {
-  state?: {
-    subject?: string;
-    settings?: {
-      difficulty?: string;
-      timeLimit?: number;
-      questionsCount?: number;
-    };
-  };
-};
+import { useNavigate } from 'react-router-dom';
 
 interface UseTestManagementProps {
   testId: string | undefined;
@@ -38,7 +26,6 @@ export const useTestManagement = ({
   testTakerInfo 
 }: UseTestManagementProps) => {
   const navigate = useNavigate();
-  const location = useLocation() as LocationWithState;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -49,27 +36,23 @@ export const useTestManagement = ({
   const [reviewMode, setReviewMode] = useState(false);
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [publicResults, setPublicResults] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [savingError, setSavingError] = useState<string | null>(null);
-  const [testFinished, setTestFinished] = useState(false); // Add this to track if test is finished
 
   useEffect(() => {
-    if (testStarted && timeRemaining > 0 && !testFinished) {
+    if (testStarted && timeRemaining > 0) {
       const timer = setTimeout(() => {
         setTimeRemaining(time => time - 1);
       }, 1000);
       
       return () => clearTimeout(timer);
-    } else if (testStarted && timeRemaining === 0 && !testFinished) {
+    } else if (testStarted && timeRemaining === 0) {
       finishTest();
     }
-  }, [timeRemaining, testStarted, testFinished]);
+  }, [timeRemaining, testStarted]);
 
   const startTest = () => {
     const timeLimit = testDetails?.time_limit || 15;
     setTimeRemaining(timeLimit * 60);
     setTestStarted(true);
-    setTestFinished(false);
   };
 
   const handleAnswerSelect = (optionIndex: number) => {
@@ -78,8 +61,10 @@ export const useTestManagement = ({
     const currentQuestionData = questions[currentQuestion];
     if (!currentQuestionData) return;
     
+    // FIXED: Enhanced correct answer checking to handle different property names and formats
     let correctAnswer: number | null = null;
     
+    // Try all possible property names and formats
     if (typeof currentQuestionData.correctOption !== 'undefined') {
       correctAnswer = Number(currentQuestionData.correctOption);
     } else if (typeof currentQuestionData.answer !== 'undefined') {
@@ -97,6 +82,7 @@ export const useTestManagement = ({
       return;
     }
     
+    // Check if the selected option matches the correct answer
     const isCorrect = optionIndex === correctAnswer;
     console.log('Is answer correct?', isCorrect);
     
@@ -153,10 +139,11 @@ export const useTestManagement = ({
   };
 
   const calculateScore = () => {
+    // Recalculate score based on correct answers
     const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
     console.log('Final score calculation:', correctAnswers, 'correct out of', userAnswers.length);
     setScore(correctAnswers);
-    return correctAnswers;
+    return correctAnswers; // Return the score for immediate use
   };
 
   const loadPublicResults = async () => {
@@ -179,159 +166,62 @@ export const useTestManagement = ({
     }
   };
 
-  const saveTestAttempt = async (testData: any): Promise<boolean> => {
-    setSaving(true);
-    setSavingError(null);
-    
-    if (testId === 'subject' && testData.test_id === 'subject') {
-      const subjectName = testData.subject || location?.state?.subject;
-      if (subjectName) {
-        const userIdentifier = user?.id || testTakerInfo?.email || 'anonymous';
-        testData.test_id = `subject_${subjectName.replace(/\s+/g, '_').toLowerCase()}_${userIdentifier}`;
-      }
-    }
-    
-    let attempts = 0;
-    const maxAttempts = 5; 
-    
-    while (attempts < maxAttempts) {
-      attempts++;
-      console.log(`Saving test attempt: Attempt ${attempts} of ${maxAttempts}`);
-      
-      try {
-        const { error: insertError } = await supabase
-          .from('test_attempts')
-          .insert([testData]);
-          
-        if (!insertError) {
-          console.log(`Test results saved successfully on attempt ${attempts}`);
-          setSaving(false);
-          return true;
-        }
-        
-        console.error(`Error on attempt ${attempts}:`, insertError);
-        
-        if (attempts < maxAttempts) {
-          const delay = 1000 * Math.pow(2, attempts - 1);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      } catch (e: any) {
-        console.error(`Exception on attempt ${attempts}:`, e);
-        
-        if (attempts < maxAttempts) {
-          const delay = 1000 * Math.pow(2, attempts - 1);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
-    
-    const fallbackSave = await fallbackSaveAttempt(testData);
-    if (fallbackSave) {
-      setSaving(false);
-      return true;
-    }
-    
-    setSaving(false);
-    setSavingError(null); // Suppress error message
-    return false;
-  };
-
-  const fallbackSaveAttempt = async (testData: any): Promise<boolean> => {
-    try {
-      console.log("Trying fallback save method...");
-      
-      const minimalData = {
-        score: testData.score,
-        total_questions: testData.total_questions,
-        participant_email: testData.participant_email || 'anonymous',
-        participant_name: testData.participant_name || 'Anonymous User',
-        completed_at: new Date().toISOString(),
-        test_id: testData.test_id === 'subject' ? null : testData.test_id,
-        subject: testData.subject
-      };
-      
-      const { error } = await supabase
-        .from('test_attempts')
-        .insert([minimalData]);
-      
-      if (!error) {
-        console.log("Test results saved successfully using fallback method");
-        return true;
-      }
-      
-      console.error("Fallback save attempt failed:", error);
-      return false;
-    } catch (error) {
-      console.error("Error in fallback save:", error);
-      return false;
-    }
-  };
-
   const finishTest = async () => {
-    // Stop the timer by marking test as finished
-    setTestFinished(true);
-    
+    // Calculate the final score before submission to ensure it's up to date
     const finalScore = calculateScore();
     
     try {
+      // Using the calculated score instead of the state which might not be updated yet
       const testData = {
         test_id: testId,
         score: finalScore,
         total_questions: questions.length,
         time_taken: (testDetails?.time_limit || 15) * 60 - timeRemaining,
         user_id: user?.id || null,
-        participant_email: testTakerInfo?.email || user?.email || 'anonymous',
-        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous User',
+        participant_email: testTakerInfo?.email || user?.email || '',
+        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || '',
         completed_at: new Date().toISOString(),
-        subject: location?.state?.subject || testDetails?.subject || 'general',
       };
       
-      console.log("Preparing to save test attempt with data:", testData);
+      console.log("Saving test attempt with data:", testData);
       
-      // Determine what to display based on results_visibility setting
-      const isCreator = user?.id === testDetails?.creator_id;
+      const { error } = await supabase.from('test_attempts').insert([testData]);
       
-      if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
-        // Show results to creator, test takers (if allowed), or everyone (if public)
-        setShowResults(true);
-      } else {
-        // For 'creator_only' setting, show submission complete page for non-creators
-        setSubmissionComplete(true);
+      if (error) {
+        console.error("Error in supabase insert:", error);
+        throw error;
       }
       
-      saveTestAttempt(testData).then((saved) => {
-        if (saved) {
-          setSavingError(null);
-          toast({
-            title: "Test completed",
-            description: "Your results have been saved successfully",
-            variant: "default",
-          });
-        } else {
-          // Silently handle save failure without showing error to user
-          console.error("Failed to save test results but not showing error to user");
-        }
-      }).catch(error => {
-        console.error("Error saving test results:", error);
-        // Silently handle save error
+      console.log("Test results saved successfully");
+      
+      // Load public results regardless of visibility setting to prepare data
+      await loadPublicResults();
+      
+      // Show appropriate screens based on settings
+      if (testDetails?.results_visibility === 'creator_only') {
+        setSubmissionComplete(true);
+        toast({
+          title: "Test completed",
+          description: "Your results have been submitted successfully",
+          variant: "default",
+        });
+      } else {
+        setShowResults(true);
+        toast({
+          title: "Test completed",
+          description: "View your results below",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving test results:", error);
+      toast({
+        title: "Error",
+        description: "Could not save your results. Results will still be shown but might not be stored permanently.",
+        variant: "destructive",
       });
-      
-      if (testDetails?.results_visibility === 'public') {
-        await loadPublicResults();
-      }
-    } catch (error: any) {
-      console.error("Error finalizing test:", error);
-      // Silently handle error without showing to user
-      
-      // Still set showResults or submissionComplete based on visibility setting
-      const isCreator = user?.id === testDetails?.creator_id;
-      if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
-        setShowResults(true);
-      } else {
-        setSubmissionComplete(true);
-      }
+      // Still show results in case of error
+      setShowResults(true);
     }
   };
 
@@ -343,9 +233,6 @@ export const useTestManagement = ({
     setUserAnswers([]);
     setTimeRemaining((testDetails?.time_limit || 15) * 60);
     setTestStarted(false);
-    setTestFinished(false);
-    setSavingError(null);
-    setSubmissionComplete(false);
   };
 
   const formatTime = (seconds: number) => {
@@ -365,8 +252,6 @@ export const useTestManagement = ({
     reviewMode,
     submissionComplete,
     publicResults,
-    saving,
-    savingError,
     startTest,
     handleAnswerSelect,
     goToPreviousQuestion,

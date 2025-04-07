@@ -48,7 +48,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { resetPassword, signIn, signUp } = useAuth();
+  const { resetPassword } = useAuth();
 
   const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -157,23 +157,52 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
 
     try {
       if (mode === 'signin') {
-        const { error } = await signIn(email, password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
         if (error) throw error;
         
         toast.success('Welcome back!');
         navigate('/dashboard');
       } else {
-        // Sign up with custom flow
         const storedReferralCode = referralCode || sessionStorage.getItem('referralCode');
         
-        const { error, confirmEmailSent } = await signUp(email, password);
+        const { error, data } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
+            data: {
+              referred_by: storedReferralCode || null,
+            }
+          }
+        });
 
         if (error) throw error;
         
-        if (confirmEmailSent) {
-          setConfirmMessage("Account created! Please check your email for verification instructions.");
-          toast.success('Account created! Please check your email for verification instructions.');
+        if (storedReferralCode && data.user) {
+          try {
+            const { error: referralError } = await supabase
+              .from('user_referrals')
+              .insert({
+                referrer_id: storedReferralCode,
+                referred_id: data.user.id,
+                status: 'pending'
+              });
+            
+            if (referralError) throw referralError;
+            
+            console.log('Referral recorded successfully');
+            sessionStorage.removeItem('referralCode');
+          } catch (referralError) {
+            console.error('Error recording referral:', referralError);
+          }
         }
+        
+        setConfirmMessage("Account created! Please check your email for verification instructions.");
+        toast.success('Account created! Please check your email for verification instructions.');
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');

@@ -25,7 +25,6 @@ interface TestResultsProps {
   onFinish: () => void;
   onTryAgain: () => void;
   formatTime: (seconds: number) => string;
-  savingError?: string | null;
 }
 
 const TestResults: React.FC<TestResultsProps> = ({
@@ -42,7 +41,6 @@ const TestResults: React.FC<TestResultsProps> = ({
   onFinish,
   onTryAgain,
   formatTime,
-  savingError,
 }) => {
   const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   
@@ -143,6 +141,8 @@ const TestResults: React.FC<TestResultsProps> = ({
                   You answered {score} out of {questions.length} questions correctly
                 </p>
               </div>
+              
+              {/* Download certificate button has been removed */}
             </div>
             
             <div className="grid gap-6 md:grid-cols-2 mb-8">
