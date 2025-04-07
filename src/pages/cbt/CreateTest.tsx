@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info } from "lucide-react";
+import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -222,6 +222,15 @@ const CreateTest = () => {
     }
   };
 
+  const goToQuestionBank = () => {
+    // Save current form state to localStorage to preserve it when returning
+    localStorage.setItem('testFormState', JSON.stringify(form.getValues()));
+    localStorage.setItem('currentQuestions', JSON.stringify(questions));
+    
+    // Navigate to question bank page
+    navigate('/cbt/question-bank');
+  };
+
   return (
     <div className="pb-14">
       <div className="flex items-center space-x-4 mb-6">
@@ -379,9 +388,20 @@ const CreateTest = () => {
             transition={{ delay: 0.15 }}
             className="veno-card p-5 space-y-4"
           >
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-veno-primary" />
-              <h2 className="text-lg font-medium">Questions</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-veno-primary" />
+                <h2 className="text-lg font-medium">Questions</h2>
+              </div>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={goToQuestionBank}
+                className="flex items-center gap-2 border-veno-primary/40 text-veno-primary"
+              >
+                <Library size={16} />
+                Question Bank
+              </Button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Add questions to your test. Each question must have 4 options with 1 correct answer.

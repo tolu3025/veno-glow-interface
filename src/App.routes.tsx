@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
 import CBTIndex from './pages/cbt/index';
 import CreateTest from './pages/cbt/CreateTest';
+import QuestionBank from './pages/cbt/QuestionBank';
 import TakeTest from './pages/cbt/TakeTest';
 import ManageTest from './pages/cbt/ManageTest';
 import Analytics from './pages/cbt/Analytics';
@@ -94,6 +95,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <ProtectedRoute><CBTIndex /></ProtectedRoute> },
           { path: 'create', element: <ProtectedRoute><CreateTest /></ProtectedRoute> },
+          { path: 'question-bank', element: <ProtectedRoute><QuestionBank /></ProtectedRoute> },
           { path: 'take/:shareCode', element: <ProtectedRoute><TakeTest /></ProtectedRoute> },
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
