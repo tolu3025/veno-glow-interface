@@ -216,7 +216,7 @@ const Leaderboard = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex justify-center mb-6">
           <Button 
             variant="outline" 
             className="flex items-center gap-2"

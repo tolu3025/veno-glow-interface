@@ -196,12 +196,9 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
           })}
         </div>
       </CardContent>
-      <CardFooter className="flex gap-4">
-        <Button variant="outline" className="flex-1" onClick={onBackToSummary}>
+      <CardFooter className="flex justify-center mb-6">
+        <Button variant="outline" onClick={onBackToSummary}>
           Back to Summary
-        </Button>
-        <Button className="flex-1 bg-veno-primary hover:bg-veno-primary/90" onClick={onFinish}>
-          Finish Review
         </Button>
       </CardFooter>
     </Card>
