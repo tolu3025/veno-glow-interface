@@ -28,3 +28,7 @@ timeout_seconds = 30
 
 [functions.get-openai-key]
 verify_jwt = true
+
+[functions.brevo-email-confirmation]
+verify_jwt = false
+

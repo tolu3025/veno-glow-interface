@@ -125,6 +125,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       
+      // Send custom confirmation email through our edge function
+      if (data.user && !data.session) {
+        try {
+          // Get the confirmation URL from Supabase's session data
+          const confirmUrl = `${window.location.origin}/auth?confirmation=true&email=${encodeURIComponent(email)}`;
+          
+          // Call our custom email function
+          const response = await supabase.functions.invoke('brevo-email-confirmation', {
+            body: {
+              email: email,
+              name: data.user.user_metadata?.full_name || '',
+              confirmationUrl: confirmUrl
+            }
+          });
+
+          if (response.error) {
+            console.error('Error sending confirmation email:', response.error);
+            toast.error('Error sending confirmation email. Please try again.');
+          } else {
+            toast.success('Confirmation email sent. Please check your inbox.');
+          }
+        } catch (emailError) {
+          console.error('Error invoking email function:', emailError);
+        }
+      }
+      
       return { 
         data: data.session, 
         error: null, 

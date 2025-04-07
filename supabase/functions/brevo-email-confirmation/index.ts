@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,12 +21,7 @@ serve(async (req) => {
   
   try {
     const { email, name, confirmationUrl }: EmailRequest = await req.json();
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
     
-    if (!BREVO_API_KEY) {
-      throw new Error("BREVO_API_KEY is not set");
-    }
-
     if (!email || !confirmationUrl) {
       throw new Error("Email and confirmationUrl are required");
     }
@@ -33,6 +29,19 @@ serve(async (req) => {
     console.log("Sending confirmation email to:", email);
     console.log("Confirmation URL:", confirmationUrl);
     
+    // Setup SMTP client with Brevo settings
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp-relay.brevo.com",
+        port: 587,
+        tls: true,
+        auth: {
+          username: "89756a003@smtp-brevo.com",
+          password: Deno.env.get("BREVO_SMTP_PASSWORD") || "",
+        },
+      },
+    });
+
     // Prepare HTML for the email
     const htmlContent = `
       <!DOCTYPE html>
@@ -145,40 +154,28 @@ serve(async (req) => {
       </html>
     `;
 
-    // Send the email using Brevo API
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "api-key": BREVO_API_KEY
+    // Send the email
+    await client.send({
+      from: {
+        address: "bot@venobot.online",
+        name: "Veno",
       },
-      body: JSON.stringify({
-        sender: {
-          name: "Veno Education",
-          email: "no-reply@venoeducation.com"
+      to: [
+        {
+          address: email,
+          name: name || email,
         },
-        to: [
-          {
-            email: email,
-            name: name || email
-          }
-        ],
-        subject: "Confirm Your Veno Education Account",
-        htmlContent: htmlContent
-      })
+      ],
+      subject: "Confirm Your Veno Education Account",
+      html: htmlContent,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Brevo API error:", errorData);
-      throw new Error(`Brevo API error: ${JSON.stringify(errorData)}`);
-    }
-
-    const result = await response.json();
-    console.log("Email sent successfully:", result);
+    // Close the connection
+    await client.close();
     
-    return new Response(JSON.stringify({ success: true, messageId: result.messageId }), {
+    console.log("Email sent successfully to:", email);
+    
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 
         "Content-Type": "application/json",
