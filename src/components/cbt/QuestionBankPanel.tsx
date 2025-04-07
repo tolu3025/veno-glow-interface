@@ -62,18 +62,20 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
   const fetchQuestions = async () => {
     setLoading(true);
     try {
+      // Use proper type casting for the query builder
       let query = supabase.from('questions').select('*');
       
       if (selectedSubject) {
-        // Fix: Use eq with string type
-        query = query.eq('subject', selectedSubject);
+        // Use an explicit cast to string for the column name
+        query = query.eq('subject' as string, selectedSubject);
       }
       
       if (difficulty) {
-        // Fix: Cast the difficulty to the appropriate type
-        const difficultyValue = difficulty as "beginner" | "intermediate" | "advanced" | null;
+        // Cast the difficulty to the appropriate enum type
+        type DifficultyType = "beginner" | "intermediate" | "advanced" | null;
+        const difficultyValue = difficulty as DifficultyType;
         if (difficultyValue) {
-          query = query.eq('difficulty', difficultyValue);
+          query = query.eq('difficulty' as string, difficultyValue);
         }
       }
       
@@ -82,12 +84,12 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
       if (error) throw error;
       
       if (data) {
-        // Fix: Convert JSON options to string array
+        // Properly format the questions, ensuring options is always a string array
         const formattedQuestions: Question[] = data.map(q => ({
           id: q.id,
           subject: q.subject,
           question: q.question,
-          // Ensure options is always a string array
+          // Convert options to string array with proper type handling
           options: Array.isArray(q.options) ? q.options.map(String) : 
                   (typeof q.options === 'object' && q.options !== null ? 
                    Object.values(q.options).map(String) : []),
@@ -142,8 +144,7 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
         
       if (error) throw error;
       
-      // Update the question count in the test
-      // Fix: Use the count() function properly
+      // Get the updated count directly from the database
       const { count, error: countError } = await supabase
         .from('test_questions')
         .select('*', { count: 'exact', head: true })
@@ -154,7 +155,7 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
       // Update the question count in the user_tests table
       const { error: updateError } = await supabase
         .from('user_tests')
-        .update({ question_count: count })
+        .update({ question_count: count as number })
         .eq('id', testId);
         
       if (updateError) throw updateError;
