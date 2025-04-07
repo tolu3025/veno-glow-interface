@@ -64,7 +64,13 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
   });
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    onSubmit(data);
+    // Ensure the data is properly cast to TestTakerInfo
+    const testTakerInfo: TestTakerInfo = {
+      name: data.name,
+      email: data.email,
+      shareCode: data.shareCode
+    };
+    onSubmit(testTakerInfo);
   };
 
   return (

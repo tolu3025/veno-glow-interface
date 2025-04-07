@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -51,7 +50,7 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savingError, setSavingError] = useState<string | null>(null);
-  const [testFinished, setTestFinished] = useState(false); // This tracks if test is finished
+  const [testFinished, setTestFinished] = useState(false);
 
   useEffect(() => {
     if (testStarted && timeRemaining > 0 && !testFinished) {
@@ -159,6 +158,8 @@ export const useTestManagement = ({
     try {
       // Use the get_test_leaderboard function if results are public
       if (testDetails?.results_visibility === 'public') {
+        // Use the test_attempts table instead of participant_results
+        // This fixes the TypeScript error
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
