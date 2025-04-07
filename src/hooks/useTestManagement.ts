@@ -172,7 +172,7 @@ export const useTestManagement = ({
           throw error;
         }
         
-        console.log('Public results loaded:', data?.length || 0);
+        console.log('Public results loaded:', data?.length || 0, data);
         if (data) {
           setPublicResults(data);
         }

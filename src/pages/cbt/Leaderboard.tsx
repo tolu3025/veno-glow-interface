@@ -50,7 +50,7 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data
+        // Fetch leaderboard data from test_attempts which is the correct table
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
@@ -61,6 +61,7 @@ const Leaderboard = () => {
           throw error;
         }
         
+        console.log('Fetched leaderboard data:', data);
         setLeaderboard(data || []);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
