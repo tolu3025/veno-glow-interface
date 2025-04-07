@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -72,34 +71,88 @@ export const useTestManagement = ({
       console.log("Test details visibility:", testDetails?.results_visibility);
       console.log("Is user the creator?", user?.id === testDetails?.creator_id);
       
-      // Always allow the creator to see results regardless of visibility setting
+      // Determine user role and visibility settings
       const isCreator = user?.id === testDetails?.creator_id;
+      const visibilitySetting = testDetails?.results_visibility || 'creator_only';
       
-      // Only check visibility restrictions for non-creators
-      if (!isCreator && testDetails?.results_visibility === 'creator_only') {
+      // Creator always sees all results
+      if (isCreator) {
+        const { data, error } = await supabase
+          .from('test_attempts')
+          .select('*')
+          .eq('test_id', testId)
+          .order('score', { ascending: false });
+          
+        if (error) {
+          console.error("Error loading results:", error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`Found ${data.length} results for test ID ${testId}:`, data);
+          setPublicResults(data);
+        } else {
+          console.log(`No results found for test ID ${testId}`);
+          setPublicResults([]);
+        }
+        return;
+      }
+      
+      // If results are set to creator_only and user is not creator
+      if (visibilitySetting === 'creator_only') {
         console.log("Results are set to creator_only and current user is not the creator");
         setPublicResults([]);
         return;
       }
       
-      // For test creators, always show all results
-      const { data, error } = await supabase
-        .from('test_attempts')
-        .select('*')
-        .eq('test_id', testId)
-        .order('score', { ascending: false });
+      // For 'test_takers' setting, only show the current user's result
+      if (visibilitySetting === 'test_takers') {
+        const userEmail = testTakerInfo?.email || user?.email;
+        if (!userEmail) {
+          setPublicResults([]);
+          return;
+        }
         
-      if (error) {
-        console.error("Error loading results:", error);
-        throw error;
+        const { data, error } = await supabase
+          .from('test_attempts')
+          .select('*')
+          .eq('test_id', testId)
+          .eq('participant_email', userEmail);
+          
+        if (error) {
+          console.error("Error loading user results:", error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`Found user's results for test ID ${testId}:`, data);
+          setPublicResults(data);
+        } else {
+          setPublicResults([]);
+        }
+        return;
       }
       
-      if (data && data.length > 0) {
-        console.log(`Found ${data.length} results for test ID ${testId}:`, data);
-        setPublicResults(data);
-      } else {
-        console.log(`No results found for test ID ${testId}`);
-        setPublicResults([]);
+      // For public visibility, show all results
+      if (visibilitySetting === 'public') {
+        const { data, error } = await supabase
+          .from('test_attempts')
+          .select('*')
+          .eq('test_id', testId)
+          .order('score', { ascending: false });
+          
+        if (error) {
+          console.error("Error loading results:", error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`Found ${data.length} results for test ID ${testId}:`, data);
+          setPublicResults(data);
+        } else {
+          console.log(`No results found for test ID ${testId}`);
+          setPublicResults([]);
+        }
       }
     } catch (error) {
       console.error("Error loading results:", error);
@@ -109,7 +162,7 @@ export const useTestManagement = ({
         variant: "destructive",
       });
     }
-  }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id]);
+  }, [testId, testDetails?.results_visibility, user?.id, testDetails?.creator_id, testTakerInfo?.email, user?.email]);
 
   useEffect(() => {
     if (showResults && testId) {

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MailCheck, Award } from 'lucide-react';
+import { MailCheck, Award, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,17 +30,19 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
       <CardContent className="py-6 text-center">
         {isCreatorOnly ? (
           <>
-            <Award className="mx-auto h-16 w-16 text-veno-primary mb-6" />
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-veno-primary/20 rounded-full mb-6">
+              <Check className="h-10 w-10 text-veno-primary" />
+            </div>
             <h2 className="text-xl sm:text-2xl font-bold mb-2">Thank you for completing the test</h2>
             <p className="text-muted-foreground mb-6">
               Your answers have been recorded. The test creator will review your results 
-              and your score will be announced soon.
+              and only they can see your score.
               {testTakerInfo?.email && " You may be contacted via email with your score and feedback."}
             </p>
           </>
         ) : (
           <>
-            <MailCheck className="mx-auto h-16 w-16 text-veno-primary mb-6" />
+            <Award className="mx-auto h-16 w-16 text-veno-primary mb-6" />
             <h2 className="text-xl sm:text-2xl font-bold mb-2">Thank you for completing the test</h2>
             <p className="text-muted-foreground mb-6">
               Your answers have been recorded. The test creator will review your results.

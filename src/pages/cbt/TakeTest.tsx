@@ -56,6 +56,7 @@ const TakeTest = () => {
   const [shareCodeVerified, setShareCodeVerified] = useState(false);
   const [showSubmissionComplete, setShowSubmissionComplete] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [shouldShowResults, setShouldShowResults] = useState(false);
 
   const [settings, setSettings] = useState({
     difficulty: 'beginner',
@@ -78,21 +79,30 @@ const TakeTest = () => {
   }, [location.state]);
   
   useEffect(() => {
-    if (testManagement.showResults) {
-      const isCreator = user?.id === testDetails?.creator_id;
-      if (isCreator || testDetails?.results_visibility !== 'creator_only') {
-        console.log("Loading results on test results page display");
-        console.log("Is creator:", isCreator);
-        console.log("Results visibility:", testDetails?.results_visibility);
+    if (testManagement.showResults && testDetails) {
+      const isCreator = user?.id === testDetails.creator_id;
+      
+      // Determine if results should be shown based on visibility settings
+      if (isCreator) {
+        // Creators always see results
+        setShouldShowResults(true);
+        testManagement.loadPublicResults();
+      } else if (testDetails.results_visibility === 'creator_only') {
+        // Only creators should see results
+        setShouldShowResults(false);
+        setShowSubmissionComplete(true);
+      } else if (testDetails.results_visibility === 'test_takers' || testDetails.results_visibility === 'public') {
+        // Test takers can see their own results
+        setShouldShowResults(true);
         testManagement.loadPublicResults();
       }
     }
   }, [
     testManagement.showResults, 
     testDetails?.results_visibility, 
-    testManagement.loadPublicResults, 
     user?.id, 
-    testDetails?.creator_id
+    testDetails?.creator_id,
+    testManagement.loadPublicResults
   ]);
 
   useEffect(() => {
@@ -426,6 +436,15 @@ const TakeTest = () => {
 
   if (testManagement.showResults) {
     if (showSubmissionComplete) {
+      return (
+        <SubmissionComplete 
+          testDetails={testDetails} 
+          testTakerInfo={testTakerInfo} 
+        />
+      );
+    }
+    
+    if (!shouldShowResults) {
       return (
         <SubmissionComplete 
           testDetails={testDetails} 
