@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -22,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/AuthProvider";
+import { useSubjects } from "@/hooks/useSubjects";
 
 type QuestionBankItem = {
   id: string;
@@ -46,6 +48,7 @@ const QuestionBank = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCount, setSelectedCount] = useState(0);
+  const { data: subjects, isLoading: subjectsLoading } = useSubjects();
 
   useEffect(() => {
     fetchQuestions();
@@ -75,7 +78,7 @@ const QuestionBank = () => {
           question_text: q.question,
           // Convert options to string[] regardless of the source format
           options: Array.isArray(q.options) 
-            ? q.options.map(opt => String(opt)) 
+            ? q.options.map((opt: any) => String(opt)) 
             : [],
           answer: q.answer,
           explanation: q.explanation,
@@ -180,21 +183,22 @@ const QuestionBank = () => {
     navigate('/cbt/create');
   };
 
-  const subjects = [
-    { value: "all", label: "All Subjects" },
-    { value: "General", label: "General" },
-    { value: "Mathematics", label: "Mathematics" },
-    { value: "Science", label: "Science" },
-    { value: "English", label: "English" },
-    { value: "Programming", label: "Programming" },
-  ];
-
-  const difficulties = [
-    { value: "all", label: "All Difficulties" },
-    { value: "beginner", label: "Beginner" },
-    { value: "intermediate", label: "Intermediate" },
-    { value: "advanced", label: "Advanced" },
-  ];
+  // Get difficulties from the actual questions
+  const getDifficulties = () => {
+    const difficultySet = new Set<string>();
+    questions.forEach(q => {
+      if (q.difficulty) {
+        difficultySet.add(q.difficulty);
+      }
+    });
+    
+    const difficulties = Array.from(difficultySet).map(difficulty => ({
+      value: difficulty,
+      label: difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+    }));
+    
+    return [{ value: "all", label: "All Difficulties" }, ...difficulties];
+  };
 
   return (
     <div className="pb-14">
@@ -228,9 +232,10 @@ const QuestionBank = () => {
               <SelectValue placeholder="Subject" />
             </SelectTrigger>
             <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.value} value={subject.value}>
-                  {subject.label}
+              <SelectItem value="all">All Subjects</SelectItem>
+              {subjects && subjects.map((subject) => (
+                <SelectItem key={subject.name} value={subject.name}>
+                  {subject.name} ({subject.question_count})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -244,7 +249,7 @@ const QuestionBank = () => {
               <SelectValue placeholder="Difficulty" />
             </SelectTrigger>
             <SelectContent>
-              {difficulties.map((difficulty) => (
+              {getDifficulties().map((difficulty) => (
                 <SelectItem key={difficulty.value} value={difficulty.value}>
                   {difficulty.label}
                 </SelectItem>
@@ -265,7 +270,7 @@ const QuestionBank = () => {
         </TabsList>
       </Tabs>
       
-      {loading ? (
+      {loading || subjectsLoading ? (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-veno-primary"></div>
         </div>
