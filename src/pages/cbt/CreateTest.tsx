@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, PlusCircle, HelpCircle, Trash2, BookOpen, Info, Library } from "lucide-react";
@@ -89,6 +89,37 @@ const CreateTest = () => {
       allowRetakes: false,
     },
   });
+
+  // Load saved form state and questions when component mounts
+  useEffect(() => {
+    // Load saved form state if it exists
+    const savedFormState = localStorage.getItem('testFormState');
+    if (savedFormState) {
+      try {
+        const parsedState = JSON.parse(savedFormState);
+        Object.keys(parsedState).forEach(key => {
+          form.setValue(key as any, parsedState[key]);
+        });
+      } catch (error) {
+        console.error("Error parsing saved form state:", error);
+      }
+    }
+    
+    // Load saved questions if they exist
+    const savedQuestions = localStorage.getItem('currentQuestions');
+    if (savedQuestions) {
+      try {
+        const parsedQuestions = JSON.parse(savedQuestions);
+        setQuestions(parsedQuestions);
+      } catch (error) {
+        console.error("Error parsing saved questions:", error);
+      }
+    }
+    
+    // Clear localStorage after loading
+    localStorage.removeItem('testFormState');
+    localStorage.removeItem('currentQuestions');
+  }, []);
 
   const addQuestion = () => {
     if (!currentQuestion.text.trim()) {
