@@ -74,7 +74,7 @@ const QuestionBank = () => {
         const formattedQuestions: QuestionBankItem[] = data.map(q => ({
           id: q.id,
           question_text: q.question,
-          // Make sure options is converted to string[] - handle various possible formats
+          // Convert options to string[] regardless of the source format
           options: Array.isArray(q.options) 
             ? q.options.map(opt => String(opt)) 
             : [],
