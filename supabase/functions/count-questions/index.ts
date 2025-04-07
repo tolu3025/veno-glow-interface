@@ -33,7 +33,7 @@ serve(async (req) => {
       );
     }
 
-    // Count the questions for the specified test
+    // Count the questions for the specified test using a direct count query
     const { count, error } = await supabase
       .from('test_questions')
       .select('*', { count: 'exact', head: true })

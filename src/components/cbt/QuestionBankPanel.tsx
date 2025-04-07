@@ -65,18 +65,39 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
       let query = supabase.from('questions').select('*');
       
       if (selectedSubject) {
+        // Fix: Use eq with string type
         query = query.eq('subject', selectedSubject);
       }
       
       if (difficulty) {
-        query = query.eq('difficulty', difficulty);
+        // Fix: Cast the difficulty to the appropriate type
+        const difficultyValue = difficulty as "beginner" | "intermediate" | "advanced" | null;
+        if (difficultyValue) {
+          query = query.eq('difficulty', difficultyValue);
+        }
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      setQuestions(data || []);
+      if (data) {
+        // Fix: Convert JSON options to string array
+        const formattedQuestions: Question[] = data.map(q => ({
+          id: q.id,
+          subject: q.subject,
+          question: q.question,
+          // Ensure options is always a string array
+          options: Array.isArray(q.options) ? q.options.map(String) : 
+                  (typeof q.options === 'object' && q.options !== null ? 
+                   Object.values(q.options).map(String) : []),
+          answer: q.answer,
+          difficulty: q.difficulty,
+          explanation: q.explanation || ''
+        }));
+        
+        setQuestions(formattedQuestions);
+      }
     } catch (error) {
       console.error("Error fetching questions:", error);
       toast.error("Failed to load questions from the bank");
@@ -122,11 +143,18 @@ const QuestionBankPanel = ({ testId, onQuestionsAdded }: QuestionBankPanelProps)
       if (error) throw error;
       
       // Update the question count in the test
+      // Fix: Use the count() function properly
+      const { count, error: countError } = await supabase
+        .from('test_questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('test_id', testId);
+        
+      if (countError) throw countError;
+      
+      // Update the question count in the user_tests table
       const { error: updateError } = await supabase
         .from('user_tests')
-        .update({ 
-          question_count: supabase.rpc('get_question_count', { test_id: testId }) 
-        })
+        .update({ question_count: count })
         .eq('id', testId);
         
       if (updateError) throw updateError;
