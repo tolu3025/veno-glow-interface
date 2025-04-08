@@ -42,8 +42,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function getActiveSession() {
-      setIsLoading(true);
+    // Set up auth state listener FIRST to avoid race conditions
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
+      console.log("Auth state change:", event);
+      
+      if (currentSession) {
+        setSession(currentSession);
+        setUser(currentSession.user);
+      } else {
+        setSession(null);
+        setUser(null);
+      }
+      
+      // Handle specific auth events with toasts
+      if (event === "SIGNED_IN") {
+        toast.success("Signed in successfully!");
+      } else if (event === "SIGNED_OUT") {
+        toast.info("Signed out successfully!");
+        // Clear any locally stored session data to prevent auto-login
+        localStorage.removeItem("supabase.auth.token");
+      } else if (event === "PASSWORD_RECOVERY") {
+        toast.info("Check your email for password reset instructions");
+      } else if (event === "USER_UPDATED") {
+        toast.success("Your profile has been updated");
+      } else if (event === "SIGNED_IN" && currentSession?.user?.email_confirmed_at) {
+        toast.success("Email confirmed successfully!");
+      }
+    });
+
+    // THEN check for existing session
+    const initializeAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (!error && data.session) {
@@ -55,47 +83,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } finally {
         setIsLoading(false);
       }
-    }
+    };
 
-    getActiveSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
-      console.log("Auth state change:", event);
-      
-      if (currentSession && event === "SIGNED_IN") {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        toast.success("Signed in successfully!");
-      }
-      
-      if (event === "SIGNED_OUT") {
-        setSession(null);
-        setUser(null);
-        toast.info("Signed out successfully!");
-        
-        // Clear any locally stored session data to prevent auto-login
-        localStorage.removeItem("supabase.auth.token");
-      }
-      
-      if (event === "PASSWORD_RECOVERY") {
-        toast.info("Check your email for password reset instructions");
-      }
-      
-      if (event === "USER_UPDATED") {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        toast.success("Your profile has been updated");
-      }
-      
-      // Handle email confirmation
-      if (event === "SIGNED_IN" && currentSession?.user?.email_confirmed_at) {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        toast.success("Email confirmed successfully!");
-      }
-    });
+    initializeAuth();
 
     return () => {
       subscription.unsubscribe();
@@ -103,12 +93,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
   
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    return { data: data.session, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      return { data: data.session, error };
+    } catch (err) {
+      console.error("Sign in error:", err);
+      return { data: null, error: err instanceof Error ? err : new Error("Unknown error") };
+    }
   };
   
   const signUp = async (email: string, password: string) => {
@@ -185,25 +180,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const signOut = async () => {
-    await supabase.auth.signOut();
-    // Force redirect to auth page after signout
-    window.location.href = '/auth';
+    try {
+      await supabase.auth.signOut();
+      // Force redirect to auth page after signout
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out properly. Please try again.");
+    }
   };
 
   const updateUserMetadata = async (metadata: Record<string, any>) => {
-    const { error } = await supabase.auth.updateUser({
-      data: metadata
-    });
-    
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: metadata
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating user metadata:", error);
+      throw error;
+    }
   };
 
   const resetPassword = async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?reset=true`,
-    });
-    
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error("Failed to reset password") 
+      };
+    }
   };
 
   return (

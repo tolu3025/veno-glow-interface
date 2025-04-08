@@ -10,13 +10,16 @@ type ProtectedRouteProps = {
 };
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, session } = useAuth();
   const location = useLocation();
   const [offlineMode, setOfflineMode] = useState(false);
   const [dbConnectionStatus, setDbConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
   
   // Check if the route is a test-taking route
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
+  
+  // Track authentication status
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Handle online/offline status and database connectivity
   useEffect(() => {
@@ -110,6 +113,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
   }, [offlineMode, dbConnectionStatus]);
 
+  // Mark auth as checked once loading is complete
+  useEffect(() => {
+    if (!isLoading) {
+      setAuthChecked(true);
+    }
+  }, [isLoading]);
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -123,7 +133,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <>{children}</>;
   }
 
-  if (!user) {
+  // Double-check auth status
+  if (!user && authChecked) {
     // If offline or database unreachable, show limited functionality warning but don't redirect
     if (offlineMode || dbConnectionStatus === 'disconnected') {
       toast({
@@ -135,7 +146,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       return <>{children}</>;
     }
     
-    return <Navigate to="/auth" replace />;
+    // Actual session validation
+    if (!session && !isLoading) {
+      // Redirect to auth page with the current location as a return destination
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
   }
 
   return <>{children}</>;
