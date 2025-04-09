@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -64,14 +63,6 @@ type Question = {
   explanation?: string;
 };
 
-interface DraftTest {
-  formValues: TestFormValues;
-  questions: Question[];
-  currentQuestion: Question;
-  lastUpdated: number;
-}
-
-// Define the expected shape of the user_tests table data
 interface UserTest {
   id: string;
   title: string;
@@ -87,9 +78,16 @@ interface UserTest {
   draft_data?: {
     questions?: Question[];
     currentQuestion?: Question;
-  };
+  } | null;
   created_at: string;
   updated_at: string;
+}
+
+interface DraftTest {
+  formValues: TestFormValues;
+  questions: Question[];
+  currentQuestion: Question;
+  lastUpdated: number;
 }
 
 const DRAFT_TEST_KEY = "draftTest";
@@ -249,7 +247,7 @@ const CreateTest = () => {
           form.setValue('description', draftTest.description || '');
           form.setValue('difficulty', draftTest.difficulty);
           form.setValue('timeLimit', draftTest.time_limit ? draftTest.time_limit.toString() : '');
-          form.setValue('resultsVisibility', draftTest.results_visibility);
+          form.setValue('resultsVisibility', draftTest.results_visibility as "creator_only" | "test_takers" | "public");
           form.setValue('allowRetakes', draftTest.allow_retakes);
           
           if (draftTest.draft_data) {

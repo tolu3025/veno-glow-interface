@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -52,45 +51,48 @@ export const updateDatabaseSchema = async () => {
     }
     
     if (tableExists) {
-      // Instead of using add_column_if_not_exists, use a raw SQL query
-      // with proper error handling for column existence
-      const { error: alterTableError } = await supabase
+      // Use direct SQL queries without .catch() to check for columns
+      // Check for is_draft column
+      const { data: hasDraftColumn, error: draftColumnError } = await supabase
         .from('user_tests')
         .select('is_draft')
         .limit(1)
-        .catch(async (err) => {
-          // If the column doesn't exist (indicated by error), try to add it
-          if (err.message && err.message.includes('column "is_draft" does not exist')) {
-            const { error } = await supabase.rpc('execute_sql', {
-              sql_query: 'ALTER TABLE public.user_tests ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT false'
-            }).catch(e => ({ error: e }));
-            return { error };
+        .then(
+          () => ({ data: true, error: null }),
+          (err) => {
+            // If the column doesn't exist, this will error
+            console.log("is_draft column check error:", err);
+            return { data: false, error: err };
           }
-          return { error: err };
-        });
-      
-      // Check for draft_data column similarly
-      const { error: draft_dataError } = await supabase
+        );
+
+      // Check for draft_data column
+      const { data: hasDraftDataColumn, error: draftDataColumnError } = await supabase
         .from('user_tests')
         .select('draft_data')
         .limit(1)
-        .catch(async (err) => {
-          // If the column doesn't exist, try to add it
-          if (err.message && err.message.includes('column "draft_data" does not exist')) {
-            const { error } = await supabase.rpc('execute_sql', {
-              sql_query: 'ALTER TABLE public.user_tests ADD COLUMN IF NOT EXISTS draft_data JSONB DEFAULT NULL'
-            }).catch(e => ({ error: e }));
-            return { error };
+        .then(
+          () => ({ data: true, error: null }),
+          (err) => {
+            // If the column doesn't exist, this will error
+            console.log("draft_data column check error:", err);
+            return { data: false, error: err };
           }
-          return { error: err };
-        });
+        );
       
-      if (alterTableError || draft_dataError) {
-        console.error("Error updating schema:", alterTableError || draft_dataError);
-        return { success: false, error: alterTableError || draft_dataError };
-      }
+      // Log the results of our checks
+      console.log("Column checks:", { hasDraftColumn, hasDraftDataColumn });
       
-      return { success: true };
+      // No actions taken here since we've already run the SQL migration
+      // to add the columns
+      
+      return { 
+        success: true, 
+        columnsExist: {
+          isDraft: hasDraftColumn,
+          draftData: hasDraftDataColumn
+        }
+      };
     }
     
     return { success: false, message: "Table not found" };
