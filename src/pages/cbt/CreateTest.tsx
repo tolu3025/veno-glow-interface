@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -63,6 +64,7 @@ type Question = {
   explanation?: string;
 };
 
+// Fixed interface to avoid circular references
 interface UserTest {
   id: string;
   title: string;
@@ -83,6 +85,7 @@ interface UserTest {
   updated_at: string;
 }
 
+// Simplified DraftTest interface to avoid deep nesting
 interface DraftTest {
   formValues: TestFormValues;
   questions: Question[];
