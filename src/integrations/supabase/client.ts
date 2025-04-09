@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -36,6 +35,47 @@ export const supabase = createClient<Database>(
     }
   }
 );
+
+// Function to update the database schema (check and add necessary columns)
+export const updateDatabaseSchema = async () => {
+  if (!isOnline()) return { success: false, message: "Device is offline" };
+  
+  try {
+    // Check if is_draft column exists in user_tests table
+    const { data: columns, error: columnsError } = await supabase
+      .rpc('check_if_table_exists', { table_name: 'user_tests' });
+    
+    if (columnsError) {
+      console.error("Error checking table:", columnsError);
+      return { success: false, error: columnsError };
+    }
+    
+    if (columns) {
+      // Add is_draft column if it doesn't exist
+      await supabase.rpc('add_column_if_not_exists', {
+        table_name: 'user_tests',
+        column_name: 'is_draft',
+        column_type: 'boolean',
+        column_default: 'false'
+      });
+      
+      // Add draft_data column if it doesn't exist
+      await supabase.rpc('add_column_if_not_exists', {
+        table_name: 'user_tests',
+        column_name: 'draft_data',
+        column_type: 'jsonb',
+        column_default: 'null'
+      });
+      
+      return { success: true };
+    }
+    
+    return { success: false, message: "Table not found" };
+  } catch (error) {
+    console.error("Error updating schema:", error);
+    return { success: false, error };
+  }
+};
 
 // Create a function to check if we're online
 export const isOnline = () => {

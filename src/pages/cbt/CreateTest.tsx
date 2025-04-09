@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -64,6 +63,16 @@ type Question = {
   explanation?: string;
 };
 
+interface DraftTest {
+  formValues: TestFormValues;
+  questions: Question[];
+  currentQuestion: Question;
+  lastUpdated: number;
+}
+
+const DRAFT_TEST_KEY = "draftTest";
+const AUTO_SAVE_INTERVAL = 10000; // 10 seconds
+
 const CreateTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -77,6 +86,8 @@ const CreateTest = () => {
     explanation: "",
   });
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   
   const form = useForm<TestFormValues>({
     resolver: zodResolver(testFormSchema),
@@ -90,36 +101,196 @@ const CreateTest = () => {
     },
   });
 
-  // Load saved form state and questions when component mounts
+  const saveDraftToLocalStorage = () => {
+    const formValues = form.getValues();
+    const draftData: DraftTest = {
+      formValues,
+      questions,
+      currentQuestion,
+      lastUpdated: Date.now()
+    };
+    
+    localStorage.setItem(DRAFT_TEST_KEY, JSON.stringify(draftData));
+    return draftData;
+  };
+
+  const saveDraftToSupabase = async (draftData: DraftTest) => {
+    if (!user) return;
+    
+    try {
+      setAutoSaving(true);
+      
+      const testData = {
+        title: draftData.formValues.title || "Untitled Test",
+        description: draftData.formValues.description,
+        creator_id: user.id,
+        is_draft: true,
+        difficulty: draftData.formValues.difficulty as any,
+        time_limit: draftData.formValues.timeLimit ? parseInt(draftData.formValues.timeLimit) : null,
+        question_count: draftData.questions.length,
+        results_visibility: draftData.formValues.resultsVisibility,
+        allow_retakes: draftData.formValues.allowRetakes,
+        subject: "General", // Default subject
+        draft_data: {
+          questions: draftData.questions,
+          currentQuestion: draftData.currentQuestion
+        }
+      };
+      
+      if (draftId) {
+        const { error } = await supabase
+          .from('user_tests')
+          .update(testData)
+          .eq('id', draftId);
+          
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('user_tests')
+          .insert(testData)
+          .select('id');
+          
+        if (error) throw error;
+        if (data && data[0]) {
+          setDraftId(data[0].id);
+        }
+      }
+      
+      console.log("Draft saved to Supabase successfully");
+    } catch (error) {
+      console.error("Error saving draft to Supabase:", error);
+    } finally {
+      setAutoSaving(false);
+    }
+  };
+
   useEffect(() => {
-    // Load saved form state if it exists
-    const savedFormState = localStorage.getItem('testFormState');
-    if (savedFormState) {
+    if (!form.getValues().title && questions.length === 0) {
+      return;
+    }
+    
+    const draftData = saveDraftToLocalStorage();
+    
+    const intervalId = setInterval(() => {
+      const updatedDraftData = saveDraftToLocalStorage();
+      saveDraftToSupabase(updatedDraftData);
+    }, AUTO_SAVE_INTERVAL);
+    
+    saveDraftToSupabase(draftData);
+    
+    return () => clearInterval(intervalId);
+  }, [form.getValues(), questions, currentQuestion, user]);
+
+  useEffect(() => {
+    const loadDraftFromLocalStorage = () => {
+      const savedData = localStorage.getItem(DRAFT_TEST_KEY);
+      if (!savedData) return false;
+      
       try {
-        const parsedState = JSON.parse(savedFormState);
-        Object.keys(parsedState).forEach(key => {
-          form.setValue(key as any, parsedState[key]);
+        const parsedData: DraftTest = JSON.parse(savedData);
+        
+        Object.keys(parsedData.formValues).forEach(key => {
+          form.setValue(key as any, parsedData.formValues[key as keyof TestFormValues]);
         });
+        
+        setQuestions(parsedData.questions);
+        
+        setCurrentQuestion(parsedData.currentQuestion);
+        
+        console.log("Loaded draft from localStorage");
+        return true;
       } catch (error) {
-        console.error("Error parsing saved form state:", error);
+        console.error("Error parsing saved draft:", error);
+        return false;
       }
-    }
+    };
     
-    // Load saved questions if they exist
-    const savedQuestions = localStorage.getItem('currentQuestions');
-    if (savedQuestions) {
+    const loadDraftFromSupabase = async () => {
+      if (!user) return;
+      
       try {
-        const parsedQuestions = JSON.parse(savedQuestions);
-        setQuestions(parsedQuestions);
+        const { data, error } = await supabase
+          .from('user_tests')
+          .select('*')
+          .eq('creator_id', user.id)
+          .eq('is_draft', true)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const draftTest = data[0];
+          setDraftId(draftTest.id);
+          
+          form.setValue('title', draftTest.title);
+          form.setValue('description', draftTest.description || '');
+          form.setValue('difficulty', draftTest.difficulty);
+          form.setValue('timeLimit', draftTest.time_limit ? draftTest.time_limit.toString() : '');
+          form.setValue('resultsVisibility', draftTest.resultsVisibility);
+          form.setValue('allowRetakes', draftTest.allow_retakes);
+          
+          if (draftTest.draft_data) {
+            if (draftTest.draft_data.questions) {
+              setQuestions(draftTest.draft_data.questions);
+            }
+            if (draftTest.draft_data.currentQuestion) {
+              setCurrentQuestion(draftTest.draft_data.currentQuestion);
+            }
+          }
+          
+          console.log("Loaded draft from Supabase");
+          
+          toast({
+            title: "Draft test loaded",
+            description: "You can continue from where you left off.",
+          });
+          
+          return true;
+        }
+        
+        return false;
       } catch (error) {
-        console.error("Error parsing saved questions:", error);
+        console.error("Error loading draft from Supabase:", error);
+        return false;
+      }
+    };
+    
+    const loadFromStorage = localStorage.getItem('testFormState') || localStorage.getItem('currentQuestions');
+    
+    if (loadFromStorage) {
+      const savedFormState = localStorage.getItem('testFormState');
+      if (savedFormState) {
+        try {
+          const parsedState = JSON.parse(savedFormState);
+          Object.keys(parsedState).forEach(key => {
+            form.setValue(key as any, parsedState[key]);
+          });
+        } catch (error) {
+          console.error("Error parsing saved form state:", error);
+        }
+      }
+      
+      const savedQuestions = localStorage.getItem('currentQuestions');
+      if (savedQuestions) {
+        try {
+          const parsedQuestions = JSON.parse(savedQuestions);
+          setQuestions(parsedQuestions);
+        } catch (error) {
+          console.error("Error parsing saved questions:", error);
+        }
+      }
+      
+      localStorage.removeItem('testFormState');
+      localStorage.removeItem('currentQuestions');
+    } else {
+      const localDraftLoaded = loadDraftFromLocalStorage();
+      
+      if (user) {
+        loadDraftFromSupabase();
       }
     }
-    
-    // Clear localStorage after loading
-    localStorage.removeItem('testFormState');
-    localStorage.removeItem('currentQuestions');
-  }, []);
+  }, [user]);
 
   const addQuestion = () => {
     if (!currentQuestion.text.trim()) {
@@ -200,6 +371,7 @@ const CreateTest = () => {
           question_count: questions.length,
           results_visibility: data.resultsVisibility,
           allow_retakes: data.allowRetakes,
+          is_draft: false,
         })
         .select();
         
@@ -235,6 +407,15 @@ const CreateTest = () => {
         throw questionsError;
       }
       
+      if (draftId) {
+        await supabase
+          .from('user_tests')
+          .delete()
+          .eq('id', draftId);
+      }
+      
+      localStorage.removeItem(DRAFT_TEST_KEY);
+      
       toast({
         title: "Test created",
         description: "Your test has been created successfully!",
@@ -254,11 +435,9 @@ const CreateTest = () => {
   };
 
   const goToQuestionBank = () => {
-    // Save current form state to localStorage to preserve it when returning
     localStorage.setItem('testFormState', JSON.stringify(form.getValues()));
     localStorage.setItem('currentQuestions', JSON.stringify(questions));
     
-    // Navigate to question bank page
     navigate('/cbt/question-bank');
   };
 
@@ -272,6 +451,9 @@ const CreateTest = () => {
           <ArrowLeft size={18} />
         </button>
         <h1 className="text-2xl font-bold">Create Test</h1>
+        {autoSaving && (
+          <span className="text-sm text-muted-foreground ml-auto">Saving draft...</span>
+        )}
       </div>
       
       <Form {...form}>
