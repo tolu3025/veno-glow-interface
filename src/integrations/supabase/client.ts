@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -41,31 +42,53 @@ export const updateDatabaseSchema = async () => {
   if (!isOnline()) return { success: false, message: "Device is offline" };
   
   try {
-    // Check if is_draft column exists in user_tests table
-    const { data: columns, error: columnsError } = await supabase
+    // Check if user_tests table exists
+    const { data: tableExists, error: tableCheckError } = await supabase
       .rpc('check_if_table_exists', { table_name: 'user_tests' });
     
-    if (columnsError) {
-      console.error("Error checking table:", columnsError);
-      return { success: false, error: columnsError };
+    if (tableCheckError) {
+      console.error("Error checking table:", tableCheckError);
+      return { success: false, error: tableCheckError };
     }
     
-    if (columns) {
-      // Add is_draft column if it doesn't exist
-      await supabase.rpc('add_column_if_not_exists', {
-        table_name: 'user_tests',
-        column_name: 'is_draft',
-        column_type: 'boolean',
-        column_default: 'false'
-      });
+    if (tableExists) {
+      // Instead of using add_column_if_not_exists, use a raw SQL query
+      // with proper error handling for column existence
+      const { error: alterTableError } = await supabase
+        .from('user_tests')
+        .select('is_draft')
+        .limit(1)
+        .catch(async (err) => {
+          // If the column doesn't exist (indicated by error), try to add it
+          if (err.message && err.message.includes('column "is_draft" does not exist')) {
+            const { error } = await supabase.rpc('execute_sql', {
+              sql_query: 'ALTER TABLE public.user_tests ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT false'
+            }).catch(e => ({ error: e }));
+            return { error };
+          }
+          return { error: err };
+        });
       
-      // Add draft_data column if it doesn't exist
-      await supabase.rpc('add_column_if_not_exists', {
-        table_name: 'user_tests',
-        column_name: 'draft_data',
-        column_type: 'jsonb',
-        column_default: 'null'
-      });
+      // Check for draft_data column similarly
+      const { error: draft_dataError } = await supabase
+        .from('user_tests')
+        .select('draft_data')
+        .limit(1)
+        .catch(async (err) => {
+          // If the column doesn't exist, try to add it
+          if (err.message && err.message.includes('column "draft_data" does not exist')) {
+            const { error } = await supabase.rpc('execute_sql', {
+              sql_query: 'ALTER TABLE public.user_tests ADD COLUMN IF NOT EXISTS draft_data JSONB DEFAULT NULL'
+            }).catch(e => ({ error: e }));
+            return { error };
+          }
+          return { error: err };
+        });
+      
+      if (alterTableError || draft_dataError) {
+        console.error("Error updating schema:", alterTableError || draft_dataError);
+        return { success: false, error: alterTableError || draft_dataError };
+      }
       
       return { success: true };
     }
