@@ -247,7 +247,10 @@ const CreateTest = () => {
           form.setValue('description', draftTest.description || '');
           form.setValue('difficulty', draftTest.difficulty);
           form.setValue('timeLimit', draftTest.time_limit ? draftTest.time_limit.toString() : '');
-          form.setValue('resultsVisibility', draftTest.results_visibility as "creator_only" | "test_takers" | "public");
+          
+          const visibility = draftTest.results_visibility as "creator_only" | "test_takers" | "public";
+          form.setValue('resultsVisibility', visibility);
+          
           form.setValue('allowRetakes', draftTest.allow_retakes);
           
           if (draftTest.draft_data) {
