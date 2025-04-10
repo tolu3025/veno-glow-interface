@@ -56,7 +56,7 @@ const resultsVisibilityOptions = [
   { value: "public", label: "Public (test takers can see all results)" },
 ];
 
-// Basic question type without circular references
+// Fix 1: Define Question type without any potential circular references
 type Question = {
   id: string;
   text: string;
@@ -65,7 +65,13 @@ type Question = {
   explanation?: string;
 };
 
-// Completely separate interfaces with no nesting to avoid circular references
+// Fix 2: Define draft data type separately to avoid nesting issues
+type DraftData = {
+  questions?: Question[] | null;
+  currentQuestion?: Question | null;
+};
+
+// Fix 3: Redefine UserTest interface without circular references
 interface UserTest {
   id: string;
   title: string;
@@ -78,15 +84,12 @@ interface UserTest {
   results_visibility: string;
   allow_retakes: boolean;
   is_draft?: boolean;
-  draft_data?: {
-    questions?: Question[] | null;
-    currentQuestion?: Question | null;
-  } | null;
+  draft_data?: DraftData | null;
   created_at: string;
   updated_at: string;
 }
 
-// Simplified draft test interface
+// Fix 4: Simplified draft test interface with primitive types
 interface DraftTest {
   formValues: TestFormValues;
   questions: Question[];
