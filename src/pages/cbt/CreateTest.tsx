@@ -56,6 +56,7 @@ const resultsVisibilityOptions = [
   { value: "public", label: "Public (test takers can see all results)" },
 ];
 
+// Basic question type without circular references
 type Question = {
   id: string;
   text: string;
@@ -64,7 +65,7 @@ type Question = {
   explanation?: string;
 };
 
-// Fixed interface to avoid circular references
+// Completely separate interfaces with no nesting to avoid circular references
 interface UserTest {
   id: string;
   title: string;
@@ -78,14 +79,14 @@ interface UserTest {
   allow_retakes: boolean;
   is_draft?: boolean;
   draft_data?: {
-    questions?: Question[];
-    currentQuestion?: Question;
+    questions?: Question[] | null;
+    currentQuestion?: Question | null;
   } | null;
   created_at: string;
   updated_at: string;
 }
 
-// Simplified DraftTest interface to avoid deep nesting
+// Simplified draft test interface
 interface DraftTest {
   formValues: TestFormValues;
   questions: Question[];
