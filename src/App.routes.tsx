@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -64,7 +63,7 @@ export const routes: RouteObject[] = [
       },
       { 
         path: 'blog', 
-        element: <ProtectedRoute><BlogPage /></ProtectedRoute>
+        element: <BlogPage />
       },
       { 
         path: 'bot', 
