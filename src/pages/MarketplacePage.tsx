@@ -437,7 +437,11 @@ const MarketplacePage = () => {
                   <School className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                   Explore Categories
                 </Button>
-                <Button variant="outline" size={isMobile ? "sm" : "default"}>
+                <Button 
+                  variant="outline" 
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => navigate('/marketplace/info')}
+                >
                   <BookOpen className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                   Learn More
                 </Button>
@@ -756,4 +760,95 @@ const MarketplacePage = () => {
                   <Label htmlFor="name" className="text-xs md:text-sm">Full Name (Optional)</Label>
                   <Input
                     id="name"
-                    placeholder="Your full"
+                    placeholder="Your full name"
+                    value={buyerName}
+                    onChange={(e) => setBuyerName(e.target.value)}
+                    className="text-xs md:text-sm"
+                  />
+                </div>
+                
+                <div className="col-span-4">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleCheckout}
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? "Processing..." : `Pay ₦${selectedTutorial.price.toLocaleString()}`}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-[95vw] md:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedTutorial?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedTutorial?.description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTutorial?.preview_url && (
+            <div className="aspect-video relative bg-black rounded-md overflow-hidden">
+              <video
+                ref={videoRef}
+                src={selectedTutorial.preview_url}
+                className="w-full h-full"
+                poster={selectedTutorial.thumbnail_url}
+                onEnded={handleVideoEnded}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {!isPlaying && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full bg-white/20 hover:bg-white/40"
+                    onClick={togglePlayPause}
+                  >
+                    <Play className="h-6 w-6 md:h-8 md:w-8 text-white" />
+                  </Button>
+                )}
+              </div>
+              
+              <div className="absolute bottom-4 left-4 right-4 flex justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-black/40 text-white border-white/40 hover:bg-black/60"
+                  onClick={togglePlayPause}
+                >
+                  {isPlaying ? (
+                    <>
+                      <Pause className="h-4 w-4 mr-2" />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Play
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-primary/80 text-white border-primary/40 hover:bg-primary"
+                  onClick={() => handleAddToCart(selectedTutorial)}
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Buy Now
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default MarketplacePage;
