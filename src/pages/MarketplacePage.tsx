@@ -24,6 +24,17 @@ interface Product {
   inventory_count?: number;
 }
 
+type TutorialResponse = {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  subject: string;
+  level: string;
+  duration: string;
+  inventory_count?: number;
+}
+
 const MarketplacePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [tutorials, setTutorials] = useState<Product[]>([]);
@@ -59,10 +70,15 @@ const MarketplacePage = () => {
             description: error.message,
             variant: "destructive"
           });
+          const sampleTutorials = getSampleTutorials();
+          setTutorials(sampleTutorials);
+          setFilteredTutorials(sampleTutorials);
+          setFeaturedTutorials(sampleTutorials.slice(0, 3));
         } else if (data && data.length > 0) {
-          setTutorials(data);
-          setFilteredTutorials(data);
-          setFeaturedTutorials(data.slice(0, 3));
+          const formattedData = data as TutorialResponse[];
+          setTutorials(formattedData);
+          setFilteredTutorials(formattedData);
+          setFeaturedTutorials(formattedData.slice(0, 3));
         } else {
           const sampleTutorials = getSampleTutorials();
           setTutorials(sampleTutorials);
