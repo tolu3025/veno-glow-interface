@@ -4,9 +4,10 @@ import AdComponent from './AdComponent';
 
 interface AdPlacementProps {
   location: 'header' | 'sidebar' | 'footer' | 'content' | 'article';
+  contentCheck?: boolean;
 }
 
-const AdPlacement: React.FC<AdPlacementProps> = ({ location }) => {
+const AdPlacement: React.FC<AdPlacementProps> = ({ location, contentCheck = true }) => {
   // Different ad formats based on placement location
   const getAdConfig = () => {
     switch (location) {
@@ -57,6 +58,7 @@ const AdPlacement: React.FC<AdPlacementProps> = ({ location }) => {
         adSlot={config.adSlot}
         adFormat={config.adFormat}
         className={config.className}
+        contentCheck={contentCheck}
       />
     </div>
   );
