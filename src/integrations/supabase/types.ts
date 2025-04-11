@@ -951,37 +951,49 @@ export type Database = {
           created_at: string | null
           description: string
           duration: string
+          duration_seconds: number | null
           id: string
           inventory_count: number | null
           level: string
+          preview_url: string | null
           price: number
           subject: string
+          thumbnail_url: string | null
           title: string
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           created_at?: string | null
           description: string
           duration: string
+          duration_seconds?: number | null
           id?: string
           inventory_count?: number | null
           level: string
+          preview_url?: string | null
           price: number
           subject: string
+          thumbnail_url?: string | null
           title: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string
           duration?: string
+          duration_seconds?: number | null
           id?: string
           inventory_count?: number | null
           level?: string
+          preview_url?: string | null
           price?: number
           subject?: string
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -1017,6 +1029,41 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_purchases: {
+        Row: {
+          id: string
+          payment_reference: string | null
+          purchased_at: string | null
+          status: string | null
+          tutorial_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          payment_reference?: string | null
+          purchased_at?: string | null
+          status?: string | null
+          tutorial_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          payment_reference?: string | null
+          purchased_at?: string | null
+          status?: string | null
+          tutorial_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchases_tutorial_id_fkey"
+            columns: ["tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "tutorials"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_questions: {
         Row: {

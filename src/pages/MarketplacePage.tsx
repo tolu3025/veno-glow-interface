@@ -1,11 +1,10 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, ShoppingBag, Users, CreditCard, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, Search, MessageCircle } from "lucide-react";
+import { Calendar, ShoppingBag, Users, CreditCard, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, Search, MessageCircle, Play, Pause, Video, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Database } from "@/integrations/supabase/types";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Product {
   id: string;
@@ -24,6 +24,10 @@ interface Product {
   level: string;
   duration: string;
   inventory_count?: number;
+  thumbnail_url?: string;
+  preview_url?: string;
+  video_url?: string;
+  duration_seconds?: number;
 }
 
 type TutorialResponse = Database['public']['Tables']['tutorials']['Row'];
@@ -41,7 +45,12 @@ const MarketplacePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredTutorials, setFilteredTutorials] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [previewTimerId, setPreviewTimerId] = useState<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
+  const auth = useAuth();
 
   useEffect(() => {
     const fetchTutorials = async () => {
@@ -77,7 +86,11 @@ const MarketplacePage = () => {
             subject: item.subject,
             level: item.level,
             duration: item.duration,
-            inventory_count: item.inventory_count || undefined
+            inventory_count: item.inventory_count || undefined,
+            thumbnail_url: item.thumbnail_url || undefined,
+            preview_url: item.preview_url || undefined,
+            video_url: item.video_url || undefined,
+            duration_seconds: item.duration_seconds || undefined
           }));
           setTutorials(formattedData);
           setFilteredTutorials(formattedData);
@@ -130,6 +143,14 @@ const MarketplacePage = () => {
     setFilteredTutorials(filtered);
   }, [searchQuery, selectedCategory, tutorials]);
 
+  useEffect(() => {
+    return () => {
+      if (previewTimerId) {
+        clearTimeout(previewTimerId);
+      }
+    };
+  }, [previewTimerId]);
+
   const getSampleTutorials = (): Product[] => [
     {
       id: "1",
@@ -139,7 +160,10 @@ const MarketplacePage = () => {
       subject: "Mathematics",
       level: "Advanced",
       duration: "6 months",
-      inventory_count: 50
+      inventory_count: 50,
+      thumbnail_url: "https://placehold.co/600x400/3b82f6/ffffff?text=Mathematics+Tutorial",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-teacher-pointing-on-board-during-white-board-session-42342-large.mp4",
+      duration_seconds: 3600
     },
     {
       id: "2",
@@ -149,7 +173,10 @@ const MarketplacePage = () => {
       subject: "Physics",
       level: "Intermediate",
       duration: "4 months",
-      inventory_count: 30
+      inventory_count: 30,
+      thumbnail_url: "https://placehold.co/600x400/22c55e/ffffff?text=Physics+Course",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-scientist-in-a-laboratory-5214-large.mp4",
+      duration_seconds: 2700
     },
     {
       id: "3",
@@ -159,7 +186,10 @@ const MarketplacePage = () => {
       subject: "History",
       level: "Intermediate",
       duration: "3 months",
-      inventory_count: 75
+      inventory_count: 75,
+      thumbnail_url: "https://placehold.co/600x400/ef4444/ffffff?text=History+Tutorial",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-hands-holding-an-ancient-book-34901-large.mp4",
+      duration_seconds: 1800
     },
     {
       id: "4",
@@ -169,7 +199,10 @@ const MarketplacePage = () => {
       subject: "Computer Science",
       level: "Beginner to Advanced",
       duration: "6 months",
-      inventory_count: 60
+      inventory_count: 60,
+      thumbnail_url: "https://placehold.co/600x400/8b5cf6/ffffff?text=Computer+Science",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-programming-a-computer-close-up-of-the-screen-9736-large.mp4",
+      duration_seconds: 4500
     },
     {
       id: "5",
@@ -179,14 +212,108 @@ const MarketplacePage = () => {
       subject: "Chemistry",
       level: "Advanced",
       duration: "5 months",
-      inventory_count: 40
+      inventory_count: 40,
+      thumbnail_url: "https://placehold.co/600x400/ec4899/ffffff?text=Chemistry+Tutorial",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-women-scientists-test-the-green-liquid-in-flasks-4736-large.mp4",
+      duration_seconds: 3000
     }
   ];
+
+  const checkPurchaseStatus = async (tutorialId: string) => {
+    if (!auth.user) return false;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_purchases')
+        .select('*')
+        .eq('tutorial_id', tutorialId)
+        .eq('user_id', auth.user.id)
+        .eq('status', 'completed')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking purchase status:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Failed to check purchase status:', error);
+      return false;
+    }
+  };
 
   const handleAddToCart = (tutorial: Product) => {
     setSelectedTutorial(tutorial);
     setQuantity(1);
     setCheckoutDialogOpen(true);
+  };
+
+  const handleWatchPreview = (tutorial: Product) => {
+    setSelectedTutorial(tutorial);
+    setPreviewDialogOpen(true);
+    
+    // Reset video state
+    setIsPlaying(false);
+  };
+  
+  const togglePlayPause = () => {
+    if (!videoRef.current) return;
+    
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+      
+      // Start 10-second preview timer for non-purchased tutorials
+      checkPurchaseStatus(selectedTutorial?.id || '').then(isPurchased => {
+        if (!isPurchased && selectedTutorial?.preview_url) {
+          // Clear any existing timer
+          if (previewTimerId) {
+            clearTimeout(previewTimerId);
+          }
+          
+          // Set new timer for 10 seconds
+          const timerId = setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.pause();
+              setIsPlaying(false);
+              toast({
+                title: "Preview Ended",
+                description: "Purchase this tutorial to access the full video content.",
+                variant: "default"
+              });
+            }
+          }, 10000) as unknown as number;
+          
+          setPreviewTimerId(timerId);
+        }
+      });
+    }
+    
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
+  };
+
+  const handleWatchFullVideo = async (tutorial: Product) => {
+    const isPurchased = await checkPurchaseStatus(tutorial.id);
+    
+    if (isPurchased) {
+      // Allow full video view
+      setSelectedTutorial(tutorial);
+      setPreviewDialogOpen(true);
+    } else {
+      // Prompt to purchase
+      toast({
+        title: "Purchase Required",
+        description: "You need to purchase this tutorial to access the full video.",
+        variant: "default"
+      });
+      handleAddToCart(tutorial);
+    }
   };
 
   const handleCheckout = async () => {
@@ -333,13 +460,55 @@ const MarketplacePage = () => {
                   <CardDescription>{tutorial.subject}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
-                  <div className="aspect-video rounded-md bg-muted flex items-center justify-center mb-3 md:mb-4">
-                    <ShoppingBag className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
+                  <div className="aspect-video rounded-md bg-muted flex items-center justify-center mb-3 md:mb-4 relative overflow-hidden group">
+                    {tutorial.thumbnail_url ? (
+                      <img 
+                        src={tutorial.thumbnail_url} 
+                        alt={tutorial.title} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Video className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
+                    )}
+                    
+                    {tutorial.preview_url && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="rounded-full bg-white/20 hover:bg-white/40"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleWatchPreview(tutorial);
+                          }}
+                        >
+                          <Play className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs md:text-sm text-muted-foreground">{tutorial.description}</p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 md:p-6 md:pt-0 flex justify-between items-center">
-                  <Button variant="outline" size={isMobile ? "sm" : "default"} onClick={() => handleAddToCart(tutorial)}>Buy Now</Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size={isMobile ? "sm" : "default"}
+                      onClick={() => handleAddToCart(tutorial)}
+                    >
+                      Buy Now
+                    </Button>
+                    {tutorial.preview_url && (
+                      <Button 
+                        variant="ghost" 
+                        size={isMobile ? "sm" : "default"}
+                        onClick={() => handleWatchPreview(tutorial)}
+                      >
+                        <Eye className="mr-1 h-4 w-4" />
+                        Preview
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-base md:text-lg font-bold">₦{tutorial.price.toLocaleString()}</p>
                 </CardFooter>
               </Card>
@@ -378,7 +547,15 @@ const MarketplacePage = () => {
                       </TableCell>
                       <TableCell className="text-sm">{tutorial.price.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" onClick={() => handleAddToCart(tutorial)}>Buy Now</Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" onClick={() => handleAddToCart(tutorial)}>Buy Now</Button>
+                          {tutorial.preview_url && (
+                            <Button size="sm" variant="outline" onClick={() => handleWatchPreview(tutorial)}>
+                              <Eye className="h-3 w-3 mr-1" />
+                              Preview
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -656,6 +833,56 @@ const MarketplacePage = () => {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-[95vw] md:max-w-3xl p-1 md:p-2">
+          <DialogHeader className="p-2 md:p-4">
+            <DialogTitle>{selectedTutorial?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedTutorial?.preview_url ? "10-second preview available. Purchase to watch the full tutorial." : "Tutorial Video"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="relative aspect-video overflow-hidden rounded-md bg-black">
+            {selectedTutorial && (
+              <video
+                ref={videoRef}
+                src={selectedTutorial.preview_url || selectedTutorial.video_url}
+                className="w-full h-full object-contain"
+                onEnded={handleVideoEnded}
+                playsInline
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
+            
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+              <div className="bg-black/60 rounded-full p-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={togglePlayPause}
+                  className="text-white hover:text-white/90 hover:bg-transparent"
+                >
+                  {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-2 md:p-4 flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {selectedTutorial?.duration}
+            </p>
+            
+            <Button 
+              onClick={() => handleAddToCart(selectedTutorial!)}
+            >
+              Purchase Tutorial
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

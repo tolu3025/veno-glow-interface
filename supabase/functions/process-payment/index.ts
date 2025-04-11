@@ -26,9 +26,9 @@ serve(async (req) => {
     }
 
     // Get request body
-    const { productId, title, price, buyerEmail, buyerName, quantity } = await req.json();
+    const { tutorialId, title, price, buyerEmail, buyerName, quantity } = await req.json();
 
-    if (!productId || !title || !price || !buyerEmail) {
+    if (!tutorialId || !title || !price || !buyerEmail) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing required fields' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -55,7 +55,7 @@ serve(async (req) => {
           name: buyerName || buyerEmail.split('@')[0],
         },
         meta: {
-          product_id: productId,
+          product_id: tutorialId,
           quantity: quantity
         },
         customizations: {
