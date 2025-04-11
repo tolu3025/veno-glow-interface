@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import AdPlacement from "@/components/ads/AdPlacement";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// Product type definition
 interface Product {
   id: string;
   title: string;
@@ -37,8 +35,7 @@ const MarketplacePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  
-  // Fetch products from Supabase
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -64,7 +61,6 @@ const MarketplacePage = () => {
           setFilteredProducts(data);
           setFeaturedProducts(data.slice(0, 3));
         } else {
-          // Use sample data if no products are returned
           const sampleProducts = getSampleProducts();
           setProducts(sampleProducts);
           setFilteredProducts(sampleProducts);
@@ -89,7 +85,6 @@ const MarketplacePage = () => {
     fetchProducts();
   }, []);
 
-  // Filter products based on search query and category
   useEffect(() => {
     let filtered = products;
     
@@ -111,7 +106,6 @@ const MarketplacePage = () => {
     setFilteredProducts(filtered);
   }, [searchQuery, selectedCategory, products]);
 
-  // Sample products for development/preview
   const getSampleProducts = (): Product[] => [
     {
       id: "1",
@@ -226,7 +220,6 @@ const MarketplacePage = () => {
       const { data } = response;
       
       if (data.success && data.paymentLink) {
-        // Redirect to Flutterwave payment page
         window.location.href = data.paymentLink;
       } else {
         throw new Error('Failed to generate payment link');
@@ -242,7 +235,6 @@ const MarketplacePage = () => {
     }
   };
 
-  // Get all unique categories
   const categories = Array.from(new Set(products.map(product => product.category)));
 
   if (isLoading) {
@@ -259,7 +251,6 @@ const MarketplacePage = () => {
   return (
     <div className="container py-8">
       <div className="flex flex-col gap-6">
-        {/* Header Section */}
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Veno Marketplace</h1>
           <p className="text-muted-foreground">
@@ -267,12 +258,10 @@ const MarketplacePage = () => {
           </p>
         </div>
 
-        {/* Top Ad Placement */}
         <div className="w-full">
           <AdPlacement location="header" />
         </div>
 
-        {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -306,7 +295,6 @@ const MarketplacePage = () => {
 
         <Separator />
 
-        {/* Hero Section with Educational Theme */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-xl mb-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="flex-1">
@@ -331,7 +319,6 @@ const MarketplacePage = () => {
           </div>
         </div>
 
-        {/* Featured Products Section */}
         <div>
           <h2 className="text-2xl font-bold mb-4">Featured Products</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -356,12 +343,10 @@ const MarketplacePage = () => {
           </div>
         </div>
 
-        {/* Middle Ad Placement */}
         <div className="my-8">
           <AdPlacement location="content" />
         </div>
 
-        {/* Product Listings Table */}
         <div>
           <h2 className="text-2xl font-bold mb-4">Available Products</h2>
           <Card>
@@ -409,7 +394,6 @@ const MarketplacePage = () => {
           </Card>
         </div>
 
-        {/* Sidebar Ad Placement */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
           <div className="md:col-span-2">
             <Card className="p-6">
@@ -459,27 +443,44 @@ const MarketplacePage = () => {
           <div className="flex gap-4 items-start">
             <AlertCircle className="h-6 w-6 text-amber-500 mt-1" />
             <div>
-              <h3 className="text-lg font-medium mb-2">Marketplace v1.0</h3>
+              <h3 className="text-lg font-medium mb-2">Marketplace v1.0 Beta</h3>
               <p className="text-muted-foreground mb-4">
-                This is the first version of Veno M, our educational marketplace platform. We offer a wide range 
-                of educational resources at affordable prices. All products are in Nigerian Naira (₦) and payment 
-                is processed securely through Flutterwave.
+                Veno Marketplace version 1.0 is set to launch on April 16, 2024. 
+                The beta version will be available in Q2 of 2025. 
+                If you are interested in uploading your products, 
+                please contact us through our WhatsApp at +2347065684718.
               </p>
-              <p className="text-sm text-muted-foreground">
-                Launch: April 2023
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  Launch Dates:
+                </p>
+                <Badge variant="outline">Version 1.0: April 16, 2024</Badge>
+                <Badge variant="outline">Beta: Q2 2025</Badge>
+              </div>
+              <div className="mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const phoneNumber = "+2347065684718";
+                    const message = encodeURIComponent("Hello! I'm interested in uploading products to the Veno Marketplace.");
+                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Contact via WhatsApp
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
 
         <Separator />
 
-        {/* Footer Ad Placement */}
         <div className="my-4">
           <AdPlacement location="footer" />
         </div>
 
-        {/* Additional Information Section */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
@@ -532,7 +533,6 @@ const MarketplacePage = () => {
         </div>
       </div>
 
-      {/* Checkout Dialog */}
       <Dialog open={checkoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
         <DialogContent>
           <DialogHeader>
