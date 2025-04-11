@@ -41,6 +41,13 @@ const AdComponent: React.FC<AdComponentProps> = ({
       // Only show ads if there's substantial content (at least 300px height and 150 words)
       const hasSubstantialContent = contentHeight > 300 && wordCount > 150;
       setShouldRenderAd(hasSubstantialContent);
+
+      // Log content metrics for debugging
+      console.log('Content metrics:', {
+        contentHeight,
+        wordCount,
+        hasSubstantialContent
+      });
     };
     
     // Run content verification after a short delay to ensure content is rendered
@@ -65,6 +72,7 @@ const AdComponent: React.FC<AdComponentProps> = ({
 
   // Don't render anything if content check fails
   if (!shouldRenderAd) {
+    console.log(`Ad with slot ${adSlot} not rendered due to insufficient content`);
     return null;
   }
 
