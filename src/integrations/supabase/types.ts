@@ -946,6 +946,45 @@ export type Database = {
           },
         ]
       }
+      tutorials: {
+        Row: {
+          created_at: string | null
+          description: string
+          duration: string
+          id: string
+          inventory_count: number | null
+          level: string
+          price: number
+          subject: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          duration: string
+          id?: string
+          inventory_count?: number | null
+          level: string
+          price: number
+          subject: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          duration?: string
+          id?: string
+          inventory_count?: number | null
+          level?: string
+          price?: number
+          subject?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           activities: Json | null

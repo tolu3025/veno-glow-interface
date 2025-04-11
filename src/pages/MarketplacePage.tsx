@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import AdPlacement from "@/components/ads/AdPlacement";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Database } from "@/integrations/supabase/types";
 
 interface Product {
   id: string;
@@ -24,16 +26,7 @@ interface Product {
   inventory_count?: number;
 }
 
-type TutorialResponse = {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  subject: string;
-  level: string;
-  duration: string;
-  inventory_count?: number;
-}
+type TutorialResponse = Database['public']['Tables']['tutorials']['Row'];
 
 const MarketplacePage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +68,17 @@ const MarketplacePage = () => {
           setFilteredTutorials(sampleTutorials);
           setFeaturedTutorials(sampleTutorials.slice(0, 3));
         } else if (data && data.length > 0) {
-          const formattedData = data as TutorialResponse[];
+          // Convert the data to match the Product interface
+          const formattedData: Product[] = data.map((item: TutorialResponse) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            price: item.price,
+            subject: item.subject,
+            level: item.level,
+            duration: item.duration,
+            inventory_count: item.inventory_count || undefined
+          }));
           setTutorials(formattedData);
           setFilteredTutorials(formattedData);
           setFeaturedTutorials(formattedData.slice(0, 3));
