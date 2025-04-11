@@ -5,8 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, ShoppingBag, Users, CreditCard, Gift, AlertCircle, BookOpen, GraduationCap, School, Award } from "lucide-react";
+import { Calendar, ShoppingBag, Users, CreditCard, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import AdPlacement from "@/components/ads/AdPlacement";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 // Product type definition
@@ -17,33 +21,66 @@ interface Product {
   price: number;
   category: string;
   condition: string;
+  inventory_count?: number;
 }
 
 const MarketplacePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerName, setBuyerName] = useState("");
+  const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   
   // Fetch products from Supabase
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.email) {
+          setBuyerEmail(userData.user.email);
+        }
+
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .limit(10);
+          .limit(20);
           
         if (error) {
           console.error('Error fetching products:', error);
-        } else if (data) {
-          // For now, use sample data if no products are returned
-          setProducts(data.length > 0 ? data : getSampleProducts());
-          setFeaturedProducts(data.length > 0 ? data.slice(0, 3) : getSampleProducts().slice(0, 3));
+          toast({
+            title: "Failed to load products",
+            description: error.message,
+            variant: "destructive"
+          });
+        } else if (data && data.length > 0) {
+          setProducts(data);
+          setFilteredProducts(data);
+          setFeaturedProducts(data.slice(0, 3));
+        } else {
+          // Use sample data if no products are returned
+          const sampleProducts = getSampleProducts();
+          setProducts(sampleProducts);
+          setFilteredProducts(sampleProducts);
+          setFeaturedProducts(sampleProducts.slice(0, 3));
         }
       } catch (error) {
         console.error('Failed to fetch products:', error);
-        setProducts(getSampleProducts());
-        setFeaturedProducts(getSampleProducts().slice(0, 3));
+        const sampleProducts = getSampleProducts();
+        setProducts(sampleProducts);
+        setFilteredProducts(sampleProducts);
+        setFeaturedProducts(sampleProducts.slice(0, 3));
+        toast({
+          title: "Connection Error",
+          description: "Using sample data while we restore connection",
+          variant: "default"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -52,49 +89,161 @@ const MarketplacePage = () => {
     fetchProducts();
   }, []);
 
+  // Filter products based on search query and category
+  useEffect(() => {
+    let filtered = products;
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(product => 
+        product.title.toLowerCase().includes(query) || 
+        product.description.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query)
+      );
+    }
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(product => 
+        product.category === selectedCategory
+      );
+    }
+    
+    setFilteredProducts(filtered);
+  }, [searchQuery, selectedCategory, products]);
+
   // Sample products for development/preview
   const getSampleProducts = (): Product[] => [
     {
       id: "1",
       title: "Advanced Mathematics Textbook",
       description: "Comprehensive textbook covering algebra, calculus, and statistics for high school students.",
-      price: 29.99,
+      price: 4500,
       category: "Books",
-      condition: "new"
+      condition: "new",
+      inventory_count: 15
     },
     {
       id: "2",
       title: "Science Lab Kit",
       description: "Complete lab kit for conducting basic chemistry and physics experiments at home.",
-      price: 49.99,
+      price: 12000,
       category: "Equipment",
-      condition: "new"
+      condition: "new",
+      inventory_count: 8
     },
     {
       id: "3",
       title: "History Notes Collection",
       description: "Detailed notes covering world history from ancient civilizations to modern times.",
-      price: 19.99,
+      price: 3000,
       category: "Notes",
-      condition: "new"
+      condition: "new",
+      inventory_count: 20
     },
     {
       id: "4",
       title: "Online Course Access - Programming Fundamentals",
       description: "6-month access to a comprehensive programming course covering Python, Java, and web development.",
-      price: 79.99,
+      price: 15000,
       category: "Courses",
-      condition: "new"
+      condition: "new",
+      inventory_count: 50
     },
     {
       id: "5",
       title: "School Supplies Bundle",
       description: "Complete set of notebooks, pens, pencils, and other essential school supplies.",
-      price: 34.99,
+      price: 7500,
       category: "Supplies",
-      condition: "new"
+      condition: "new",
+      inventory_count: 25
+    },
+    {
+      id: "6",
+      title: "UTME Past Questions - All Subjects",
+      description: "Compilation of past UTME questions for all subjects with detailed solutions.",
+      price: 2800,
+      category: "Study Materials",
+      condition: "new",
+      inventory_count: 100
+    },
+    {
+      id: "7",
+      title: "Scientific Calculator",
+      description: "Advanced scientific calculator for mathematics, physics, and engineering students.",
+      price: 6500,
+      category: "Equipment",
+      condition: "new",
+      inventory_count: 30
+    },
+    {
+      id: "8",
+      title: "Biology Slide Set",
+      description: "Professional set of biology slides for microscope observation.",
+      price: 8000,
+      category: "Equipment",
+      condition: "new",
+      inventory_count: 12
     }
   ];
+
+  const handleAddToCart = (product: Product) => {
+    setSelectedProduct(product);
+    setQuantity(1);
+    setCheckoutDialogOpen(true);
+  };
+
+  const handleCheckout = async () => {
+    if (!selectedProduct) return;
+    
+    if (!buyerEmail.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsProcessingPayment(true);
+    
+    try {
+      const response = await supabase.functions.invoke('process-payment', {
+        body: {
+          productId: selectedProduct.id,
+          title: selectedProduct.title,
+          price: selectedProduct.price,
+          buyerEmail,
+          buyerName,
+          quantity
+        }
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      const { data } = response;
+      
+      if (data.success && data.paymentLink) {
+        // Redirect to Flutterwave payment page
+        window.location.href = data.paymentLink;
+      } else {
+        throw new Error('Failed to generate payment link');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Failed to process payment",
+        variant: "destructive"
+      });
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // Get all unique categories
+  const categories = Array.from(new Set(products.map(product => product.category)));
 
   if (isLoading) {
     return (
@@ -123,20 +272,36 @@ const MarketplacePage = () => {
           <AdPlacement location="header" />
         </div>
 
-        {/* Categories and Filters */}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2 flex-wrap">
-            <Badge className="bg-veno-primary hover:bg-veno-primary/80">New</Badge>
-            <Badge variant="outline">Educational</Badge>
-            <Badge variant="outline">Premium</Badge>
-            <Badge variant="outline">Textbooks</Badge>
-            <Badge variant="outline">Study Materials</Badge>
-            <Badge variant="outline">Technology</Badge>
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
-          <Button variant="outline" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Latest Products
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button 
+              variant={selectedCategory === "" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setSelectedCategory("")}
+            >
+              All
+            </Button>
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category)}
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <Separator />
@@ -183,8 +348,8 @@ const MarketplacePage = () => {
                   <p className="text-sm text-muted-foreground">{product.description}</p>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                  <Button variant="outline">View Details</Button>
-                  <p className="text-lg font-bold">${product.price.toFixed(2)}</p>
+                  <Button variant="outline" onClick={() => handleAddToCart(product)}>Buy Now</Button>
+                  <p className="text-lg font-bold">₦{product.price.toLocaleString()}</p>
                 </CardFooter>
               </Card>
             ))}
@@ -205,12 +370,12 @@ const MarketplacePage = () => {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
+                  <TableHead>Price (₦)</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <div>
@@ -221,12 +386,24 @@ const MarketplacePage = () => {
                     <TableCell>
                       <Badge variant="outline">{product.category}</Badge>
                     </TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>{product.price.toLocaleString()}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm">Add to Cart</Button>
+                      <Button size="sm" onClick={() => handleAddToCart(product)}>Buy Now</Button>
                     </TableCell>
                   </TableRow>
                 ))}
+
+                {filteredProducts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="h-8 w-8 text-muted-foreground opacity-50" />
+                        <p className="font-medium">No products found</p>
+                        <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -282,14 +459,14 @@ const MarketplacePage = () => {
           <div className="flex gap-4 items-start">
             <AlertCircle className="h-6 w-6 text-amber-500 mt-1" />
             <div>
-              <h3 className="text-lg font-medium mb-2">Marketplace Beta</h3>
+              <h3 className="text-lg font-medium mb-2">Marketplace v1.0</h3>
               <p className="text-muted-foreground mb-4">
-                We're currently developing our marketplace to provide you with high-quality educational resources. 
-                This is a beta version of Veno M, our educational marketplace platform. Soon we'll have a wider range 
-                of products and services to enhance your learning experience.
+                This is the first version of Veno M, our educational marketplace platform. We offer a wide range 
+                of educational resources at affordable prices. All products are in Nigerian Naira (₦) and payment 
+                is processed securely through Flutterwave.
               </p>
               <p className="text-sm text-muted-foreground">
-                Full launch: Q3 2023
+                Launch: April 2023
               </p>
             </div>
           </div>
@@ -313,13 +490,13 @@ const MarketplacePage = () => {
               <div className="flex gap-2 flex-wrap">
                 <Badge variant="outline" className="py-2 px-4">
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Credit Card
-                </Badge>
-                <Badge variant="outline" className="py-2 px-4">
-                  PayPal
+                  Card Payment
                 </Badge>
                 <Badge variant="outline" className="py-2 px-4">
                   Bank Transfer
+                </Badge>
+                <Badge variant="outline" className="py-2 px-4">
+                  USSD
                 </Badge>
                 <Badge variant="outline" className="py-2 px-4">
                   Mobile Money
@@ -335,21 +512,153 @@ const MarketplacePage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-medium">How do I sell my educational materials?</h4>
-                <p className="text-sm text-muted-foreground">Create an account, verify your credentials, and list your products through our seller portal.</p>
+                <h4 className="font-medium">How do I track my order?</h4>
+                <p className="text-sm text-muted-foreground">Visit the Orders page to see all your purchases and their current status.</p>
               </div>
               <div>
-                <h4 className="font-medium">What types of products are accepted?</h4>
-                <p className="text-sm text-muted-foreground">Educational resources, study materials, textbooks, digital courses, and academic tools.</p>
+                <h4 className="font-medium">What payment methods are accepted?</h4>
+                <p className="text-sm text-muted-foreground">We accept card payments, bank transfers, USSD, and mobile money through Flutterwave.</p>
               </div>
               <div>
-                <h4 className="font-medium">How are products vetted for quality?</h4>
-                <p className="text-sm text-muted-foreground">Our team of educators reviews all submitted materials to ensure they meet our quality standards.</p>
+                <h4 className="font-medium">How are digital products delivered?</h4>
+                <p className="text-sm text-muted-foreground">Digital products are delivered to your email immediately after payment confirmation.</p>
+              </div>
+              <div>
+                <h4 className="font-medium">How can I sell my educational materials?</h4>
+                <p className="text-sm text-muted-foreground">Contact us to become a verified seller on Veno Marketplace.</p>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Checkout Dialog */}
+      <Dialog open={checkoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Your Purchase</DialogTitle>
+            <DialogDescription>
+              Review your order details before proceeding to payment.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProduct && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="col-span-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex flex-col space-y-2">
+                        <h3 className="font-medium">{selectedProduct.title}</h3>
+                        <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <Badge variant="outline">{selectedProduct.category}</Badge>
+                          <span className="font-bold">₦{selectedProduct.price.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="col-span-4 space-y-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <Input
+                    id="email"
+                    placeholder="your@email.com"
+                    type="email"
+                    value={buyerEmail}
+                    onChange={(e) => setBuyerEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="col-span-4 space-y-2">
+                  <Label htmlFor="name">Full Name (Optional)</Label>
+                  <Input
+                    id="name"
+                    placeholder="Your full name"
+                    value={buyerName}
+                    onChange={(e) => setBuyerName(e.target.value)}
+                  />
+                </div>
+                
+                <div className="col-span-4 space-y-2">
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-20 text-center"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity(quantity + 1)}
+                      disabled={selectedProduct.inventory_count ? quantity >= selectedProduct.inventory_count : false}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="col-span-4">
+                  <Separator />
+                </div>
+                
+                <div className="col-span-4">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Subtotal:</span>
+                    <span>₦{(selectedProduct.price * quantity).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between mt-2">
+                    <span className="font-medium">Delivery:</span>
+                    <span>₦0.00 (Digital Product)</span>
+                  </div>
+                  <div className="flex justify-between mt-4 text-lg font-bold">
+                    <span>Total:</span>
+                    <span>₦{(selectedProduct.price * quantity).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex-col sm:flex-row sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setCheckoutDialogOpen(false)}
+              disabled={isProcessingPayment}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCheckout} 
+              disabled={isProcessingPayment}
+              className="mt-2 sm:mt-0"
+            >
+              {isProcessingPayment ? (
+                <>
+                  <span className="animate-spin mr-2">◌</span>
+                  Processing...
+                </>
+              ) : (
+                <>Proceed to Payment</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

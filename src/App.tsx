@@ -17,6 +17,8 @@ import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
 import MarketplacePage from "./pages/MarketplacePage";
+import OrdersPage from "./pages/OrdersPage";
+import OrderCompletePage from "./pages/OrderCompletePage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
 import NotFound from "./pages/NotFound";
@@ -151,6 +153,18 @@ const AppRoutes = () => {
         <Route path="/marketplace" element={
           <ProtectedRoute>
             <MarketplacePage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/orders" element={
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/marketplace/order-complete" element={
+          <ProtectedRoute>
+            <OrderCompletePage />
           </ProtectedRoute>
         } />
         
