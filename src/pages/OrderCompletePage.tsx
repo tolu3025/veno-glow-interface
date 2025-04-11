@@ -7,9 +7,17 @@ import { CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+interface OrderDetails {
+  id: string;
+  created_at: string;
+  transaction_ref?: string;
+  total_amount: number;
+  [key: string]: any;
+}
+
 const OrderCompletePage = () => {
   const [status, setStatus] = useState<'success' | 'failure' | 'processing'>('processing');
-  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();

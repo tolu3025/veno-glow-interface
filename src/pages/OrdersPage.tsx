@@ -8,6 +8,11 @@ import { ShoppingBag, Package, Clock, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface OrderProduct {
+  title: string;
+  category: string;
+}
+
 interface Order {
   id: string;
   created_at: string;
@@ -15,10 +20,7 @@ interface Order {
   quantity: number;
   total_amount: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
-  product: {
-    title: string;
-    category: string;
-  };
+  product: OrderProduct;
 }
 
 const OrdersPage = () => {
@@ -66,8 +68,14 @@ const OrdersPage = () => {
             description: error.message,
             variant: "destructive"
           });
-        } else {
-          setOrders(data || []);
+        } else if (data) {
+          // Transform the data to match our Order interface
+          const formattedOrders = data.map(item => ({
+            ...item,
+            product: item.products // Rename products to product to match our interface
+          }));
+          
+          setOrders(formattedOrders);
         }
       } catch (error) {
         console.error('Failed to fetch orders:', error);
