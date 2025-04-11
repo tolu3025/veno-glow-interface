@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ const MarketplacePage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
   const auth = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTutorials = async () => {
@@ -77,7 +79,6 @@ const MarketplacePage = () => {
           setFilteredTutorials(sampleTutorials);
           setFeaturedTutorials(sampleTutorials.slice(0, 3));
         } else if (data && data.length > 0) {
-          // Convert the data to match the Product interface
           const formattedData: Product[] = data.map((item: TutorialResponse) => ({
             id: item.id,
             title: item.title,
@@ -639,6 +640,15 @@ const MarketplacePage = () => {
                 </p>
                 <Badge variant="outline" className="text-xs">Version 1.0: April 16, 2024</Badge>
                 <Badge variant="outline" className="text-xs">Beta: Q2 2025</Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/marketplace/info')}
+                  className="ml-2"
+                >
+                  <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                  Learn More
+                </Button>
               </div>
             </div>
           </div>
@@ -746,147 +756,4 @@ const MarketplacePage = () => {
                   <Label htmlFor="name" className="text-xs md:text-sm">Full Name (Optional)</Label>
                   <Input
                     id="name"
-                    placeholder="Your full name"
-                    value={buyerName}
-                    onChange={(e) => setBuyerName(e.target.value)}
-                    className="text-xs md:text-sm"
-                  />
-                </div>
-                
-                <div className="col-span-4 space-y-1 md:space-y-2">
-                  <Label htmlFor="quantity" className="text-xs md:text-sm">Quantity</Label>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                      className="h-8 w-8 p-0"
-                    >
-                      -
-                    </Button>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-16 md:w-20 text-center text-xs md:text-sm"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setQuantity(quantity + 1)}
-                      disabled={selectedTutorial.inventory_count ? quantity >= selectedTutorial.inventory_count : false}
-                      className="h-8 w-8 p-0"
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="col-span-4">
-                  <Separator />
-                </div>
-                
-                <div className="col-span-4 text-xs md:text-sm">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Subtotal:</span>
-                    <span>₦{(selectedTutorial.price * quantity).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between mt-2">
-                    <span className="font-medium">Delivery:</span>
-                    <span>₦0.00 (Digital Product)</span>
-                  </div>
-                  <div className="flex justify-between mt-3 md:mt-4 text-base md:text-lg font-bold">
-                    <span>Total:</span>
-                    <span>₦{(selectedTutorial.price * quantity).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter className="flex-col sm:flex-row sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setCheckoutDialogOpen(false)}
-              disabled={isProcessingPayment}
-              size={isMobile ? "sm" : "default"}
-              className="text-xs md:text-sm"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCheckout} 
-              disabled={isProcessingPayment}
-              className="mt-2 sm:mt-0 text-xs md:text-sm"
-              size={isMobile ? "sm" : "default"}
-            >
-              {isProcessingPayment ? (
-                <>
-                  <span className="animate-spin mr-1.5 md:mr-2">◌</span>
-                  Processing...
-                </>
-              ) : (
-                <>Proceed to Payment</>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
-        <DialogContent className="max-w-[95vw] md:max-w-3xl p-1 md:p-2">
-          <DialogHeader className="p-2 md:p-4">
-            <DialogTitle>{selectedTutorial?.title}</DialogTitle>
-            <DialogDescription>
-              {selectedTutorial?.preview_url ? "10-second preview available. Purchase to watch the full tutorial." : "Tutorial Video"}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="relative aspect-video overflow-hidden rounded-md bg-black">
-            {selectedTutorial && (
-              <video
-                ref={videoRef}
-                src={selectedTutorial.preview_url || selectedTutorial.video_url}
-                className="w-full h-full object-contain"
-                onEnded={handleVideoEnded}
-                playsInline
-              >
-                Your browser does not support the video tag.
-              </video>
-            )}
-            
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-              <div className="bg-black/60 rounded-full p-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={togglePlayPause}
-                  className="text-white hover:text-white/90 hover:bg-transparent"
-                >
-                  {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-2 md:p-4 flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">
-              {selectedTutorial?.duration}
-            </p>
-            
-            <Button 
-              onClick={() => handleAddToCart(selectedTutorial!)}
-            >
-              Purchase Tutorial
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default MarketplacePage;
+                    placeholder="Your full"

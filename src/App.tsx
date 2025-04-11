@@ -17,6 +17,7 @@ import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
 import MarketplacePage from "./pages/MarketplacePage";
+import MarketplaceInfo from "./pages/MarketplaceInfo";
 import OrdersPage from "./pages/OrdersPage";
 import OrderCompletePage from "./pages/OrderCompletePage";
 import BotPage from "./pages/BotPage";
@@ -153,6 +154,12 @@ const AppRoutes = () => {
         <Route path="/marketplace" element={
           <ProtectedRoute>
             <MarketplacePage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/marketplace/info" element={
+          <ProtectedRoute>
+            <MarketplaceInfo />
           </ProtectedRoute>
         } />
 

@@ -5,6 +5,7 @@ import MainLayout from './layouts/MainLayout';
 import Index from './pages/Index';
 import CbtPage from './pages/CbtPage';
 import MarketplacePage from './pages/MarketplacePage';
+import MarketplaceInfo from './pages/MarketplaceInfo';
 import BlogPage from './pages/BlogPage';
 import BotPage from './pages/BotPage';
 import AuthPage from './pages/AuthPage';
@@ -55,6 +56,10 @@ export const routes: RouteObject[] = [
       { 
         path: 'marketplace', 
         element: <ProtectedRoute><MarketplacePage /></ProtectedRoute>
+      },
+      { 
+        path: 'marketplace/info', 
+        element: <ProtectedRoute><MarketplaceInfo /></ProtectedRoute>
       },
       { 
         path: 'blog', 
