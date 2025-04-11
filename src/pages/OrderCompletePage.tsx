@@ -52,14 +52,14 @@ const OrderCompletePage = () => {
       }
 
       try {
-        // Verify the transaction in Supabase database
+        // Avoid using .single() which can cause deep type instantiation issues
         const { data, error } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, created_at, transaction_ref, total_amount, status, product_id')
           .eq('transaction_ref', txRef)
-          .single();
+          .limit(1);
 
-        if (error || !data) {
+        if (error || !data || data.length === 0) {
           console.error('Error fetching order:', error);
           setStatus('failure');
           toast({
@@ -71,7 +71,7 @@ const OrderCompletePage = () => {
         }
 
         // Order found, update status to success
-        setOrderDetails(data);
+        setOrderDetails(data[0]);
         setStatus('success');
         toast({
           title: "Order Successful!",
