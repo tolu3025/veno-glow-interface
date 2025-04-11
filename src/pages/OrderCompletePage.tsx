@@ -12,7 +12,8 @@ interface OrderDetails {
   created_at: string;
   transaction_ref?: string;
   total_amount: number;
-  [key: string]: any;
+  status?: string;
+  product_id?: string;
 }
 
 const OrderCompletePage = () => {

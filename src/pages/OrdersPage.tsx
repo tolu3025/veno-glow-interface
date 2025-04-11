@@ -23,6 +23,20 @@ interface Order {
   product: OrderProduct;
 }
 
+// Interface to match the raw data from Supabase
+interface RawOrderData {
+  id: string;
+  created_at: string;
+  product_id: string;
+  quantity: number;
+  total_amount: number;
+  status: string;
+  products: {
+    title: string;
+    category: string;
+  };
+}
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,9 +84,12 @@ const OrdersPage = () => {
           });
         } else if (data) {
           // Transform the data to match our Order interface
-          const formattedOrders = data.map(item => ({
+          const formattedOrders: Order[] = data.map((item: RawOrderData) => ({
             ...item,
-            product: item.products // Rename products to product to match our interface
+            // Ensure status is one of the allowed values
+            status: validateOrderStatus(item.status),
+            // Map products to product
+            product: item.products
           }));
           
           setOrders(formattedOrders);
@@ -91,6 +108,17 @@ const OrdersPage = () => {
 
     fetchOrders();
   }, [toast]);
+
+  // Helper function to validate status
+  const validateOrderStatus = (status: string): 'pending' | 'processing' | 'completed' | 'cancelled' => {
+    switch (status) {
+      case 'pending': return 'pending';
+      case 'processing': return 'processing';
+      case 'completed': return 'completed';
+      case 'cancelled': return 'cancelled';
+      default: return 'pending'; // Default fallback
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
