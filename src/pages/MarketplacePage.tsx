@@ -18,28 +18,29 @@ interface Product {
   title: string;
   description: string;
   price: number;
-  category: string;
-  condition: string;
+  subject: string;
+  level: string;
+  duration: string;
   inventory_count?: number;
 }
 
 const MarketplacePage = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [tutorials, setTutorials] = useState<Product[]>([]);
+  const [featuredTutorials, setFeaturedTutorials] = useState<Product[]>([]);
+  const [selectedTutorial, setSelectedTutorial] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [filteredTutorials, setFilteredTutorials] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchTutorials = async () => {
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (userData?.user?.email) {
@@ -47,33 +48,33 @@ const MarketplacePage = () => {
         }
 
         const { data, error } = await supabase
-          .from('products')
+          .from('tutorials')
           .select('*')
           .limit(20);
           
         if (error) {
-          console.error('Error fetching products:', error);
+          console.error('Error fetching tutorials:', error);
           toast({
-            title: "Failed to load products",
+            title: "Failed to load tutorials",
             description: error.message,
             variant: "destructive"
           });
         } else if (data && data.length > 0) {
-          setProducts(data);
-          setFilteredProducts(data);
-          setFeaturedProducts(data.slice(0, 3));
+          setTutorials(data);
+          setFilteredTutorials(data);
+          setFeaturedTutorials(data.slice(0, 3));
         } else {
-          const sampleProducts = getSampleProducts();
-          setProducts(sampleProducts);
-          setFilteredProducts(sampleProducts);
-          setFeaturedProducts(sampleProducts.slice(0, 3));
+          const sampleTutorials = getSampleTutorials();
+          setTutorials(sampleTutorials);
+          setFilteredTutorials(sampleTutorials);
+          setFeaturedTutorials(sampleTutorials.slice(0, 3));
         }
       } catch (error) {
-        console.error('Failed to fetch products:', error);
-        const sampleProducts = getSampleProducts();
-        setProducts(sampleProducts);
-        setFilteredProducts(sampleProducts);
-        setFeaturedProducts(sampleProducts.slice(0, 3));
+        console.error('Failed to fetch tutorials:', error);
+        const sampleTutorials = getSampleTutorials();
+        setTutorials(sampleTutorials);
+        setFilteredTutorials(sampleTutorials);
+        setFeaturedTutorials(sampleTutorials.slice(0, 3));
         toast({
           title: "Connection Error",
           description: "Using sample data while we restore connection",
@@ -84,113 +85,93 @@ const MarketplacePage = () => {
       }
     };
 
-    fetchProducts();
+    fetchTutorials();
   }, []);
 
   useEffect(() => {
-    let filtered = products;
+    let filtered = tutorials;
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(product => 
-        product.title.toLowerCase().includes(query) || 
-        product.description.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
+      filtered = filtered.filter(tutorial => 
+        tutorial.title.toLowerCase().includes(query) || 
+        tutorial.description.toLowerCase().includes(query) ||
+        tutorial.subject.toLowerCase().includes(query) ||
+        tutorial.level.toLowerCase().includes(query) ||
+        tutorial.duration.toLowerCase().includes(query)
       );
     }
     
     if (selectedCategory) {
-      filtered = filtered.filter(product => 
-        product.category === selectedCategory
+      filtered = filtered.filter(tutorial => 
+        tutorial.subject === selectedCategory
       );
     }
     
-    setFilteredProducts(filtered);
-  }, [searchQuery, selectedCategory, products]);
+    setFilteredTutorials(filtered);
+  }, [searchQuery, selectedCategory, tutorials]);
 
-  const getSampleProducts = (): Product[] => [
+  const getSampleTutorials = (): Product[] => [
     {
       id: "1",
-      title: "Advanced Mathematics Textbook",
-      description: "Comprehensive textbook covering algebra, calculus, and statistics for high school students.",
+      title: "Advanced Mathematics Tutorial Series",
+      description: "Comprehensive online tutorial covering algebra, calculus, and advanced mathematical concepts for high school and pre-university students.",
       price: 4500,
-      category: "Books",
-      condition: "new",
-      inventory_count: 15
-    },
-    {
-      id: "2",
-      title: "Science Lab Kit",
-      description: "Complete lab kit for conducting basic chemistry and physics experiments at home.",
-      price: 12000,
-      category: "Equipment",
-      condition: "new",
-      inventory_count: 8
-    },
-    {
-      id: "3",
-      title: "History Notes Collection",
-      description: "Detailed notes covering world history from ancient civilizations to modern times.",
-      price: 3000,
-      category: "Notes",
-      condition: "new",
-      inventory_count: 20
-    },
-    {
-      id: "4",
-      title: "Online Course Access - Programming Fundamentals",
-      description: "6-month access to a comprehensive programming course covering Python, Java, and web development.",
-      price: 15000,
-      category: "Courses",
-      condition: "new",
+      subject: "Mathematics",
+      level: "Advanced",
+      duration: "6 months",
       inventory_count: 50
     },
     {
-      id: "5",
-      title: "School Supplies Bundle",
-      description: "Complete set of notebooks, pens, pencils, and other essential school supplies.",
-      price: 7500,
-      category: "Supplies",
-      condition: "new",
-      inventory_count: 25
-    },
-    {
-      id: "6",
-      title: "UTME Past Questions - All Subjects",
-      description: "Compilation of past UTME questions for all subjects with detailed solutions.",
-      price: 2800,
-      category: "Study Materials",
-      condition: "new",
-      inventory_count: 100
-    },
-    {
-      id: "7",
-      title: "Scientific Calculator",
-      description: "Advanced scientific calculator for mathematics, physics, and engineering students.",
-      price: 6500,
-      category: "Equipment",
-      condition: "new",
+      id: "2",
+      title: "Physics Fundamentals Video Course",
+      description: "In-depth video tutorials exploring mechanics, electricity, magnetism, and modern physics with detailed explanations and practice problems.",
+      price: 12000,
+      subject: "Physics",
+      level: "Intermediate",
+      duration: "4 months",
       inventory_count: 30
     },
     {
-      id: "8",
-      title: "Biology Slide Set",
-      description: "Professional set of biology slides for microscope observation.",
+      id: "3",
+      title: "World History Comprehensive Tutorial",
+      description: "Engaging online tutorial series covering world history from ancient civilizations to modern geopolitics, perfect for secondary school students.",
+      price: 3000,
+      subject: "History",
+      level: "Intermediate",
+      duration: "3 months",
+      inventory_count: 75
+    },
+    {
+      id: "4",
+      title: "Computer Science Programming Bootcamp",
+      description: "Hands-on tutorial series covering programming fundamentals, web development, and coding best practices using Python and JavaScript.",
+      price: 15000,
+      subject: "Computer Science",
+      level: "Beginner to Advanced",
+      duration: "6 months",
+      inventory_count: 60
+    },
+    {
+      id: "5",
+      title: "Chemistry Lab and Theory Tutorial",
+      description: "Comprehensive online tutorial combining theoretical lessons with virtual lab experiments covering organic, inorganic, and physical chemistry.",
       price: 8000,
-      category: "Equipment",
-      condition: "new",
-      inventory_count: 12
+      subject: "Chemistry",
+      level: "Advanced",
+      duration: "5 months",
+      inventory_count: 40
     }
   ];
 
-  const handleAddToCart = (product: Product) => {
-    setSelectedProduct(product);
+  const handleAddToCart = (tutorial: Product) => {
+    setSelectedTutorial(tutorial);
     setQuantity(1);
     setCheckoutDialogOpen(true);
   };
 
   const handleCheckout = async () => {
-    if (!selectedProduct) return;
+    if (!selectedTutorial) return;
     
     if (!buyerEmail.trim()) {
       toast({
@@ -206,9 +187,9 @@ const MarketplacePage = () => {
     try {
       const response = await supabase.functions.invoke('process-payment', {
         body: {
-          productId: selectedProduct.id,
-          title: selectedProduct.title,
-          price: selectedProduct.price,
+          tutorialId: selectedTutorial.id,
+          title: selectedTutorial.title,
+          price: selectedTutorial.price,
           buyerEmail,
           buyerName,
           quantity
@@ -237,7 +218,7 @@ const MarketplacePage = () => {
     }
   };
 
-  const categories = Array.from(new Set(products.map(product => product.category)));
+  const categories = Array.from(new Set(tutorials.map(tutorial => tutorial.subject)));
 
   if (isLoading) {
     return (
@@ -254,9 +235,9 @@ const MarketplacePage = () => {
     <div className="container py-4 md:py-8">
       <div className="flex flex-col gap-4 md:gap-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Veno Marketplace</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Veno Tutorial Marketplace</h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            Discover educational resources, study materials, and premium content curated for students and educators.
+            Discover comprehensive subject tutorials, expert-led online courses, and educational resources designed to enhance your learning experience.
           </p>
         </div>
 
@@ -268,7 +249,7 @@ const MarketplacePage = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products..."
+              placeholder="Search tutorials..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -302,7 +283,7 @@ const MarketplacePage = () => {
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4 md:p-8 rounded-lg md:rounded-xl mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
             <div className="flex-1">
-              <h2 className="text-xl md:text-2xl font-bold mb-2 md:mb-4">Welcome to Veno M</h2>
+              <h2 className="text-xl md:text-2xl font-bold mb-2 md:mb-4">Welcome to Veno Tutorials Marketplace</h2>
               <p className="text-sm md:text-base mb-4">Your premier marketplace for educational resources, study materials, and academic tools. Find everything you need to excel in your academic journey.</p>
               <div className="flex flex-wrap gap-2 md:gap-3">
                 <Button size={isMobile ? "sm" : "default"}>
@@ -324,23 +305,23 @@ const MarketplacePage = () => {
         </div>
 
         <div>
-          <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Featured Products</h2>
+          <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Featured Tutorials</h2>
           <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredProducts.map((product) => (
-              <Card key={product.id} className="h-full">
+            {featuredTutorials.map((tutorial) => (
+              <Card key={tutorial.id} className="h-full">
                 <CardHeader className="p-4 md:p-6">
-                  <CardTitle className="text-lg md:text-xl">{product.title}</CardTitle>
-                  <CardDescription>{product.category}</CardDescription>
+                  <CardTitle className="text-lg md:text-xl">{tutorial.title}</CardTitle>
+                  <CardDescription>{tutorial.subject}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
                   <div className="aspect-video rounded-md bg-muted flex items-center justify-center mb-3 md:mb-4">
                     <ShoppingBag className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                   </div>
-                  <p className="text-xs md:text-sm text-muted-foreground">{product.description}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">{tutorial.description}</p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 md:p-6 md:pt-0 flex justify-between items-center">
-                  <Button variant="outline" size={isMobile ? "sm" : "default"} onClick={() => handleAddToCart(product)}>Buy Now</Button>
-                  <p className="text-base md:text-lg font-bold">₦{product.price.toLocaleString()}</p>
+                  <Button variant="outline" size={isMobile ? "sm" : "default"} onClick={() => handleAddToCart(tutorial)}>Buy Now</Button>
+                  <p className="text-base md:text-lg font-bold">₦{tutorial.price.toLocaleString()}</p>
                 </CardFooter>
               </Card>
             ))}
@@ -352,43 +333,43 @@ const MarketplacePage = () => {
         </div>
 
         <div>
-          <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Available Products</h2>
+          <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Available Tutorials</h2>
           <Card>
             <div className={isMobile ? "overflow-x-auto" : ""}>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead>Tutorial</TableHead>
+                    <TableHead>Subject</TableHead>
                     <TableHead>Price (₦)</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                  {filteredTutorials.map((tutorial) => (
+                    <TableRow key={tutorial.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-sm md:text-base">{product.title}</p>
-                          <p className="text-xs md:text-sm text-muted-foreground">{product.description.substring(0, isMobile ? 40 : 60)}...</p>
+                          <p className="font-medium text-sm md:text-base">{tutorial.title}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">{tutorial.description.substring(0, isMobile ? 40 : 60)}...</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                        <Badge variant="outline" className="text-xs">{tutorial.subject}</Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{product.price.toLocaleString()}</TableCell>
+                      <TableCell className="text-sm">{tutorial.price.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" onClick={() => handleAddToCart(product)}>Buy Now</Button>
+                        <Button size="sm" onClick={() => handleAddToCart(tutorial)}>Buy Now</Button>
                       </TableCell>
                     </TableRow>
                   ))}
 
-                  {filteredProducts.length === 0 && (
+                  {filteredTutorials.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6 md:py-8">
                         <div className="flex flex-col items-center gap-2">
                           <Search className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground opacity-50" />
-                          <p className="font-medium">No products found</p>
+                          <p className="font-medium">No tutorials found</p>
                           <p className="text-xs md:text-sm text-muted-foreground">Try adjusting your search or filters</p>
                         </div>
                       </TableCell>
@@ -449,9 +430,9 @@ const MarketplacePage = () => {
           <div className="flex gap-3 md:gap-4 items-start">
             <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-amber-500 mt-1" />
             <div>
-              <h3 className="text-base md:text-lg font-medium mb-2">Marketplace v1.0 Beta</h3>
+              <h3 className="text-base md:text-lg font-medium mb-2">Veno Tutorials Marketplace v1.0 Beta</h3>
               <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
-                Veno Marketplace version 1.0 is set to launch on April 16, 2024. 
+                Veno Tutorials Marketplace version 1.0 is set to launch on April 16, 2024. 
                 The beta version will be available in Q2 of 2025. 
                 If you are interested in uploading your tutorial sessions, 
                 please contact us for more information.
@@ -534,18 +515,18 @@ const MarketplacePage = () => {
             </DialogDescription>
           </DialogHeader>
           
-          {selectedProduct && (
+          {selectedTutorial && (
             <div className="space-y-3 md:space-y-4 py-3 md:py-4">
               <div className="grid grid-cols-4 gap-3 md:gap-4">
                 <div className="col-span-4">
                   <Card>
                     <CardContent className="p-3 md:p-4">
                       <div className="flex flex-col space-y-2">
-                        <h3 className="font-medium text-sm md:text-base">{selectedProduct.title}</h3>
-                        <p className="text-xs md:text-sm text-muted-foreground">{selectedProduct.description}</p>
+                        <h3 className="font-medium text-sm md:text-base">{selectedTutorial.title}</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground">{selectedTutorial.description}</p>
                         <div className="flex justify-between items-center mt-2">
-                          <Badge variant="outline" className="text-xs">{selectedProduct.category}</Badge>
-                          <span className="font-bold text-sm md:text-base">₦{selectedProduct.price.toLocaleString()}</span>
+                          <Badge variant="outline" className="text-xs">{selectedTutorial.subject}</Badge>
+                          <span className="font-bold text-sm md:text-base">₦{selectedTutorial.price.toLocaleString()}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -600,7 +581,7 @@ const MarketplacePage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setQuantity(quantity + 1)}
-                      disabled={selectedProduct.inventory_count ? quantity >= selectedProduct.inventory_count : false}
+                      disabled={selectedTutorial.inventory_count ? quantity >= selectedTutorial.inventory_count : false}
                       className="h-8 w-8 p-0"
                     >
                       +
@@ -615,7 +596,7 @@ const MarketplacePage = () => {
                 <div className="col-span-4 text-xs md:text-sm">
                   <div className="flex justify-between">
                     <span className="font-medium">Subtotal:</span>
-                    <span>₦{(selectedProduct.price * quantity).toLocaleString()}</span>
+                    <span>₦{(selectedTutorial.price * quantity).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between mt-2">
                     <span className="font-medium">Delivery:</span>
@@ -623,7 +604,7 @@ const MarketplacePage = () => {
                   </div>
                   <div className="flex justify-between mt-3 md:mt-4 text-base md:text-lg font-bold">
                     <span>Total:</span>
-                    <span>₦{(selectedProduct.price * quantity).toLocaleString()}</span>
+                    <span>₦{(selectedTutorial.price * quantity).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
