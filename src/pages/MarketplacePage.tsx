@@ -453,8 +453,8 @@ const MarketplacePage = () => {
               <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
                 Veno Marketplace version 1.0 is set to launch on April 16, 2024. 
                 The beta version will be available in Q2 of 2025. 
-                If you are interested in uploading your products, 
-                please contact us through our WhatsApp at +2347065684718.
+                If you are interested in uploading your tutorial sessions, 
+                please contact us for more information.
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs md:text-sm text-muted-foreground">
@@ -462,21 +462,6 @@ const MarketplacePage = () => {
                 </p>
                 <Badge variant="outline" className="text-xs">Version 1.0: April 16, 2024</Badge>
                 <Badge variant="outline" className="text-xs">Beta: Q2 2025</Badge>
-              </div>
-              <div className="mt-3 md:mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    const phoneNumber = "+2347065684718";
-                    const message = encodeURIComponent("Hello! I'm interested in uploading products to the Veno Marketplace.");
-                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
-                  }}
-                  className="flex items-center text-xs md:text-sm"
-                >
-                  <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
-                  Contact via WhatsApp
-                </Button>
               </div>
             </div>
           </div>
