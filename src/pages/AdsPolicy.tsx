@@ -1,78 +1,126 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 const AdsPolicy = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="container max-w-4xl py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="mr-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
+    <div className="container py-8 max-w-4xl mx-auto">
+      <div className="flex items-center mb-8">
+        <Button variant="ghost" asChild className="mr-4">
+          <Link to="/">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Advertising Policy</h1>
+        <h1 className="text-3xl font-bold">Advertising Policy</h1>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Ad Policy and Cookie Usage</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <section>
-            <h2 className="text-lg font-semibold mb-2">About Our Advertisements</h2>
-            <p>
-              Veno displays third-party advertisements to support our free educational services. 
-              These advertisements are delivered by Google AdSense and other trusted advertising partners.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-2">Ad Personalization</h2>
-            <p>
-              The advertisements displayed may be personalized based on your interests and browsing behavior.
-              This personalization improves the relevance of advertisements shown to you.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-2">Cookie Usage</h2>
-            <p>
-              Our advertising partners, including Google, use cookies to serve ads based on your prior visits to our website
-              or other websites. Google's use of advertising cookies enables it and its partners to serve ads based on your 
-              visit to our site and/or other sites on the Internet.
-            </p>
-            <p className="mt-2">
-              You can opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" 
-              className="text-veno-primary underline" target="_blank" rel="noopener noreferrer">Google's Ads Settings</a>.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-2">Ad Content</h2>
-            <p>
-              While we work with reputable advertising partners, we do not have complete control over the content of advertisements displayed.
-              If you encounter an inappropriate advertisement, please report it directly to Google AdSense.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold mb-2">Your Privacy</h2>
-            <p>
-              For more information about how we protect your privacy while displaying advertisements, please read our 
-              <a href="/privacy-policy" className="text-veno-primary underline ml-1">Privacy Policy</a>.
-            </p>
-          </section>
-        </CardContent>
-      </Card>
+      
+      <Separator className="my-6" />
+      
+      <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
+        <h2>Veno Platform Advertising Policy</h2>
+        <p>
+          Last Updated: April 11, 2024
+        </p>
+        
+        <h3>1. Overview</h3>
+        <p>
+          This Advertising Policy governs the display of advertisements on the Veno platform, 
+          including our website, mobile applications, and other digital properties. By using 
+          the Veno platform, you consent to the display of advertisements in accordance with 
+          this policy.
+        </p>
+        
+        <h3>2. Types of Advertisements</h3>
+        <p>
+          Advertisements on the Veno platform may include, but are not limited to:
+        </p>
+        <ul>
+          <li>Display advertisements (banners, tiles, etc.)</li>
+          <li>Sponsored content</li>
+          <li>Text advertisements</li>
+          <li>Video advertisements</li>
+          <li>Native advertisements</li>
+        </ul>
+        
+        <h3>3. Ad Placement</h3>
+        <p>
+          Advertisements may appear in various locations throughout the Veno platform, including:
+        </p>
+        <ul>
+          <li>At the top, bottom, or sides of pages</li>
+          <li>Within content feeds</li>
+          <li>Between sections of content</li>
+          <li>Before, during, or after educational content</li>
+          <li>On quiz and test pages</li>
+        </ul>
+        
+        <h3>4. Ad Content Standards</h3>
+        <p>
+          All advertisements displayed on the Veno platform must adhere to the following standards:
+        </p>
+        <ul>
+          <li>Advertisements must be clearly distinguishable from content</li>
+          <li>Advertisements must not be deceptive or misleading</li>
+          <li>Advertisements must not contain inappropriate or offensive content</li>
+          <li>Advertisements must comply with all applicable laws and regulations</li>
+          <li>Advertisements must not interfere with the educational experience</li>
+        </ul>
+        
+        <h3>5. Third-Party Advertising</h3>
+        <p>
+          Veno uses third-party advertising services, including Google AdSense, to display advertisements.
+          These services may use cookies and similar technologies to collect information about your 
+          browsing activity for the purpose of delivering relevant advertisements.
+        </p>
+        
+        <h3>6. Ad Blockers</h3>
+        <p>
+          While we respect your right to use ad blockers, we encourage you to support the Veno platform 
+          by allowing advertisements. Advertisements help us provide free access to educational content 
+          and maintain the platform.
+        </p>
+        
+        <h3>7. Feedback</h3>
+        <p>
+          If you encounter an advertisement that you believe violates this policy or is otherwise 
+          inappropriate, please report it to us.
+        </p>
+        
+        <h3>8. Changes to This Policy</h3>
+        <p>
+          We may update this Advertising Policy from time to time. Any changes will be posted on this page, 
+          and the "Last Updated" date will be revised accordingly.
+        </p>
+        
+        <h3>9. Contact Us</h3>
+        <p>
+          If you have any questions or concerns about this Advertising Policy, please contact us at:
+        </p>
+        <p>
+          <Link to="/contact" className="text-primary hover:underline">
+            Contact Page
+          </Link>
+        </p>
+      </div>
+      
+      <Separator className="my-6" />
+      
+      <div className="flex justify-between items-center">
+        <Button variant="outline" asChild>
+          <Link to="/privacy-policy">
+            Privacy Policy
+          </Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/terms-of-service">
+            Terms of Service
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 };

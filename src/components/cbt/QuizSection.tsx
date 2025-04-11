@@ -8,8 +8,9 @@ import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
 import { useSubjects } from '@/hooks/useSubjects';
 import { testSupabaseConnection } from '@/integrations/supabase/client';
+import AdPlacement from '@/components/ads/AdPlacement';
 
-// Import our new components
+// Import our components
 import ConnectionStatus from './quiz/ConnectionStatus';
 import SubjectSelector from './quiz/SubjectSelector';
 import DifficultySelector from './quiz/DifficultySelector';
@@ -162,6 +163,10 @@ const QuizSection = () => {
           onDifficultyChange={setDifficulty}
           options={difficultyOptions}
         />
+
+        <div className="my-4">
+          <AdPlacement location="content" contentCheck={false} />
+        </div>
 
         <SliderControl
           label="Time Limit"

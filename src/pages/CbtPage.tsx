@@ -2,6 +2,7 @@
 import { ArrowLeft, BookOpen, FileCheck, Monitor } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AdPlacement from "@/components/ads/AdPlacement";
 
 const CbtPage = () => {
   const navigate = useNavigate();
@@ -70,6 +71,10 @@ const CbtPage = () => {
             </div>
           </motion.div>
         ))}
+      </div>
+      
+      <div className="my-6">
+        <AdPlacement location="content" contentCheck={false} />
       </div>
       
       <button 

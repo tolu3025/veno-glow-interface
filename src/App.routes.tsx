@@ -23,6 +23,7 @@ import Library from './pages/cbt/Library';
 import Leaderboard from './pages/cbt/Leaderboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import AdsPolicy from './pages/AdsPolicy';
 import UnderMaintenancePage from './pages/UnderMaintenancePage';
 import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
@@ -94,6 +95,10 @@ export const routes: RouteObject[] = [
       {
         path: 'terms-of-service',
         element: <TermsOfService />
+      },
+      {
+        path: 'ads-policy',
+        element: <AdsPolicy />
       },
       {
         path: 'cbt',
