@@ -7,7 +7,6 @@ import CbtPage from './pages/CbtPage';
 import MarketplacePage from './pages/MarketplacePage';
 import MarketplaceInfo from './pages/MarketplaceInfo';
 import BlogPage from './pages/BlogPage';
-import BlogPostPage from './pages/BlogPostPage';
 import BotPage from './pages/BotPage';
 import AuthPage from './pages/AuthPage';
 import NotFound from './pages/NotFound';
@@ -65,11 +64,7 @@ export const routes: RouteObject[] = [
       },
       { 
         path: 'blog', 
-        element: <BlogPage />
-      },
-      { 
-        path: 'blog/post/:slug', 
-        element: <BlogPostPage />
+        element: <ProtectedRoute><BlogPage /></ProtectedRoute>
       },
       { 
         path: 'bot', 
