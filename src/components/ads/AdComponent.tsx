@@ -1,51 +1,29 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 interface AdComponentProps {
   adSlot: string;
   adFormat?: 'auto' | 'horizontal' | 'vertical' | 'rectangle';
   className?: string;
-  contentCheck?: boolean; // New prop to verify content is available
 }
 
 const AdComponent: React.FC<AdComponentProps> = ({ 
   adSlot, 
   adFormat = 'auto', 
-  className = '',
-  contentCheck = true // Default to true, set to false when no content
+  className = '' 
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
-    // Only initialize ads if contentCheck is true
-    if (!contentCheck) {
-      console.log('Ad not shown: No publisher content available');
-      return;
-    }
-
-    // Set a delay to ensure content is loaded before showing ads
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-      
-      try {
-        // Push commands to Google AdSense to refresh ads when component mounts
-        // @ts-ignore - AdSense declarations not available in TypeScript
-        if (window.adsbygoogle) {
-          // @ts-ignore
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }
-      } catch (error) {
-        console.error('Error initializing AdSense:', error);
+    // Push commands to Google AdSense to refresh ads when component mounts
+    try {
+      // @ts-ignore - AdSense declarations not available in TypeScript
+      if (window.adsbygoogle) {
+        // @ts-ignore
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
       }
-    }, 1000); // 1 second delay
-
-    return () => clearTimeout(timer);
-  }, [contentCheck]);
-
-  // Don't render anything if content check fails
-  if (!contentCheck || !isVisible) {
-    return null;
-  }
+    } catch (error) {
+      console.error('Error initializing AdSense:', error);
+    }
+  }, []);
 
   return (
     <div className={`ad-container my-4 overflow-hidden ${className}`}>

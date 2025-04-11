@@ -12,15 +12,12 @@ import MyTestsSection from "@/components/cbt/MyTestsSection";
 import AppNavigation from "@/components/cbt/AppNavigation";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from "@/providers/AuthProvider";
-import { useAds } from "@/providers/AdContext";
-import AdPlacement from "@/components/ads/AdPlacement";
 
 const CbtPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { setPageHasContent } = useAds();
   const [activeTab, setActiveTab] = useState(() => {
     // Get tab from URL query params or default to 'quiz'
     const params = new URLSearchParams(location.search);
@@ -39,14 +36,7 @@ const CbtPage = () => {
         });
       });
     }
-
-    // Set page has content to true when CBT page loads
-    setPageHasContent(true);
-    
-    return () => {
-      setPageHasContent(false);
-    };
-  }, [setPageHasContent]);
+  }, []);
   
   const handleCreateTest = () => {
     navigate("/cbt/create");
@@ -85,9 +75,6 @@ const CbtPage = () => {
           </Button>
         </div>
       </div>
-      
-      {/* Only show ads when there is content */}
-      <AdPlacement location="content" contentAvailable={true} />
       
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -151,11 +138,6 @@ const CbtPage = () => {
           </CardContent>
         </Card>
       </motion.div>
-      
-      {/* Footer ad only shown when there is content */}
-      <div className="mt-10">
-        <AdPlacement location="footer" contentAvailable={true} />
-      </div>
     </div>
   );
 };

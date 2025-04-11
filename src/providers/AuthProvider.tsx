@@ -64,8 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
       console.log("Auth state change:", event);
       
-      // Fix for the TypeScript error - correct comparison for SIGNED_IN event
-      if (currentSession && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+      if (currentSession && event === "SIGNED_IN") {
         setSession(currentSession);
         setUser(currentSession.user);
         toast.success("Signed in successfully!");

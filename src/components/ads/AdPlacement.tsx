@@ -4,13 +4,9 @@ import AdComponent from './AdComponent';
 
 interface AdPlacementProps {
   location: 'header' | 'sidebar' | 'footer' | 'content' | 'article';
-  contentAvailable?: boolean; // New prop to indicate if there's actual content
 }
 
-const AdPlacement: React.FC<AdPlacementProps> = ({ 
-  location,
-  contentAvailable = true // Default to true, should be set to false when no content 
-}) => {
+const AdPlacement: React.FC<AdPlacementProps> = ({ location }) => {
   // Different ad formats based on placement location
   const getAdConfig = () => {
     switch (location) {
@@ -61,7 +57,6 @@ const AdPlacement: React.FC<AdPlacementProps> = ({
         adSlot={config.adSlot}
         adFormat={config.adFormat}
         className={config.className}
-        contentCheck={contentAvailable}
       />
     </div>
   );

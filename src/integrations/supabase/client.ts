@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -35,72 +36,6 @@ export const supabase = createClient<Database>(
     }
   }
 );
-
-// Function to update the database schema (check and add necessary columns)
-export const updateDatabaseSchema = async () => {
-  if (!isOnline()) return { success: false, message: "Device is offline" };
-  
-  try {
-    // Check if user_tests table exists
-    const { data: tableExists, error: tableCheckError } = await supabase
-      .rpc('check_if_table_exists', { table_name: 'user_tests' });
-    
-    if (tableCheckError) {
-      console.error("Error checking table:", tableCheckError);
-      return { success: false, error: tableCheckError };
-    }
-    
-    if (tableExists) {
-      // Use direct SQL queries without .catch() to check for columns
-      // Check for is_draft column
-      const { data: hasDraftColumn, error: draftColumnError } = await supabase
-        .from('user_tests')
-        .select('is_draft')
-        .limit(1)
-        .then(
-          () => ({ data: true, error: null }),
-          (err) => {
-            // If the column doesn't exist, this will error
-            console.log("is_draft column check error:", err);
-            return { data: false, error: err };
-          }
-        );
-
-      // Check for draft_data column
-      const { data: hasDraftDataColumn, error: draftDataColumnError } = await supabase
-        .from('user_tests')
-        .select('draft_data')
-        .limit(1)
-        .then(
-          () => ({ data: true, error: null }),
-          (err) => {
-            // If the column doesn't exist, this will error
-            console.log("draft_data column check error:", err);
-            return { data: false, error: err };
-          }
-        );
-      
-      // Log the results of our checks
-      console.log("Column checks:", { hasDraftColumn, hasDraftDataColumn });
-      
-      // No actions taken here since we've already run the SQL migration
-      // to add the columns
-      
-      return { 
-        success: true, 
-        columnsExist: {
-          isDraft: hasDraftColumn,
-          draftData: hasDraftDataColumn
-        }
-      };
-    }
-    
-    return { success: false, message: "Table not found" };
-  } catch (error) {
-    console.error("Error updating schema:", error);
-    return { success: false, error };
-  }
-};
 
 // Create a function to check if we're online
 export const isOnline = () => {
