@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Users, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, Search, MessageCircle, Play, Pause, Video, Eye } from "lucide-react";
+import { 
+  Calendar, Users, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, 
+  Search, MessageCircle, Play, Pause, Video, Eye, Briefcase, Code, Laptop, 
+  PenTool, LineChart, Languages, Heart, Camera, Music, Palette, Smartphone 
+} from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import AdPlacement from "@/components/ads/AdPlacement";
@@ -60,7 +64,7 @@ const TutorialPage = () => {
           const sampleTutorials = getSampleTutorials();
           setTutorials(sampleTutorials);
           setFilteredTutorials(sampleTutorials);
-          setFeaturedTutorials(sampleTutorials.slice(0, 3));
+          setFeaturedTutorials(sampleTutorials.slice(0, 4));
         } else if (data && data.length > 0) {
           const formattedData: Tutorial[] = data.map((item) => ({
             id: item.id,
@@ -76,19 +80,19 @@ const TutorialPage = () => {
           }));
           setTutorials(formattedData);
           setFilteredTutorials(formattedData);
-          setFeaturedTutorials(formattedData.slice(0, 3));
+          setFeaturedTutorials(formattedData.slice(0, 4));
         } else {
           const sampleTutorials = getSampleTutorials();
           setTutorials(sampleTutorials);
           setFilteredTutorials(sampleTutorials);
-          setFeaturedTutorials(sampleTutorials.slice(0, 3));
+          setFeaturedTutorials(sampleTutorials.slice(0, 4));
         }
       } catch (error) {
         console.error('Failed to fetch tutorials:', error);
         const sampleTutorials = getSampleTutorials();
         setTutorials(sampleTutorials);
         setFilteredTutorials(sampleTutorials);
-        setFeaturedTutorials(sampleTutorials.slice(0, 3));
+        setFeaturedTutorials(sampleTutorials.slice(0, 4));
         toast({
           title: "Connection Error",
           description: "Using sample data while we restore connection",
@@ -188,6 +192,61 @@ const TutorialPage = () => {
       thumbnail_url: "https://placehold.co/600x400/ec4899/ffffff?text=Chemistry+Tutorial",
       preview_url: "https://assets.mixkit.co/videos/preview/mixkit-women-scientists-test-the-green-liquid-in-flasks-4736-large.mp4",
       duration_seconds: 3000
+    },
+    {
+      id: "6",
+      title: "Digital Marketing Masterclass",
+      description: "Complete guide to digital marketing strategies including social media, SEO, content marketing, and analytics for business growth.",
+      subject: "Business",
+      level: "Intermediate",
+      duration: "3 months",
+      thumbnail_url: "https://placehold.co/600x400/f97316/ffffff?text=Digital+Marketing",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-female-graphic-designer-working-at-her-desk-5693-large.mp4",
+      duration_seconds: 2400
+    },
+    {
+      id: "7",
+      title: "Freelancing Success: Complete Guide",
+      description: "Learn how to establish a successful freelancing career from finding clients to managing projects and scaling your business.",
+      subject: "Freelancing",
+      level: "Beginner",
+      duration: "2 months",
+      thumbnail_url: "https://placehold.co/600x400/6366f1/ffffff?text=Freelancing+Guide",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-person-typing-on-computer-at-desk-with-coffee-4820-large.mp4",
+      duration_seconds: 1800
+    },
+    {
+      id: "8",
+      title: "Graphic Design Fundamentals",
+      description: "Master the core principles of graphic design including typography, color theory, layout design, and digital design tools.",
+      subject: "Design",
+      level: "Beginner to Intermediate",
+      duration: "4 months",
+      thumbnail_url: "https://placehold.co/600x400/d946ef/ffffff?text=Graphic+Design",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-graphic-designer-working-on-a-tablet-at-an-office-5694-large.mp4",
+      duration_seconds: 2700
+    },
+    {
+      id: "9",
+      title: "Financial Literacy for Beginners",
+      description: "Essential financial concepts explained simply - from budgeting and saving to investing and planning for retirement.",
+      subject: "Finance",
+      level: "Beginner",
+      duration: "2 months",
+      thumbnail_url: "https://placehold.co/600x400/10b981/ffffff?text=Financial+Literacy",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-man-working-on-a-financial-report-in-an-office-5700-large.mp4",
+      duration_seconds: 1500
+    },
+    {
+      id: "10",
+      title: "Mobile App Development for Beginners",
+      description: "Step-by-step guide to creating mobile applications for iOS and Android using React Native and modern development practices.",
+      subject: "App Development",
+      level: "Intermediate",
+      duration: "5 months",
+      thumbnail_url: "https://placehold.co/600x400/0ea5e9/ffffff?text=App+Development",
+      preview_url: "https://assets.mixkit.co/videos/preview/mixkit-woman-scrolling-on-her-smartphone-at-an-office-5712-large.mp4",
+      duration_seconds: 3300
     }
   ];
 
@@ -279,7 +338,7 @@ const TutorialPage = () => {
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
             <div className="flex-1">
               <h2 className="text-xl md:text-2xl font-bold mb-2 md:mb-4">Welcome to Veno Tutorials Library</h2>
-              <p className="text-sm md:text-base mb-4">Your premier resource for educational materials, study guides, and academic tools. Find everything you need to excel in your academic journey.</p>
+              <p className="text-sm md:text-base mb-4">Your premier resource for educational materials, study guides, and academic tools. Find everything you need to excel in your academic journey, develop professional skills, and explore new interests.</p>
               <div className="flex flex-wrap gap-2 md:gap-3">
                 <Button size={isMobile ? "sm" : "default"}>
                   <School className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -305,7 +364,7 @@ const TutorialPage = () => {
 
         <div>
           <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Featured Tutorials</h2>
-          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {featuredTutorials.map((tutorial) => (
               <Card key={tutorial.id} className="h-full">
                 <CardHeader className="p-4 md:p-6">
@@ -340,7 +399,7 @@ const TutorialPage = () => {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs md:text-sm text-muted-foreground">{tutorial.description}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">{tutorial.description.substring(0, 100)}...</p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 md:p-6 md:pt-0 flex justify-between items-center">
                   <div className="flex gap-2">
@@ -417,38 +476,51 @@ const TutorialPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 my-6 md:my-8">
           <div className="md:col-span-2">
             <Card className="p-4 md:p-6">
-              <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Educational Resources</h3>
+              <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Learning Categories</h3>
               <p className="text-sm md:text-base mb-3 md:mb-4">
-                Veno Tutorials offers a wide range of educational resources to help students, teachers, 
-                and educational institutions enhance their learning and teaching experiences.
+                Veno Tutorials offers a wide range of categories to help you develop skills across various disciplines:
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                <div className="flex items-start gap-2">
-                  <Award className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-sm md:text-base">Quality Materials</h4>
-                    <p className="text-xs md:text-sm text-muted-foreground">Curated and verified by educators</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-sm md:text-base">Latest Content</h4>
-                    <p className="text-xs md:text-sm text-muted-foreground">Updated regularly with new materials</p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                 <div className="flex items-start gap-2">
                   <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-sm md:text-base">Academic Success</h4>
-                    <p className="text-xs md:text-sm text-muted-foreground">Resources that help students excel</p>
+                    <h4 className="font-medium text-sm md:text-base">Academic</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Mathematics, Science, History</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Users className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
+                  <Briefcase className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-sm md:text-base">Community Support</h4>
-                    <p className="text-xs md:text-sm text-muted-foreground">Connect with other educators and students</p>
+                    <h4 className="font-medium text-sm md:text-base">Business</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Marketing, Management, Finance</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Laptop className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-sm md:text-base">Freelancing</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Client management, Pricing, Growth</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Code className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-sm md:text-base">Technology</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Programming, Web Dev, Mobile</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <PenTool className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-sm md:text-base">Design</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">UI/UX, Graphic Design, Typography</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <LineChart className="h-4 w-4 md:h-5 md:w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-sm md:text-base">Data Science</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Analytics, Visualization, ML</p>
                   </div>
                 </div>
               </div>
@@ -463,10 +535,10 @@ const TutorialPage = () => {
           <div className="flex gap-3 md:gap-4 items-start">
             <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-amber-500 mt-1" />
             <div>
-              <h3 className="text-base md:text-lg font-medium mb-2">Veno Tutorials v1.0</h3>
+              <h3 className="text-base md:text-lg font-medium mb-2">Constantly Growing Library</h3>
               <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
-                Our tutorial library is growing! More tutorials are being added regularly to cover a wider range of subjects and 
-                academic levels. If you have suggestions for tutorials you'd like to see, please contact us.
+                Our tutorial library is expanding weekly with new content covering business, technology, creative skills, 
+                and academic subjects. Check back regularly to discover new learning materials.
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Button 

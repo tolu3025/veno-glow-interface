@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Book, ShoppingCart, Bot, FileText, Landmark, BarChart, BookOpen, CheckCircle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Book, ShoppingCart, Bot, FileText, Landmark, BarChart, BookOpen, CheckCircle, ArrowRight, GraduationCap, Video, Briefcase, Code, Laptop } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ServiceCard from '@/components/ServiceCard';
 import { motion } from 'framer-motion';
@@ -49,25 +48,25 @@ const ServicesPage = () => {
       category: "education"
     },
     {
-      id: "marketplace",
-      title: "Veno Marketplace",
-      description: "Shop for digital products and services in our marketplace. Find educational resources, templates, and more.",
-      icon: ShoppingCart,
-      href: "/marketplace",
+      id: "tutorial",
+      title: "Veno Tutorials",
+      description: "Comprehensive tutorial library covering business, freelancing, education, and a wide range of learning topics with high-quality video content.",
+      icon: Video,
+      href: "/tutorial",
       features: [
-        "High-quality educational resources",
-        "Peer-reviewed content",
-        "Secure payment system",
-        "Instant downloads"
+        "High-quality educational videos",
+        "Business and freelancing guides",
+        "Professional development courses",
+        "Beginner to advanced content"
       ],
-      details: "Veno Marketplace connects content creators with learners, offering a wide range of educational materials, course templates, and digital resources. Our curated marketplace ensures quality content while providing creators with a platform to monetize their expertise.",
+      details: "Our tutorial platform provides access to a vast collection of educational videos and learning resources across multiple disciplines. From business development to technical skills, our content is designed to help learners of all levels advance their knowledge and capabilities.",
       benefits: [
-        "Commission-free for verified educators",
-        "Quality assurance process",
-        "Diverse content categories",
-        "Support for multiple file formats"
+        "Free access to all content",
+        "Regularly updated materials",
+        "Diverse learning paths",
+        "Expert-created tutorials"
       ],
-      category: "commerce"
+      category: "education"
     },
     {
       id: "bot",
@@ -225,7 +224,6 @@ const ServicesPage = () => {
             <TabsTrigger value="all">All Services</TabsTrigger>
             <TabsTrigger value="education">Education</TabsTrigger>
             <TabsTrigger value="technology">Technology</TabsTrigger>
-            <TabsTrigger value="commerce">Commerce</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
             <TabsTrigger value="professional">Professional</TabsTrigger>
           </TabsList>
