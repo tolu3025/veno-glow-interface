@@ -16,9 +16,10 @@ import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
-import TutorialPage from "./pages/TutorialPage";
-import TutorialInfo from "./pages/TutorialInfo";
+import MarketplacePage from "./pages/MarketplacePage";
+import MarketplaceInfo from "./pages/MarketplaceInfo";
 import OrdersPage from "./pages/OrdersPage";
+import OrderCompletePage from "./pages/OrderCompletePage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
 import NotFound from "./pages/NotFound";
@@ -150,13 +151,27 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         
-        <Route path="/tutorial" element={<TutorialPage />} />
+        <Route path="/marketplace" element={
+          <ProtectedRoute>
+            <MarketplacePage />
+          </ProtectedRoute>
+        } />
 
-        <Route path="/tutorial/info" element={<TutorialInfo />} />
+        <Route path="/marketplace/info" element={
+          <ProtectedRoute>
+            <MarketplaceInfo />
+          </ProtectedRoute>
+        } />
 
         <Route path="/orders" element={
           <ProtectedRoute>
             <OrdersPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/marketplace/order-complete" element={
+          <ProtectedRoute>
+            <OrderCompletePage />
           </ProtectedRoute>
         } />
         
@@ -166,7 +181,11 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         
-        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog" element={
+          <ProtectedRoute>
+            <BlogPage />
+          </ProtectedRoute>
+        } />
         
         <Route path="/contact" element={<ContactPage />} />
       </Route>
