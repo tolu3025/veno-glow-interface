@@ -1,12 +1,12 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, BookOpen } from "lucide-react";
 
 type ServiceCardProps = {
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   href: string;
   onClick: () => void;
   className?: string;
@@ -15,7 +15,7 @@ type ServiceCardProps = {
 const ServiceCard = ({
   title,
   description,
-  icon: Icon,
+  icon: Icon = BookOpen, // Default to BookOpen icon if not provided
   onClick,
   className,
 }: ServiceCardProps) => {
