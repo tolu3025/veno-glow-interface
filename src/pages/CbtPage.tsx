@@ -77,12 +77,20 @@ const CbtPage = () => {
         <AdPlacement location="content" contentCheck={false} />
       </div>
       
-      <button 
-        className="veno-button w-full mt-6"
-        onClick={() => navigate('/cbt')}
-      >
-        Explore Courses
-      </button>
+      <div className="flex flex-col md:flex-row gap-4 mt-6">
+        <button 
+          className="veno-button flex-1"
+          onClick={() => navigate('/cbt')}
+        >
+          Explore Courses
+        </button>
+        <button 
+          className="veno-button-outline flex-1"
+          onClick={() => navigate('/tutorial')}
+        >
+          View Tutorials
+        </button>
+      </div>
     </div>
   );
 };

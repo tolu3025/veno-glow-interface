@@ -19,7 +19,7 @@ const MainLayout = () => {
   const mainLinks = [
     { name: "Home", path: "/" },
     { name: "CBT", path: "/cbt" },
-    { name: "Marketplace", path: "/marketplace" },
+    { name: "Tutorial", path: "/tutorial" },
     { name: "Blog", path: "/blog" }
   ];
 
