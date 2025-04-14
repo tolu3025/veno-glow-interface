@@ -78,12 +78,10 @@ const TutorialPage = () => {
             video_url: item.video_url || undefined,
             duration_seconds: item.duration_seconds || undefined
           }));
-          console.log('Fetched tutorials:', formattedData);
           setTutorials(formattedData);
           setFilteredTutorials(formattedData);
           setFeaturedTutorials(formattedData.slice(0, 4));
         } else {
-          console.log('No tutorials found, using sample data');
           const sampleTutorials = getSampleTutorials();
           setTutorials(sampleTutorials);
           setFilteredTutorials(sampleTutorials);
