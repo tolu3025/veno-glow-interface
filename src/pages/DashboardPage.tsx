@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,11 +10,11 @@ import { useNavigate } from "react-router-dom";
 import { VenoLogo } from "@/components/ui/logo";
 import { supabase } from '@/integrations/supabase/client';
 import CertificatesSection from '@/components/certificate/CertificatesSection';
-
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-  
   const [userData, setUserData] = useState({
     cbtStats: {
       testsCompleted: 0,
@@ -36,74 +35,60 @@ const DashboardPage = () => {
       queriesAnswered: 0
     }
   });
-
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     if (!user) {
       setIsLoading(false);
       return;
     }
-
     const fetchDashboardData = async () => {
       setIsLoading(true);
-      
       try {
         // Fetch user test attempts
-        const { data: testAttempts, error: testError } = await supabase
-          .from('test_attempts')
-          .select('id, score, total_questions')
-          .eq('user_id', user.id);
-        
+        const {
+          data: testAttempts,
+          error: testError
+        } = await supabase.from('test_attempts').select('id, score, total_questions').eq('user_id', user.id);
         if (testError) {
           console.error('Error fetching test attempts:', testError);
         }
-        
+
         // Fetch user profile
-        const { data: userProfile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('activities')
-          .eq('user_id', user.id)
-          .single();
-          
+        const {
+          data: userProfile,
+          error: profileError
+        } = await supabase.from('user_profiles').select('activities').eq('user_id', user.id).single();
         if (profileError) {
           console.error('Error fetching user profile:', profileError);
         }
-        
+
         // Calculate CBT statistics
         let avgScore = 0;
         let questionsAnswered = 0;
-        
         if (testAttempts && testAttempts.length > 0) {
           questionsAnswered = testAttempts.reduce((total, attempt) => total + attempt.total_questions, 0);
           const totalScorePercent = testAttempts.reduce((total, attempt) => {
-            return total + (attempt.score / attempt.total_questions * 100);
+            return total + attempt.score / attempt.total_questions * 100;
           }, 0);
           avgScore = Math.round(totalScorePercent / testAttempts.length);
         }
-        
+
         // Get blog activities
         let articlesRead = 0;
         let commentsPosted = 0;
-        
         if (userProfile?.activities) {
           const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
-          
-          articlesRead = activities.filter(
-            (activity: any) => activity.type === 'blog_read'
-          ).length;
-          
-          commentsPosted = activities.filter(
-            (activity: any) => activity.type === 'blog_comment'
-          ).length;
+          articlesRead = activities.filter((activity: any) => activity.type === 'blog_read').length;
+          commentsPosted = activities.filter((activity: any) => activity.type === 'blog_comment').length;
         }
-        
+
         // Get marketplace activities
-        const { count: purchaseCount, error: purchaseError } = await supabase
-          .from('orders')
-          .select('id', { count: 'exact' })
-          .eq('buyer_id', user.id);
-          
+        const {
+          count: purchaseCount,
+          error: purchaseError
+        } = await supabase.from('orders').select('id', {
+          count: 'exact'
+        }).eq('buyer_id', user.id);
         if (purchaseError) {
           console.error('Error fetching purchase count:', purchaseError);
         }
@@ -111,19 +96,11 @@ const DashboardPage = () => {
         // Count bot activities if they exist
         let botConversations = 0;
         let botQueries = 0;
-
         if (userProfile?.activities) {
           const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
-          
-          botConversations = activities.filter(
-            (activity: any) => activity.type === 'bot_conversation'
-          ).length;
-          
-          botQueries = activities.filter(
-            (activity: any) => activity.type === 'bot_query'
-          ).length;
+          botConversations = activities.filter((activity: any) => activity.type === 'bot_conversation').length;
+          botQueries = activities.filter((activity: any) => activity.type === 'bot_query').length;
         }
-        
         setUserData({
           cbtStats: {
             testsCompleted: testAttempts?.length || 0,
@@ -132,7 +109,8 @@ const DashboardPage = () => {
           },
           marketplaceStats: {
             purchases: purchaseCount || 0,
-            reviews: 0, // Will implement when reviews table is available
+            reviews: 0,
+            // Will implement when reviews table is available
             favoriteItems: 0 // Will implement when favorites functionality is available
           },
           blogStats: {
@@ -150,35 +128,33 @@ const DashboardPage = () => {
         setIsLoading(false);
       }
     };
-    
     fetchDashboardData();
-    
+
     // Set up realtime subscriptions for data updates
-    const channel = supabase.channel('dashboard-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'test_attempts', filter: `user_id=eq.${user.id}` },
-        () => fetchDashboardData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_profiles', filter: `user_id=eq.${user.id}` },
-        () => fetchDashboardData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` },
-        () => fetchDashboardData()
-      )
-      .subscribe();
-      
+    const channel = supabase.channel('dashboard-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'test_attempts',
+      filter: `user_id=eq.${user.id}`
+    }, () => fetchDashboardData()).on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'user_profiles',
+      filter: `user_id=eq.${user.id}`
+    }, () => fetchDashboardData()).on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'orders',
+      filter: `buyer_id=eq.${user.id}`
+    }, () => fetchDashboardData()).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
-
   const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {
+      opacity: 0
+    },
     visible: {
       opacity: 1,
       transition: {
@@ -187,30 +163,27 @@ const DashboardPage = () => {
       }
     }
   };
-
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: {
+      y: 20,
+      opacity: 0
+    },
     visible: {
       y: 0,
       opacity: 1
     }
   };
-
   const [activeTab, setActiveTab] = useState("overview");
 
   // Asynchronously fetch recent activities
   const getRecentActivities = async () => {
     if (!user) return [];
-    
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('activities')
-        .eq('user_id', user.id)
-        .single();
-        
+      const {
+        data,
+        error
+      } = await supabase.from('user_profiles').select('activities').eq('user_id', user.id).single();
       if (error || !data) return [];
-      
       const activities = Array.isArray(data.activities) ? data.activities : [];
       return activities.slice(0, 5);
     } catch (error) {
@@ -218,22 +191,14 @@ const DashboardPage = () => {
       return [];
     }
   };
-
-  return (
-    <div className="pb-6">
+  return <div className="pb-6">
       <div className="flex items-center mb-6">
         <VenoLogo className="h-8 w-8 mr-3" />
         <h1 className="text-2xl font-bold">Dashboard</h1>
       </div>
 
-      {user ? (
-        <>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-6"
-          >
+      {user ? <>
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
             <motion.div variants={itemVariants}>
               <Card className="border border-veno-primary/20 bg-gradient-to-br from-card/50 to-card">
                 <CardContent className="p-6">
@@ -243,18 +208,11 @@ const DashboardPage = () => {
                         Welcome back, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                       </h2>
                       <p className="text-muted-foreground">
-                        {isLoading 
-                          ? "Loading your dashboard..." 
-                          : `You have completed ${userData.cbtStats.testsCompleted} tests`
-                        }
+                        {isLoading ? "Loading your dashboard..." : `You have completed ${userData.cbtStats.testsCompleted} tests`}
                       </p>
                     </div>
                     <div className="mt-4 md:mt-0 flex space-x-3">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => navigate('/profile')}
-                        className="border-veno-primary/30 text-veno-primary"
-                      >
+                      <Button variant="outline" onClick={() => navigate('/profile')} className="border-veno-primary/30 text-veno-primary">
                         View Profile
                       </Button>
                     </div>
@@ -322,27 +280,15 @@ const DashboardPage = () => {
 
                   <h2 className="text-xl font-medium mb-4">Quick Access</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Button 
-                      onClick={() => navigate('/cbt')} 
-                      variant="outline" 
-                      className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    >
+                    <Button onClick={() => navigate('/cbt')} variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
                       <Book className="h-6 w-6 text-veno-primary" />
                       <span>Veno CBT</span>
                     </Button>
-                    <Button 
-                      onClick={() => navigate('/marketplace')} 
-                      variant="outline"
-                      className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    >
+                    <Button onClick={() => navigate('/marketplace')} variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
                       <ShoppingCart className="h-6 w-6 text-veno-primary" />
-                      <span>Marketplace</span>
+                      <span>Tutorial</span>
                     </Button>
-                    <Button 
-                      onClick={() => navigate('/blog')} 
-                      variant="outline"
-                      className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-                    >
+                    <Button onClick={() => navigate('/blog')} variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
                       <FileText className="h-6 w-6 text-veno-primary" />
                       <span>Blog</span>
                     </Button>
@@ -388,11 +334,7 @@ const DashboardPage = () => {
                               <Progress value={userData.cbtStats.questionsAnswered / 500 * 100} className="h-2" />
                             </div>
                             <div className="flex justify-end">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => navigate('/cbt')}
-                                className="border-veno-primary/30 text-veno-primary text-xs mt-2"
-                              >
+                              <Button variant="outline" onClick={() => navigate('/cbt')} className="border-veno-primary/30 text-veno-primary text-xs mt-2">
                                 View CBT Dashboard
                               </Button>
                             </div>
@@ -426,11 +368,7 @@ const DashboardPage = () => {
                               <Progress value={userData.marketplaceStats.reviews / 20 * 100} className="h-2" />
                             </div>
                             <div className="flex justify-end">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => navigate('/marketplace')}
-                                className="border-veno-primary/30 text-veno-primary text-xs mt-2"
-                              >
+                              <Button variant="outline" onClick={() => navigate('/marketplace')} className="border-veno-primary/30 text-veno-primary text-xs mt-2">
                                 Visit Marketplace
                               </Button>
                             </div>
@@ -464,11 +402,7 @@ const DashboardPage = () => {
                               <Progress value={userData.blogStats.commentsPosted / 15 * 100} className="h-2" />
                             </div>
                             <div className="flex justify-end">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => navigate('/blog')}
-                                className="border-veno-primary/30 text-veno-primary text-xs mt-2"
-                              >
+                              <Button variant="outline" onClick={() => navigate('/blog')} className="border-veno-primary/30 text-veno-primary text-xs mt-2">
                                 Read Blog
                               </Button>
                             </div>
@@ -485,43 +419,36 @@ const DashboardPage = () => {
               </motion.div>
             </Tabs>
           </motion.div>
-        </>
-      ) : (
-        <Card>
+        </> : <Card>
           <CardContent className="p-8 text-center">
             <h2 className="text-xl font-medium mb-4">Please Sign In</h2>
             <p className="text-muted-foreground mb-6">
               You need to be signed in to view your dashboard.
             </p>
-            <Button 
-              className="bg-veno-primary hover:bg-veno-primary/90"
-              onClick={() => navigate('/auth')}
-            >
+            <Button className="bg-veno-primary hover:bg-veno-primary/90" onClick={() => navigate('/auth')}>
               Sign In
             </Button>
           </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        </Card>}
+    </div>;
 };
 
 // Extract the RecentActivities component to handle async data loading
-const RecentActivities = ({ userId }: { userId: string }) => {
+const RecentActivities = ({
+  userId
+}: {
+  userId: string;
+}) => {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('activities')
-          .eq('user_id', userId)
-          .single();
-          
+        const {
+          data,
+          error
+        } = await supabase.from('user_profiles').select('activities').eq('user_id', userId).single();
         if (error) throw error;
-        
         const activityList = Array.isArray(data?.activities) ? data.activities : [];
         setActivities(activityList.slice(0, 5));
       } catch (error) {
@@ -530,32 +457,23 @@ const RecentActivities = ({ userId }: { userId: string }) => {
         setLoading(false);
       }
     };
-
     fetchActivities();
   }, [userId]);
-
   if (loading) {
     return <p className="text-muted-foreground">Loading activities...</p>;
   }
-
   if (activities.length === 0) {
     return <p className="text-muted-foreground">No activities yet</p>;
   }
-
-  return (
-    <ul className="space-y-2">
-      {activities.map((activity: any, index: number) => (
-        <li key={index} className="p-3 border rounded-md">
+  return <ul className="space-y-2">
+      {activities.map((activity: any, index: number) => <li key={index} className="p-3 border rounded-md">
           <div className="flex justify-between">
             <span className="font-medium">{activity.description}</span>
             <span className="text-muted-foreground text-sm">
               {new Date(activity.timestamp).toLocaleDateString()}
             </span>
           </div>
-        </li>
-      ))}
-    </ul>
-  );
+        </li>)}
+    </ul>;
 };
-
 export default DashboardPage;
