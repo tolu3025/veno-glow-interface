@@ -1,7 +1,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { LucideIcon, BookOpen } from "lucide-react";
+import { LucideIcon, BookOpen, Share2 } from "lucide-react";
 
 type ServiceCardProps = {
   title: string;
@@ -10,6 +10,8 @@ type ServiceCardProps = {
   href: string;
   onClick: () => void;
   className?: string;
+  showShareButton?: boolean;
+  onShare?: () => void;
 };
 
 const ServiceCard = ({
@@ -18,6 +20,8 @@ const ServiceCard = ({
   icon: Icon = BookOpen, // Default to BookOpen icon if not provided
   onClick,
   className,
+  showShareButton = false,
+  onShare,
 }: ServiceCardProps) => {
   return (
     <motion.div
@@ -34,6 +38,18 @@ const ServiceCard = ({
           <Icon className="h-6 w-6" />
         </div>
         <h3 className="font-semibold text-lg text-foreground">{title}</h3>
+        
+        {showShareButton && onShare && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare();
+            }}
+            className="ml-auto p-2 rounded-full hover:bg-secondary/80"
+          >
+            <Share2 className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
       <p className="text-muted-foreground text-sm">{description}</p>
     </motion.div>

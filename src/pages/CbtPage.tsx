@@ -88,7 +88,7 @@ const CbtPage = () => {
           className="veno-button-outline flex-1"
           onClick={() => navigate('/tutorial')}
         >
-          View Tutorials
+          Tutorial Page
         </button>
       </div>
     </div>
