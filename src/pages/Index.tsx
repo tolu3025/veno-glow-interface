@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
-import ServiceCard from "@/components/ServiceCard";
+import TutorialCard from "@/components/ServiceCard";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
@@ -49,7 +49,7 @@ const Index = () => {
     }
   ];
   
-  const services = [
+  const tutorials = [
     {
       title: "Veno CBT",
       description: "Interactive educational platform for effective learning and assessment.",
@@ -57,10 +57,10 @@ const Index = () => {
       href: "/cbt",
     },
     {
-      title: "Veno Marketplace",
-      description: "Shop for digital products and services in our marketplace.",
+      title: "Veno Tutorials",
+      description: "Free tutorial videos on various subjects and topics.",
       icon: ShoppingCart,
-      href: "/marketplace",
+      href: "/tutorial",
     },
     {
       title: "Veno Bot",
@@ -313,13 +313,13 @@ const Index = () => {
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-heading">Our Services</h2>
+            <h2 className="text-3xl font-bold tracking-tight font-heading">Our Tutorials</h2>
             <p className="text-muted-foreground mt-2">Discover what Veno has to offer.</p>
           </div>
           <Button 
             variant="outline" 
             className="mt-4 md:mt-0"
-            onClick={() => navigate("/services")}
+            onClick={() => navigate("/tutorial")}
           >
             View All <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
@@ -332,14 +332,19 @@ const Index = () => {
           viewport={{ once: true }}
           className="grid gap-4 grid-cols-1 md:grid-cols-2"
         >
-          {services.map((service) => (
-            <motion.div key={service.title} variants={itemVariants}>
-              <ServiceCard
-                title={service.title}
-                description={service.description}
-                icon={service.icon}
-                href={service.href}
-                onClick={() => navigate(service.href)}
+          {tutorials.map((tutorial) => (
+            <motion.div key={tutorial.title} variants={itemVariants}>
+              <TutorialCard
+                title={tutorial.title}
+                description={tutorial.description}
+                icon={tutorial.icon}
+                href={tutorial.href}
+                onClick={() => navigate(tutorial.href)}
+                showShareButton={true}
+                onShare={() => {
+                  navigator.clipboard.writeText(`Check out this tutorial: ${window.location.origin}${tutorial.href}`);
+                  // You would typically add a toast notification here
+                }}
               />
             </motion.div>
           ))}

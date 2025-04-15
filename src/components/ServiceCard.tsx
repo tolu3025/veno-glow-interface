@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { LucideIcon, BookOpen, Share2 } from "lucide-react";
 
-type ServiceCardProps = {
+type TutorialCardProps = {
   title: string;
   description: string;
   icon?: LucideIcon;
@@ -14,7 +14,7 @@ type ServiceCardProps = {
   onShare?: () => void;
 };
 
-const ServiceCard = ({
+const TutorialCard = ({
   title,
   description,
   icon: Icon = BookOpen, // Default to BookOpen icon if not provided
@@ -22,7 +22,7 @@ const ServiceCard = ({
   className,
   showShareButton = false,
   onShare,
-}: ServiceCardProps) => {
+}: TutorialCardProps) => {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -56,4 +56,4 @@ const ServiceCard = ({
   );
 };
 
-export default ServiceCard;
+export default TutorialCard;
