@@ -1,5 +1,6 @@
+
 import { useNavigate } from "react-router-dom";
-import { Book, ShoppingCart, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
+import { Book, BookOpen, Bot, FileText, CheckCircle, ArrowRight } from "lucide-react";
 import TutorialCard from "@/components/ServiceCard";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,7 @@ const Index = () => {
     {
       title: "Veno Tutorials",
       description: "Free tutorial videos on various subjects and topics.",
-      icon: ShoppingCart,
+      icon: BookOpen, // Changed from ShoppingCart to BookOpen
       href: "/tutorial",
     },
     {
