@@ -17,11 +17,11 @@ export const bannerSlides = [
     secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
   },
   {
-    title: "Digital Marketplace",
-    subtitle: "Discover and purchase high-quality educational resources created by experts in their fields.",
+    title: "Expert-Led Tutorials",
+    subtitle: "Access comprehensive tutorial materials created by subject matter experts across various fields of study.",
     background: "bg-gradient-to-r from-veno-primary to-blue-600",
-    primaryButton: { text: "Shop Now", link: "/marketplace" },
-    secondaryButton: { text: "Browse Categories", link: "/marketplace" }
+    primaryButton: { text: "Browse Tutorials", link: "/tutorial" },
+    secondaryButton: { text: "View Categories", link: "/tutorial" }
   },
   {
     title: "Insightful Blog Content",
@@ -41,26 +41,26 @@ export const bannerSlides = [
 
 export const tutorials = [
   {
-    title: "Veno CBT",
-    description: "Interactive educational platform for effective learning and assessment.",
+    title: "Interactive CBT",
+    description: "Experience comprehensive computer-based testing with real-time feedback and performance analytics.",
     icon: Book,
     href: "/cbt",
   },
   {
-    title: "Veno Tutorials",
-    description: "Free tutorial videos on various subjects and topics.",
+    title: "Video Tutorials",
+    description: "Access high-quality video lessons with detailed explanations and practical examples.",
     icon: BookOpen,
     href: "/tutorial",
   },
   {
-    title: "Veno Bot",
-    description: "AI-powered assistant to help with your questions and tasks.",
+    title: "AI Learning Assistant",
+    description: "Get personalized learning support and instant answers to your academic questions.",
     icon: Bot,
     href: "/bot",
   },
   {
-    title: "Veno Blog",
-    description: "Latest news, updates and insights from our team.",
+    title: "Educational Blog",
+    description: "Explore in-depth articles, study guides, and expert insights on various subjects.",
     icon: FileText,
     href: "/blog",
   },
@@ -68,32 +68,33 @@ export const tutorials = [
 
 export const features = [
   {
-    title: "Interactive Learning",
-    description: "Engage with dynamic content and interactive assessments for better knowledge retention.",
+    title: "Personalized Learning Paths",
+    description: "Customized study plans and recommendations based on your learning style and goals.",
     icon: Book,
   },
   {
-    title: "Personalized Experience",
-    description: "Tailored learning paths and recommendations based on your performance and preferences.",
+    title: "Progress Tracking",
+    description: "Monitor your learning journey with detailed analytics and performance insights.",
     icon: CheckCircle,
   },
   {
-    title: "AI-Powered Insights",
-    description: "Get intelligent feedback and analysis to improve your learning outcomes.",
+    title: "AI-Enhanced Support",
+    description: "24/7 access to AI-powered learning assistance and doubt resolution.",
     icon: Bot,
   },
   {
-    title: "Cross-Device Compatibility",
-    description: "Access your learning materials anytime, anywhere, on any device.",
+    title: "Cross-Platform Access",
+    description: "Seamlessly continue your learning across all your devices with cloud synchronization.",
     icon: BookOpen,
   },
 ];
 
 export const testimonial = {
-  quote: "Veno has transformed how I approach learning and assessment. The interactive tools and personalized feedback have significantly improved my study efficiency and outcomes.",
+  quote: "Veno's comprehensive tutorial system and interactive learning tools have transformed my educational journey. The personalized feedback and AI assistance make complex topics much easier to understand.",
   author: {
     name: "Toluwanimi Oyetade",
     image: "/lovable-uploads/cb8d05cb-602f-45e9-a069-f187aee51c74.png",
     role: "University Student"
   }
 };
+
