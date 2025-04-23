@@ -1,11 +1,11 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, Calculator, Flag } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AdPlacement from '@/components/ads/AdPlacement';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface QuestionDisplayProps {
   currentQuestion: number;
@@ -28,38 +28,31 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   onNextQuestion,
   formatTime,
 }) => {
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [flagged, setFlagged] = useState<boolean[]>(new Array(questions.length).fill(false));
+  const [calcDisplay, setCalcDisplay] = useState('0');
+  const [prevNumber, setPrevNumber] = useState<number | null>(null);
+  const [operation, setOperation] = useState<string | null>(null);
+  const [newNumber, setNewNumber] = useState(true);
+
   const currentQuestionData = questions[currentQuestion];
   
-  // Enhanced debugging to help diagnose rendering issues
-  console.log('Current question details:', {
-    questionNumber: currentQuestion + 1,
-    questionId: currentQuestionData?.id,
-    question: currentQuestionData?.text || currentQuestionData?.question,
-    options: currentQuestionData?.options,
-    correctAnswer: currentQuestionData?.correctOption || currentQuestionData?.answer,
-    selectedAnswer
-  });
-  
-  // Improved option processing to handle more formats
   const processOptions = () => {
     if (!currentQuestionData) return [];
     
     const options = currentQuestionData.options;
     
-    // Handle different option formats
     if (Array.isArray(options)) {
       return options;
     } else if (typeof options === 'object' && options !== null) {
-      // Convert object to array if needed
       return Object.values(options);
     } else if (typeof options === 'string') {
-      // Try to parse JSON string
       try {
         const parsedOptions = JSON.parse(options);
         return Array.isArray(parsedOptions) ? parsedOptions : Object.values(parsedOptions);
       } catch (e) {
         console.error('Failed to parse options string:', e);
-        return [options]; // Return as single item array as fallback
+        return [options];
       }
     }
     
@@ -68,8 +61,63 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   
   const questionOptions = processOptions();
   
-  // Get question text from either text or question property
   const questionText = currentQuestionData?.text || currentQuestionData?.question || 'No question text available';
+
+  const handleNumber = (num: string) => {
+    if (newNumber) {
+      setCalcDisplay(num);
+      setNewNumber(false);
+    } else {
+      setCalcDisplay(calcDisplay === '0' ? num : calcDisplay + num);
+    }
+  };
+
+  const handleOperation = (op: string) => {
+    const current = parseFloat(calcDisplay);
+    if (prevNumber === null) {
+      setPrevNumber(current);
+    } else if (operation) {
+      const result = calculate(prevNumber, current, operation);
+      setPrevNumber(result);
+      setCalcDisplay(String(result));
+    }
+    setOperation(op);
+    setNewNumber(true);
+  };
+
+  const calculate = (a: number, b: number, op: string): number => {
+    switch (op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '×': return a * b;
+      case '÷': return b !== 0 ? a / b : 0;
+      default: return b;
+    }
+  };
+
+  const handleEqual = () => {
+    if (prevNumber !== null && operation) {
+      const current = parseFloat(calcDisplay);
+      const result = calculate(prevNumber, current, operation);
+      setCalcDisplay(String(result));
+      setPrevNumber(null);
+      setOperation(null);
+      setNewNumber(true);
+    }
+  };
+
+  const handleClear = () => {
+    setCalcDisplay('0');
+    setPrevNumber(null);
+    setOperation(null);
+    setNewNumber(true);
+  };
+
+  const toggleFlag = () => {
+    const newFlagged = [...flagged];
+    newFlagged[currentQuestion] = !newFlagged[currentQuestion];
+    setFlagged(newFlagged);
+  };
 
   return (
     <div className="space-y-4">
@@ -80,9 +128,29 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               <VenoLogo className="h-6 w-6" />
               <CardTitle>Question {currentQuestion + 1}/{questions.length}</CardTitle>
             </div>
-            <div className="flex items-center gap-1 bg-secondary/30 px-3 py-1 rounded-full">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm font-medium">{formatTime(timeRemaining)}</span>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCalculator(true)}
+                className="flex items-center gap-2"
+              >
+                <Calculator className="h-4 w-4" />
+                Calculator
+              </Button>
+              <Button
+                variant={flagged[currentQuestion] ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleFlag}
+                className="flex items-center gap-2"
+              >
+                <Flag className="h-4 w-4" />
+                {flagged[currentQuestion] ? 'Flagged' : 'Flag'}
+              </Button>
+              <div className="flex items-center gap-1 bg-secondary/30 px-3 py-1 rounded-full">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-medium">{formatTime(timeRemaining)}</span>
+              </div>
             </div>
           </div>
           <div className="mt-2">
@@ -96,7 +164,6 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-medium mb-2">{questionText}</h3>
-              {/* Display explanation hint if available */}
               {currentQuestionData?.explanation && (
                 <p className="text-sm text-muted-foreground italic mb-4">
                   (This question includes an explanation that will be available after completion)
@@ -153,8 +220,46 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           </Button>
         </CardFooter>
       </Card>
+
+      <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Calculator</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <div className="bg-secondary/10 p-4 rounded-lg mb-4 text-right">
+              <span className="text-2xl font-mono">{calcDisplay}</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[7, 8, 9, '÷', 4, 5, 6, '×', 1, 2, 3, '-', 0, '.', '=', '+'].map((btn) => (
+                <Button
+                  key={btn}
+                  variant={typeof btn === 'number' || btn === '.' ? "outline" : "default"}
+                  onClick={() => {
+                    if (typeof btn === 'number') handleNumber(String(btn));
+                    else if (btn === '=') handleEqual();
+                    else if (btn === '.') {
+                      if (!calcDisplay.includes('.')) handleNumber('.');
+                    }
+                    else handleOperation(btn);
+                  }}
+                  className="h-12 text-lg"
+                >
+                  {btn}
+                </Button>
+              ))}
+              <Button
+                variant="destructive"
+                onClick={handleClear}
+                className="h-12 col-span-4 mt-2"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
-      {/* Add advertisement below the question */}
       <div className="my-4">
         <AdPlacement location="content" contentCheck={false} />
       </div>
