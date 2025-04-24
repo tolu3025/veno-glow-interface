@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -123,34 +124,36 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <VenoLogo className="h-6 w-6" />
               <CardTitle>Question {currentQuestion + 1}/{questions.length}</CardTitle>
             </div>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCalculator(true)}
-                className="flex items-center gap-2"
-              >
-                <Calculator className="h-4 w-4" />
-                Calculator
-              </Button>
-              <Button
-                variant={flagged[currentQuestion] ? "destructive" : "outline"}
-                size="sm"
-                onClick={toggleFlag}
-                className="flex items-center gap-2"
-              >
-                <Flag className="h-4 w-4" />
-                {flagged[currentQuestion] ? 'Flagged' : 'Flag'}
-              </Button>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <div className="flex items-center gap-1 bg-secondary/30 px-3 py-1 rounded-full">
                 <Clock className="h-4 w-4" />
                 <span className="text-sm font-medium">{formatTime(timeRemaining)}</span>
               </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCalculator(true)}
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
+              >
+                <Calculator className="h-4 w-4" />
+                <span className="sm:inline hidden">Calculator</span>
+              </Button>
+              
+              <Button
+                variant={flagged[currentQuestion] ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleFlag}
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
+              >
+                <Flag className="h-4 w-4" />
+                <span className="sm:inline hidden">{flagged[currentQuestion] ? 'Flagged' : 'Flag'}</span>
+              </Button>
             </div>
           </div>
           <div className="mt-2">
