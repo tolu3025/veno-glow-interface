@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,8 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
+  updated_at: string;
+  tutorial_id: string;
   user_id: string;
   profiles: {
     display_name?: string;
@@ -57,21 +58,16 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       return;
     }
 
-    // Handle the case where profiles might be an error object
-    const processedComments = data?.map(comment => {
-      // If profiles is an error or doesn't exist, provide a default value
-      if (!comment.profiles || typeof comment.profiles !== 'object' || comment.profiles.error) {
-        return {
-          ...comment,
-          profiles: {
+    const processedComments = (data || []).map(comment => ({
+      ...comment,
+      profiles: comment.profiles && typeof comment.profiles === 'object' 
+        ? comment.profiles 
+        : {
             display_name: 'Unknown User',
             avatar_url: undefined,
             email: undefined
           }
-        };
-      }
-      return comment;
-    }) || [];
+    }));
 
     setComments(processedComments as Comment[]);
   };
