@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,6 +59,7 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       return;
     }
 
+    // Process comments to ensure correct profile structure
     const processedComments = (data || []).map(comment => ({
       ...comment,
       profiles: comment.profiles && typeof comment.profiles === 'object' 

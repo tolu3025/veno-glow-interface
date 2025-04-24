@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import BannerCarousel from "@/components/home/BannerCarousel";
 import FeaturesSection from "@/components/home/FeaturesSection";
