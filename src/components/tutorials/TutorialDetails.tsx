@@ -1,6 +1,6 @@
 
 import { useState, useRef } from 'react';
-import { Share2 } from 'lucide-react';
+import { Share2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
