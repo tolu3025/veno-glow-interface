@@ -22,47 +22,76 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       console.log("Fetching comments for tutorial:", tutorialId);
       setIsLoading(true);
       
-      const { data, error } = await supabase
+      // First, fetch all comments for the tutorial
+      const { data: commentsData, error: commentsError } = await supabase
         .from('tutorial_comments')
-        .select(`
-          *,
-          profiles:user_id (
-            display_name,
-            avatar_url,
-            email
-          )
-        `)
+        .select('*')
         .eq('tutorial_id', tutorialId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching comments:", error);
+      if (commentsError) {
+        console.error("Error fetching comments:", commentsError);
         toast({
           title: "Error loading comments",
-          description: error.message,
+          description: commentsError.message,
           variant: "destructive"
         });
         return;
       }
 
-      const commentsWithReactions = await Promise.all(
-        data.map(async (comment) => {
-          const { data: reactions } = await supabase
-            .from('tutorial_comment_reactions')
-            .select('reaction_type')
-            .eq('comment_id', comment.id);
+      // Then, fetch user profiles separately
+      const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+      
+      // Only fetch profiles if there are comments
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, avatar_url')
+          .in('id', userIds);
 
-          return {
-            ...comment,
-            reactions: {
-              hearts: reactions?.filter(r => r.reaction_type === 'heart').length || 0,
-              likes: reactions?.filter(r => r.reaction_type === 'like').length || 0
-            }
-          };
-        })
-      );
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+        }
 
-      setComments(commentsWithReactions);
+        // Create a map of profiles for quick lookup
+        const profileMap = new Map();
+        if (profilesData) {
+          profilesData.forEach(profile => {
+            profileMap.set(profile.id, profile);
+          });
+        }
+
+        // Add profile data to comments
+        const commentsWithProfiles = await Promise.all(
+          commentsData.map(async (comment) => {
+            const profile = profileMap.get(comment.user_id);
+            
+            // Get reaction counts
+            const { data: reactions } = await supabase
+              .from('tutorial_comment_reactions')
+              .select('reaction_type')
+              .eq('comment_id', comment.id);
+
+            return {
+              ...comment,
+              profiles: profile || { 
+                display_name: 'Anonymous', 
+                avatar_url: null,
+                email: null 
+              },
+              reactions: {
+                hearts: reactions?.filter(r => r.reaction_type === 'heart').length || 0,
+                likes: reactions?.filter(r => r.reaction_type === 'like').length || 0
+              }
+            };
+          })
+        );
+
+        setComments(commentsWithProfiles);
+      } else {
+        // No comments, so set empty array
+        setComments([]);
+      }
     } catch (err) {
       console.error("Unexpected error loading comments:", err);
       toast({
@@ -154,35 +183,37 @@ const Comments = ({ tutorialId }: CommentsProps) => {
         ) : comments.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">No comments yet. Be the first to comment!</p>
         ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="space-y-4">
-              <CommentItem 
-                comment={comment}
-                onReply={handleReply}
-                onReactionUpdate={fetchComments}
-              />
-              {replyingTo === comment.id && (
-                <div className="ml-12">
-                  <CommentForm 
-                    onSubmit={handleSubmitComment}
-                    parentId={comment.id}
-                    isSubmitting={isSubmitting}
-                  />
-                </div>
-              )}
-              {comments
-                .filter(reply => reply.parent_id === comment.id)
-                .map(reply => (
-                  <div key={reply.id} className="ml-12">
-                    <CommentItem 
-                      comment={reply}
-                      onReply={handleReply}
-                      onReactionUpdate={fetchComments}
+          comments
+            .filter(comment => !comment.parent_id)
+            .map((comment) => (
+              <div key={comment.id} className="space-y-4">
+                <CommentItem 
+                  comment={comment}
+                  onReply={handleReply}
+                  onReactionUpdate={fetchComments}
+                />
+                {replyingTo === comment.id && (
+                  <div className="ml-12">
+                    <CommentForm 
+                      onSubmit={handleSubmitComment}
+                      parentId={comment.id}
+                      isSubmitting={isSubmitting}
                     />
                   </div>
-                ))}
-            </div>
-          ))
+                )}
+                {comments
+                  .filter(reply => reply.parent_id === comment.id)
+                  .map(reply => (
+                    <div key={reply.id} className="ml-12">
+                      <CommentItem 
+                        comment={reply}
+                        onReply={handleReply}
+                        onReactionUpdate={fetchComments}
+                      />
+                    </div>
+                  ))}
+              </div>
+            ))
         )}
       </div>
     </div>

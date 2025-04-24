@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Share2 } from 'lucide-react';
 import Comments from '@/components/tutorials/Comments';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 const VideoPlayerPage = () => {
   const [tutorial, setTutorial] = useState<any>(null);
@@ -33,7 +32,7 @@ const VideoPlayerPage = () => {
           .from('tutorials')
           .select('*')
           .eq('id', tutorialId)
-          .maybeSingle();
+          .single();
 
         if (error) {
           console.error('Error fetching tutorial:', error);
@@ -145,7 +144,7 @@ const VideoPlayerPage = () => {
       </div>
 
       <div className="mt-8 pt-8 border-t">
-        {tutorial.id && <Comments tutorialId={tutorial.id} />}
+        {tutorialId && <Comments tutorialId={tutorialId} />}
       </div>
     </div>
   );
