@@ -38,6 +38,7 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
   };
 
   const handleWatchVideo = () => {
+    console.log("Navigating to video player with ID:", tutorial.id);
     navigate(`/tutorial/watch?id=${tutorial.id}`);
   };
 

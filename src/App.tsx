@@ -34,6 +34,7 @@ import AdsPolicy from "./pages/AdsPolicy";
 import UnderMaintenancePage from "./pages/UnderMaintenancePage";
 import ContactPage from "./pages/ContactPage";
 import ServicesPage from "./pages/ServicesPage";
+import VideoPlayerPage from "./pages/VideoPlayerPage";
 
 import "./functions/appendToActivities";
 
@@ -153,6 +154,8 @@ const AppRoutes = () => {
         <Route path="/tutorial" element={<TutorialPage />} />
 
         <Route path="/tutorial/info" element={<TutorialInfo />} />
+        
+        <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
 
         <Route path="/orders" element={
           <ProtectedRoute>

@@ -1,38 +1,63 @@
 
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import VideoPlayer from '@/components/tutorials/VideoPlayer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 
 const VideoPlayerPage = () => {
   const [tutorial, setTutorial] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const tutorialId = searchParams.get('id');
 
   useEffect(() => {
     const fetchTutorial = async () => {
-      if (!tutorialId) return;
-
-      const { data, error } = await supabase
-        .from('tutorials')
-        .select('*')
-        .eq('id', tutorialId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching tutorial:', error);
+      if (!tutorialId) {
+        setError("No tutorial ID provided");
+        setIsLoading(false);
         return;
       }
 
-      setTutorial(data);
-      setIsLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('tutorials')
+          .select('*')
+          .eq('id', tutorialId)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching tutorial:', error);
+          setError("Failed to fetch tutorial data");
+          return;
+        }
+
+        if (!data) {
+          setError("Tutorial not found");
+          return;
+        }
+
+        console.log("Fetched tutorial data:", data);
+        setTutorial(data);
+      } catch (err) {
+        console.error('Unexpected error fetching tutorial:', err);
+        setError("An unexpected error occurred");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchTutorial();
   }, [tutorialId]);
+
+  const handleBack = () => {
+    navigate(-1);
+  };
 
   if (isLoading) {
     return (
@@ -44,16 +69,27 @@ const VideoPlayerPage = () => {
     );
   }
 
-  if (!tutorial) {
+  if (error || !tutorial) {
     return (
-      <div className="container py-8">
-        <p className="text-center text-muted-foreground">Tutorial not found</p>
+      <div className="container py-8 max-w-4xl mx-auto">
+        <div className="flex flex-col items-center justify-center space-y-4 py-16">
+          <p className="text-center text-muted-foreground">{error || "Tutorial not found"}</p>
+          <Button variant="outline" onClick={handleBack}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Go Back
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container py-8 max-w-4xl mx-auto space-y-6">
+      <Button variant="ghost" onClick={handleBack} className="mb-4">
+        <ChevronLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+      
       <VideoPlayer 
         videoUrl={tutorial.video_url} 
         thumbnailUrl={tutorial.thumbnail_url} 
