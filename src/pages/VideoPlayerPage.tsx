@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import VideoPlayer from '@/components/tutorials/VideoPlayer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Share2 } from 'lucide-react';
 import Comments from '@/components/tutorials/Comments';
+import { toast } from '@/components/ui/use-toast';
 
 const VideoPlayerPage = () => {
   const [tutorial, setTutorial] = useState<any>(null);
@@ -26,6 +27,7 @@ const VideoPlayerPage = () => {
       }
 
       try {
+        console.log("Fetching tutorial with ID:", tutorialId);
         const { data, error } = await supabase
           .from('tutorials')
           .select('*')
@@ -39,6 +41,7 @@ const VideoPlayerPage = () => {
         }
 
         if (!data) {
+          console.error("No data returned for tutorial ID:", tutorialId);
           setError("Tutorial not found");
           return;
         }
@@ -73,7 +76,10 @@ const VideoPlayerPage = () => {
       navigator.share(shareData).catch(console.error);
     } else {
       navigator.clipboard.writeText(shareData.url);
-      alert("Video link copied to clipboard");
+      toast({
+        title: "Video link copied!",
+        description: "Tutorial video link copied to clipboard",
+      });
     }
   };
 
@@ -131,6 +137,7 @@ const VideoPlayerPage = () => {
 
         <div className="mt-6">
           <Button variant="outline" onClick={handleShare}>
+            <Share2 className="mr-2 h-4 w-4" />
             Share
           </Button>
         </div>

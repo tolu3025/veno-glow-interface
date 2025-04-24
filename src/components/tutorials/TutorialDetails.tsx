@@ -23,7 +23,7 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
     const shareData = {
       title: tutorial.title,
       text: tutorial.description,
-      url: `${window.location.origin}/tutorial/info?id=${tutorial.id}`
+      url: `${window.location.origin}/tutorial/watch?id=${tutorial.id}`
     };
 
     if (navigator.share && navigator.canShare(shareData)) {
@@ -39,7 +39,8 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
 
   const handleWatchVideo = () => {
     console.log("Navigating to video player with ID:", tutorial.id);
-    navigate(`/tutorial/watch?id=${tutorial.id}`);
+    // Use navigate with replace: true to avoid needing a refresh
+    navigate(`/tutorial/watch?id=${tutorial.id}`, { replace: true });
   };
 
   return (
