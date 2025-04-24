@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,8 +38,8 @@ const MainLayout = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-14 items-center">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between px-4 md:px-6">
           <div className="flex items-center space-x-2">
             <Link to="/" className="flex items-center space-x-2">
               {isHomePage && <VenoLogo className="h-8 w-8" />}
@@ -48,7 +47,6 @@ const MainLayout = () => {
             </Link>
           </div>
           
-          {/* Desktop Navigation - hidden on mobile */}
           <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 mx-6">
             {mainLinks.map((link) => (
               <Link 
@@ -71,7 +69,6 @@ const MainLayout = () => {
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
             
-            {/* Desktop Auth Controls - hidden on mobile */}
             <div className="hidden md:flex items-center space-x-2">
               {user ? (
                 <>
@@ -110,23 +107,34 @@ const MainLayout = () => {
               )}
             </div>
             
-            {/* Mobile Menu - now positioned at the right */}
             <MobileMenu mainLinks={mainLinks} />
           </div>
         </div>
       </header>
       <main className="flex-1">
-        <div className="container py-4">
+        <div className="container mx-auto px-4 md:px-6 py-4 max-w-7xl">
           <Outlet />
         </div>
       </main>
-      <footer className="border-t py-4">
+      <div className="sticky bottom-4 z-40 w-full">
+        <div className="container flex justify-center">
+          <a
+            href="https://x.com/OyetadeToluwan1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-[#1DA1F2] text-white px-4 py-2 rounded-full shadow-lg hover:bg-[#1a8cd8] transition-colors"
+          >
+            <Twitter className="h-5 w-5" />
+            <span className="font-medium">Follow our developer</span>
+          </a>
+        </div>
+      </div>
+      <footer className="border-t mt-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 md:h-14 text-muted-foreground">
           <p className="text-sm">
             © {new Date().getFullYear()} Veno. All rights reserved.
           </p>
           
-          {/* Social Media Links */}
           <div className="flex items-center gap-6 mb-4 md:mb-0">
             <a 
               href="https://www.facebook.com/share/1DvXpB5pM3/?mibextid=wwXIfr" 
