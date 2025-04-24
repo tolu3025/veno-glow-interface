@@ -21,6 +21,7 @@ const VideoPlayerPage = () => {
   useEffect(() => {
     const fetchTutorial = async () => {
       if (!tutorialId) {
+        console.error("No tutorial ID provided in URL parameters");
         setError("No tutorial ID provided");
         setIsLoading(false);
         return;
