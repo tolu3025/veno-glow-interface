@@ -6,6 +6,7 @@ import VideoPlayer from '@/components/tutorials/VideoPlayer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
+import Comments from '@/components/tutorials/Comments';
 
 const VideoPlayerPage = () => {
   const [tutorial, setTutorial] = useState<any>(null);
@@ -59,6 +60,23 @@ const VideoPlayerPage = () => {
     navigate(-1);
   };
 
+  const handleShare = () => {
+    if (!tutorial) return;
+    
+    const shareData = {
+      title: tutorial.title,
+      text: tutorial.description,
+      url: `${window.location.origin}/tutorial/watch?id=${tutorial.id}`
+    };
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      navigator.share(shareData).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareData.url);
+      alert("Video link copied to clipboard");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container py-8 max-w-4xl mx-auto space-y-6">
@@ -90,10 +108,16 @@ const VideoPlayerPage = () => {
         Back
       </Button>
       
-      <VideoPlayer 
-        videoUrl={tutorial.video_url} 
-        thumbnailUrl={tutorial.thumbnail_url} 
-      />
+      {tutorial.video_url ? (
+        <VideoPlayer 
+          videoUrl={tutorial.video_url} 
+          thumbnailUrl={tutorial.thumbnail_url} 
+        />
+      ) : (
+        <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-lg">
+          <p className="text-muted-foreground">No video available for this tutorial</p>
+        </div>
+      )}
       
       <div>
         <h1 className="text-2xl font-bold">{tutorial.title}</h1>
@@ -104,6 +128,16 @@ const VideoPlayerPage = () => {
           <span>Level: {tutorial.level}</span>
           <span>Subject: {tutorial.subject}</span>
         </div>
+
+        <div className="mt-6">
+          <Button variant="outline" onClick={handleShare}>
+            Share
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-8 pt-8 border-t">
+        <Comments tutorialId={tutorial.id} />
       </div>
     </div>
   );

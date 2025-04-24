@@ -60,6 +60,10 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
             variant="outline"
             size="icon"
             className="rounded-full bg-white/20 hover:bg-white/40"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent the parent onClick from firing
+              handleWatchVideo();
+            }}
           >
             <Play className="h-8 w-8 text-white" />
           </Button>

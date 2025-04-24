@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -253,9 +252,7 @@ const TutorialPage = () => {
   ];
 
   const handleWatchVideo = (tutorial: Tutorial) => {
-    setSelectedTutorial(tutorial);
-    setPreviewDialogOpen(true);
-    setIsPlaying(false);
+    navigate(`/tutorial/watch?id=${tutorial.id}`);
   };
   
   const togglePlayPause = () => {
@@ -385,21 +382,16 @@ const TutorialPage = () => {
                       <Video className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                     )}
                     
-                    {tutorial.preview_url && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="rounded-full bg-white/20 hover:bg-white/40"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleWatchVideo(tutorial);
-                          }}
-                        >
-                          <Play className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="rounded-full bg-white/20 hover:bg-white/40"
+                        onClick={() => navigate(`/tutorial/watch?id=${tutorial.id}`)}
+                      >
+                        <Play className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs md:text-sm text-muted-foreground">{tutorial.description.substring(0, 100)}...</p>
                 </CardContent>
@@ -408,7 +400,7 @@ const TutorialPage = () => {
                     <Button 
                       variant="outline" 
                       size={isMobile ? "sm" : "default"}
-                      onClick={() => handleWatchVideo(tutorial)}
+                      onClick={() => navigate(`/tutorial/watch?id=${tutorial.id}`)}
                     >
                       Watch Now
                     </Button>
@@ -452,7 +444,7 @@ const TutorialPage = () => {
                       <TableCell className="text-sm">{tutorial.level}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
-                          <Button size="sm" onClick={() => handleWatchVideo(tutorial)}>Watch Now</Button>
+                          <Button size="sm" onClick={() => navigate(`/tutorial/watch?id=${tutorial.id}`)}>Watch Now</Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -573,30 +565,18 @@ const TutorialPage = () => {
             </DialogDescription>
           </DialogHeader>
           
-          {selectedTutorial?.preview_url && (
-            <div className="aspect-video relative bg-black rounded-md overflow-hidden">
-              <video
-                ref={videoRef}
-                src={selectedTutorial.preview_url}
-                className="w-full h-full"
-                poster={selectedTutorial.thumbnail_url}
-                onEnded={handleVideoEnded}
-                controls
-              />
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full bg-white/20 hover:bg-white/40"
-                    onClick={togglePlayPause}
-                  >
-                    <Play className="h-6 w-6 md:h-8 md:w-8 text-white" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex justify-center">
+            <Button 
+              onClick={() => {
+                setPreviewDialogOpen(false);
+                if (selectedTutorial) {
+                  navigate(`/tutorial/watch?id=${selectedTutorial.id}`);
+                }
+              }}
+            >
+              Watch Full Video
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
