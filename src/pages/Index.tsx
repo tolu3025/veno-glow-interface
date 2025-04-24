@@ -9,6 +9,12 @@ import BackgroundBubbles from "@/components/home/BackgroundBubbles";
 import AdPlacement from "@/components/ads/AdPlacement";
 import { bannerSlides, features, tutorials, testimonial } from "@/data/homePageData";
 
+// Update the tutorials data to include the required 'id' property
+const tutorialsWithIds = tutorials.map((tutorial, index) => ({
+  ...tutorial,
+  id: `tutorial-${index + 1}`
+}));
+
 const Index = () => {
   return (
     <div className="pb-6 relative overflow-hidden">
@@ -32,7 +38,7 @@ const Index = () => {
       </div>
       
       <FeaturesSection features={features} />
-      <TutorialsSection tutorials={tutorials} />
+      <TutorialsSection tutorials={tutorialsWithIds} />
       
       {/* Content-rich section with contextual ad */}
       <div className="container my-10">

@@ -39,7 +39,7 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       .from('tutorial_comments')
       .select(`
         *,
-        profiles:user_id (
+        profiles:user_id(
           display_name,
           avatar_url,
           email
@@ -57,7 +57,23 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       return;
     }
 
-    setComments(data || []);
+    // Handle the case where profiles might be an error object
+    const processedComments = data?.map(comment => {
+      // If profiles is an error or doesn't exist, provide a default value
+      if (!comment.profiles || typeof comment.profiles !== 'object' || comment.profiles.error) {
+        return {
+          ...comment,
+          profiles: {
+            display_name: 'Unknown User',
+            avatar_url: undefined,
+            email: undefined
+          }
+        };
+      }
+      return comment;
+    }) || [];
+
+    setComments(processedComments as Comment[]);
   };
 
   const subscribeToComments = () => {
