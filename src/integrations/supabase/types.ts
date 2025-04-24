@@ -946,11 +946,45 @@ export type Database = {
           },
         ]
       }
+      tutorial_comment_reactions: {
+        Row: {
+          comment_id: string | null
+          created_at: string | null
+          id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string | null
+          id?: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string | null
+          id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutorial_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "tutorial_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutorial_comments: {
         Row: {
           content: string
           created_at: string | null
           id: string
+          parent_id: string | null
+          reactions: Json | null
           tutorial_id: string
           updated_at: string | null
           user_id: string
@@ -959,6 +993,8 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          parent_id?: string | null
+          reactions?: Json | null
           tutorial_id: string
           updated_at?: string | null
           user_id: string
@@ -967,11 +1003,20 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          parent_id?: string | null
+          reactions?: Json | null
           tutorial_id?: string
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tutorial_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "tutorial_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tutorial_comments_tutorial_id_fkey"
             columns: ["tutorial_id"]
