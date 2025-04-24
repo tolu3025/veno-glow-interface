@@ -1,6 +1,5 @@
-
 import { useState, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Captions, CaptionsOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -15,7 +14,10 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCaptions, setShowCaptions] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -25,6 +27,32 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
         videoRef.current.play();
       }
       setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      try {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } catch (err) {
+        console.error('Error attempting to enable fullscreen:', err);
+      }
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const toggleCaptions = () => {
+    if (videoRef.current) {
+      const track = videoRef.current.textTracks[0];
+      if (track) {
+        track.mode = showCaptions ? 'hidden' : 'showing';
+        setShowCaptions(!showCaptions);
+      }
     }
   };
 
@@ -79,7 +107,7 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+    <div ref={containerRef} className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
       <video
         ref={videoRef}
         src={videoUrl}
@@ -88,7 +116,15 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleVideoEnd}
-      />
+      >
+        <track 
+          kind="captions" 
+          src="/captions/default.vtt" 
+          srcLang="en" 
+          label="English"
+          default 
+        />
+      </video>
       
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
         <div className="space-y-2">
@@ -132,11 +168,37 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
                   />
                 </div>
               </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleCaptions}
+                className="text-white hover:bg-white/20"
+              >
+                {showCaptions ? 
+                  <Captions className="h-5 w-5" /> : 
+                  <CaptionsOff className="h-5 w-5" />
+                }
+              </Button>
             </div>
             
-            <span className="text-white text-sm">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+            <div className="flex items-center gap-4">
+              <span className="text-white text-sm">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFullscreen}
+                className="text-white hover:bg-white/20"
+              >
+                {isFullscreen ? 
+                  <Minimize className="h-5 w-5" /> : 
+                  <Maximize className="h-5 w-5" />
+                }
+              </Button>
+            </div>
           </div>
         </div>
       </div>
