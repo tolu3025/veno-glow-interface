@@ -39,34 +39,46 @@ const Comments = ({ tutorialId }: CommentsProps) => {
         return;
       }
 
-      // Then, fetch user profiles separately
+      // Get unique user IDs from comments
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
       
-      // Only fetch profiles if there are comments
+      // If there are comments, fetch the profile data separately
+      let commentsWithProfiles = commentsData;
+      
       if (userIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
+        // Fetch profiles data
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, display_name, email, avatar_url')
           .in('id', userIds);
 
         if (profilesError) {
           console.error("Error fetching profiles:", profilesError);
-        }
-
-        // Create a map of profiles for quick lookup
-        const profileMap = new Map();
-        if (profilesData) {
-          profilesData.forEach(profile => {
+        } else if (profiles) {
+          // Create a map for quick profile lookup
+          const profileMap = new Map();
+          profiles.forEach(profile => {
             profileMap.set(profile.id, profile);
+          });
+
+          // Merge comments with profile data
+          commentsWithProfiles = commentsData.map(comment => {
+            const profile = profileMap.get(comment.user_id) || { 
+              display_name: 'Anonymous',
+              avatar_url: null,
+              email: null
+            };
+            
+            return {
+              ...comment,
+              profiles: profile
+            };
           });
         }
 
-        // Add profile data to comments
-        const commentsWithProfiles = await Promise.all(
-          commentsData.map(async (comment) => {
-            const profile = profileMap.get(comment.user_id);
-            
-            // Get reaction counts
+        // Fetch reactions counts separately
+        commentsWithProfiles = await Promise.all(
+          commentsWithProfiles.map(async (comment) => {
             const { data: reactions } = await supabase
               .from('tutorial_comment_reactions')
               .select('reaction_type')
@@ -74,11 +86,6 @@ const Comments = ({ tutorialId }: CommentsProps) => {
 
             return {
               ...comment,
-              profiles: profile || { 
-                display_name: 'Anonymous', 
-                avatar_url: null,
-                email: null 
-              },
               reactions: {
                 hearts: reactions?.filter(r => r.reaction_type === 'heart').length || 0,
                 likes: reactions?.filter(r => r.reaction_type === 'like').length || 0
@@ -86,12 +93,9 @@ const Comments = ({ tutorialId }: CommentsProps) => {
             };
           })
         );
-
-        setComments(commentsWithProfiles);
-      } else {
-        // No comments, so set empty array
-        setComments([]);
       }
+
+      setComments(commentsWithProfiles);
     } catch (err) {
       console.error("Unexpected error loading comments:", err);
       toast({
