@@ -1,8 +1,9 @@
 
 import { useState, useRef } from 'react';
-import { Share2, Pause, Play } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 import Comments from './Comments';
 
 interface TutorialDetailsProps {
@@ -16,19 +17,7 @@ interface TutorialDetailsProps {
 }
 
 const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const togglePlayPause = () => {
-    if (!videoRef.current) return;
-    
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
+  const navigate = useNavigate();
 
   const handleShare = () => {
     const shareData = {
@@ -48,37 +37,32 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
     }
   };
 
+  const handleWatchVideo = () => {
+    navigate(`/tutorial/watch?id=${tutorial.id}`);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-        {tutorial.video_url ? (
-          <>
-            <video
-              ref={videoRef}
-              src={tutorial.video_url}
-              className="w-full h-full"
-              poster={tutorial.thumbnail_url}
-              onEnded={() => setIsPlaying(false)}
-              controls
-            />
-            {!isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full bg-white/20 hover:bg-white/40"
-                  onClick={togglePlayPause}
-                >
-                  <Play className="h-8 w-8 text-white" />
-                </Button>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full bg-muted">
-            <p className="text-muted-foreground">No video available</p>
-          </div>
+      <div 
+        className="relative aspect-video bg-black rounded-lg overflow-hidden cursor-pointer"
+        onClick={handleWatchVideo}
+      >
+        {tutorial.thumbnail_url && (
+          <img
+            src={tutorial.thumbnail_url}
+            alt={tutorial.title}
+            className="w-full h-full object-cover"
+          />
         )}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors">
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-white/20 hover:bg-white/40"
+          >
+            <Play className="h-8 w-8 text-white" />
+          </Button>
+        </div>
       </div>
 
       <div className="flex justify-between items-center">

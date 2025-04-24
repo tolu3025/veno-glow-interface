@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -28,6 +27,7 @@ import UnderMaintenancePage from './pages/UnderMaintenancePage';
 import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import VideoPlayerPage from './pages/VideoPlayerPage';
 
 const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   const LazyComponent = React.lazy(() => 
@@ -113,6 +113,9 @@ export const routes: RouteObject[] = [
           { path: 'library', element: <ProtectedRoute><Library /></ProtectedRoute> },
           { path: 'leaderboard/:testId', element: <ProtectedRoute><Leaderboard /></ProtectedRoute> }
         ]
+      },
+      { path: 'tutorial/watch', 
+        element: <VideoPlayerPage /> 
       },
       { path: '*', element: <NotFound /> }
     ]
