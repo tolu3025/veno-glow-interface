@@ -144,7 +144,7 @@ const VideoPlayerPage = () => {
       </div>
 
       <div className="mt-8 pt-8 border-t">
-        <Comments tutorialId={tutorial.id} />
+        {tutorial.id && <Comments tutorialId={tutorial.id} />}
       </div>
     </div>
   );

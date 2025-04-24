@@ -37,41 +37,48 @@ const Comments = ({ tutorialId }: CommentsProps) => {
   }, [tutorialId]);
 
   const fetchComments = async () => {
-    const { data, error } = await supabase
-      .from('tutorial_comments')
-      .select(`
-        *,
-        profiles:user_id(
-          display_name,
-          avatar_url,
-          email
-        )
-      `)
-      .eq('tutorial_id', tutorialId)
-      .order('created_at', { ascending: false });
+    try {
+      console.log("Fetching comments for tutorial:", tutorialId);
+      const { data, error } = await supabase
+        .from('tutorial_comments')
+        .select(`
+          *,
+          profiles:user_id(
+            display_name,
+            avatar_url,
+            email
+          )
+        `)
+        .eq('tutorial_id', tutorialId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      toast({
-        title: "Error loading comments",
-        description: error.message,
-        variant: "destructive"
-      });
-      return;
+      if (error) {
+        console.error("Error fetching comments:", error);
+        toast({
+          title: "Error loading comments",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Process comments to ensure correct profile structure
+      const processedComments = (data || []).map(comment => ({
+        ...comment,
+        profiles: comment.profiles && typeof comment.profiles === 'object' 
+          ? comment.profiles 
+          : {
+              display_name: 'Unknown User',
+              avatar_url: undefined,
+              email: undefined
+            }
+      }));
+
+      console.log("Comments loaded:", processedComments.length);
+      setComments(processedComments as Comment[]);
+    } catch (err) {
+      console.error("Unexpected error loading comments:", err);
     }
-
-    // Process comments to ensure correct profile structure
-    const processedComments = (data || []).map(comment => ({
-      ...comment,
-      profiles: comment.profiles && typeof comment.profiles === 'object' 
-        ? comment.profiles 
-        : {
-            display_name: 'Unknown User',
-            avatar_url: undefined,
-            email: undefined
-          }
-    }));
-
-    setComments(processedComments as Comment[]);
   };
 
   const subscribeToComments = () => {
@@ -101,28 +108,58 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       return;
     }
 
-    setIsLoading(true);
-    const { error } = await supabase
-      .from('tutorial_comments')
-      .insert([
-        {
-          tutorial_id: tutorialId,
-          user_id: user.id,
-          content: newComment
-        }
-      ]);
-
-    setIsLoading(false);
-    if (error) {
+    if (!newComment.trim()) {
       toast({
-        title: "Error posting comment",
-        description: error.message,
+        title: "Comment required",
+        description: "Please enter a comment",
         variant: "destructive"
       });
       return;
     }
 
-    setNewComment('');
+    setIsLoading(true);
+    try {
+      console.log("Submitting comment for tutorial:", tutorialId, "by user:", user.id);
+      const { data, error } = await supabase
+        .from('tutorial_comments')
+        .insert([
+          {
+            tutorial_id: tutorialId,
+            user_id: user.id,
+            content: newComment.trim()
+          }
+        ]);
+
+      setIsLoading(false);
+      
+      if (error) {
+        console.error("Error posting comment:", error);
+        toast({
+          title: "Error posting comment",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log("Comment posted successfully:", data);
+      setNewComment('');
+      toast({
+        title: "Comment posted",
+        description: "Your comment has been added successfully",
+      });
+      
+      // Refresh comments
+      fetchComments();
+    } catch (err) {
+      console.error("Unexpected error posting comment:", err);
+      setIsLoading(false);
+      toast({
+        title: "Error posting comment",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -141,11 +178,15 @@ const Comments = ({ tutorialId }: CommentsProps) => {
           type="submit" 
           disabled={!user || isLoading || !newComment.trim()}
         >
-          Post Comment
+          {isLoading ? "Posting..." : "Post Comment"}
         </Button>
       </form>
 
       <div className="space-y-4 mt-6">
+        {comments.length === 0 && (
+          <p className="text-muted-foreground text-center py-4">No comments yet. Be the first to comment!</p>
+        )}
+        
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-4 p-4 bg-card rounded-lg">
             <Avatar className="h-10 w-10">
