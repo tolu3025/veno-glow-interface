@@ -1,31 +1,12 @@
 import { useState, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Captions, CaptionsOff, Languages } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Captions, CaptionsOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface VideoPlayerProps {
   videoUrl: string;
   thumbnailUrl?: string;
 }
-
-interface CaptionTrack {
-  src: string;
-  label: string;
-  srcLang: string;
-}
-
-const CAPTION_TRACKS: CaptionTrack[] = [
-  { src: "/captions/english.vtt", label: "English", srcLang: "en" },
-  { src: "/captions/spanish.vtt", label: "Español", srcLang: "es" },
-  { src: "/captions/french.vtt", label: "Français", srcLang: "fr" },
-];
 
 const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -35,7 +16,6 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,29 +48,11 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
 
   const toggleCaptions = () => {
     if (videoRef.current) {
-      const tracks = Array.from(videoRef.current.textTracks);
-      tracks.forEach(track => {
-        if (track.language === selectedLanguage) {
-          track.mode = showCaptions ? 'hidden' : 'showing';
-        } else {
-          track.mode = 'hidden';
-        }
-      });
-      setShowCaptions(!showCaptions);
-    }
-  };
-
-  const handleLanguageChange = (value: string) => {
-    if (videoRef.current) {
-      const tracks = Array.from(videoRef.current.textTracks);
-      tracks.forEach(track => {
-        if (track.language === value) {
-          track.mode = showCaptions ? 'showing' : 'hidden';
-        } else {
-          track.mode = 'hidden';
-        }
-      });
-      setSelectedLanguage(value);
+      const track = videoRef.current.textTracks[0];
+      if (track) {
+        track.mode = showCaptions ? 'hidden' : 'showing';
+        setShowCaptions(!showCaptions);
+      }
     }
   };
 
@@ -155,16 +117,13 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleVideoEnd}
       >
-        {CAPTION_TRACKS.map((track) => (
-          <track
-            key={track.srcLang}
-            kind="captions"
-            src={track.src}
-            srcLang={track.srcLang}
-            label={track.label}
-            default={track.srcLang === "en"}
-          />
-        ))}
+        <track 
+          kind="captions" 
+          src="/captions/default.vtt" 
+          srcLang="en" 
+          label="English"
+          default 
+        />
       </video>
       
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
@@ -210,40 +169,17 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleCaptions}
-                  className="text-white hover:bg-white/20"
-                >
-                  {showCaptions ? 
-                    <Captions className="h-5 w-5" /> : 
-                    <CaptionsOff className="h-5 w-5" />
-                  }
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-white hover:bg-white/20"
-                    >
-                      <Languages className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuRadioGroup value={selectedLanguage} onValueChange={handleLanguageChange}>
-                      {CAPTION_TRACKS.map((track) => (
-                        <DropdownMenuRadioItem key={track.srcLang} value={track.srcLang}>
-                          {track.label}
-                        </DropdownMenuRadioItem>
-                      ))}
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleCaptions}
+                className="text-white hover:bg-white/20"
+              >
+                {showCaptions ? 
+                  <Captions className="h-5 w-5" /> : 
+                  <CaptionsOff className="h-5 w-5" />
+                }
+              </Button>
             </div>
             
             <div className="flex items-center gap-4">
