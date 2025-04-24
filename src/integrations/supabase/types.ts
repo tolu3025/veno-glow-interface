@@ -946,6 +946,41 @@ export type Database = {
           },
         ]
       }
+      tutorial_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          tutorial_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          tutorial_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          tutorial_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutorial_comments_tutorial_id_fkey"
+            columns: ["tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "tutorials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutorials: {
         Row: {
           created_at: string | null

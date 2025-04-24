@@ -1,16 +1,17 @@
-
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import TutorialCard from "@/components/ServiceCard";
 import { LucideIcon } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface Tutorial {
   title: string;
   description: string;
   icon: LucideIcon;
   href: string;
+  id: string;
 }
 
 interface TutorialsSectionProps {
@@ -36,6 +37,24 @@ const TutorialsSection = ({ tutorials }: TutorialsSectionProps) => {
     visible: {
       y: 0,
       opacity: 1
+    }
+  };
+
+  const shareToSocial = (tutorial: Tutorial) => {
+    const shareData = {
+      title: tutorial.title,
+      text: tutorial.description,
+      url: `${window.location.origin}/tutorial/info?id=${tutorial.href}`
+    };
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      navigator.share(shareData).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareData.url);
+      toast({
+        title: "Link copied!",
+        description: "Tutorial link copied to clipboard",
+      });
     }
   };
 
@@ -78,8 +97,7 @@ const TutorialsSection = ({ tutorials }: TutorialsSectionProps) => {
               onClick={() => navigate(tutorial.href)}
               showShareButton={true}
               onShare={() => {
-                navigator.clipboard.writeText(`Check out this tutorial: ${window.location.origin}${tutorial.href}`);
-                // You would typically add a toast notification here
+                shareToSocial(tutorial);
               }}
             />
           </motion.div>
