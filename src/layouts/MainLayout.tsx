@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -191,16 +190,6 @@ const MainLayout = () => {
                 Contact Us
               </Link>
             </div>
-            
-            <a
-              href="https://x.com/OyetadeToluwan1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-[#1DA1F2] text-white px-4 py-2 rounded-full shadow-lg hover:bg-[#1a8cd8] transition-colors"
-            >
-              <Twitter className="h-5 w-5" />
-              <span className="font-medium">Follow our developer</span>
-            </a>
           </div>
         </div>
       </footer>
