@@ -1,3 +1,4 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -111,24 +112,13 @@ const MainLayout = () => {
           </div>
         </div>
       </header>
+      
       <main className="flex-1">
         <div className="container mx-auto px-4 md:px-6 py-4 max-w-7xl">
           <Outlet />
         </div>
       </main>
-      <div className="sticky bottom-4 z-40 w-full">
-        <div className="container flex justify-center">
-          <a
-            href="https://x.com/OyetadeToluwan1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-[#1DA1F2] text-white px-4 py-2 rounded-full shadow-lg hover:bg-[#1a8cd8] transition-colors"
-          >
-            <Twitter className="h-5 w-5" />
-            <span className="font-medium">Follow our developer</span>
-          </a>
-        </div>
-      </div>
+      
       <footer className="border-t mt-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 md:h-14 text-muted-foreground">
           <p className="text-sm">
@@ -186,19 +176,31 @@ const MainLayout = () => {
             </a>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Link to="/terms-of-service" className="text-xs underline-offset-4 hover:underline">
-              Terms of Service
-            </Link>
-            <Link to="/privacy-policy" className="text-xs underline-offset-4 hover:underline">
-              Privacy
-            </Link>
-            <Link to="/ads-policy" className="text-xs underline-offset-4 hover:underline">
-              Ads Policy
-            </Link>
-            <Link to="/contact" className="text-xs underline-offset-4 hover:underline">
-              Contact Us
-            </Link>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="flex items-center gap-4 mb-2 md:mb-0">
+              <Link to="/terms-of-service" className="text-xs underline-offset-4 hover:underline">
+                Terms of Service
+              </Link>
+              <Link to="/privacy-policy" className="text-xs underline-offset-4 hover:underline">
+                Privacy
+              </Link>
+              <Link to="/ads-policy" className="text-xs underline-offset-4 hover:underline">
+                Ads Policy
+              </Link>
+              <Link to="/contact" className="text-xs underline-offset-4 hover:underline">
+                Contact Us
+              </Link>
+            </div>
+            
+            <a
+              href="https://x.com/OyetadeToluwan1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-[#1DA1F2] text-white px-4 py-2 rounded-full shadow-lg hover:bg-[#1a8cd8] transition-colors"
+            >
+              <Twitter className="h-5 w-5" />
+              <span className="font-medium">Follow our developer</span>
+            </a>
           </div>
         </div>
       </footer>
