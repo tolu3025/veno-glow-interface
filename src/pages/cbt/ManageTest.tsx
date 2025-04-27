@@ -1,32 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
-import { 
-  ArrowLeft, 
-  StopCircle, 
-  Printer, 
-  Check, 
-  X,
-  RefreshCw,
-  Loader2,
-  AlertCircle,
-  FileText,
-  PencilIcon,
-  Save,
-  XCircle,
-  BookOpen,
-  HelpCircle,
-  Trash,
-  Download
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { VenoLogo } from '@/components/ui/logo';
+import { TestHeader } from '@/components/cbt/manage/TestHeader';
+import { TestDetails } from '@/components/cbt/manage/TestDetails';
+import { ParticipantsList } from '@/components/cbt/manage/ParticipantsList';
+import { QuestionsList } from '@/components/cbt/manage/QuestionsList';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import Certificate from '@/components/certificate/Certificate';
 import {
   Table,
   TableBody,
@@ -64,12 +51,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import Certificate from '@/components/certificate/Certificate';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { motion } from 'framer-motion';
+import { 
+  ArrowLeft, 
+  StopCircle, 
+  Printer, 
+  Check, 
+  X,
+  RefreshCw,
+  AlertCircle as AlertCircleIcon,
+  FileText,
+  PencilIcon,
+  Save,
+  XCircle,
+  BookOpen,
+  HelpCircle,
+  Trash,
+  Download
+} from 'lucide-react';
 
 type Test = {
   id: string;
@@ -663,7 +666,9 @@ const ManageTest = () => {
       <div className="flex flex-col items-center justify-center py-10">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
         <h2 className="text-2xl font-bold mb-2">Test Not Found</h2>
-        <p className="text-muted-foreground mb-6">The test you're looking for doesn't exist or you don't have permission to view it.</p>
+        <p className="text-muted-foreground mb-6">
+          The test you're looking for doesn't exist or you don't have permission to view it.
+        </p>
         <Button onClick={() => navigate('/cbt')}>Return to Dashboard</Button>
       </div>
     );
@@ -671,94 +676,25 @@ const ManageTest = () => {
 
   return (
     <div className="container max-w-4xl mx-auto pb-10 md:pb-6 md:pl-0 pt-6">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-        <Button 
-          variant="ghost" 
-          className="flex items-center gap-2" 
-          onClick={() => navigate('/cbt')}
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Tests</span>
-        </Button>
-        
-        <div className="flex gap-2 flex-wrap">
-          <Button 
-            variant={testActive ? "destructive" : "default"}
-            onClick={toggleTestStatus}
-            className="flex items-center gap-2"
-          >
-            <StopCircle size={16} />
-            {testActive ? 'Deactivate Test' : 'Activate Test'}
-          </Button>
-          
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="flex items-center gap-2">
-                <Trash size={16} />
-                Delete Test
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Test</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete the test and all associated data. 
-                  This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={deleteTest}
-                  disabled={deleteLoading}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  {deleteLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Trash className="h-4 w-4 mr-2" />
-                  )}
-                  {deleteLoading ? 'Deleting...' : 'Delete Test'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+      <TestHeader 
+        testActive={testActive}
+        toggleTestStatus={toggleTestStatus}
+        deleteTest={deleteTest}
+        deleteLoading={deleteLoading}
+        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        isDeleteDialogOpen={isDeleteDialogOpen}
+      />
       
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>{testDetails.title}</CardTitle>
-          <CardDescription>
-            {testDetails.description || 'No description'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-secondary/30 p-3 rounded-md">
-              <p className="text-sm font-medium">Questions</p>
-              <p className="text-lg">{testDetails.question_count}</p>
-            </div>
-            <div className="bg-secondary/30 p-3 rounded-md">
-              <p className="text-sm font-medium">Time Limit</p>
-              <p className="text-lg">{testDetails.time_limit || 'No'} min</p>
-            </div>
-            <div className="bg-secondary/30 p-3 rounded-md">
-              <p className="text-sm font-medium">Difficulty</p>
-              <p className="text-lg capitalize">{testDetails.difficulty}</p>
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center border-t pt-4 mt-4">
-            <p className="text-sm text-muted-foreground">
-              Share Code: <span className="font-mono bg-secondary/50 px-1 rounded">{testDetails.share_code}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Created: {formatDate(testDetails.created_at)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <TestDetails 
+        title={testDetails.title}
+        description={testDetails.description}
+        questionCount={testDetails.question_count}
+        timeLimit={testDetails.time_limit}
+        difficulty={testDetails.difficulty}
+        shareCode={testDetails.share_code}
+        createdAt={testDetails.created_at}
+        formatDate={formatDate}
+      />
       
       <Tabs defaultValue="participants" onValueChange={(value) => {
         setActiveTab(value);
@@ -772,428 +708,40 @@ const ManageTest = () => {
         </TabsList>
         
         <TabsContent value="participants">
-          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-            <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={refreshData}
-              disabled={refreshing}
-              className="flex items-center gap-1"
-            >
-              {refreshing ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw size={14} />
-              )}
-              Refresh
-            </Button>
-          </div>
-          
-          {testAttempts.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-muted-foreground mb-4">
-                  No one has taken this test yet
-                </p>
-                <Button onClick={() => navigate('/cbt')}>Back to Dashboard</Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead className="text-center">Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {testAttempts.map((attempt) => (
-                      <TableRow 
-                        key={attempt.id} 
-                        className={attempt.disqualified ? "bg-destructive/10" : ""}
-                      >
-                        <TableCell className="font-medium">
-                          {attempt.participant_name || 'Anonymous'}
-                        </TableCell>
-                        <TableCell>{attempt.participant_email || 'N/A'}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="font-medium">
-                            {attempt.score}/{attempt.total_questions}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {Math.round((attempt.score / attempt.total_questions) * 100)}%
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex flex-col md:flex-row gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => downloadParticipantPDF(attempt)}
-                              className="text-blue-600"
-                            >
-                              <Download className="h-3.5 w-3.5 mr-1" />
-                              Download PDF
-                            </Button>
-                            
-                            {attempt.disqualified ? (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="outline">
-                                    Reinstate
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Reinstate Participant</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will reinstate the participant's results. Are you sure?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                      onClick={() => reinstateParticipant(attempt.id)}
-                                    >
-                                      Reinstate
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            ) : (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="destructive">
-                                    {disqualifying === attempt.id ? 
-                                      <Loader2 className="h-4 w-4 animate-spin" /> : 
-                                      'Disqualify'
-                                    }
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Disqualify Participant</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will mark the participant's results as disqualified. Are you sure?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                      onClick={() => disqualifyParticipant(attempt.id)}
-                                      className="bg-destructive hover:bg-destructive/90"
-                                    >
-                                      Disqualify
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+          <ParticipantsList 
+            testAttempts={testAttempts}
+            downloadParticipantPDF={downloadParticipantPDF}
+            disqualifyParticipant={disqualifyParticipant}
+            reinstateParticipant={reinstateParticipant}
+            disqualifying={disqualifying}
+            refreshing={refreshing}
+            refreshData={refreshData}
+          />
         </TabsContent>
         
         <TabsContent value="questions">
-          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-veno-primary" />
-              <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={fetchTestQuestions}
-              disabled={loadingQuestions}
-              className="flex items-center gap-1"
-            >
-              {loadingQuestions ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw size={14} />
-              )}
-              Refresh Questions
-            </Button>
-          </div>
-          
-          {loadingQuestions ? (
-            <Card>
-              <CardContent className="flex justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
-              </CardContent>
-            </Card>
-          ) : testQuestions.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-muted-foreground mb-4">
-                  No questions found for this test
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {testQuestions.map((question, index) => (
-                <motion.div 
-                  key={question.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex justify-between">
-                        <span>Question {index + 1}</span>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleEditQuestion(question)}
-                            className="h-8 px-2"
-                          >
-                            <PencilIcon size={16} />
-                            <span className="ml-1">Edit</span>
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="h-8 px-2 text-destructive hover:text-destructive"
-                              >
-                                <Trash size={16} />
-                                <span className="ml-1">Delete</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Question</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this question? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteQuestion(question.id)}
-                                  className="bg-destructive hover:bg-destructive/90"
-                                >
-                                  Delete Question
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-4">{question.question}</p>
-                      <div className="space-y-2">
-                        {question.options.map((option, optionIndex) => (
-                          <div 
-                            key={optionIndex} 
-                            className={`p-3 rounded-md border ${
-                              optionIndex === question.answer ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700'
-                            }`}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 ${
-                                optionIndex === question.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                              }`}>
-                                {String.fromCharCode(65 + optionIndex)}
-                              </div>
-                              <span>{option}</span>
-                              {optionIndex === question.answer && (
-                                <Check size={16} className="ml-2 text-green-500" />
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {question.explanation ? (
-                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-                          <div className="flex items-start gap-2">
-                            <BookOpen size={20} className="mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                            <div>
-                              <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Explanation:</p>
-                              <p className="text-blue-700 dark:text-blue-300/90">{question.explanation}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-md border border-gray-200 dark:border-gray-700 text-muted-foreground text-sm italic">
-                          No explanation provided for this question
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
+          <QuestionsList 
+            questions={testQuestions}
+            loadingQuestions={loadingQuestions}
+            handleEditQuestion={handleEditQuestion}
+            handleDeleteQuestion={handleDeleteQuestion}
+            fetchTestQuestions={fetchTestQuestions}
+          />
         </TabsContent>
       </Tabs>
       
-      <Dialog open={isEditQuestionDialogOpen} onOpenChange={setIsEditQuestionDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              <span>Edit Question</span>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                className="h-8"
-                onClick={() => {
-                  setIsEditQuestionDialogOpen(false);
-                }}
-              >
-                <Trash className="h-4 w-4 mr-1" />
-                Delete Question
-              </Button>
-            </DialogTitle>
-            <DialogDescription>
-              Make changes to the question, options, answer, or explanation.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {currentEditQuestion && (
-            <div className="space-y-4 my-2">
-              <div>
-                <Label htmlFor="question">Question</Label>
-                <Textarea 
-                  id="question" 
-                  value={currentEditQuestion.question}
-                  onChange={(e) => handleUpdateQuestionField('question', e.target.value)}
-                  rows={3}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <Label>Options</Label>
-                {currentEditQuestion.options.map((option, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <div className={`min-w-8 h-8 flex items-center justify-center rounded-full ${
-                      index === currentEditQuestion.answer ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}>
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                    <Input 
-                      value={option}
-                      onChange={(e) => handleUpdateOption(index, e.target.value)}
-                      className="flex-1"
-                    />
-                    
-                    <RadioGroup 
-                      value={currentEditQuestion.answer.toString()} 
-                      onValueChange={(value) => handleUpdateQuestionField('answer', parseInt(value, 10))}
-                      className="flex"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value={index.toString()} id={`answer-${index}`} />
-                        <Label htmlFor={`answer-${index}`} className="cursor-pointer">Correct Answer</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                ))}
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <BookOpen size={16} className="text-veno-primary" />
-                  <Label htmlFor="explanation">Explanation (Optional)</Label>
-                </div>
-                <Textarea 
-                  id="explanation" 
-                  value={currentEditQuestion.explanation || ''}
-                  onChange={(e) => handleUpdateQuestionField('explanation', e.target.value)}
-                  rows={4}
-                  className="mt-1"
-                  placeholder="Explain why the answer is correct. This will help test takers learn from their mistakes."
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  <HelpCircle className="inline h-3 w-3 mr-1" />
-                  A clear explanation improves the educational value of your test
-                </p>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter className="mt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsEditQuestionDialogOpen(false)}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button 
-              type="button" 
-              onClick={saveQuestionChanges}
-              disabled={saveLoading}
-            >
-              {saveLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
+      {/* Hidden Certificate Component for Printing */}
       <div className="hidden">
         <div ref={certificateRef} className="certificate-container p-8 bg-white">
           {selectedParticipant && (
-            <div className="max-w-4xl mx-auto border-8 border-double border-blue-600 p-8 text-center">
-              <h1 className="text-3xl font-bold text-blue-800 mb-2">Certificate of Completion</h1>
-              <div className="text-lg mb-6">This certifies that</div>
-              <h2 className="text-2xl font-bold mb-6">{selectedParticipant.participant_name || 'Anonymous'}</h2>
-              <div className="text-lg mb-2">has successfully completed</div>
-              <h3 className="text-xl font-bold mb-6">{testDetails?.title || 'Assessment'}</h3>
-              <div className="mb-6">
-                <span className="text-lg font-semibold">
-                  Score: {selectedParticipant.score}/{selectedParticipant.total_questions} 
-                  ({Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}%)
-                </span>
-              </div>
-              <div className="text-sm mb-8">
-                Date: {formatDate(selectedParticipant.completed_at)}
-              </div>
-              <div className="flex justify-between items-end mt-12 pt-8">
-                <div className="text-center border-t border-gray-300 inline-block px-8">
-                  <p className="text-sm pt-1">Examiner's Signature</p>
-                </div>
-                <div className="flex items-center">
-                  <VenoLogo className="h-12 w-12 mr-2" />
-                  <span className="text-xl font-bold">Veno Education</span>
-                </div>
-              </div>
-              {selectedParticipant.disqualified && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-6xl font-bold text-red-500 opacity-40 transform rotate-45 border-8 border-red-500 px-4 py-2">
-                    DISQUALIFIED
-                  </div>
-                </div>
-              )}
-            </div>
+            <Certificate
+              participantName={selectedParticipant.participant_name}
+              testTitle={testDetails.title}
+              score={selectedParticipant.score}
+              totalQuestions={selectedParticipant.total_questions}
+              completedAt={selectedParticipant.completed_at}
+              disqualified={selectedParticipant.disqualified}
+            />
           )}
         </div>
       </div>
