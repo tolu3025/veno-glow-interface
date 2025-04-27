@@ -11,7 +11,6 @@ import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, MessageSquareShare } fr
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/useAuth';
 import AdPlacement from '@/components/ads/AdPlacement';
 
 interface BlogCommentFromDB {
@@ -113,12 +112,6 @@ const BlogPostPage = () => {
     },
   });
 
-  React.useEffect(() => {
-    if (user) {
-      setCommentorEmail(user.email || '');
-    }
-  }, [user]);
-
   const handleSubmitComment = async (content: string) => {
     try {
       const { error } = await supabase.from('blog_comments').insert({
@@ -138,7 +131,7 @@ const BlogPostPage = () => {
       });
       
       setReplyTo(null);
-      if (!user) setCommentorEmail('');
+      setCommentorEmail('');
       refetchComments();
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -366,7 +359,6 @@ const BlogPostPage = () => {
                   value={commentorEmail}
                   onChange={(e) => setCommentorEmail(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  disabled={!!user}
                 />
               </div>
               <CommentForm onSubmit={handleSubmitComment} parentId={replyTo} />
