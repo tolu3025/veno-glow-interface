@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -48,7 +49,7 @@ export const routes: RouteObject[] = [
     children: [
       { 
         index: true, 
-        element: <ProtectedRoute><Index /></ProtectedRoute> 
+        element: <Index /> // Remove ProtectedRoute for homepage
       },
       { 
         path: 'cbt', 
@@ -56,15 +57,15 @@ export const routes: RouteObject[] = [
       },
       { 
         path: 'tutorial', 
-        element: <TutorialPage />
+        element: <ProtectedRoute><TutorialPage /></ProtectedRoute>
       },
       { 
         path: 'tutorial/info', 
-        element: <TutorialInfo />
+        element: <ProtectedRoute><TutorialInfo /></ProtectedRoute>
       },
       { 
         path: 'blog', 
-        element: <BlogPage />
+        element: <BlogPage /> // Remove ProtectedRoute for blog
       },
       { 
         path: 'bot', 
@@ -110,14 +111,16 @@ export const routes: RouteObject[] = [
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
-          { path: 'library', element: <ProtectedRoute><Library /></ProtectedRoute> },
+          { path: 'library', element: <Library /> }, // Remove ProtectedRoute for library
           { path: 'leaderboard/:testId', element: <ProtectedRoute><Leaderboard /></ProtectedRoute> }
         ]
       },
-      { path: 'tutorial/watch', 
-        element: <VideoPlayerPage /> 
+      { 
+        path: 'tutorial/watch', 
+        element: <ProtectedRoute><VideoPlayerPage /></ProtectedRoute>
       },
       { path: '*', element: <NotFound /> }
     ]
   }
 ];
+

@@ -1,4 +1,3 @@
-
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
@@ -118,24 +117,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Allow access to test routes even if user is not logged in
-  if (isTestRoute) {
-    return <>{children}</>;
-  }
-
   if (!user) {
-    // If offline or database unreachable, show limited functionality warning but don't redirect
-    if (offlineMode || dbConnectionStatus === 'disconnected') {
-      toast({
-        title: "Limited functionality",
-        description: "Full access requires login. Some features will be unavailable while offline.",
-        variant: "warning",
-        duration: 5000,
-      });
-      return <>{children}</>;
-    }
-    
-    return <Navigate to="/auth" replace />;
+    toast({
+      title: "Authentication Required",
+      description: "Please sign in to access this feature",
+      variant: "warning",
+    });
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
