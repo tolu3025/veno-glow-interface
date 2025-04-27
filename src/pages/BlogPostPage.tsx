@@ -7,14 +7,13 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CommentForm } from "@/components/blog/CommentForm";
 import { CommentList } from "@/components/blog/CommentList";
-import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, Whatsapp } from 'lucide-react';
+import { ArrowLeft, Share2, Facebook, Twitter, Linkedin } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import AdPlacement from '@/components/ads/AdPlacement';
 
-// Define types that match what comes from Supabase
 interface BlogCommentFromDB {
   id: string;
   content: string;
@@ -30,7 +29,6 @@ interface BlogCommentFromDB {
   updated_at: string;
 }
 
-// Define the type expected by our CommentList component
 interface BlogComment {
   id: string;
   content: string;
@@ -62,7 +60,6 @@ const BlogPostPage = () => {
   const [commentorEmail, setCommentorEmail] = React.useState('');
   const { user } = useAuth();
 
-  // Fetch blog post
   const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
     queryKey: ['blog-post', postId],
     queryFn: async () => {
@@ -88,7 +85,6 @@ const BlogPostPage = () => {
     },
   });
 
-  // Fetch comments for this blog post
   const { 
     data: commentsData, 
     isLoading: isLoadingComments, 
@@ -109,7 +105,6 @@ const BlogPostPage = () => {
           throw error;
         }
         
-        // Transform the data to ensure the reactions field has the expected structure
         const transformedData: BlogComment[] = (data as BlogCommentFromDB[]).map(comment => ({
           ...comment,
           reactions: comment.reactions || { likes: 0, hearts: 0, dislikes: 0 }
@@ -125,7 +120,6 @@ const BlogPostPage = () => {
   });
 
   React.useEffect(() => {
-    // If user is logged in, pre-fill their email
     if (user) {
       setCommentorEmail(user.email || '');
     }
@@ -150,7 +144,7 @@ const BlogPostPage = () => {
       });
       
       setReplyTo(null);
-      if (!user) setCommentorEmail(''); // Clear the email field after posting only if not logged in
+      if (!user) setCommentorEmail('');
       refetchComments();
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -168,26 +162,9 @@ const BlogPostPage = () => {
     const shareUrl = window.location.href;
     const shareTitle = post.title;
     
-    // Use Web Share API if available
-    if (navigator.share) {
-      navigator.share({
-        title: shareTitle,
-        url: shareUrl,
-      })
-      .then(() => toast({ title: "Shared successfully" }))
-      .catch(error => console.error('Error sharing:', error));
-    } else {
-      // Fallback for browsers that don't support navigator.share
-      navigator.clipboard.writeText(shareUrl)
-        .then(() => toast({ 
-          title: "Link copied to clipboard",
-          description: "You can now share this post with others"
-        }))
-        .catch(() => toast({ 
-          title: "Could not copy link",
-          variant: "destructive"
-        }));
-    }
+    const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`;
+    
+    window.open(whatsappShareUrl, '_blank', 'noopener,noreferrer');
   };
 
   const shareOnSocial = (platform: 'facebook' | 'twitter' | 'linkedin' | 'whatsapp') => {
@@ -215,7 +192,6 @@ const BlogPostPage = () => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // Handle loading states
   if (isLoadingPost) {
     return (
       <div className="relative min-h-screen">
@@ -236,7 +212,6 @@ const BlogPostPage = () => {
     );
   }
 
-  // Handle error state
   if (postError) {
     return (
       <div className="relative min-h-screen">
@@ -295,7 +270,6 @@ const BlogPostPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Ad placement before content */}
           <div className="mb-8">
             <AdPlacement location="article" />
           </div>
@@ -313,7 +287,6 @@ const BlogPostPage = () => {
               <p className="text-muted-foreground">By {post.author_name}</p>
             )}
             
-            {/* Social share buttons */}
             <div className="flex items-center gap-3 mt-4">
               <span className="text-sm text-muted-foreground">Share:</span>
               <Button 
@@ -358,7 +331,7 @@ const BlogPostPage = () => {
                 className="rounded-full w-8 h-8 p-0 text-green-600" 
                 onClick={() => shareOnSocial('whatsapp')}
               >
-                <Whatsapp size={16} />
+                <Share2 size={16} />
                 <span className="sr-only">Share on WhatsApp</span>
               </Button>
             </div>
@@ -373,11 +346,9 @@ const BlogPostPage = () => {
           )}
 
           <div className="prose prose-slate dark:prose-invert max-w-none">
-            {/* Render content - in a real app you might want to use a markdown renderer */}
             <p className="text-lg leading-relaxed mb-6">{post.content}</p>
           </div>
           
-          {/* Ad placement in middle of content */}
           <div className="my-10">
             <AdPlacement location="content" />
           </div>
@@ -455,7 +426,6 @@ const BlogPostPage = () => {
             )}
           </motion.section>
           
-          {/* Ad placement after comments */}
           <div className="mt-10">
             <AdPlacement location="footer" />
           </div>
