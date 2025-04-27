@@ -67,12 +67,13 @@ const AppRoutes = () => {
       <Route path="/services" element={<ServicesPage />} />
       
       <Route element={<MainLayout />}>
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Index />
-          </ProtectedRoute>
-        } />
+        {/* Public routes that don't require authentication */}
+        <Route path="/" element={<Index />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/cbt/library" element={<Library />} />
+        <Route path="/contact" element={<ContactPage />} />
         
+        {/* Protected routes that require authentication */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardPage />
@@ -133,12 +134,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         
-        <Route path="/cbt/library" element={
-          <ProtectedRoute>
-            <Library />
-          </ProtectedRoute>
-        } />
-        
         <Route path="/settings" element={
           <ProtectedRoute>
             <SettingsPage />
@@ -151,11 +146,23 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         
-        <Route path="/tutorial" element={<TutorialPage />} />
+        <Route path="/tutorial" element={
+          <ProtectedRoute>
+            <TutorialPage />
+          </ProtectedRoute>
+        } />
 
-        <Route path="/tutorial/info" element={<TutorialInfo />} />
+        <Route path="/tutorial/info" element={
+          <ProtectedRoute>
+            <TutorialInfo />
+          </ProtectedRoute>
+        } />
         
-        <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
+        <Route path="/tutorial/watch" element={
+          <ProtectedRoute>
+            <VideoPlayerPage />
+          </ProtectedRoute>
+        } />
 
         <Route path="/orders" element={
           <ProtectedRoute>
@@ -168,10 +175,6 @@ const AppRoutes = () => {
             <BotPage />
           </ProtectedRoute>
         } />
-        
-        <Route path="/blog" element={<BlogPage />} />
-        
-        <Route path="/contact" element={<ContactPage />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />

@@ -111,7 +111,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    // Only show authentication toast for protected routes, not the public ones
+    // Show authentication toast for protected routes
     toast({
       title: "Authentication Required",
       description: "Please sign in to access this feature",
