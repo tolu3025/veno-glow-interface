@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -211,6 +210,7 @@ const BlogPostPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          {/* Top advertisement */}
           <div className="mb-8">
             <AdPlacement location="article" />
           </div>
@@ -281,17 +281,35 @@ const BlogPostPage = () => {
           </header>
 
           {article.image_url && (
-            <img 
-              src={article.image_url} 
-              alt={article.title}
-              className="w-full h-auto max-h-[400px] object-cover rounded-lg mb-8"
-            />
+            <>
+              <img 
+                src={article.image_url} 
+                alt={article.title}
+                className="w-full h-auto max-h-[400px] object-cover rounded-lg mb-8"
+              />
+              {/* Ad after featured image */}
+              <div className="my-6">
+                <AdPlacement location="content" contentCheck={false} />
+              </div>
+            </>
           )}
 
           <div className="prose prose-slate dark:prose-invert max-w-none">
-            <p className="text-lg leading-relaxed mb-6">{article.content}</p>
+            {/* Split content and add ads */}
+            {article.content.split('\n\n').map((paragraph, index, array) => (
+              <React.Fragment key={index}>
+                <p className="text-lg leading-relaxed mb-6">{paragraph}</p>
+                {/* Add an ad every 3 paragraphs */}
+                {index > 0 && (index + 1) % 3 === 0 && index < array.length - 1 && (
+                  <div className="my-8">
+                    <AdPlacement location="content" contentCheck={false} />
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
           
+          {/* Ad before comments section */}
           <div className="my-10">
             <AdPlacement location="content" />
           </div>
@@ -368,6 +386,7 @@ const BlogPostPage = () => {
             )}
           </motion.section>
           
+          {/* Bottom advertisement */}
           <div className="mt-10">
             <AdPlacement location="footer" />
           </div>
