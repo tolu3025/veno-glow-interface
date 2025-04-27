@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { jsPDF } from 'jspdf';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -735,12 +735,13 @@ const ManageTest = () => {
         <div ref={certificateRef} className="certificate-container p-8 bg-white">
           {selectedParticipant && (
             <Certificate
-              participantName={selectedParticipant.participant_name}
-              testTitle={testDetails.title}
-              score={selectedParticipant.score}
-              totalQuestions={selectedParticipant.total_questions}
-              completedAt={selectedParticipant.completed_at}
+              userName={selectedParticipant.participant_name || 'Anonymous'}
+              achievementName={testDetails?.title || 'Test'}
+              date={formatDate(selectedParticipant.completed_at)}
+              score={Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}
+              testDescription={testDetails?.description || undefined}
               disqualified={selectedParticipant.disqualified}
+              position={getParticipantPosition(selectedParticipant.id)}
             />
           )}
         </div>

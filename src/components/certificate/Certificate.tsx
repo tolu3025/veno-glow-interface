@@ -12,6 +12,12 @@ interface CertificateProps {
   score?: number;
   position?: string;
   testDescription?: string;
+  // Add the props that are being passed from ManageTest.tsx
+  participantName?: string;
+  testTitle?: string;
+  totalQuestions?: number;
+  completedAt?: string;
+  disqualified?: boolean;
 }
 
 const Certificate: React.FC<CertificateProps> = ({ 
@@ -20,8 +26,18 @@ const Certificate: React.FC<CertificateProps> = ({
   date, 
   score, 
   position,
-  testDescription
+  testDescription,
+  participantName, // Add new props with fallbacks
+  testTitle,
+  totalQuestions,
+  completedAt,
+  disqualified
 }) => {
+  // Use the new props if provided, otherwise use the original ones
+  const displayName = participantName || userName;
+  const displayAchievement = testTitle || achievementName;
+  const displayDate = completedAt ? new Date(completedAt).toLocaleDateString() : date;
+  
   return (
     <Card className="border-2 border-veno-primary/30 p-1 print:border-2 print:p-1 print:max-w-4xl print:mx-auto">
       <div className="border border-dashed border-veno-primary/50 p-6 print:border print:border-dashed print:p-6">
@@ -33,15 +49,17 @@ const Certificate: React.FC<CertificateProps> = ({
           <div className="space-y-2">
             <h2 className="text-3xl font-serif font-bold text-veno-primary print:text-3xl">Certificate of Achievement</h2>
             <p className="text-muted-foreground">This certifies that</p>
-            <p className="text-2xl font-medium my-4">{userName}</p>
+            <p className="text-2xl font-medium my-4">{displayName}</p>
             <p className="text-muted-foreground">has successfully completed</p>
-            <p className="text-xl font-medium my-2">{achievementName}</p>
+            <p className="text-xl font-medium my-2">{displayAchievement}</p>
             {testDescription && (
               <p className="text-sm text-muted-foreground mt-1 mb-3">{testDescription}</p>
             )}
-            {score !== undefined && (
+            {(score !== undefined || totalQuestions !== undefined) && (
               <p className="font-medium">
-                with a score of <span className="text-veno-primary font-bold">{score}%</span>
+                with a score of <span className="text-veno-primary font-bold">
+                  {score !== undefined ? score : Math.round((score || 0) / (totalQuestions || 1) * 100)}%
+                </span>
               </p>
             )}
             {position && (
@@ -49,8 +67,14 @@ const Certificate: React.FC<CertificateProps> = ({
                 Position: <span className="text-veno-primary font-bold">{position}</span>
               </p>
             )}
-            <p className="text-muted-foreground mt-6">Awarded on {date}</p>
+            <p className="text-muted-foreground mt-6">Awarded on {displayDate}</p>
           </div>
+          
+          {disqualified && (
+            <div className="mt-4 py-2 px-4 bg-destructive/10 border border-destructive rounded-md">
+              <p className="text-destructive font-bold">DISQUALIFIED</p>
+            </div>
+          )}
           
           <div className="mt-8 pt-8 border-t border-muted">
             <div className="flex justify-between items-center">
