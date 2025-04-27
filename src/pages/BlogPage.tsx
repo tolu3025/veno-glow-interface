@@ -64,6 +64,9 @@ const BlogPage = () => {
         <div className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-4xl font-bold mb-4">Oops!</h1>
           <p className="text-muted-foreground">Failed to load blog posts. Please try again later.</p>
+          <pre className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-left overflow-auto max-w-lg mx-auto text-xs">
+            {JSON.stringify(error, null, 2)}
+          </pre>
         </div>
       </div>
     );
