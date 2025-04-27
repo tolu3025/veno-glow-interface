@@ -60,7 +60,7 @@ type TestAttempt = {
 type TestQuestion = {
   id: string;
   question: string;
-  options: string[]; // This was causing the error - now explicitly string[]
+  options: string[]; 
   answer: number;
   explanation?: string;
 };
@@ -328,10 +328,10 @@ const ManageTest = () => {
         
         if (userTestQuestionsData && userTestQuestionsData.length > 0) {
           console.log('Fetched questions from user_test_questions:', userTestQuestionsData);
-          const questions = userTestQuestionsData.map(q => ({
+          const questions: TestQuestion[] = userTestQuestionsData.map(q => ({
             id: q.id,
-            question: q.question_text || q.question,
-            options: Array.isArray(q.options) ? q.options : [],
+            question: q.question_text || '',
+            options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
             answer: q.answer,
             explanation: q.explanation || ''
           }));
@@ -343,10 +343,10 @@ const ManageTest = () => {
         }
       } else {
         console.log('Fetched questions from test_questions:', testQuestionsData);
-        const questions = testQuestionsData.map(q => ({
+        const questions: TestQuestion[] = testQuestionsData.map(q => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options : [],
+          options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
           answer: q.answer,
           explanation: q.explanation || ''
         }));
