@@ -12,69 +12,25 @@ import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
 import AdPlacement from '@/components/ads/AdPlacement';
-
-interface BlogCommentFromDB {
-  id: string;
-  content: string;
-  created_at: string;
-  user_email: string;
-  parent_id: string | null;
-  blog_post_id: string;
-  reactions: {
-    likes: number;
-    hearts: number;
-    dislikes: number;
-  } | null;
-  updated_at: string;
-}
-
-interface BlogComment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_email: string;
-  parent_id: string | null;
-  reactions: {
-    likes: number;
-    hearts: number;
-    dislikes: number;
-  };
-}
-
-interface BlogPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  image_url: string;
-  author_name: string | null;
-  created_at: string;
-  category: string;
-  published: boolean;
-}
+import { BlogArticle, BlogComment } from '@/types/blog';
 
 const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [commentorEmail, setCommentorEmail] = React.useState('');
 
-  const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
-    queryKey: ['blog-post', postId],
+  const { data: article, isLoading: isLoadingPost, error: postError } = useQuery({
+    queryKey: ['blog-article', postId],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('blog_posts')
-          .select('*')
-          .eq('id', postId)
-          .eq('published', true)
-          .single();
-        
-        if (error) throw error;
-        return data as BlogPost;
-      } catch (err) {
-        console.error('Exception fetching blog post:', err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('id', postId)
+        .eq('published', true)
+        .single();
+      
+      if (error) throw error;
+      return data as BlogArticle;
     },
   });
 
@@ -84,50 +40,35 @@ const BlogPostPage = () => {
     error: commentsError,
     refetch: refetchComments 
   } = useQuery({
-    queryKey: ['blog-comments', postId],
+    queryKey: ['blog-article-comments', postId],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('blog_comments')
-          .select('*')
-          .eq('blog_post_id', postId)
-          .order('created_at', { ascending: true });
-        
-        if (error) {
-          console.error('Error fetching blog comments:', error);
-          throw error;
-        }
-        
-        const transformedData: BlogComment[] = (data as BlogCommentFromDB[]).map(comment => ({
-          ...comment,
-          reactions: comment.reactions || { likes: 0, hearts: 0, dislikes: 0 }
-        }));
-        
-        console.log('Blog comments fetched successfully:', transformedData);
-        return transformedData;
-      } catch (err) {
-        console.error('Exception fetching blog comments:', err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from('blog_article_comments')
+        .select('*')
+        .eq('article_id', postId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data as BlogComment[];
     },
   });
 
   const handleSubmitComment = async (content: string) => {
     try {
-      const { error } = await supabase.from('blog_comments').insert({
-        blog_post_id: postId,
-        content,
-        user_email: commentorEmail || 'Anonymous',
-        parent_id: replyTo,
-        reactions: { likes: 0, hearts: 0, dislikes: 0 }
-      });
+      const { error } = await supabase
+        .from('blog_article_comments')
+        .insert({
+          article_id: postId,
+          content,
+          user_email: commentorEmail || 'Anonymous',
+          parent_id: replyTo
+        });
 
       if (error) throw error;
       
       toast({
         title: "Comment posted",
         description: "Your comment has been added successfully",
-        variant: "default",
       });
       
       setReplyTo(null);
@@ -144,21 +85,20 @@ const BlogPostPage = () => {
   };
 
   const handleShare = () => {
-    if (!post) return;
+    if (!article) return;
     
     const shareUrl = window.location.href;
-    const shareTitle = post.title;
+    const shareTitle = article.title;
     
     const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`;
-    
     window.open(whatsappShareUrl, '_blank', 'noopener,noreferrer');
   };
 
   const shareOnSocial = (platform: 'facebook' | 'twitter' | 'linkedin' | 'whatsapp') => {
-    if (!post) return;
+    if (!article) return;
     
     const shareUrl = encodeURIComponent(window.location.href);
-    const shareText = encodeURIComponent(`Check out this blog post: ${post.title}`);
+    const shareText = encodeURIComponent(`Check out this blog article: ${article.title}`);
     
     let url = '';
     
@@ -225,7 +165,7 @@ const BlogPostPage = () => {
     );
   }
 
-  if (!post) {
+  if (!article) {
     return (
       <div className="relative min-h-screen">
         <WaveBackground />
@@ -264,15 +204,17 @@ const BlogPostPage = () => {
           
           <header className="mb-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <span>{new Date(post.created_at).toLocaleDateString()}</span>
+              <span>{new Date(article.created_at).toLocaleDateString()}</span>
               <span>•</span>
               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {post.category}
+                {article.category}
               </span>
             </div>
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">{post.title}</h1>
-            {post.author_name && (
-              <p className="text-muted-foreground">By {post.author_name}</p>
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              {article.title}
+            </h1>
+            {article.author_name && (
+              <p className="text-muted-foreground">By {article.author_name}</p>
             )}
             
             <div className="flex items-center gap-3 mt-4">
@@ -325,16 +267,16 @@ const BlogPostPage = () => {
             </div>
           </header>
 
-          {post.image_url && (
+          {article.image_url && (
             <img 
-              src={post.image_url} 
-              alt={post.title}
+              src={article.image_url} 
+              alt={article.title}
               className="w-full h-auto max-h-[400px] object-cover rounded-lg mb-8"
             />
           )}
 
           <div className="prose prose-slate dark:prose-invert max-w-none">
-            <p className="text-lg leading-relaxed mb-6">{post.content}</p>
+            <p className="text-lg leading-relaxed mb-6">{article.content}</p>
           </div>
           
           <div className="my-10">

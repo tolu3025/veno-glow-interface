@@ -9,52 +9,37 @@ import { motion } from 'framer-motion';
 import AdPlacement from '@/components/ads/AdPlacement';
 import { Share2 } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  image_url: string;
-  author_name: string | null;
-  created_at: string;
-  category: string;
-}
+import { BlogArticle } from '@/types/blog';
 
 const BlogPage = () => {
-  const { data: posts, isLoading, error } = useQuery({
-    queryKey: ['blog-posts'],
+  const { data: articles, isLoading, error } = useQuery({
+    queryKey: ['blog-articles'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('blog_posts')
-          .select('*')
-          .eq('published', true)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        return data as BlogPost[];
-      } catch (err) {
-        console.error('Exception fetching blog posts:', err);
-        throw err;
-      }
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as BlogArticle[];
     }
   });
 
-  const handleSharePost = (post: BlogPost) => {
+  const handleShareArticle = (article: BlogArticle) => {
     if (navigator.share) {
       navigator.share({
-        title: post.title,
-        text: post.excerpt,
-        url: window.location.origin + `/blog/${post.id}`,
+        title: article.title,
+        text: article.excerpt || '',
+        url: window.location.origin + `/blog/${article.id}`,
       })
       .then(() => toast({ title: "Shared successfully" }))
       .catch((error) => console.error('Error sharing:', error));
     } else {
-      navigator.clipboard.writeText(window.location.origin + `/blog/${post.id}`)
+      navigator.clipboard.writeText(window.location.origin + `/blog/${article.id}`)
         .then(() => toast({ 
           title: "Link copied to clipboard",
-          description: "You can now share this post with others"
+          description: "You can now share this article with others"
         }))
         .catch(() => toast({ 
           title: "Could not copy link",
@@ -136,20 +121,20 @@ const BlogPage = () => {
         </div>
         
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {posts && posts.length > 0 ? (
-            posts.map((post, index) => (
+          {articles && articles.length > 0 ? (
+            articles.map((article, index) => (
               <motion.div
-                key={post.id}
+                key={article.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
                 <Card className="overflow-hidden hover:shadow-lg transition-all backdrop-blur-sm bg-white/50 dark:bg-gray-900/50 border-0 h-full flex flex-col">
-                  <Link to={`/blog/${post.id}`} className="block">
+                  <Link to={`/blog/${article.id}`} className="block">
                     <div className="relative overflow-hidden">
                       <img 
-                        src={post.image_url || "/placeholder.svg"} 
-                        alt={post.title}
+                        src={article.image_url || "/placeholder.svg"} 
+                        alt={article.title}
                         className="w-full h-48 object-cover transition-transform hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
@@ -158,36 +143,36 @@ const BlogPage = () => {
                   <CardContent className="p-6 flex flex-col flex-grow">
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-sm text-muted-foreground">
-                        {new Date(post.created_at).toLocaleDateString()}
+                        {new Date(article.created_at).toLocaleDateString()}
                       </span>
                       <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full">
-                        {post.category}
+                        {article.category}
                       </span>
                     </div>
-                    <Link to={`/blog/${post.id}`} className="block group flex-grow">
+                    <Link to={`/blog/${article.id}`} className="block group flex-grow">
                       <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                        {post.title}
+                        {article.title}
                       </h2>
                     </Link>
-                    <p className="text-muted-foreground line-clamp-2 mb-4">{post.excerpt}</p>
+                    <p className="text-muted-foreground line-clamp-2 mb-4">{article.excerpt}</p>
                     <div className="flex justify-between items-center mt-auto pt-3">
-                      {post.author_name && (
+                      {article.author_name && (
                         <p className="text-sm text-muted-foreground">
-                          By {post.author_name}
+                          By {article.author_name}
                         </p>
                       )}
                       <div className="flex space-x-2">
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleSharePost(post)}
+                          onClick={() => handleShareArticle(article)}
                           className="hover:text-primary"
                         >
                           <Share2 size={16} className="mr-1" />
                           Share
                         </Button>
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/blog/${post.id}`}>Read more</Link>
+                          <Link to={`/blog/${article.id}`}>Read more</Link>
                         </Button>
                       </div>
                     </div>
@@ -197,7 +182,7 @@ const BlogPage = () => {
             ))
           ) : (
             <div className="col-span-full text-center py-16">
-              <p className="text-muted-foreground">No blog posts available at the moment.</p>
+              <p className="text-muted-foreground">No blog articles available at the moment.</p>
             </div>
           )}
         </div>

@@ -1,25 +1,14 @@
+
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Reply, Heart } from 'lucide-react';
-
-interface CommentProps {
-  id: string;
-  content: string;
-  created_at: string;
-  user_email: string;
-  parent_id: string | null;
-  reactions: {
-    likes: number;
-    hearts: number;
-    dislikes: number;
-  };
-}
+import { BlogComment } from '@/types/blog';
 
 interface CommentListProps {
-  comments: CommentProps[];
+  comments: BlogComment[];
   onReply: (commentId: string) => void;
   onReactionUpdate: () => void;
 }
@@ -58,7 +47,7 @@ export const CommentList = ({ comments, onReply, onReactionUpdate }: CommentList
 };
 
 interface CommentItemProps {
-  comment: CommentProps;
+  comment: BlogComment;
   onReply: (commentId: string) => void;
   onReactionUpdate: () => void;
   children?: React.ReactNode;
@@ -72,13 +61,14 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
       setIsReacting(true);
       
       const { data: commentData } = await supabase
-        .from('blog_comments')
+        .from('blog_article_comments')
         .select('reactions')
         .eq('id', comment.id)
         .single();
         
       if (commentData) {
-        const currentReactions = commentData.reactions as { likes: number; hearts: number; dislikes: number } || { likes: 0, hearts: 0, dislikes: 0 };
+        const currentReactions = commentData.reactions as { likes: number; hearts: number; dislikes: number } || 
+          { likes: 0, hearts: 0, dislikes: 0 };
         
         const updatedReactions = {
           ...currentReactions,
@@ -86,7 +76,7 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
         };
         
         await supabase
-          .from('blog_comments')
+          .from('blog_article_comments')
           .update({ reactions: updatedReactions })
           .eq('id', comment.id);
           
