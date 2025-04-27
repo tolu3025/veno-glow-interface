@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,13 +114,13 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
       const emojiOption = EMOJI_OPTIONS.find(e => e.key === key);
       if (emojiOption && count > 0) {
         return (
-          <span key={key} className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+          <span key={key} className="inline-flex items-center gap-1 text-sm text-muted-foreground bg-muted/40 px-2 py-1 rounded-full">
             {emojiOption.emoji} {count}
           </span>
         );
       }
       return null;
-    });
+    }).filter(Boolean);
   };
 
   return (
