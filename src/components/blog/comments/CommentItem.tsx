@@ -38,9 +38,10 @@ export const CommentItem = ({
       if (commentData) {
         const currentReactions = commentData.reactions || {};
         
+        // Make sure currentReactions is treated as an object
         const updatedReactions = {
-          ...currentReactions,
-          [emojiKey]: (currentReactions[emojiKey] || 0) + 1
+          ...Object(currentReactions),
+          [emojiKey]: ((currentReactions as any)[emojiKey] || 0) + 1
         };
         
         await supabase

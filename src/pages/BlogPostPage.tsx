@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CommentForm } from "@/components/blog/CommentForm";
-import { CommentList } from "@/components/blog/CommentList";
+import { CommentList } from "@/components/blog/comments/CommentList";
 import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, MessageSquareShare } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
