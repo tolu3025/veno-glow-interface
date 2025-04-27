@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CommentForm } from "@/components/blog/CommentForm";
 import { CommentList } from "@/components/blog/CommentList";
-import { ArrowLeft, Share2, Facebook, Twitter, Linkedin } from 'lucide-react';
+import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, MessageCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
@@ -328,10 +328,10 @@ const BlogPostPage = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="rounded-full w-8 h-8 p-0 text-green-600" 
+                className="rounded-full w-8 h-8 p-0 bg-green-50 border-green-200" 
                 onClick={() => shareOnSocial('whatsapp')}
               >
-                <Share2 size={16} className="text-green-600" />
+                <MessageCircle size={16} className="text-green-600 fill-green-100" />
                 <span className="sr-only">Share on WhatsApp</span>
               </Button>
             </div>
