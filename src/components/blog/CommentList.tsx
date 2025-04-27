@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Reply, Heart } from 'lucide-react';
-import { BlogComment } from '@/types/blog';
+import { BlogComment, BlogCommentReactions } from '@/types/blog';
 
 interface CommentListProps {
   comments: BlogComment[];
@@ -67,7 +67,7 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
         .single();
         
       if (commentData) {
-        const currentReactions = commentData.reactions as { likes: number; hearts: number; dislikes: number } || 
+        const currentReactions = commentData.reactions as unknown as BlogCommentReactions || 
           { likes: 0, hearts: 0, dislikes: 0 };
         
         const updatedReactions = {

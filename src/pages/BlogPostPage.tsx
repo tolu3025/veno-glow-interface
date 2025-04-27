@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
 import AdPlacement from '@/components/ads/AdPlacement';
-import { BlogArticle, BlogComment } from '@/types/blog';
+import { BlogArticle, BlogComment, BlogCommentReactions } from '@/types/blog';
 
 const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -49,7 +50,19 @@ const BlogPostPage = () => {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data as BlogComment[];
+      
+      // Transform the JSON reactions to our expected type
+      return (data || []).map(comment => {
+        const reactions = comment.reactions as unknown as BlogCommentReactions || { likes: 0, hearts: 0, dislikes: 0 };
+        return {
+          ...comment,
+          reactions: {
+            likes: reactions.likes || 0,
+            hearts: reactions.hearts || 0,
+            dislikes: reactions.dislikes || 0
+          }
+        } as BlogComment;
+      });
     },
   });
 

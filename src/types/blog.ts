@@ -12,6 +12,12 @@ export interface BlogArticle {
   slug: string | null;
 }
 
+export interface BlogCommentReactions {
+  likes: number;
+  hearts: number;
+  dislikes: number;
+}
+
 export interface BlogComment {
   id: string;
   article_id: string;
@@ -19,9 +25,6 @@ export interface BlogComment {
   user_email: string;
   created_at: string;
   parent_id: string | null;
-  reactions: {
-    likes: number;
-    hearts: number;
-    dislikes: number;
-  };
+  reactions: BlogCommentReactions;
+  updated_at: string;
 }
