@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,13 +5,12 @@ import { Award, Download } from "lucide-react";
 import { VenoLogo } from "@/components/ui/logo";
 
 interface CertificateProps {
-  userName: string;
-  achievementName: string;
-  date: string;
+  userName?: string;
+  achievementName?: string;
+  date?: string;
   score?: number;
   position?: string;
   testDescription?: string;
-  // Add the props that are being passed from ManageTest.tsx
   participantName?: string;
   testTitle?: string;
   totalQuestions?: number;
@@ -27,16 +25,16 @@ const Certificate: React.FC<CertificateProps> = ({
   score, 
   position,
   testDescription,
-  participantName, // Add new props with fallbacks
+  participantName,
   testTitle,
   totalQuestions,
   completedAt,
   disqualified
 }) => {
   // Use the new props if provided, otherwise use the original ones
-  const displayName = participantName || userName;
-  const displayAchievement = testTitle || achievementName;
-  const displayDate = completedAt ? new Date(completedAt).toLocaleDateString() : date;
+  const displayName = participantName || userName || '';
+  const displayAchievement = testTitle || achievementName || '';
+  const displayDate = completedAt ? new Date(completedAt).toLocaleDateString() : date || '';
   
   return (
     <Card className="border-2 border-veno-primary/30 p-1 print:border-2 print:p-1 print:max-w-4xl print:mx-auto">

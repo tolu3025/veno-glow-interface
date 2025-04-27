@@ -2,7 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { jsPDF } from 'jspdf';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { 
+  Loader2, 
+  AlertCircle, 
+  ArrowLeft, 
+  StopCircle, 
+  Printer, 
+  Check, 
+  X,
+  AlertCircle as AlertCircleIcon,
+  FileText,
+  PencilIcon,
+  Save,
+  XCircle,
+  BookOpen,
+  HelpCircle,
+  Trash,
+  Download 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,23 +73,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  StopCircle, 
-  Printer, 
-  Check, 
-  X,
-  RefreshCw,
-  AlertCircle as AlertCircleIcon,
-  FileText,
-  PencilIcon,
-  Save,
-  XCircle,
-  BookOpen,
-  HelpCircle,
-  Trash,
-  Download
-} from 'lucide-react';
 
 type Test = {
   id: string;
@@ -127,6 +127,7 @@ const ManageTest = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<TestAttempt | null>(null);
   const [activeTab, setActiveTab] = useState('participants');
+  const [hasLoadedQuestions, setHasLoadedQuestions] = useState(false);
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const participantResultRef = useRef<HTMLDivElement>(null);
@@ -340,10 +341,11 @@ const ManageTest = () => {
   };
 
   const fetchTestQuestions = async () => {
-    if (!testId) return;
+    if (!testId || hasLoadedQuestions) return;
     
     setLoadingQuestions(true);
     try {
+      console.log('Fetching questions for test:', testId);
       const { data, error } = await supabase
         .from('test_questions')
         .select('*')
@@ -352,7 +354,7 @@ const ManageTest = () => {
       if (error) throw error;
       
       if (data) {
-        console.log('Fetched questions:', data); // Debug log
+        console.log('Fetched questions:', data);
         const questions = data.map(q => ({
           id: q.id,
           question: q.question,
@@ -362,6 +364,7 @@ const ManageTest = () => {
         }));
         
         setTestQuestions(questions);
+        setHasLoadedQuestions(true);
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
@@ -648,10 +651,10 @@ const ManageTest = () => {
   }, [testId, user, navigate, toast]);
 
   useEffect(() => {
-    if (activeTab === 'questions' && testQuestions.length === 0) {
+    if (activeTab === 'questions' && !hasLoadedQuestions && testId) {
       fetchTestQuestions();
     }
-  }, [activeTab, testQuestions]);
+  }, [activeTab, hasLoadedQuestions, testId]);
 
   if (loading) {
     return (
@@ -696,12 +699,12 @@ const ManageTest = () => {
         formatDate={formatDate}
       />
       
-      <Tabs defaultValue="participants" onValueChange={(value) => {
-        setActiveTab(value);
-        if (value === 'questions' && testQuestions.length === 0) {
-          fetchTestQuestions();
-        }
-      }}>
+      <Tabs 
+        defaultValue="participants" 
+        onValueChange={(value) => {
+          setActiveTab(value);
+        }}
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="participants">Participants</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>
@@ -725,12 +728,14 @@ const ManageTest = () => {
             loadingQuestions={loadingQuestions}
             handleEditQuestion={handleEditQuestion}
             handleDeleteQuestion={handleDeleteQuestion}
-            fetchTestQuestions={fetchTestQuestions}
+            fetchTestQuestions={() => {
+              setHasLoadedQuestions(false);
+              fetchTestQuestions();
+            }}
           />
         </TabsContent>
       </Tabs>
       
-      {/* Hidden Certificate Component for Printing */}
       <div className="hidden">
         <div ref={certificateRef} className="certificate-container p-8 bg-white">
           {selectedParticipant && (
