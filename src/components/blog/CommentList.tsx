@@ -108,34 +108,29 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
   const renderReactionCounts = () => {
     if (!comment.reactions) return null;
     
-    const totalReactions = Object.values(comment.reactions).reduce((sum, count) => sum + count, 0);
-    
-    if (totalReactions === 0) return null;
-
-    const topReactions = Object.entries(comment.reactions)
+    const reactionEntries = Object.entries(comment.reactions)
       .filter(([_, count]) => count > 0)
-      .sort(([_, countA], [__, countB]) => countB - countA)
-      .slice(0, 3);
+      .sort(([_, countA], [__, countB]) => countB - countA);
+    
+    if (reactionEntries.length === 0) return null;
 
     return (
-      <div className="flex items-center gap-0.5">
-        <div className="flex -space-x-1">
-          {topReactions.map(([key]) => {
-            const emojiOption = EMOJI_OPTIONS.find(e => e.key === key);
-            if (emojiOption) {
-              return (
-                <div 
-                  key={key} 
-                  className="w-5 h-5 rounded-full bg-background border border-border flex items-center justify-center text-xs"
-                >
-                  {emojiOption.emoji}
-                </div>
-              );
-            }
-            return null;
-          })}
-        </div>
-        <span className="text-sm text-muted-foreground ml-1">{totalReactions}</span>
+      <div className="flex flex-wrap items-center gap-1">
+        {reactionEntries.map(([key, count]) => {
+          const emojiOption = EMOJI_OPTIONS.find(e => e.key === key);
+          if (emojiOption) {
+            return (
+              <div 
+                key={key}
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-background/80 border border-border shadow-sm"
+              >
+                <span className="text-sm">{emojiOption.emoji}</span>
+                <span className="text-xs text-muted-foreground">{count}</span>
+              </div>
+            );
+          }
+          return null;
+        })}
       </div>
     );
   };
