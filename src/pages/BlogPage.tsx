@@ -22,7 +22,7 @@ interface BlogPost {
 }
 
 const BlogPage = () => {
-  const { data: posts, isLoading, error, refetch } = useQuery({
+  const { data: posts, isLoading, error } = useQuery({
     queryKey: ['blog-posts'],
     queryFn: async () => {
       try {
@@ -32,11 +32,7 @@ const BlogPage = () => {
           .eq('published', true)
           .order('created_at', { ascending: false });
         
-        if (error) {
-          console.error('Error fetching blog posts:', error);
-          throw error;
-        }
-        
+        if (error) throw error;
         return data as BlogPost[];
       } catch (err) {
         console.error('Exception fetching blog posts:', err);
@@ -65,10 +61,6 @@ const BlogPage = () => {
           variant: "destructive"
         }));
     }
-  };
-
-  const handleRetry = () => {
-    refetch();
   };
 
   if (isLoading) {
@@ -112,7 +104,7 @@ const BlogPage = () => {
           <Button 
             variant="default" 
             className="mt-6"
-            onClick={handleRetry}
+            onClick={() => window.location.reload()}
           >
             Try Again
           </Button>
