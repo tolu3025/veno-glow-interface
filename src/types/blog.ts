@@ -1,4 +1,3 @@
-
 export interface BlogArticle {
   id: string;
   title: string;
@@ -13,9 +12,7 @@ export interface BlogArticle {
 }
 
 export interface BlogCommentReactions {
-  likes: number;
-  hearts: number;
-  dislikes: number;
+  [key: string]: number; // This allows for any emoji as a key with a count
 }
 
 export interface BlogComment {
