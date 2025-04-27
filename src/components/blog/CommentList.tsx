@@ -83,29 +83,32 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
 
     try {
       setIsReacting(true);
-      const { data: existingReaction } = await supabase
-        .from('blog_comment_reactions')
-        .select('*')
-        .eq('comment_id', comment.id)
-        .eq('user_email', user.email)
-        .eq('reaction_type', 'heart')
-        .maybeSingle();
-
-      if (existingReaction) {
+      
+      // Update the reactions directly on the comment itself
+      // Get the current reactions
+      const { data: commentData } = await supabase
+        .from('blog_comments')
+        .select('reactions')
+        .eq('id', comment.id)
+        .single();
+        
+      if (commentData) {
+        const currentReactions = commentData.reactions || { likes: 0, hearts: 0, dislikes: 0 };
+        
+        // Increment or decrement heart reactions
+        const updatedReactions = {
+          ...currentReactions,
+          hearts: (currentReactions.hearts || 0) + 1
+        };
+        
+        // Update the comment with the new reactions
         await supabase
-          .from('blog_comment_reactions')
-          .delete()
-          .eq('id', existingReaction.id);
-      } else {
-        await supabase
-          .from('blog_comment_reactions')
-          .insert({
-            comment_id: comment.id,
-            user_email: user.email,
-            reaction_type: 'heart'
-          });
+          .from('blog_comments')
+          .update({ reactions: updatedReactions })
+          .eq('id', comment.id);
+          
+        onReactionUpdate();
       }
-      onReactionUpdate();
     } catch (error) {
       console.error('Error toggling reaction:', error);
       toast({

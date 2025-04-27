@@ -12,6 +12,23 @@ import { CommentList } from "@/components/blog/CommentList";
 import { ArrowLeft } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 
+// Define types that match what comes from Supabase
+interface BlogCommentFromDB {
+  id: string;
+  content: string;
+  created_at: string;
+  user_email: string;
+  parent_id: string | null;
+  blog_post_id: string;
+  reactions: {
+    likes: number;
+    hearts: number;
+    dislikes: number;
+  } | null;
+  updated_at: string;
+}
+
+// Define the type expected by our CommentList component
 interface BlogComment {
   id: string;
   content: string;
@@ -60,7 +77,7 @@ const BlogPostPage = () => {
 
   // Fetch comments for this blog post
   const { 
-    data: comments, 
+    data: commentsData, 
     isLoading: isLoadingComments, 
     error: commentsError,
     refetch: refetchComments 
@@ -74,7 +91,14 @@ const BlogPostPage = () => {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data as BlogComment[];
+      
+      // Transform the data to ensure the reactions field has the expected structure
+      const transformedData: BlogComment[] = (data as BlogCommentFromDB[]).map(comment => ({
+        ...comment,
+        reactions: comment.reactions || { likes: 0, hearts: 0, dislikes: 0 }
+      }));
+      
+      return transformedData;
     },
   });
 
@@ -94,6 +118,7 @@ const BlogPostPage = () => {
         content,
         user_email: user.email,
         parent_id: replyTo,
+        reactions: { likes: 0, hearts: 0, dislikes: 0 }
       });
 
       if (error) throw error;
@@ -206,7 +231,17 @@ const BlogPostPage = () => {
           
           {user ? (
             <div className="mb-8">
-              <CommentForm onSubmit={handleSubmitComment} />
+              <CommentForm onSubmit={handleSubmitComment} parentId={replyTo} />
+              {replyTo && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setReplyTo(null)}
+                  className="mt-2"
+                >
+                  Cancel Reply
+                </Button>
+              )}
             </div>
           ) : (
             <Card className="p-4 mb-8 bg-muted/50">
@@ -236,9 +271,9 @@ const BlogPostPage = () => {
             <p className="text-center text-muted-foreground">
               Failed to load comments. Please try again later.
             </p>
-          ) : comments && comments.length > 0 ? (
+          ) : commentsData && commentsData.length > 0 ? (
             <CommentList 
-              comments={comments} 
+              comments={commentsData} 
               onReply={(commentId) => setReplyTo(commentId)} 
               onReactionUpdate={refetchComments}
             />
