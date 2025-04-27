@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EditQuestionDialog } from './EditQuestionDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Question {
   id: string;
@@ -34,7 +35,7 @@ interface Question {
 interface QuestionsListProps {
   questions: Question[];
   loadingQuestions: boolean;
-  handleEditQuestion: (question: Question) => void;
+  handleEditQuestion: (updatedQuestion: Question) => Promise<void>;
   handleDeleteQuestion: (questionId: string) => Promise<void>;
   fetchTestQuestions: () => Promise<void>;
 }
@@ -46,6 +47,32 @@ export const QuestionsList = ({
   handleDeleteQuestion,
   fetchTestQuestions
 }: QuestionsListProps) => {
+  const { toast } = useToast();
+  const [selectedQuestion, setSelectedQuestion] = React.useState<Question | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+
+  const onEditClick = (question: Question) => {
+    setSelectedQuestion(question);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveQuestion = async (updatedQuestion: Question) => {
+    try {
+      await handleEditQuestion(updatedQuestion);
+      toast({
+        title: "Question Updated",
+        description: "The question has been successfully updated.",
+      });
+    } catch (error) {
+      console.error('Error updating question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update the question. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -100,7 +127,7 @@ export const QuestionsList = ({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => handleEditQuestion(question)}
+                        onClick={() => onEditClick(question)}
                         className="h-8 px-2"
                       >
                         <PencilIcon size={16} />
@@ -183,6 +210,13 @@ export const QuestionsList = ({
           ))}
         </div>
       )}
+      
+      <EditQuestionDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        question={selectedQuestion}
+        onSave={handleSaveQuestion}
+      />
     </>
   );
 };

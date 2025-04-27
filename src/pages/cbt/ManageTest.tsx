@@ -579,67 +579,37 @@ const ManageTest = () => {
     }, 100);
   };
 
-  const handleEditQuestion = (question: TestQuestion) => {
-    setCurrentEditQuestion({...question});
-    setIsEditQuestionDialogOpen(true);
-  };
-
-  const handleUpdateQuestionField = (field: string, value: any) => {
-    if (!currentEditQuestion) return;
-    setCurrentEditQuestion(prev => {
-      if (!prev) return prev;
-      
-      if (field === 'answer') {
-        return {...prev, [field]: Number(value)};
-      }
-      
-      return {...prev, [field]: value};
-    });
-  };
-
-  const handleUpdateOption = (index: number, value: string) => {
-    if (!currentEditQuestion) return;
-    const newOptions = [...currentEditQuestion.options];
-    newOptions[index] = value;
-    setCurrentEditQuestion({...currentEditQuestion, options: newOptions});
-  };
-
-  const saveQuestionChanges = async () => {
-    if (!currentEditQuestion || !testId) return;
+  const handleEditQuestion = async (updatedQuestion: TestQuestion) => {
+    if (!testId) return;
     
-    setSaveLoading(true);
     try {
       const { error } = await supabase
         .from('test_questions')
         .update({
-          question: currentEditQuestion.question,
-          options: currentEditQuestion.options,
-          answer: Number(currentEditQuestion.answer),
-          explanation: currentEditQuestion.explanation
+          question: updatedQuestion.question,
+          options: updatedQuestion.options,
+          answer: updatedQuestion.answer,
+          explanation: updatedQuestion.explanation
         })
-        .eq('id', currentEditQuestion.id);
-        
+        .eq('id', updatedQuestion.id);
+      
       if (error) throw error;
       
       setTestQuestions(prev => 
-        prev.map(q => q.id === currentEditQuestion.id ? currentEditQuestion : q)
+        prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
       );
       
       toast({
         title: 'Question Updated',
         description: 'The question has been successfully updated',
       });
-      
-      setIsEditQuestionDialogOpen(false);
     } catch (error) {
       console.error('Error updating question:', error);
       toast({
-        title: 'Update Failed',
-        description: 'Failed to update the question',
+        title: 'Error',
+        description: 'Failed to update question',
         variant: 'destructive',
       });
-    } finally {
-      setSaveLoading(false);
     }
   };
 
@@ -725,10 +695,7 @@ const ManageTest = () => {
             loadingQuestions={loadingQuestions}
             handleEditQuestion={handleEditQuestion}
             handleDeleteQuestion={handleDeleteQuestion}
-            fetchTestQuestions={() => {
-              setHasLoadedQuestions(false);
-              return fetchTestQuestions();
-            }}
+            fetchTestQuestions={fetchTestQuestions}
           />
         </TabsContent>
       </Tabs>
