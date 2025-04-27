@@ -53,6 +53,12 @@ export const useTestManagement = ({
   const [testFinished, setTestFinished] = useState(false);
 
   useEffect(() => {
+    if (questions && questions.length) {
+      console.log('Questions loaded in hook:', questions.length);
+    }
+  }, [questions]);
+
+  useEffect(() => {
     if (testStarted && timeRemaining > 0 && !testFinished) {
       const timer = setTimeout(() => {
         setTimeRemaining(time => time - 1);

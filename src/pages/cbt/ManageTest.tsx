@@ -123,6 +123,7 @@ const ManageTest = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<TestAttempt | null>(null);
+  const [activeTab, setActiveTab] = useState('participants');
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const participantResultRef = useRef<HTMLDivElement>(null);
@@ -348,6 +349,7 @@ const ManageTest = () => {
       if (error) throw error;
       
       if (data) {
+        console.log('Fetched questions:', data); // Debug log
         const questions = data.map(q => ({
           id: q.id,
           question: q.question,
@@ -642,6 +644,12 @@ const ManageTest = () => {
     fetchTestData();
   }, [testId, user, navigate, toast]);
 
+  useEffect(() => {
+    if (activeTab === 'questions' && testQuestions.length === 0) {
+      fetchTestQuestions();
+    }
+  }, [activeTab, testQuestions]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -752,7 +760,12 @@ const ManageTest = () => {
         </CardContent>
       </Card>
       
-      <Tabs defaultValue="participants">
+      <Tabs defaultValue="participants" onValueChange={(value) => {
+        setActiveTab(value);
+        if (value === 'questions' && testQuestions.length === 0) {
+          fetchTestQuestions();
+        }
+      }}>
         <TabsList className="mb-4">
           <TabsTrigger value="participants">Participants</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>
@@ -898,6 +911,20 @@ const ManageTest = () => {
               <BookOpen className="h-5 w-5 text-veno-primary" />
               <h2 className="text-xl font-bold">Questions ({testQuestions.length})</h2>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={fetchTestQuestions}
+              disabled={loadingQuestions}
+              className="flex items-center gap-1"
+            >
+              {loadingQuestions ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              Refresh Questions
+            </Button>
           </div>
           
           {loadingQuestions ? (
