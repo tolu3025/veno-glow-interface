@@ -1,7 +1,8 @@
+
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users, Share, Flag, WhatsApp } from 'lucide-react';
+import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users, Share, Flag, MessageCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -56,6 +57,14 @@ const formSchema = z.object({
     message: "Description must be at least 10 characters.",
   }),
 });
+
+// Function to get the color class for the progress bar based on the percentage
+const getProgressColorClass = (percentage: number): string => {
+  if (percentage >= 80) return "bg-green-500";
+  if (percentage >= 70) return "bg-blue-500";
+  if (percentage >= 50) return "bg-amber-500";
+  return "bg-rose-500";
+};
 
 const TestResults: React.FC<TestResultsProps> = ({
   score,
@@ -122,6 +131,19 @@ const TestResults: React.FC<TestResultsProps> = ({
     },
   });
 
+  // Function to find the rank of the current user in the leaderboard
+  const findRank = (): string => {
+    if (!publicResults || publicResults.length === 0 || 
+        (!testTakerInfo?.email && !user?.email)) {
+      return "N/A";
+    }
+    
+    const userEmail = testTakerInfo?.email || user?.email;
+    const position = publicResults.findIndex(entry => entry.participant_email === userEmail);
+    
+    return position >= 0 ? `${position + 1} of ${publicResults.length}` : "N/A";
+  };
+
   const shareAsImage = async () => {
     if (resultRef.current) {
       try {
@@ -159,7 +181,7 @@ const TestResults: React.FC<TestResultsProps> = ({
     const whatsappText = encodeURIComponent(
       `Flagged Questions Report\n\nTest: ${testDetails?.title || location?.state?.subject || testId}\n\nDescription: ${values.description}\n\nUser: ${testTakerInfo?.name || user?.email || 'Anonymous'}`
     );
-    window.open(`https://wa.me/+1234567890?text=${whatsappText}`, '_blank');
+    window.open(`https://wa.me/+2347065684718?text=${whatsappText}`, '_blank');
     toast({
       title: "Report sent!",
       description: "Your flagged questions report has been submitted",
@@ -463,11 +485,11 @@ const TestResults: React.FC<TestResultsProps> = ({
         </h3>
         <div className="flex gap-2">
           <Button variant="outline" onClick={shareAsImage}>
-            <image className="h-4 w-4 mr-2" />
+            <FileText className="h-4 w-4 mr-2" />
             Save as Image
           </Button>
           <Button variant="outline" onClick={shareAsLink}>
-            <link className="h-4 w-4 mr-2" />
+            <Share className="h-4 w-4 mr-2" />
             Copy Link
           </Button>
         </div>
@@ -507,7 +529,7 @@ const TestResults: React.FC<TestResultsProps> = ({
               />
               <div className="flex justify-end gap-2">
                 <Button type="submit">
-                  <WhatsApp className="h-4 w-4 mr-2" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                   Submit via WhatsApp
                 </Button>
               </div>
