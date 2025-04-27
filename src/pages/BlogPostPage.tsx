@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CommentForm } from "@/components/blog/CommentForm";
 import { CommentList } from "@/components/blog/CommentList";
-import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, MessageCircle, MessageCircleShare } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
@@ -171,7 +171,8 @@ const BlogPostPage = () => {
     if (!post) return;
     
     const shareUrl = encodeURIComponent(window.location.href);
-    const shareTitle = encodeURIComponent(post.title);
+    const shareText = encodeURIComponent(`Check out this blog post: ${post.title}`);
+    
     let url = '';
     
     switch (platform) {
@@ -179,13 +180,13 @@ const BlogPostPage = () => {
         url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
         break;
       case 'twitter':
-        url = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`;
+        url = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`;
         break;
       case 'linkedin':
         url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
         break;
       case 'whatsapp':
-        url = `https://wa.me/?text=${shareTitle}%20${shareUrl}`;
+        url = `https://wa.me/?text=${shareText}%20${shareUrl}`;
         break;
     }
     
@@ -331,7 +332,7 @@ const BlogPostPage = () => {
                 className="rounded-full w-8 h-8 p-0 bg-green-50 border-green-200" 
                 onClick={() => shareOnSocial('whatsapp')}
               >
-                <MessageCircle size={16} className="text-green-600 fill-green-100" />
+                <MessageCircleShare size={16} className="text-green-600 fill-green-100" />
                 <span className="sr-only">Share on WhatsApp</span>
               </Button>
             </div>
