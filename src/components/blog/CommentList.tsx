@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,6 +80,7 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
       if (commentData) {
         const currentReactions = commentData.reactions as BlogCommentReactions || {};
         
+        // Update the reaction count
         const updatedReactions = {
           ...currentReactions,
           [emojiKey]: (currentReactions[emojiKey] || 0) + 1
@@ -107,7 +107,9 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
   };
 
   const renderReactionCounts = () => {
-    return Object.entries(comment.reactions || {}).map(([key, count]) => {
+    if (!comment.reactions) return null;
+    
+    return Object.entries(comment.reactions).map(([key, count]) => {
       const emojiOption = EMOJI_OPTIONS.find(e => e.key === key);
       if (emojiOption && count > 0) {
         return (
