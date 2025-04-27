@@ -14,10 +14,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [offlineMode, setOfflineMode] = useState(false);
   const [dbConnectionStatus, setDbConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
   
-  // Check if the route is a test-taking route
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
 
-  // Handle online/offline status and database connectivity
   useEffect(() => {
     const checkConnectivity = async () => {
       const online = isOnline();
@@ -34,7 +32,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           duration: 5000,
         });
       } else if (online && offlineMode) {
-        // When coming back online, test actual database connection
         const result = await testSupabaseConnection();
         
         if (result.success) {
@@ -48,7 +45,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             duration: 3000,
           });
         } else {
-          // Still offline at the database level
           setOfflineMode(true);
           setDbConnectionStatus('disconnected');
           
@@ -60,7 +56,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           });
         }
       } else if (online && !wasOffline && dbConnectionStatus === 'unknown') {
-        // Initial connection test when already online
         const result = await testSupabaseConnection();
         setDbConnectionStatus(result.success ? 'connected' : 'disconnected');
         
@@ -75,10 +70,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }
     };
     
-    // Check initial status
     checkConnectivity();
     
-    // Set up event listeners
     const handleOnline = () => checkConnectivity();
     const handleOffline = () => {
       setOfflineMode(true);
@@ -95,7 +88,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    // Check database connectivity every minute when online
     const intervalId = setInterval(() => {
       if (isOnline() && dbConnectionStatus === 'disconnected') {
         checkConnectivity();

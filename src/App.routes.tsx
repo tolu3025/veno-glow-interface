@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -49,7 +48,7 @@ export const routes: RouteObject[] = [
     children: [
       { 
         index: true, 
-        element: <Index /> // Remove ProtectedRoute for homepage
+        element: <Index /> 
       },
       { 
         path: 'cbt', 
@@ -65,7 +64,7 @@ export const routes: RouteObject[] = [
       },
       { 
         path: 'blog', 
-        element: <BlogPage /> // Remove ProtectedRoute for blog
+        element: <BlogPage /> 
       },
       { 
         path: 'bot', 
@@ -111,7 +110,7 @@ export const routes: RouteObject[] = [
           { path: 'manage/:testId', element: <ProtectedRoute><ManageTest /></ProtectedRoute> },
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
-          { path: 'library', element: <Library /> }, // Remove ProtectedRoute for library
+          { path: 'library', element: <Library /> },
           { path: 'leaderboard/:testId', element: <ProtectedRoute><Leaderboard /></ProtectedRoute> }
         ]
       },
@@ -123,4 +122,3 @@ export const routes: RouteObject[] = [
     ]
   }
 ];
-
