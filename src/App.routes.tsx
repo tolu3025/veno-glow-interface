@@ -7,6 +7,7 @@ import CbtPage from './pages/CbtPage';
 import TutorialPage from './pages/TutorialPage';
 import TutorialInfo from './pages/TutorialInfo';
 import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
 import BotPage from './pages/BotPage';
 import AuthPage from './pages/AuthPage';
 import NotFound from './pages/NotFound';
@@ -66,6 +67,10 @@ export const routes: RouteObject[] = [
       { 
         path: 'blog', 
         element: <BlogPage /> 
+      },
+      { 
+        path: 'blog/:postId', 
+        element: <BlogPostPage /> 
       },
       { 
         path: 'bot', 

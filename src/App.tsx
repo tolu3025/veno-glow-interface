@@ -21,6 +21,7 @@ import TutorialInfo from "./pages/TutorialInfo";
 import OrdersPage from "./pages/OrdersPage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
@@ -70,6 +71,7 @@ const AppRoutes = () => {
         {/* Public routes that don't require authentication */}
         <Route path="/" element={<Index />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:postId" element={<BlogPostPage />} />
         <Route path="/cbt/library" element={<Library />} />
         <Route path="/contact" element={<ContactPage />} />
         
@@ -124,7 +126,7 @@ const AppRoutes = () => {
         
         <Route path="/cbt/stats/:testId" element={
           <ProtectedRoute>
-            <Analytics />
+            <ManageTest />
           </ProtectedRoute>
         } />
         
