@@ -4,10 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Reply } from 'lucide-react';
 import { BlogComment } from '@/types/blog';
-import { ReactionPopover } from './ReactionPopover';
-import { ReactionDisplay } from './ReactionDisplay';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 
 interface CommentItemProps {
   comment: BlogComment;
@@ -18,52 +14,9 @@ interface CommentItemProps {
 
 export const CommentItem = ({ 
   comment, 
-  onReply, 
-  onReactionUpdate, 
+  onReply,
   children 
 }: CommentItemProps) => {
-  const [isReacting, setIsReacting] = React.useState(false);
-  const [openPopover, setOpenPopover] = React.useState(false);
-
-  const handleReaction = async (emojiKey: string) => {
-    try {
-      setIsReacting(true);
-      
-      const { data: commentData } = await supabase
-        .from('blog_article_comments')
-        .select('reactions')
-        .eq('id', comment.id)
-        .single();
-        
-      if (commentData) {
-        const currentReactions = commentData.reactions || {};
-        
-        // Make sure currentReactions is treated as an object
-        const updatedReactions = {
-          ...Object(currentReactions),
-          [emojiKey]: ((currentReactions as any)[emojiKey] || 0) + 1
-        };
-        
-        await supabase
-          .from('blog_article_comments')
-          .update({ reactions: updatedReactions })
-          .eq('id', comment.id);
-          
-        onReactionUpdate();
-      }
-    } catch (error) {
-      console.error('Error toggling reaction:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update reaction",
-        variant: "destructive"
-      });
-    } finally {
-      setIsReacting(false);
-      setOpenPopover(false);
-    }
-  };
-
   return (
     <div className="space-y-2">
       <Card className="p-4">
@@ -89,15 +42,6 @@ export const CommentItem = ({
                 <Reply className="h-4 w-4 mr-1" />
                 Reply
               </Button>
-              
-              <ReactionPopover
-                onReaction={handleReaction}
-                isReacting={isReacting}
-                openPopover={openPopover}
-                onOpenChange={setOpenPopover}
-              />
-
-              <ReactionDisplay reactions={comment.reactions} />
             </div>
           </div>
         </div>
