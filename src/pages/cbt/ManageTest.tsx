@@ -286,7 +286,6 @@ const ManageTest = () => {
       }
 
       setTestAttempts(attemptsData || []);
-      fetchTestQuestions();
     } catch (error) {
       console.error('Error fetching test data:', error);
       toast({
@@ -300,31 +299,68 @@ const ManageTest = () => {
   };
 
   const fetchTestQuestions = async (): Promise<void> => {
-    if (!testId || hasLoadedQuestions) return Promise.resolve();
+    if (!testId) return Promise.resolve();
     
     setLoadingQuestions(true);
     try {
       console.log('Fetching questions for test:', testId);
-      const { data, error } = await supabase
+      
+      const { data: testQuestionsData, error: testQuestionsError } = await supabase
         .from('test_questions')
         .select('*')
         .eq('test_id', testId);
         
-      if (error) throw error;
+      if (testQuestionsError) {
+        console.error('Error fetching from test_questions:', testQuestionsError);
+        throw testQuestionsError;
+      }
       
-      if (data) {
-        console.log('Fetched questions:', data);
-        const questions = data.map(q => ({
+      if (!testQuestionsData || testQuestionsData.length === 0) {
+        const { data: userTestQuestionsData, error: userTestQuestionsError } = await supabase
+          .from('user_test_questions')
+          .select('*')
+          .eq('test_id', testId);
+          
+        if (userTestQuestionsError) {
+          console.error('Error fetching from user_test_questions:', userTestQuestionsError);
+          throw userTestQuestionsError;
+        }
+        
+        if (userTestQuestionsData && userTestQuestionsData.length > 0) {
+          console.log('Fetched questions from user_test_questions:', userTestQuestionsData);
+          const questions = userTestQuestionsData.map(q => ({
+            id: q.id,
+            question: q.question_text || q.question,
+            options: Array.isArray(q.options) ? q.options : [],
+            answer: q.answer,
+            explanation: q.explanation || ''
+          }));
+          
+          setTestQuestions(questions);
+          setHasLoadedQuestions(true);
+          setLoadingQuestions(false);
+          return Promise.resolve();
+        }
+      } else {
+        console.log('Fetched questions from test_questions:', testQuestionsData);
+        const questions = testQuestionsData.map(q => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options.map(String) : [],
+          options: Array.isArray(q.options) ? q.options : [],
           answer: q.answer,
           explanation: q.explanation || ''
         }));
         
         setTestQuestions(questions);
         setHasLoadedQuestions(true);
+        setLoadingQuestions(false);
+        return Promise.resolve();
       }
+      
+      console.log('No questions found for this test in any table');
+      setTestQuestions([]);
+      setHasLoadedQuestions(true);
+      
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
