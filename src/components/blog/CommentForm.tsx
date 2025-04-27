@@ -24,7 +24,7 @@ export const CommentForm = ({
   };
   return <form onSubmit={handleSubmit} className="space-y-4">
       <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder={parentId ? "Write a reply..." : "Share your thoughts..."} className="min-h-[100px] w-full" />
-      <Button type="submit" disabled={isSubmitting || !content.trim()} className="float-right my-[31px]">
+      <Button type="submit" disabled={isSubmitting || !content.trim()} className="float-right my-[29px]">
         {isSubmitting ? "Posting..." : parentId ? "Post Reply" : "Post Comment"}
       </Button>
     </form>;
