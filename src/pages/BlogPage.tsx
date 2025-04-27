@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -27,19 +26,13 @@ const BlogPage = () => {
     queryKey: ['blog-posts'],
     queryFn: async () => {
       try {
-        // Use a more direct query approach that bypasses RLS issues
         const { data, error } = await supabase
           .from('blog_posts')
           .select('*')
           .eq('published', true)
           .order('created_at', { ascending: false });
         
-        if (error) {
-          console.error('Error fetching blog posts:', error);
-          throw error;
-        }
-        
-        console.log('Blog posts fetched successfully:', data);
+        if (error) throw error;
         return data as BlogPost[];
       } catch (err) {
         console.error('Exception fetching blog posts:', err);
@@ -58,7 +51,6 @@ const BlogPage = () => {
       .then(() => toast({ title: "Shared successfully" }))
       .catch((error) => console.error('Error sharing:', error));
     } else {
-      // Fallback for browsers that don't support navigator.share
       navigator.clipboard.writeText(window.location.origin + `/blog/${post.id}`)
         .then(() => toast({ 
           title: "Link copied to clipboard",
@@ -139,7 +131,6 @@ const BlogPage = () => {
           </p>
         </motion.div>
 
-        {/* Top ad banner */}
         <div className="mb-10">
           <AdPlacement location="header" />
         </div>
@@ -211,7 +202,6 @@ const BlogPage = () => {
           )}
         </div>
         
-        {/* Bottom ad banner */}
         <div className="mt-12">
           <AdPlacement location="footer" />
         </div>

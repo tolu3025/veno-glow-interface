@@ -49,9 +49,10 @@ export const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Index /> },
-      // Blog routes - publicly accessible (no auth required)
+      // Blog routes - explicitly marked as public
       { path: 'blog', element: <BlogPage /> },
       { path: 'blog/:postId', element: <BlogPostPage /> },
+      
       // Protected routes that require authentication
       { 
         path: 'bot', 

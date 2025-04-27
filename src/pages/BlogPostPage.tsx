@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -59,7 +58,6 @@ const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [commentorEmail, setCommentorEmail] = React.useState('');
-  const { user } = useAuth();
 
   const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
     queryKey: ['blog-post', postId],
@@ -72,12 +70,7 @@ const BlogPostPage = () => {
           .eq('published', true)
           .single();
         
-        if (error) {
-          console.error('Error fetching blog post:', error);
-          throw error;
-        }
-
-        console.log('Blog post fetched successfully:', data);
+        if (error) throw error;
         return data as BlogPost;
       } catch (err) {
         console.error('Exception fetching blog post:', err);
