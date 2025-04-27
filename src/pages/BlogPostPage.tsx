@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -58,7 +59,7 @@ const BlogPostPage = () => {
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [commentorEmail, setCommentorEmail] = React.useState('');
 
-  const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
+  const { data: post, isLoading: isLoadingPost, error: postError, refetch: refetchPost } = useQuery({
     queryKey: ['blog-post', postId],
     queryFn: async () => {
       try {
@@ -69,7 +70,11 @@ const BlogPostPage = () => {
           .eq('published', true)
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching blog post:', error);
+          throw error;
+        }
+        
         return data as BlogPost;
       } catch (err) {
         console.error('Exception fetching blog post:', err);
@@ -114,15 +119,27 @@ const BlogPostPage = () => {
 
   const handleSubmitComment = async (content: string) => {
     try {
+      if (!commentorEmail.trim()) {
+        toast({
+          title: "Email required",
+          description: "Please provide an email to post a comment",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const { error } = await supabase.from('blog_comments').insert({
         blog_post_id: postId,
         content,
-        user_email: commentorEmail || 'Anonymous',
+        user_email: commentorEmail,
         parent_id: replyTo,
         reactions: { likes: 0, hearts: 0, dislikes: 0 }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error posting comment:', error);
+        throw error;
+      }
       
       toast({
         title: "Comment posted",
@@ -179,6 +196,10 @@ const BlogPostPage = () => {
     
     window.open(url, '_blank', 'noopener,noreferrer');
   };
+  
+  const handleRetry = () => {
+    refetchPost();
+  };
 
   if (isLoadingPost) {
     return (
@@ -215,7 +236,10 @@ const BlogPostPage = () => {
               </pre>
             </details>
           </div>
-          <Button asChild>
+          <Button onClick={handleRetry} className="mr-4">
+            Try Again
+          </Button>
+          <Button asChild variant="outline">
             <Link to="/blog">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
             </Link>
@@ -353,9 +377,13 @@ const BlogPostPage = () => {
           
             <Card className="p-6 mb-12 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
               <div className="mb-4">
+                <label htmlFor="commenter-email" className="block text-sm font-medium mb-1">
+                  Your Email
+                </label>
                 <input
+                  id="commenter-email"
                   type="email"
-                  placeholder="Your email (optional)"
+                  placeholder="Your email (required)"
                   value={commentorEmail}
                   onChange={(e) => setCommentorEmail(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
