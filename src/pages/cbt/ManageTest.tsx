@@ -18,7 +18,8 @@ import {
   BookOpen,
   HelpCircle,
   Trash,
-  Download 
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/providers/AuthProvider';
@@ -31,48 +32,6 @@ import { QuestionsList } from '@/components/cbt/manage/QuestionsList';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import Certificate from '@/components/certificate/Certificate';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { motion } from 'framer-motion';
 
 type Test = {
   id: string;
@@ -340,8 +299,8 @@ const ManageTest = () => {
     }
   };
 
-  const fetchTestQuestions = async () => {
-    if (!testId || hasLoadedQuestions) return;
+  const fetchTestQuestions = async (): Promise<void> => {
+    if (!testId || hasLoadedQuestions) return Promise.resolve();
     
     setLoadingQuestions(true);
     try {
@@ -376,6 +335,8 @@ const ManageTest = () => {
     } finally {
       setLoadingQuestions(false);
     }
+    
+    return Promise.resolve();
   };
 
   const toggleTestStatus = async () => {
@@ -689,13 +650,13 @@ const ManageTest = () => {
       />
       
       <TestDetails 
-        title={testDetails.title}
-        description={testDetails.description}
-        questionCount={testDetails.question_count}
-        timeLimit={testDetails.time_limit}
-        difficulty={testDetails.difficulty}
-        shareCode={testDetails.share_code}
-        createdAt={testDetails.created_at}
+        title={testDetails?.title || ''}
+        description={testDetails?.description}
+        questionCount={testDetails?.question_count || 0}
+        timeLimit={testDetails?.time_limit}
+        difficulty={testDetails?.difficulty || ''}
+        shareCode={testDetails?.share_code || ''}
+        createdAt={testDetails?.created_at || ''}
         formatDate={formatDate}
       />
       
@@ -730,7 +691,7 @@ const ManageTest = () => {
             handleDeleteQuestion={handleDeleteQuestion}
             fetchTestQuestions={() => {
               setHasLoadedQuestions(false);
-              fetchTestQuestions();
+              return fetchTestQuestions();
             }}
           />
         </TabsContent>
@@ -740,10 +701,11 @@ const ManageTest = () => {
         <div ref={certificateRef} className="certificate-container p-8 bg-white">
           {selectedParticipant && (
             <Certificate
-              userName={selectedParticipant.participant_name || 'Anonymous'}
-              achievementName={testDetails?.title || 'Test'}
-              date={formatDate(selectedParticipant.completed_at)}
+              participantName={selectedParticipant.participant_name || 'Anonymous'}
+              testTitle={testDetails?.title || 'Test'}
+              completedAt={selectedParticipant.completed_at}
               score={Math.round((selectedParticipant.score / selectedParticipant.total_questions) * 100)}
+              totalQuestions={selectedParticipant.total_questions}
               testDescription={testDetails?.description || undefined}
               disqualified={selectedParticipant.disqualified}
               position={getParticipantPosition(selectedParticipant.id)}
