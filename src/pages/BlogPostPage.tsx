@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
 
 // Define types that match what comes from Supabase
 interface BlogCommentFromDB {
@@ -59,6 +60,7 @@ const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [commentorEmail, setCommentorEmail] = React.useState('');
+  const { user } = useAuth();
 
   // Fetch blog post
   const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
@@ -122,6 +124,13 @@ const BlogPostPage = () => {
     },
   });
 
+  React.useEffect(() => {
+    // If user is logged in, pre-fill their email
+    if (user) {
+      setCommentorEmail(user.email || '');
+    }
+  }, [user]);
+
   const handleSubmitComment = async (content: string) => {
     try {
       const { error } = await supabase.from('blog_comments').insert({
@@ -141,7 +150,7 @@ const BlogPostPage = () => {
       });
       
       setReplyTo(null);
-      setCommentorEmail(''); // Clear the email field after posting
+      if (!user) setCommentorEmail(''); // Clear the email field after posting only if not logged in
       refetchComments();
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -295,7 +304,7 @@ const BlogPostPage = () => {
             </Card>
           
             {isLoadingComments ? (
-              <div className="space-y-4">
+              <div className="space-y-4 mt-8">
                 {[1, 2, 3].map(i => (
                   <Card key={i} className="p-4 animate-pulse">
                     <div className="flex gap-3">
@@ -309,7 +318,7 @@ const BlogPostPage = () => {
                 ))}
               </div>
             ) : commentsError ? (
-              <div className="text-center p-6 bg-background/80 backdrop-blur-sm rounded-lg">
+              <div className="text-center p-6 bg-background/80 backdrop-blur-sm rounded-lg mt-8">
                 <p className="text-muted-foreground mb-2">
                   Failed to load comments. Please try again later.
                 </p>
@@ -318,13 +327,15 @@ const BlogPostPage = () => {
                 </Button>
               </div>
             ) : commentsData && commentsData.length > 0 ? (
-              <CommentList 
-                comments={commentsData} 
-                onReply={(commentId) => setReplyTo(commentId)} 
-                onReactionUpdate={refetchComments}
-              />
+              <div className="mt-8">
+                <CommentList 
+                  comments={commentsData} 
+                  onReply={(commentId) => setReplyTo(commentId)} 
+                  onReactionUpdate={refetchComments}
+                />
+              </div>
             ) : (
-              <p className="text-center text-muted-foreground p-6 bg-background/80 backdrop-blur-sm rounded-lg">
+              <p className="text-center text-muted-foreground p-6 bg-background/80 backdrop-blur-sm rounded-lg mt-8">
                 No comments yet. Be the first to share your thoughts!
               </p>
             )}
