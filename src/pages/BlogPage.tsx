@@ -23,14 +23,25 @@ const BlogPage = () => {
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ['blog-posts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('published', true)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as BlogPost[];
+      try {
+        // Use a more direct query approach that bypasses RLS issues
+        const { data, error } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('published', true)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching blog posts:', error);
+          throw error;
+        }
+        
+        console.log('Blog posts fetched successfully:', data);
+        return data as BlogPost[];
+      } catch (err) {
+        console.error('Exception fetching blog posts:', err);
+        throw err;
+      }
     }
   });
 
@@ -63,10 +74,22 @@ const BlogPage = () => {
         <WaveBackground />
         <div className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-4xl font-bold mb-4">Oops!</h1>
-          <p className="text-muted-foreground">Failed to load blog posts. Please try again later.</p>
-          <pre className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-left overflow-auto max-w-lg mx-auto text-xs">
-            {JSON.stringify(error, null, 2)}
-          </pre>
+          <p className="text-muted-foreground mb-6">Failed to load blog posts. Please try again later.</p>
+          <div className="max-w-lg mx-auto p-4 bg-background/80 backdrop-blur-sm rounded-lg shadow">
+            <details className="text-left">
+              <summary className="cursor-pointer text-sm font-medium mb-2">View error details</summary>
+              <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto">
+                {JSON.stringify(error, null, 2)}
+              </pre>
+            </details>
+          </div>
+          <Button 
+            variant="default" 
+            className="mt-6"
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </Button>
         </div>
       </div>
     );
@@ -91,53 +114,59 @@ const BlogPage = () => {
         </motion.div>
         
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {posts?.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-            >
-              <Card className="overflow-hidden hover:shadow-lg transition-all backdrop-blur-sm bg-white/50 dark:bg-gray-900/50 border-0">
-                <Link to={`/blog/${post.id}`}>
-                  <div className="relative overflow-hidden">
-                    <img 
-                      src={post.image_url || "/placeholder.svg"} 
-                      alt={post.title}
-                      className="w-full h-48 object-cover transition-transform hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </div>
-                </Link>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </span>
-                    <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full">
-                      {post.category}
-                    </span>
-                  </div>
-                  <Link to={`/blog/${post.id}`} className="block group">
-                    <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                      {post.title}
-                    </h2>
+          {posts && posts.length > 0 ? (
+            posts.map((post, index) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <Card className="overflow-hidden hover:shadow-lg transition-all backdrop-blur-sm bg-white/50 dark:bg-gray-900/50 border-0">
+                  <Link to={`/blog/${post.id}`}>
+                    <div className="relative overflow-hidden">
+                      <img 
+                        src={post.image_url || "/placeholder.svg"} 
+                        alt={post.title}
+                        className="w-full h-48 object-cover transition-transform hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    </div>
                   </Link>
-                  <p className="text-muted-foreground line-clamp-2 mb-4">{post.excerpt}</p>
-                  <div className="flex justify-between items-center">
-                    {post.author_name && (
-                      <p className="text-sm text-muted-foreground">
-                        By {post.author_name}
-                      </p>
-                    )}
-                    <Button asChild variant="outline" size="sm" className="ml-auto">
-                      <Link to={`/blog/${post.id}`}>Read more</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full">
+                        {post.category}
+                      </span>
+                    </div>
+                    <Link to={`/blog/${post.id}`} className="block group">
+                      <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                        {post.title}
+                      </h2>
+                    </Link>
+                    <p className="text-muted-foreground line-clamp-2 mb-4">{post.excerpt}</p>
+                    <div className="flex justify-between items-center">
+                      {post.author_name && (
+                        <p className="text-sm text-muted-foreground">
+                          By {post.author_name}
+                        </p>
+                      )}
+                      <Button asChild variant="outline" size="sm" className="ml-auto">
+                        <Link to={`/blog/${post.id}`}>Read more</Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-16">
+              <p className="text-muted-foreground">No blog posts available at the moment.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

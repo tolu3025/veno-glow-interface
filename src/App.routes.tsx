@@ -48,14 +48,10 @@ export const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Index /> },
-      { 
-        path: 'blog', 
-        element: <BlogPage /> 
-      },
-      { 
-        path: 'blog/:postId', 
-        element: <BlogPostPage /> 
-      },
+      // Blog routes - publicly accessible (no auth required)
+      { path: 'blog', element: <BlogPage /> },
+      { path: 'blog/:postId', element: <BlogPostPage /> },
+      // Protected routes that require authentication
       { 
         path: 'bot', 
         element: <ProtectedRoute><BotPage /></ProtectedRoute>

@@ -64,15 +64,25 @@ const BlogPostPage = () => {
   const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
     queryKey: ['blog-post', postId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('id', postId)
-        .eq('published', true)
-        .single();
-      
-      if (error) throw error;
-      return data as BlogPost;
+      try {
+        const { data, error } = await supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('id', postId)
+          .eq('published', true)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching blog post:', error);
+          throw error;
+        }
+
+        console.log('Blog post fetched successfully:', data);
+        return data as BlogPost;
+      } catch (err) {
+        console.error('Exception fetching blog post:', err);
+        throw err;
+      }
     },
   });
 
@@ -85,21 +95,30 @@ const BlogPostPage = () => {
   } = useQuery({
     queryKey: ['blog-comments', postId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('blog_comments')
-        .select('*')
-        .eq('blog_post_id', postId)
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      
-      // Transform the data to ensure the reactions field has the expected structure
-      const transformedData: BlogComment[] = (data as BlogCommentFromDB[]).map(comment => ({
-        ...comment,
-        reactions: comment.reactions || { likes: 0, hearts: 0, dislikes: 0 }
-      }));
-      
-      return transformedData;
+      try {
+        const { data, error } = await supabase
+          .from('blog_comments')
+          .select('*')
+          .eq('blog_post_id', postId)
+          .order('created_at', { ascending: true });
+        
+        if (error) {
+          console.error('Error fetching blog comments:', error);
+          throw error;
+        }
+        
+        // Transform the data to ensure the reactions field has the expected structure
+        const transformedData: BlogComment[] = (data as BlogCommentFromDB[]).map(comment => ({
+          ...comment,
+          reactions: comment.reactions || { likes: 0, hearts: 0, dislikes: 0 }
+        }));
+        
+        console.log('Blog comments fetched successfully:', transformedData);
+        return transformedData;
+      } catch (err) {
+        console.error('Exception fetching blog comments:', err);
+        throw err;
+      }
     },
   });
 
@@ -122,6 +141,7 @@ const BlogPostPage = () => {
       });
       
       setReplyTo(null);
+      setCommentorEmail(''); // Clear the email field after posting
       refetchComments();
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -162,6 +182,14 @@ const BlogPostPage = () => {
         <div className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-4xl font-bold mb-4">Oops!</h1>
           <p className="text-muted-foreground mb-8">We couldn't find the blog post you're looking for.</p>
+          <div className="max-w-lg mx-auto p-4 bg-background/80 backdrop-blur-sm rounded-lg shadow mb-6">
+            <details className="text-left">
+              <summary className="cursor-pointer text-sm font-medium mb-2">View error details</summary>
+              <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto">
+                {JSON.stringify(postError, null, 2)}
+              </pre>
+            </details>
+          </div>
           <Button asChild>
             <Link to="/blog">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
@@ -242,7 +270,7 @@ const BlogPostPage = () => {
           >
             <h2 className="text-2xl font-semibold mb-6">Comments</h2>
           
-            <Card className="p-6 mb-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
+            <Card className="p-6 mb-12 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
               <div className="mb-4">
                 <input
                   type="email"
@@ -253,8 +281,8 @@ const BlogPostPage = () => {
                 />
               </div>
               <CommentForm onSubmit={handleSubmitComment} parentId={replyTo} />
-              <div className="flex mt-4 justify-end">
-                {replyTo && (
+              {replyTo && (
+                <div className="flex mt-4 justify-end">
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -262,8 +290,8 @@ const BlogPostPage = () => {
                   >
                     Cancel Reply
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </Card>
           
             {isLoadingComments ? (
@@ -281,9 +309,14 @@ const BlogPostPage = () => {
                 ))}
               </div>
             ) : commentsError ? (
-              <p className="text-center text-muted-foreground">
-                Failed to load comments. Please try again later.
-              </p>
+              <div className="text-center p-6 bg-background/80 backdrop-blur-sm rounded-lg">
+                <p className="text-muted-foreground mb-2">
+                  Failed to load comments. Please try again later.
+                </p>
+                <Button size="sm" onClick={() => refetchComments()}>
+                  Retry
+                </Button>
+              </div>
             ) : commentsData && commentsData.length > 0 ? (
               <CommentList 
                 comments={commentsData} 
@@ -291,7 +324,7 @@ const BlogPostPage = () => {
                 onReactionUpdate={refetchComments}
               />
             ) : (
-              <p className="text-center text-muted-foreground">
+              <p className="text-center text-muted-foreground p-6 bg-background/80 backdrop-blur-sm rounded-lg">
                 No comments yet. Be the first to share your thoughts!
               </p>
             )}
