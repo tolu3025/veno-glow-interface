@@ -1,8 +1,7 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users } from 'lucide-react';
+import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users, Share, Flag, WhatsApp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,6 +11,28 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import html2canvas from 'html2canvas';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface TestResultsProps {
   score: number;
@@ -29,6 +50,12 @@ interface TestResultsProps {
   formatTime: (seconds: number) => string;
   savingError?: string | null;
 }
+
+const formSchema = z.object({
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters.",
+  }),
+});
 
 const TestResults: React.FC<TestResultsProps> = ({
   score,
@@ -88,28 +115,55 @@ const TestResults: React.FC<TestResultsProps> = ({
   
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  
-  const findRank = () => {
-    if (!publicResults || publicResults.length === 0) return "N/A";
-    
-    const sortedResults = [...publicResults].sort((a, b) => 
-      (b.score / b.total_questions) - (a.score / a.total_questions)
-    );
-    
-    const userEmail = testTakerInfo?.email || user?.email;
-    const position = sortedResults.findIndex(result => result.participant_email === userEmail) + 1;
-    
-    if (position === 0) return "N/A";
-    if (position === 1) return "1st 🥇";
-    if (position === 2) return "2nd 🥈";
-    if (position === 3) return "3rd 🥉";
-    return `${position}th`;
-  }
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      description: "",
+    },
+  });
 
-  const getProgressColorClass = (percentage: number) => {
-    if (percentage >= 80) return "bg-green-500";
-    if (percentage >= 60) return "bg-amber-500";
-    return "bg-red-500";
+  const shareAsImage = async () => {
+    if (resultRef.current) {
+      try {
+        const canvas = await html2canvas(resultRef.current);
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = image;
+        link.download = "test-results.png";
+        link.click();
+        toast({
+          title: "Success!",
+          description: "Results saved as image",
+        });
+      } catch (error) {
+        console.error("Error generating image:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate image",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const shareAsLink = () => {
+    const shareUrl = window.location.href;
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: "Link copied!",
+      description: "Share link has been copied to clipboard",
+    });
+  };
+
+  const onFlaggedSubmit = (values: z.infer<typeof formSchema>) => {
+    const whatsappText = encodeURIComponent(
+      `Flagged Questions Report\n\nTest: ${testDetails?.title || location?.state?.subject || testId}\n\nDescription: ${values.description}\n\nUser: ${testTakerInfo?.name || user?.email || 'Anonymous'}`
+    );
+    window.open(`https://wa.me/+1234567890?text=${whatsappText}`, '_blank');
+    toast({
+      title: "Report sent!",
+      description: "Your flagged questions report has been submitted",
+    });
   };
 
   return (
@@ -258,7 +312,6 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
-            {/* Leaderboard Section - Only show when results_visibility is public */}
             {testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0 && (
               <div className="bg-secondary/30 p-4 rounded-lg mb-8">
                 <h3 className="font-medium mb-3 flex items-center">
@@ -266,10 +319,8 @@ const TestResults: React.FC<TestResultsProps> = ({
                   Leaderboard
                 </h3>
                 
-                {/* Top 3 performers highlight (if at least 3 participants) */}
                 {publicResults.length >= 3 && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                    {/* 2nd place */}
                     <div className="bg-secondary/30 rounded-lg p-3 text-center order-2 md:order-1">
                       <div className="flex justify-center mb-1">
                         <div className="bg-secondary/50 rounded-full p-2">
@@ -285,7 +336,6 @@ const TestResults: React.FC<TestResultsProps> = ({
                       </p>
                     </div>
 
-                    {/* 1st place */}
                     <div className="bg-secondary/30 rounded-lg p-3 text-center order-1 md:order-2 ring-2 ring-primary/20">
                       <div className="flex justify-center mb-1">
                         <div className="bg-primary/20 rounded-full p-2">
@@ -301,7 +351,6 @@ const TestResults: React.FC<TestResultsProps> = ({
                       </p>
                     </div>
 
-                    {/* 3rd place */}
                     <div className="bg-secondary/30 rounded-lg p-3 text-center order-3">
                       <div className="flex justify-center mb-1">
                         <div className="bg-secondary/50 rounded-full p-2">
@@ -319,7 +368,6 @@ const TestResults: React.FC<TestResultsProps> = ({
                   </div>
                 )}
                 
-                {/* Full Leaderboard */}
                 <div className="rounded-lg border overflow-hidden mt-2">
                   <Table>
                     <TableHeader>
@@ -407,6 +455,66 @@ const TestResults: React.FC<TestResultsProps> = ({
           </CardFooter>
         </Card>
       </div>
+      
+      <div className="bg-secondary/30 p-4 rounded-lg mb-4">
+        <h3 className="font-medium mb-3 flex items-center">
+          <Share className="h-4 w-4 mr-2 text-veno-primary" />
+          Share Results
+        </h3>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={shareAsImage}>
+            <image className="h-4 w-4 mr-2" />
+            Save as Image
+          </Button>
+          <Button variant="outline" onClick={shareAsLink}>
+            <link className="h-4 w-4 mr-2" />
+            Copy Link
+          </Button>
+        </div>
+      </div>
+
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full mb-4">
+            <Flag className="h-4 w-4 mr-2" />
+            Report Flagged Questions
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report Flagged Questions</DialogTitle>
+            <DialogDescription>
+              Describe the issues with the flagged questions. This will be sent directly to our support team.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onFlaggedSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe the issues with the questions..." 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2">
+                <Button type="submit">
+                  <WhatsApp className="h-4 w-4 mr-2" />
+                  Submit via WhatsApp
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
