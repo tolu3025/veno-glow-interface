@@ -7,6 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
+import AdPlacement from '@/components/ads/AdPlacement';
+import { Share2 } from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
 
 interface BlogPost {
   id: string;
@@ -44,6 +47,29 @@ const BlogPage = () => {
       }
     }
   });
+
+  const handleSharePost = (post: BlogPost) => {
+    if (navigator.share) {
+      navigator.share({
+        title: post.title,
+        text: post.excerpt,
+        url: window.location.origin + `/blog/${post.id}`,
+      })
+      .then(() => toast({ title: "Shared successfully" }))
+      .catch((error) => console.error('Error sharing:', error));
+    } else {
+      // Fallback for browsers that don't support navigator.share
+      navigator.clipboard.writeText(window.location.origin + `/blog/${post.id}`)
+        .then(() => toast({ 
+          title: "Link copied to clipboard",
+          description: "You can now share this post with others"
+        }))
+        .catch(() => toast({ 
+          title: "Could not copy link",
+          variant: "destructive"
+        }));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -100,7 +126,7 @@ const BlogPage = () => {
       <WaveBackground />
       <div className="container mx-auto px-4 py-12">
         <motion.div 
-          className="max-w-2xl mx-auto text-center mb-16"
+          className="max-w-2xl mx-auto text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -112,6 +138,11 @@ const BlogPage = () => {
             Explore our latest insights on education, technology, and learning strategies
           </p>
         </motion.div>
+
+        {/* Top ad banner */}
+        <div className="mb-10">
+          <AdPlacement location="header" />
+        </div>
         
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {posts && posts.length > 0 ? (
@@ -122,8 +153,8 @@ const BlogPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <Card className="overflow-hidden hover:shadow-lg transition-all backdrop-blur-sm bg-white/50 dark:bg-gray-900/50 border-0">
-                  <Link to={`/blog/${post.id}`}>
+                <Card className="overflow-hidden hover:shadow-lg transition-all backdrop-blur-sm bg-white/50 dark:bg-gray-900/50 border-0 h-full flex flex-col">
+                  <Link to={`/blog/${post.id}`} className="block">
                     <div className="relative overflow-hidden">
                       <img 
                         src={post.image_url || "/placeholder.svg"} 
@@ -133,7 +164,7 @@ const BlogPage = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>
                   </Link>
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 flex flex-col flex-grow">
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-sm text-muted-foreground">
                         {new Date(post.created_at).toLocaleDateString()}
@@ -142,21 +173,32 @@ const BlogPage = () => {
                         {post.category}
                       </span>
                     </div>
-                    <Link to={`/blog/${post.id}`} className="block group">
+                    <Link to={`/blog/${post.id}`} className="block group flex-grow">
                       <h2 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors line-clamp-2">
                         {post.title}
                       </h2>
                     </Link>
                     <p className="text-muted-foreground line-clamp-2 mb-4">{post.excerpt}</p>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mt-auto pt-3">
                       {post.author_name && (
                         <p className="text-sm text-muted-foreground">
                           By {post.author_name}
                         </p>
                       )}
-                      <Button asChild variant="outline" size="sm" className="ml-auto">
-                        <Link to={`/blog/${post.id}`}>Read more</Link>
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleSharePost(post)}
+                          className="hover:text-primary"
+                        >
+                          <Share2 size={16} className="mr-1" />
+                          Share
+                        </Button>
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/blog/${post.id}`}>Read more</Link>
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -167,6 +209,11 @@ const BlogPage = () => {
               <p className="text-muted-foreground">No blog posts available at the moment.</p>
             </div>
           )}
+        </div>
+        
+        {/* Bottom ad banner */}
+        <div className="mt-12">
+          <AdPlacement location="footer" />
         </div>
       </div>
     </div>
