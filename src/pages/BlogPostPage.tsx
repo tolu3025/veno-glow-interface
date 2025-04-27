@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CommentForm } from "@/components/blog/CommentForm";
 import { CommentList } from "@/components/blog/CommentList";
-import { ArrowLeft, Share2, Facebook, Twitter, Linkedin } from 'lucide-react';
+import { ArrowLeft, Share2, Facebook, Twitter, Linkedin, Whatsapp } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
@@ -191,7 +190,7 @@ const BlogPostPage = () => {
     }
   };
 
-  const shareOnSocial = (platform: 'facebook' | 'twitter' | 'linkedin') => {
+  const shareOnSocial = (platform: 'facebook' | 'twitter' | 'linkedin' | 'whatsapp') => {
     if (!post) return;
     
     const shareUrl = encodeURIComponent(window.location.href);
@@ -207,6 +206,9 @@ const BlogPostPage = () => {
         break;
       case 'linkedin':
         url = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
+        break;
+      case 'whatsapp':
+        url = `https://wa.me/?text=${shareTitle}%20${shareUrl}`;
         break;
     }
     
@@ -349,6 +351,15 @@ const BlogPostPage = () => {
               >
                 <Linkedin size={16} />
                 <span className="sr-only">Share on LinkedIn</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full w-8 h-8 p-0 text-green-600" 
+                onClick={() => shareOnSocial('whatsapp')}
+              >
+                <Whatsapp size={16} />
+                <span className="sr-only">Share on WhatsApp</span>
               </Button>
             </div>
           </header>
