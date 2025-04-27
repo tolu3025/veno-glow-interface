@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
 
-// Define a correct custom Location type
 type LocationWithState = Location & {
   state?: {
     subject?: string;
@@ -165,7 +164,6 @@ export const useTestManagement = ({
       console.log('Loading public results for test:', testId);
       console.log('Result visibility:', testDetails?.results_visibility);
       
-      // Use the test_attempts table to load results
       if (testDetails?.results_visibility === 'public') {
         const { data, error } = await supabase
           .from('test_attempts')
@@ -201,7 +199,6 @@ export const useTestManagement = ({
     }
     
     try {
-      // First, save to test_attempts table
       const { error: insertError } = await supabase
         .from('test_attempts')
         .insert([testData]);
@@ -216,13 +213,12 @@ export const useTestManagement = ({
     } catch (error) {
       console.error("Failed to save test results:", error);
       setSaving(false);
-      setSavingError(null); // We don't show error to user
+      setSavingError(null);
       return false;
     }
   };
 
   const finishTest = async () => {
-    // Stop the timer by marking test as finished
     setTestFinished(true);
     
     const finalScore = calculateScore();
@@ -240,40 +236,28 @@ export const useTestManagement = ({
         subject: location?.state?.subject || testDetails?.subject || 'general',
       };
       
-      // Determine what to display based on results_visibility setting
       const isCreator = user?.id === testDetails?.creator_id;
       
-      // Save the test attempt
-      await saveTestAttempt(testData);
-      
-      if (isCreator) {
-        // Creator can always see results
-        setShowResults(true);
-      } else if (testDetails?.results_visibility === 'test_takers') {
-        // Test takers can see their own results
-        setShowResults(true);
-      } else if (testDetails?.results_visibility === 'public') {
-        // Everyone can see results
-        setShowResults(true);
-        // Load leaderboard data
-        await loadPublicResults();
-      } else {
-        // For 'creator_only' setting, show submission complete page
+      if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
         setSubmissionComplete(true);
+      } else if (isCreator || ['test_takers', 'public'].includes(testDetails?.results_visibility || '')) {
+        setShowResults(true);
+        if (testDetails?.results_visibility === 'public') {
+          await loadPublicResults();
+        }
       }
       
     } catch (error: any) {
       console.error("Error finalizing test:", error);
       
-      // Still determine what to show based on visibility setting
       const isCreator = user?.id === testDetails?.creator_id;
-      if (isCreator || testDetails?.results_visibility === 'test_takers' || testDetails?.results_visibility === 'public') {
+      if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
+        setSubmissionComplete(true);
+      } else if (isCreator || ['test_takers', 'public'].includes(testDetails?.results_visibility || '')) {
         setShowResults(true);
         if (testDetails?.results_visibility === 'public') {
           await loadPublicResults();
         }
-      } else {
-        setSubmissionComplete(true);
       }
     }
   };
