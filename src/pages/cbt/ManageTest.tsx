@@ -513,6 +513,33 @@ const ManageTest = () => {
     }
   };
 
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!testId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('test_questions')
+        .delete()
+        .eq('id', questionId);
+      
+      if (error) throw error;
+      
+      setTestQuestions(prev => prev.filter(q => q.id !== questionId));
+      
+      toast({
+        title: 'Question Deleted',
+        description: 'The question has been successfully deleted',
+      });
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete question',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
@@ -900,15 +927,46 @@ const ManageTest = () => {
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex justify-between">
                         <span>Question {index + 1}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleEditQuestion(question)}
-                          className="h-8 px-2"
-                        >
-                          <PencilIcon size={16} />
-                          <span className="ml-1">Edit</span>
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEditQuestion(question)}
+                            className="h-8 px-2"
+                          >
+                            <PencilIcon size={16} />
+                            <span className="ml-1">Edit</span>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-8 px-2 text-destructive hover:text-destructive"
+                              >
+                                <Trash size={16} />
+                                <span className="ml-1">Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Question</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this question? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteQuestion(question.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete Question
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
