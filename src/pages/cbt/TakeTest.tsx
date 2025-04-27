@@ -331,12 +331,8 @@ const TakeTest = () => {
 
   if (testManagement.showResults) {
     const isCreator = user?.id === testDetails?.creator_id;
-    const canViewResults = 
-      isCreator || 
-      testDetails?.results_visibility === 'test_takers' || 
-      testDetails?.results_visibility === 'public';
     
-    if (!canViewResults) {
+    if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
       return (
         <SubmissionComplete 
           testDetails={testDetails} 
