@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,7 +80,6 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
       if (commentData) {
         const currentReactions = commentData.reactions as BlogCommentReactions || {};
         
-        // Update the reaction count
         const updatedReactions = {
           ...currentReactions,
           [emojiKey]: (currentReactions[emojiKey] || 0) + 1
@@ -110,17 +108,36 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
   const renderReactionCounts = () => {
     if (!comment.reactions) return null;
     
-    return Object.entries(comment.reactions).map(([key, count]) => {
-      const emojiOption = EMOJI_OPTIONS.find(e => e.key === key);
-      if (emojiOption && count > 0) {
-        return (
-          <span key={key} className="inline-flex items-center gap-1 text-sm text-muted-foreground bg-muted/40 px-2 py-1 rounded-full">
-            {emojiOption.emoji} {count}
-          </span>
-        );
-      }
-      return null;
-    }).filter(Boolean);
+    const totalReactions = Object.values(comment.reactions).reduce((sum, count) => sum + count, 0);
+    
+    if (totalReactions === 0) return null;
+
+    const topReactions = Object.entries(comment.reactions)
+      .filter(([_, count]) => count > 0)
+      .sort(([_, countA], [__, countB]) => countB - countA)
+      .slice(0, 3);
+
+    return (
+      <div className="flex items-center gap-0.5">
+        <div className="flex -space-x-1">
+          {topReactions.map(([key]) => {
+            const emojiOption = EMOJI_OPTIONS.find(e => e.key === key);
+            if (emojiOption) {
+              return (
+                <div 
+                  key={key} 
+                  className="w-5 h-5 rounded-full bg-background border border-border flex items-center justify-center text-xs"
+                >
+                  {emojiOption.emoji}
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+        <span className="text-sm text-muted-foreground ml-1">{totalReactions}</span>
+      </div>
+    );
   };
 
   return (
@@ -176,9 +193,7 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
                 </PopoverContent>
               </Popover>
 
-              <div className="flex gap-1 items-center ml-2">
-                {renderReactionCounts()}
-              </div>
+              {renderReactionCounts()}
             </div>
           </div>
         </div>
