@@ -331,7 +331,7 @@ const BlogPostPage = () => {
                 className="rounded-full w-8 h-8 p-0 text-green-600" 
                 onClick={() => shareOnSocial('whatsapp')}
               >
-                <Share2 size={16} />
+                <Share2 size={16} className="text-green-600" />
                 <span className="sr-only">Share on WhatsApp</span>
               </Button>
             </div>
