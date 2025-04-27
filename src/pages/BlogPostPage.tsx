@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -56,8 +55,8 @@ interface BlogPost {
 
 const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
-  const { user } = useAuth();
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
+  const [commentorEmail, setCommentorEmail] = React.useState('');
 
   // Fetch blog post
   const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
@@ -103,20 +102,11 @@ const BlogPostPage = () => {
   });
 
   const handleSubmitComment = async (content: string) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to post a comment",
-        variant: "warning",
-      });
-      return;
-    }
-
     try {
       const { error } = await supabase.from('blog_comments').insert({
         blog_post_id: postId,
         content,
-        user_email: user.email,
+        user_email: commentorEmail || 'Anonymous',
         parent_id: replyTo,
         reactions: { likes: 0, hearts: 0, dislikes: 0 }
       });
@@ -228,31 +218,30 @@ const BlogPostPage = () => {
 
         <section className="mt-12">
           <h2 className="text-2xl font-semibold mb-6">Comments</h2>
-          
-          {user ? (
-            <div className="mb-8">
-              <CommentForm onSubmit={handleSubmitComment} parentId={replyTo} />
-              {replyTo && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setReplyTo(null)}
-                  className="mt-2"
-                >
-                  Cancel Reply
-                </Button>
-              )}
+        
+          <div className="mb-8">
+            <div className="mb-4">
+              <input
+                type="email"
+                placeholder="Your email (optional)"
+                value={commentorEmail}
+                onChange={(e) => setCommentorEmail(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </div>
-          ) : (
-            <Card className="p-4 mb-8 bg-muted/50">
-              <p className="text-center">
-                <Link to="/auth" className="text-primary font-medium hover:underline">
-                  Sign in
-                </Link> to leave a comment
-              </p>
-            </Card>
-          )}
-          
+            <CommentForm onSubmit={handleSubmitComment} parentId={replyTo} />
+            {replyTo && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setReplyTo(null)}
+                className="mt-2"
+              >
+                Cancel Reply
+              </Button>
+            )}
+          </div>
+        
           {isLoadingComments ? (
             <div className="space-y-4">
               {[1, 2, 3].map(i => (

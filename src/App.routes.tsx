@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -48,22 +47,7 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <MainLayout />,
     children: [
-      { 
-        index: true, 
-        element: <Index /> 
-      },
-      { 
-        path: 'cbt', 
-        element: <ProtectedRoute><CbtPage /></ProtectedRoute>
-      },
-      { 
-        path: 'tutorial', 
-        element: <ProtectedRoute><TutorialPage /></ProtectedRoute>
-      },
-      { 
-        path: 'tutorial/info', 
-        element: <ProtectedRoute><TutorialInfo /></ProtectedRoute>
-      },
+      { index: true, element: <Index /> },
       { 
         path: 'blog', 
         element: <BlogPage /> 

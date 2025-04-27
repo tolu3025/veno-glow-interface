@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Reply, Heart } from 'lucide-react';
@@ -27,7 +25,6 @@ interface CommentListProps {
 }
 
 export const CommentList = ({ comments, onReply, onReactionUpdate }: CommentListProps) => {
-  // Organize comments into parent/child structure
   const parentComments = comments.filter(comment => !comment.parent_id);
   const childComments = comments.filter(comment => comment.parent_id);
 
@@ -68,24 +65,12 @@ interface CommentItemProps {
 }
 
 const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentItemProps) => {
-  const { user } = useAuth();
   const [isReacting, setIsReacting] = React.useState(false);
 
   const handleReaction = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to react to comments",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       setIsReacting(true);
       
-      // Update the reactions directly on the comment itself
-      // Get the current reactions
       const { data: commentData } = await supabase
         .from('blog_comments')
         .select('reactions')
@@ -93,15 +78,13 @@ const CommentItem = ({ comment, onReply, onReactionUpdate, children }: CommentIt
         .single();
         
       if (commentData) {
-        const currentReactions = commentData.reactions || { likes: 0, hearts: 0, dislikes: 0 };
+        const currentReactions = commentData.reactions as { likes: number; hearts: number; dislikes: number } || { likes: 0, hearts: 0, dislikes: 0 };
         
-        // Increment or decrement heart reactions
         const updatedReactions = {
           ...currentReactions,
           hearts: (currentReactions.hearts || 0) + 1
         };
         
-        // Update the comment with the new reactions
         await supabase
           .from('blog_comments')
           .update({ reactions: updatedReactions })
