@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,7 +88,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
       if (event === 'SIGNED_IN') {
         console.log("User signed in:", session?.user);
         toast.success("Successfully signed in!");
-        navigate('/dashboard');
+        
+        // Get the previous location or default to dashboard
+        const from = location.state?.from?.pathname || '/';
+        navigate(from);
       } else if (event === 'USER_UPDATED') {
         console.log("User was updated");
         toast.success("Your profile has been updated");
@@ -117,7 +119,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
             
             if (data.session) {
               toast.success("Email confirmed successfully!");
-              navigate('/dashboard');
+              navigate('/');
             }
           }
         } catch (error: any) {
@@ -171,7 +173,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'signin' }) => {
         if (error) throw error;
         
         toast.success('Welcome back!');
-        navigate('/dashboard');
+        // Navigate to the previous location or the homepage
+        const from = location.state?.from?.pathname || '/';
+        navigate(from);
       } else {
         // Sign up with custom flow
         const storedReferralCode = referralCode || sessionStorage.getItem('referralCode');
