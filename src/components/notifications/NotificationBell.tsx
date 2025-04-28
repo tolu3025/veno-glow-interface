@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -49,23 +48,21 @@ export const NotificationBell = () => {
         },
         (payload) => {
           const newNotification = payload.new as any;
-          
-          // Ensure the notification has the correct structure
           const typedNotification: Notification = {
-            ...newNotification,
-            link: null, // Default to null for link if not present
-            type: newNotification.type as 'blog_article' | 'comment_reply'
+            id: newNotification.id,
+            title: newNotification.title,
+            message: newNotification.message,
+            type: newNotification.type as 'blog_article' | 'comment_reply',
+            link: newNotification.link,
+            is_read: newNotification.is_read,
+            created_at: newNotification.created_at,
+            user_email: newNotification.user_email
           };
           
           setNotifications(prev => [typedNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show different toast messages based on notification type
-          const toastMessage = typedNotification.type === 'blog_article' 
-            ? 'New blog article published!'
-            : 'Someone replied to your comment';
-            
-          toast.info(toastMessage, {
+          toast.info(typedNotification.title, {
             description: typedNotification.message,
             action: {
               label: 'View',
@@ -96,17 +93,16 @@ export const NotificationBell = () => {
       return;
     }
 
-    // Transform the data to ensure it matches our Notification interface
-    const typedData = data?.map(item => ({
+    const typedData = data.map(item => ({
       id: item.id,
       title: item.title,
       message: item.message,
       type: item.type as 'blog_article' | 'comment_reply',
-      link: null, // Default to null since this field doesn't exist in the data
+      link: item.link,
       is_read: item.is_read,
       created_at: item.created_at,
       user_email: item.user_email
-    })) || [];
+    }));
     
     setNotifications(typedData);
     setUnreadCount(typedData.filter(n => !n.is_read).length);
