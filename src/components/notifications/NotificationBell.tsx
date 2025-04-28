@@ -53,7 +53,7 @@ export const NotificationBell = () => {
           // Ensure the notification has the correct structure
           const typedNotification: Notification = {
             ...newNotification,
-            link: newNotification.link || null,
+            link: null, // Default to null for link if not present
             type: newNotification.type as 'blog_article' | 'comment_reply'
           };
           
@@ -97,12 +97,16 @@ export const NotificationBell = () => {
     }
 
     // Transform the data to ensure it matches our Notification interface
-    const typedData = (data || []).map(item => ({
-      ...item,
-      // Explicitly add the link property if it doesn't exist
-      link: typeof item.link !== 'undefined' ? item.link : null,
-      type: item.type as 'blog_article' | 'comment_reply'
-    })) as Notification[];
+    const typedData = data?.map(item => ({
+      id: item.id,
+      title: item.title,
+      message: item.message,
+      type: item.type as 'blog_article' | 'comment_reply',
+      link: null, // Default to null since this field doesn't exist in the data
+      is_read: item.is_read,
+      created_at: item.created_at,
+      user_email: item.user_email
+    })) || [];
     
     setNotifications(typedData);
     setUnreadCount(typedData.filter(n => !n.is_read).length);
