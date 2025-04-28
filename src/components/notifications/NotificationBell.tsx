@@ -77,8 +77,11 @@ export const NotificationBell = () => {
       return;
     }
 
-    setNotifications(data || []);
-    setUnreadCount((data || []).filter(n => !n.is_read).length);
+    // Cast data to match our Notification interface
+    // The database schema should include a link column
+    const typedData = (data || []) as unknown as Notification[];
+    setNotifications(typedData);
+    setUnreadCount(typedData.filter(n => !n.is_read).length);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
