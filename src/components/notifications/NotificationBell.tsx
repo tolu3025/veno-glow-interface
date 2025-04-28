@@ -22,7 +22,7 @@ interface Notification {
   link: string | null;
   is_read: boolean;
   created_at: string;
-  user_id?: string;
+  user_email: string;
 }
 
 export const NotificationBell = () => {
@@ -36,7 +36,6 @@ export const NotificationBell = () => {
     
     fetchNotifications();
     
-    // Subscribe to realtime notifications
     const channel = supabase
       .channel('notifications')
       .on(
@@ -45,10 +44,9 @@ export const NotificationBell = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_email=eq.${user.email}`,
         },
         (payload) => {
-          console.log('New notification:', payload);
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
@@ -70,7 +68,7 @@ export const NotificationBell = () => {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_email', user.email)
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -79,10 +77,8 @@ export const NotificationBell = () => {
       return;
     }
 
-    // Ensure that the fetched data conforms to our Notification interface
-    const typedData = data as unknown as Notification[];
-    setNotifications(typedData);
-    setUnreadCount(typedData.filter(n => !n.is_read).length);
+    setNotifications(data || []);
+    setUnreadCount((data || []).filter(n => !n.is_read).length);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -96,6 +92,11 @@ export const NotificationBell = () => {
         console.error('Error marking notification as read:', error);
       } else {
         setUnreadCount(prev => Math.max(0, prev - 1));
+        setNotifications(prev => 
+          prev.map(n => 
+            n.id === notification.id ? { ...n, is_read: true } : n
+          )
+        );
       }
     }
 
