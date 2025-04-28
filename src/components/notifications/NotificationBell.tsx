@@ -119,6 +119,7 @@ export const NotificationBell = () => {
       if (error) {
         console.error('Error marking notification as read:', error);
       } else {
+        // Update local state to reflect the change
         setUnreadCount(prev => Math.max(0, prev - 1));
         setNotifications(prev => 
           prev.map(n => 
