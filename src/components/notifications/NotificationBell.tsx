@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +35,6 @@ export const NotificationBell = () => {
     
     fetchNotifications();
     
-    // Subscribe to new notifications
     const channel = supabase
       .channel('notifications')
       .on(
@@ -82,67 +80,91 @@ export const NotificationBell = () => {
   const fetchNotifications = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_email', user.email)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_email', user.email)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        toast.error('Failed to fetch notifications');
+        return;
+      }
+
+      const typedData = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        message: item.message,
+        type: item.type as 'blog_article' | 'comment_reply',
+        link: item.link,
+        is_read: item.is_read,
+        created_at: item.created_at,
+        user_email: item.user_email
+      }));
+      
+      setNotifications(typedData);
+      
+      const unreadNotifications = typedData.filter(n => !n.is_read);
+      setUnreadCount(unreadNotifications.length);
+    } catch (error) {
+      console.error('Error in fetchNotifications:', error);
+      toast.error('An unexpected error occurred');
     }
-
-    const typedData = data.map(item => ({
-      id: item.id,
-      title: item.title,
-      message: item.message,
-      type: item.type as 'blog_article' | 'comment_reply',
-      link: item.link,
-      is_read: item.is_read,
-      created_at: item.created_at,
-      user_email: item.user_email
-    }));
-    
-    setNotifications(typedData);
-    
-    // Calculate unread count based on database values
-    const unreadNotifications = typedData.filter(n => !n.is_read);
-    setUnreadCount(unreadNotifications.length);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Only update if the notification is not already marked as read
     if (!notification.is_read) {
       try {
         const { error } = await supabase
           .from('notifications')
           .update({ is_read: true })
-          .eq('id', notification.id);
+          .eq('id', notification.id)
+          .select();
 
         if (error) {
           console.error('Error marking notification as read:', error);
           toast.error('Failed to mark notification as read');
-        } else {
-          // Update local state to reflect the change
-          const updatedNotifications = notifications.map(n => 
-            n.id === notification.id ? { ...n, is_read: true } : n
-          );
-          setNotifications(updatedNotifications);
-          
-          // Recalculate unread count
-          const newUnreadCount = updatedNotifications.filter(n => !n.is_read).length;
-          setUnreadCount(newUnreadCount);
+          return;
         }
+
+        setNotifications(prevNotifications =>
+          prevNotifications.map(n =>
+            n.id === notification.id ? { ...n, is_read: true } : n
+          )
+        );
+        
+        setUnreadCount(prev => Math.max(0, prev - 1));
+
       } catch (error) {
         console.error('Unexpected error marking notification as read:', error);
         toast.error('An unexpected error occurred');
+        return;
       }
     }
 
-    // Navigate to the linked page if available
     if (notification.link) {
       navigate(notification.link);
+    }
+  };
+
+  const sendEmailNotification = async (notification: Notification) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-notification-email', {
+        body: {
+          to: notification.user_email,
+          title: notification.title,
+          message: notification.message,
+          link: notification.link ? `${window.location.origin}${notification.link}` : undefined,
+        },
+      });
+
+      if (error) {
+        console.error('Error sending email notification:', error);
+      }
+    } catch (error) {
+      console.error('Error invoking send-notification-email function:', error);
     }
   };
 

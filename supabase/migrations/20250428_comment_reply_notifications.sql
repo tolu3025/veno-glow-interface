@@ -1,4 +1,3 @@
-
 -- Create a function to notify users when someone replies to their comment
 CREATE OR REPLACE FUNCTION public.notify_blog_comment_reply()
 RETURNS trigger
@@ -18,6 +17,23 @@ BEGIN
         FROM blog_article_comments c
         JOIN blog_articles b ON c.article_id = b.id
         WHERE c.id = NEW.parent_id;
+        
+        -- For each inserted notification, invoke the email function
+        SELECT net.http_post(
+            url := 'https://oavauprgngpftanumlzs.functions.supabase.co/send-notification-email',
+            headers := jsonb_build_object(
+                'Content-Type', 'application/json',
+                'Authorization', 'Bearer ' || current_setting('request.headers')::json->>'apikey'
+            ),
+            body := json_build_object(
+                'to', NEW.user_email,
+                'title', 'New Reply to Your Comment',
+                'message', 'Someone replied to your comment',
+                'link', '/blog/' || NEW.article_id
+            )::text
+        )
+        FROM notifications
+        WHERE id = NEW.id;
     END IF;
     
     RETURN NEW;

@@ -1,4 +1,3 @@
-
 -- Create a function to notify users when a blog article is published
 CREATE OR REPLACE FUNCTION public.notify_new_blog_article()
 RETURNS trigger
@@ -15,6 +14,23 @@ BEGIN
         '/blog/' || NEW.id
     FROM auth.users
     WHERE email IS NOT NULL;
+    
+    -- For each inserted notification, invoke the email function
+    SELECT net.http_post(
+        url := 'https://oavauprgngpftanumlzs.functions.supabase.co/send-notification-email',
+        headers := jsonb_build_object(
+            'Content-Type', 'application/json',
+            'Authorization', 'Bearer ' || current_setting('request.headers')::json->>'apikey'
+        ),
+        body := json_build_object(
+            'to', NEW.user_email,
+            'title', 'New Blog Article Published',
+            'message', 'Check out our new article: ' || NEW.title,
+            'link', '/blog/' || NEW.id
+        )::text
+    )
+    FROM notifications
+    WHERE id = NEW.id;
     
     RETURN NEW;
 END;
