@@ -110,6 +110,7 @@ export const NotificationBell = () => {
       
       setNotifications(typedData);
       
+      // Only count unread notifications
       const unreadNotifications = typedData.filter(n => !n.is_read);
       setUnreadCount(unreadNotifications.length);
     } catch (error) {
@@ -181,7 +182,7 @@ export const NotificationBell = () => {
         {notifications.length > 0 ? (
           <>
             <div className="px-2 py-1.5 text-sm font-semibold">
-              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'No unread notifications'}
             </div>
             {notifications.map((notification) => (
               <DropdownMenuItem
