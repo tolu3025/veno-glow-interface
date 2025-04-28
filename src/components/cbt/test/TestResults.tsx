@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -12,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import html2canvas from 'html2canvas';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
