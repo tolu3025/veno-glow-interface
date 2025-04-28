@@ -251,18 +251,7 @@ const DashboardPage = () => {
                       </CardContent>
                     </Card>
                     
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <ShoppingCart className="h-4 w-4 mr-2 text-veno-primary" />
-                          Marketplace
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{userData.marketplaceStats.purchases}</p>
-                        <p className="text-xs text-muted-foreground">Total Purchases</p>
-                      </CardContent>
-                    </Card>
+                    
                     
                     <Card>
                       <CardHeader className="pb-2">
