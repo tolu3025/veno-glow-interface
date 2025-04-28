@@ -20,8 +20,9 @@ interface Notification {
   message: string;
   type: string;
   link: string | null;
-  read: boolean;
+  is_read: boolean;
   created_at: string;
+  user_email?: string;
 }
 
 export const NotificationBell = () => {
@@ -78,15 +79,15 @@ export const NotificationBell = () => {
       return;
     }
 
-    setNotifications(data);
-    setUnreadCount(data.filter(n => !n.read).length);
+    setNotifications(data || []);
+    setUnreadCount((data || []).filter(n => !n.is_read).length);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.read) {
+    if (!notification.is_read) {
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('id', notification.id);
 
       if (error) {
@@ -127,7 +128,7 @@ export const NotificationBell = () => {
               key={notification.id}
               onClick={() => handleNotificationClick(notification)}
               className={`flex flex-col items-start p-3 ${
-                !notification.read ? 'bg-muted/50' : ''
+                !notification.is_read ? 'bg-muted/50' : ''
               }`}
             >
               <div className="font-medium">{notification.title}</div>
