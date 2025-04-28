@@ -48,20 +48,28 @@ export const NotificationBell = () => {
           filter: `user_email=eq.${user.email}`,
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
+          const newNotification = payload.new as any;
+          
+          // Ensure the notification has the correct structure
+          const typedNotification: Notification = {
+            ...newNotification,
+            link: newNotification.link || null,
+            type: newNotification.type as 'blog_article' | 'comment_reply'
+          };
+          
+          setNotifications(prev => [typedNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
           // Show different toast messages based on notification type
-          const toastMessage = newNotification.type === 'blog_article' 
+          const toastMessage = typedNotification.type === 'blog_article' 
             ? 'New blog article published!'
             : 'Someone replied to your comment';
             
           toast.info(toastMessage, {
-            description: newNotification.message,
+            description: typedNotification.message,
             action: {
               label: 'View',
-              onClick: () => navigate(newNotification.link || '/blog')
+              onClick: () => navigate(typedNotification.link || '/blog')
             }
           });
         }
@@ -89,11 +97,11 @@ export const NotificationBell = () => {
     }
 
     // Transform the data to ensure it matches our Notification interface
-    // Handle the case where link might be missing in the database
     const typedData = (data || []).map(item => ({
       ...item,
-      link: item.link || null, // Ensure link exists, default to null if missing
-      type: item.type as 'blog_article' | 'comment_reply' // Cast the type to our union type
+      // The link property might not exist in the database yet
+      link: item.link === undefined ? null : item.link,
+      type: item.type as 'blog_article' | 'comment_reply'
     })) as Notification[];
     
     setNotifications(typedData);
