@@ -105,28 +105,38 @@ export const NotificationBell = () => {
     }));
     
     setNotifications(typedData);
-    setUnreadCount(typedData.filter(n => !n.is_read).length);
+    
+    // Calculate unread count based on database values
+    const unreadNotifications = typedData.filter(n => !n.is_read);
+    setUnreadCount(unreadNotifications.length);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    // Only update if the notification is not already marked as read
     if (!notification.is_read) {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notification.id);
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', notification.id);
 
-      if (error) {
-        console.error('Error marking notification as read:', error);
-      } else {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-        setNotifications(prev => 
-          prev.map(n => 
-            n.id === notification.id ? { ...n, is_read: true } : n
-          )
-        );
+        if (error) {
+          console.error('Error marking notification as read:', error);
+        } else {
+          // Update local state to reflect the change
+          setUnreadCount(prev => Math.max(0, prev - 1));
+          setNotifications(prev => 
+            prev.map(n => 
+              n.id === notification.id ? { ...n, is_read: true } : n
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Unexpected error marking notification as read:', error);
       }
     }
 
+    // Navigate to the linked page if available
     if (notification.link) {
       navigate(notification.link);
     }
