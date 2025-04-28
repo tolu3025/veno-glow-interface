@@ -18,7 +18,7 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: string;
+  type: 'blog_article' | 'comment_reply';
   link: string | null;
   is_read: boolean;
   created_at: string;
@@ -36,6 +36,7 @@ export const NotificationBell = () => {
     
     fetchNotifications();
     
+    // Subscribe to new notifications
     const channel = supabase
       .channel('notifications')
       .on(
@@ -50,8 +51,18 @@ export const NotificationBell = () => {
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
-          toast.info(newNotification.title, {
+          
+          // Show different toast messages based on notification type
+          const toastMessage = newNotification.type === 'blog_article' 
+            ? 'New blog article published!'
+            : 'Someone replied to your comment';
+            
+          toast.info(toastMessage, {
             description: newNotification.message,
+            action: {
+              label: 'View',
+              onClick: () => navigate(newNotification.link || '/blog')
+            }
           });
         }
       )
@@ -60,7 +71,7 @@ export const NotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, navigate]);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -77,9 +88,7 @@ export const NotificationBell = () => {
       return;
     }
 
-    // Cast data to match our Notification interface
-    // The database schema should include a link column
-    const typedData = (data || []) as unknown as Notification[];
+    const typedData = (data || []) as Notification[];
     setNotifications(typedData);
     setUnreadCount(typedData.filter(n => !n.is_read).length);
   };
