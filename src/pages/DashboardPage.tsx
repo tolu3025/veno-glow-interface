@@ -253,18 +253,7 @@ const DashboardPage = () => {
                     
                     
                     
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center">
-                          <FileText className="h-4 w-4 mr-2 text-veno-primary" />
-                          Blog Activity
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{userData.blogStats.articlesRead}</p>
-                        <p className="text-xs text-muted-foreground">Articles Read</p>
-                      </CardContent>
-                    </Card>
+                    
                   </div>
 
                   <h2 className="text-xl font-medium mb-4">Quick Access</h2>
