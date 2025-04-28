@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Download, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TestAttempt {
   id: string;
@@ -35,6 +36,7 @@ interface TestAttempt {
 
 interface ParticipantsListProps {
   testAttempts: TestAttempt[];
+  testId?: string;
   downloadParticipantPDF: (attempt: TestAttempt) => Promise<void>;
   disqualifyParticipant: (id: string) => Promise<void>;
   reinstateParticipant: (id: string) => Promise<void>;
@@ -45,6 +47,7 @@ interface ParticipantsListProps {
 
 export const ParticipantsList = ({
   testAttempts,
+  testId,
   downloadParticipantPDF,
   disqualifyParticipant,
   reinstateParticipant,
@@ -52,6 +55,14 @@ export const ParticipantsList = ({
   refreshing,
   refreshData
 }: ParticipantsListProps) => {
+  
+  // Add a useEffect to refresh data when the component mounts
+  useEffect(() => {
+    if (testId) {
+      refreshData();
+    }
+  }, [testId]);
+
   return (
     <>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">

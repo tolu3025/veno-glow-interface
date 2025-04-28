@@ -38,6 +38,7 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [testDetails, setTestDetails] = useState<TestDetails | null>(null);
   const [leaderboard, setLeaderboard] = useState<TestAttempt[]>([]);
+  const [userAccessError, setUserAccessError] = useState(false);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -71,6 +72,16 @@ const Leaderboard = () => {
         
         setTestDetails(testData);
         console.log('Test details loaded:', testData);
+        
+        // Check if results are public or user is the creator
+        const { data: userData } = await supabase.auth.getUser();
+        const currentUser = userData?.user;
+        
+        if (testData.results_visibility !== 'public' && testData.creator_id !== currentUser?.id) {
+          setUserAccessError(true);
+          setLoading(false);
+          return;
+        }
         
         // Fetch leaderboard data
         const { data, error } = await supabase
@@ -106,6 +117,43 @@ const Leaderboard = () => {
 
   if (loading) {
     return <LoadingState />;
+  }
+  
+  if (userAccessError) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Card className="w-full max-w-4xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <VenoLogo className="h-6 w-6" />
+                <CardTitle>Access Denied</CardTitle>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            </div>
+            <CardDescription>
+              You don't have permission to view this leaderboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground mb-4">
+              This leaderboard is only visible to the test creator
+            </p>
+            <Button onClick={() => navigate('/cbt')}>
+              Go to Tests
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -232,7 +280,7 @@ const Leaderboard = () => {
                   </TableHeader>
                   <TableBody>
                     {leaderboard.map((entry, index) => (
-                      <TableRow key={entry.id}>
+                      <TableRow key={entry.id} className={entry.disqualified ? "bg-destructive/10" : ""}>
                         <TableCell className="font-medium">
                           {index + 1}
                           {index === 0 && " 🥇"}

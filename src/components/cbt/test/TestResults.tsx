@@ -129,6 +129,31 @@ const TestResults: React.FC<TestResultsProps> = ({
     },
   });
 
+  useEffect(() => {
+    const loadResults = async () => {
+      if (
+        (testDetails?.results_visibility === 'public' || user?.id === testDetails?.creator_id) && 
+        testId && 
+        publicResults?.length === 0
+      ) {
+        try {
+          const { data, error } = await supabase
+            .from('test_attempts')
+            .select('*')
+            .eq('test_id', testId)
+            .order('score', { ascending: false });
+            
+          if (error) throw error;
+          console.log("Public results loaded from TestResults component:", data?.length || 0);
+        } catch (error) {
+          console.error("Error loading public results from TestResults component:", error);
+        }
+      }
+    };
+    
+    loadResults();
+  }, [testDetails, testId, user, publicResults]);
+
   const findRank = (): string => {
     if (!publicResults || publicResults.length === 0 || 
         (!testTakerInfo?.email && !user?.email)) {

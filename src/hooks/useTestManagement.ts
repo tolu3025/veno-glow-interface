@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -164,7 +165,8 @@ export const useTestManagement = ({
       console.log('Loading public results for test:', testId);
       console.log('Result visibility:', testDetails?.results_visibility);
       
-      if (testDetails?.results_visibility === 'public') {
+      // Always load results for test creators or if visibility is public
+      if (testDetails?.results_visibility === 'public' || user?.id === testDetails?.creator_id) {
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
@@ -236,15 +238,22 @@ export const useTestManagement = ({
         subject: location?.state?.subject || testDetails?.subject || 'general',
       };
       
+      const saveResult = await saveTestAttempt(testData);
+      if (!saveResult) {
+        toast({
+          title: "Error",
+          description: "Failed to save test results",
+          variant: "destructive"
+        });
+      }
+      
       const isCreator = user?.id === testDetails?.creator_id;
       
       if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
         setSubmissionComplete(true);
       } else if (isCreator || ['test_takers', 'public'].includes(testDetails?.results_visibility || '')) {
         setShowResults(true);
-        if (testDetails?.results_visibility === 'public') {
-          await loadPublicResults();
-        }
+        await loadPublicResults();
       }
       
     } catch (error: any) {
@@ -255,9 +264,7 @@ export const useTestManagement = ({
         setSubmissionComplete(true);
       } else if (isCreator || ['test_takers', 'public'].includes(testDetails?.results_visibility || '')) {
         setShowResults(true);
-        if (testDetails?.results_visibility === 'public') {
-          await loadPublicResults();
-        }
+        await loadPublicResults();
       }
     }
   };
