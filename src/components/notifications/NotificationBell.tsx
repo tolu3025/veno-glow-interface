@@ -88,7 +88,14 @@ export const NotificationBell = () => {
       return;
     }
 
-    const typedData = (data || []) as Notification[];
+    // Transform the data to ensure it matches our Notification interface
+    // Handle the case where link might be missing in the database
+    const typedData = (data || []).map(item => ({
+      ...item,
+      link: item.link || null, // Ensure link exists, default to null if missing
+      type: item.type as 'blog_article' | 'comment_reply' // Cast the type to our union type
+    })) as Notification[];
+    
     setNotifications(typedData);
     setUnreadCount(typedData.filter(n => !n.is_read).length);
   };
