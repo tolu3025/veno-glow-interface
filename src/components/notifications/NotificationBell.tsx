@@ -86,8 +86,7 @@ export const NotificationBell = () => {
       .from('notifications')
       .select('*')
       .eq('user_email', user.email)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching notifications:', error);
@@ -119,7 +118,6 @@ export const NotificationBell = () => {
       if (error) {
         console.error('Error marking notification as read:', error);
       } else {
-        // Update local state to reflect the change
         setUnreadCount(prev => Math.max(0, prev - 1));
         setNotifications(prev => 
           prev.map(n => 
@@ -155,21 +153,26 @@ export const NotificationBell = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[300px]">
         {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <DropdownMenuItem
-              key={notification.id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`flex flex-col items-start p-3 ${
-                !notification.is_read ? 'bg-muted/50' : ''
-              }`}
-            >
-              <div className="font-medium">{notification.title}</div>
-              <div className="text-sm text-muted-foreground">{notification.message}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {formatDate(notification.created_at)}
-              </div>
-            </DropdownMenuItem>
-          ))
+          <>
+            <div className="px-2 py-1.5 text-sm font-semibold">
+              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+            </div>
+            {notifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`flex flex-col items-start p-3 ${
+                  !notification.is_read ? 'bg-muted/50' : ''
+                }`}
+              >
+                <div className="font-medium">{notification.title}</div>
+                <div className="text-sm text-muted-foreground">{notification.message}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatDate(notification.created_at)}
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </>
         ) : (
           <DropdownMenuItem disabled className="text-center">
             No notifications
