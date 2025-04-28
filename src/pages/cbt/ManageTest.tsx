@@ -87,6 +87,7 @@ const ManageTest = () => {
   const [selectedParticipant, setSelectedParticipant] = useState<TestAttempt | null>(null);
   const [activeTab, setActiveTab] = useState('participants');
   const [hasLoadedQuestions, setHasLoadedQuestions] = useState(false);
+  const [togglingTestStatus, setTogglingTestStatus] = useState(false);
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const participantResultRef = useRef<HTMLDivElement>(null);
@@ -272,8 +273,7 @@ const ManageTest = () => {
       }
 
       setTestDetails(testData);
-      const storedActiveState = localStorage.getItem(`test_active_${testId}`);
-      setTestActive(storedActiveState === null ? true : storedActiveState === 'true');
+      setTestActive(testData.allow_retakes);
 
       const { data: attemptsData, error: attemptsError } = await supabase
         .from('test_attempts')
@@ -376,13 +376,24 @@ const ManageTest = () => {
   };
 
   const toggleTestStatus = async () => {
-    if (!testDetails) return;
+    if (!testDetails || !testId) return;
+    setTogglingTestStatus(true);
 
     try {
       const newActiveState = !testActive;
-      setTestActive(newActiveState);
       
-      localStorage.setItem(`test_active_${testId}`, String(newActiveState));
+      const { error } = await supabase
+        .from('user_tests')
+        .update({ allow_retakes: newActiveState })
+        .eq('id', testId);
+        
+      if (error) throw error;
+      
+      setTestActive(newActiveState);
+      setTestDetails({
+        ...testDetails,
+        allow_retakes: newActiveState
+      });
       
       toast({
         title: newActiveState ? 'Test Activated' : 'Test Deactivated',
@@ -397,6 +408,8 @@ const ManageTest = () => {
         description: 'Failed to update test status',
         variant: 'destructive',
       });
+    } finally {
+      setTogglingTestStatus(false);
     }
   };
 
@@ -522,12 +535,19 @@ const ManageTest = () => {
     if (!testId) return;
     
     try {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('test_questions')
         .delete()
         .eq('id', questionId);
       
-      if (error) throw error;
+      if (error) {
+        const { error: userTestQuestionsError } = await supabase
+          .from('user_test_questions')
+          .delete()
+          .eq('id', questionId);
+          
+        if (userTestQuestionsError) throw userTestQuestionsError;
+      }
       
       setTestQuestions(prev => prev.filter(q => q.id !== questionId));
       
@@ -535,6 +555,9 @@ const ManageTest = () => {
         title: 'Question Deleted',
         description: 'The question has been successfully deleted',
       });
+      
+      fetchTestQuestions();
+      
     } catch (error) {
       console.error('Error deleting question:', error);
       toast({
@@ -583,7 +606,7 @@ const ManageTest = () => {
     if (!testId) return;
     
     try {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('test_questions')
         .update({
           question: updatedQuestion.question,
@@ -593,7 +616,19 @@ const ManageTest = () => {
         })
         .eq('id', updatedQuestion.id);
       
-      if (error) throw error;
+      if (error) {
+        const { error: userTestQuestionsError } = await supabase
+          .from('user_test_questions')
+          .update({
+            question_text: updatedQuestion.question,
+            options: updatedQuestion.options,
+            answer: updatedQuestion.answer,
+            explanation: updatedQuestion.explanation
+          })
+          .eq('id', updatedQuestion.id);
+          
+        if (userTestQuestionsError) throw userTestQuestionsError;
+      }
       
       setTestQuestions(prev => 
         prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
@@ -603,6 +638,9 @@ const ManageTest = () => {
         title: 'Question Updated',
         description: 'The question has been successfully updated',
       });
+      
+      fetchTestQuestions();
+      
     } catch (error) {
       console.error('Error updating question:', error);
       toast({
@@ -653,6 +691,7 @@ const ManageTest = () => {
         deleteLoading={deleteLoading}
         setIsDeleteDialogOpen={setIsDeleteDialogOpen}
         isDeleteDialogOpen={isDeleteDialogOpen}
+        testId={testId || ''}
       />
       
       <TestDetails 

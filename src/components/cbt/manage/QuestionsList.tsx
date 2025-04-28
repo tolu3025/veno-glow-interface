@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   PencilIcon, 
@@ -50,15 +51,37 @@ export const QuestionsList = ({
   const { toast } = useToast();
   const [selectedQuestion, setSelectedQuestion] = React.useState<Question | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const onEditClick = (question: Question) => {
     setSelectedQuestion(question);
     setIsEditDialogOpen(true);
   };
 
+  const handleRefreshQuestions = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchTestQuestions();
+      toast({
+        title: "Questions Refreshed",
+        description: "The questions list has been updated from the database.",
+      });
+    } catch (error) {
+      console.error('Error refreshing questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleSaveQuestion = async (updatedQuestion: Question) => {
     try {
       await handleEditQuestion(updatedQuestion);
+      setIsEditDialogOpen(false);
       toast({
         title: "Question Updated",
         description: "The question has been successfully updated.",
@@ -73,6 +96,20 @@ export const QuestionsList = ({
     }
   };
 
+  // Initially load questions and set up interval for refreshing
+  useEffect(() => {
+    // Auto-refresh questions every 30 seconds while this component is open
+    const refreshInterval = setInterval(() => {
+      if (!loadingQuestions && !isRefreshing) {
+        fetchTestQuestions().catch(console.error);
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [fetchTestQuestions, loadingQuestions, isRefreshing]);
+
   return (
     <>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -83,11 +120,11 @@ export const QuestionsList = ({
         <Button 
           variant="outline" 
           size="sm"
-          onClick={fetchTestQuestions}
-          disabled={loadingQuestions}
+          onClick={handleRefreshQuestions}
+          disabled={loadingQuestions || isRefreshing}
           className="flex items-center gap-1"
         >
-          {loadingQuestions ? (
+          {(loadingQuestions || isRefreshing) ? (
             <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
             <RefreshCw size={14} />

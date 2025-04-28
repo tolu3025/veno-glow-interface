@@ -15,14 +15,17 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface TestHeaderProps {
   testActive: boolean;
-  toggleTestStatus: () => void;
+  toggleTestStatus: () => Promise<void>;
   deleteTest: () => Promise<void>;
   deleteLoading: boolean;
   setIsDeleteDialogOpen: (value: boolean) => void;
   isDeleteDialogOpen: boolean;
+  testId: string;
 }
 
 export const TestHeader = ({
@@ -31,9 +34,23 @@ export const TestHeader = ({
   deleteTest,
   deleteLoading,
   setIsDeleteDialogOpen,
-  isDeleteDialogOpen
+  isDeleteDialogOpen,
+  testId
 }: TestHeaderProps) => {
   const navigate = useNavigate();
+  const [toggling, setToggling] = React.useState(false);
+
+  const handleToggleStatus = async () => {
+    setToggling(true);
+    try {
+      await toggleTestStatus();
+    } catch (error) {
+      console.error("Error toggling test status:", error);
+      toast.error("Failed to update test status");
+    } finally {
+      setToggling(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
@@ -49,10 +66,15 @@ export const TestHeader = ({
       <div className="flex gap-2 flex-wrap">
         <Button 
           variant={testActive ? "destructive" : "default"}
-          onClick={toggleTestStatus}
+          onClick={handleToggleStatus}
           className="flex items-center gap-2"
+          disabled={toggling}
         >
-          <StopCircle size={16} />
+          {toggling ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <StopCircle size={16} />
+          )}
           {testActive ? 'Deactivate Test' : 'Activate Test'}
         </Button>
         

@@ -31,11 +31,51 @@ export const NotificationBell = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Fetch notifications from database
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_email', user.email)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        toast.error('Failed to fetch notifications');
+        return;
+      }
+
+      const typedData = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        message: item.message,
+        type: item.type as 'blog_article' | 'comment_reply',
+        link: item.link,
+        is_read: item.is_read,
+        created_at: item.created_at,
+        user_email: item.user_email
+      }));
+      
+      setNotifications(typedData);
+      
+      // Count unread notifications
+      const unreadNotifications = typedData.filter(n => !n.is_read);
+      setUnreadCount(unreadNotifications.length);
+    } catch (error) {
+      console.error('Error in fetchNotifications:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     
     fetchNotifications();
     
+    // Subscribe to new notifications
     const channel = supabase
       .channel('notifications')
       .on(
@@ -76,7 +116,7 @@ export const NotificationBell = () => {
       )
       .subscribe();
 
-    // Also listen for updates to notification read status
+    // Subscribe to notification updates (read status changes)
     const updateChannel = supabase
       .channel('notification_updates')
       .on(
@@ -90,7 +130,6 @@ export const NotificationBell = () => {
         (payload) => {
           const updatedNotification = payload.new as any;
           
-          // Update the notification in the local state
           setNotifications(prev => 
             prev.map(n => 
               n.id === updatedNotification.id 
@@ -99,13 +138,14 @@ export const NotificationBell = () => {
             )
           );
           
-          // Recalculate unread count
-          const updatedNotifications = notifications.map(n => 
-            n.id === updatedNotification.id ? { ...n, is_read: updatedNotification.is_read } : n
-          );
-          
-          const newUnreadCount = updatedNotifications.filter(n => !n.is_read).length;
-          setUnreadCount(newUnreadCount);
+          // Recalculate unread count from the updated notifications array
+          setUnreadCount(prev => {
+            const newCount = notifications
+              .map(n => n.id === updatedNotification.id ? {...n, is_read: updatedNotification.is_read} : n)
+              .filter(n => !n.is_read)
+              .length;
+            return newCount;
+          });
         }
       )
       .subscribe();
@@ -116,46 +156,9 @@ export const NotificationBell = () => {
     };
   }, [user, navigate]);
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_email', user.email)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching notifications:', error);
-        toast.error('Failed to fetch notifications');
-        return;
-      }
-
-      const typedData = data.map(item => ({
-        id: item.id,
-        title: item.title,
-        message: item.message,
-        type: item.type as 'blog_article' | 'comment_reply',
-        link: item.link,
-        is_read: item.is_read,
-        created_at: item.created_at,
-        user_email: item.user_email
-      }));
-      
-      setNotifications(typedData);
-      
-      // Only count unread notifications
-      const unreadNotifications = typedData.filter(n => !n.is_read);
-      setUnreadCount(unreadNotifications.length);
-    } catch (error) {
-      console.error('Error in fetchNotifications:', error);
-      toast.error('An unexpected error occurred');
-    }
-  };
-
   const markNotificationAsRead = async (notificationId: string) => {
     try {
+      // Update in the database
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
@@ -167,16 +170,17 @@ export const NotificationBell = () => {
         return;
       }
 
-      // Update the local state
-      setNotifications(prevNotifications =>
-        prevNotifications.map(n =>
+      // Update the local state immediately rather than waiting for the subscription
+      setNotifications(prev =>
+        prev.map(n =>
           n.id === notificationId ? { ...n, is_read: true } : n
         )
       );
       
-      // Recalculate unread count
-      const updatedUnreadCount = notifications.filter(n => n.id !== notificationId && !n.is_read).length;
-      setUnreadCount(updatedUnreadCount);
+      // Recalculate unread count directly from the updated state
+      setUnreadCount(prev => {
+        return prev > 0 ? prev - 1 : 0;
+      });
       
     } catch (error) {
       console.error('Unexpected error marking notification as read:', error);
