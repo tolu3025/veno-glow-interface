@@ -122,17 +122,21 @@ export const NotificationBell = () => {
 
         if (error) {
           console.error('Error marking notification as read:', error);
+          toast.error('Failed to mark notification as read');
         } else {
           // Update local state to reflect the change
-          setUnreadCount(prev => Math.max(0, prev - 1));
-          setNotifications(prev => 
-            prev.map(n => 
-              n.id === notification.id ? { ...n, is_read: true } : n
-            )
+          const updatedNotifications = notifications.map(n => 
+            n.id === notification.id ? { ...n, is_read: true } : n
           );
+          setNotifications(updatedNotifications);
+          
+          // Recalculate unread count
+          const newUnreadCount = updatedNotifications.filter(n => !n.is_read).length;
+          setUnreadCount(newUnreadCount);
         }
       } catch (error) {
         console.error('Unexpected error marking notification as read:', error);
+        toast.error('An unexpected error occurred');
       }
     }
 
