@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
 import MobileMenu from "@/components/ui/mobile-menu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
@@ -60,6 +61,7 @@ const MainLayout = () => {
           </nav>
           
           <div className="ml-auto flex items-center space-x-4">
+            <NotificationBell />
             <Button 
               variant="ghost" 
               size="icon" 
