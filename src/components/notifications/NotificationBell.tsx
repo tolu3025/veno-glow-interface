@@ -76,8 +76,43 @@ export const NotificationBell = () => {
       )
       .subscribe();
 
+    // Also listen for updates to notification read status
+    const updateChannel = supabase
+      .channel('notification_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_email=eq.${user.email}`,
+        },
+        (payload) => {
+          const updatedNotification = payload.new as any;
+          
+          // Update the notification in the local state
+          setNotifications(prev => 
+            prev.map(n => 
+              n.id === updatedNotification.id 
+                ? { ...n, is_read: updatedNotification.is_read } 
+                : n
+            )
+          );
+          
+          // Recalculate unread count
+          const updatedNotifications = notifications.map(n => 
+            n.id === updatedNotification.id ? { ...n, is_read: updatedNotification.is_read } : n
+          );
+          
+          const newUnreadCount = updatedNotifications.filter(n => !n.is_read).length;
+          setUnreadCount(newUnreadCount);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(updateChannel);
     };
   }, [user, navigate]);
 
@@ -140,8 +175,8 @@ export const NotificationBell = () => {
       );
       
       // Recalculate unread count
-      const updatedUnread = notifications.filter(n => n.id !== notificationId && !n.is_read).length;
-      setUnreadCount(updatedUnread);
+      const updatedUnreadCount = notifications.filter(n => n.id !== notificationId && !n.is_read).length;
+      setUnreadCount(updatedUnreadCount);
       
     } catch (error) {
       console.error('Unexpected error marking notification as read:', error);
