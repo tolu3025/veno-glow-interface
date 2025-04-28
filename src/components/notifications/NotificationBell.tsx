@@ -99,8 +99,8 @@ export const NotificationBell = () => {
     // Transform the data to ensure it matches our Notification interface
     const typedData = (data || []).map(item => ({
       ...item,
-      // The link property might not exist in the database yet
-      link: item.link === undefined ? null : item.link,
+      // Explicitly add the link property if it doesn't exist
+      link: typeof item.link !== 'undefined' ? item.link : null,
       type: item.type as 'blog_article' | 'comment_reply'
     })) as Notification[];
     
