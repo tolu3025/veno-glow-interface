@@ -4,10 +4,6 @@ CREATE OR REPLACE FUNCTION public.notify_blog_comment_reply()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
-DECLARE
-  notification_id UUID;
-  parent_comment RECORD;
-  article_record RECORD;
 BEGIN
     -- Only create notification if this is a reply (has parent_id)
     IF NEW.parent_id IS NOT NULL THEN
@@ -51,9 +47,3 @@ BEGIN
 END;
 $$;
 
--- Create a trigger to execute the function when a comment reply is created
-DROP TRIGGER IF EXISTS blog_comment_reply_trigger ON blog_article_comments;
-CREATE TRIGGER blog_comment_reply_trigger
-AFTER INSERT ON blog_article_comments
-FOR EACH ROW
-EXECUTE FUNCTION notify_blog_comment_reply();

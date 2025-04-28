@@ -46,10 +46,3 @@ BEGIN
 END;
 $$;
 
--- Create a trigger to execute the function when a blog article is published
-DROP TRIGGER IF EXISTS blog_article_published_trigger ON blog_articles;
-CREATE TRIGGER blog_article_published_trigger
-AFTER INSERT ON blog_articles
-FOR EACH ROW
-WHEN (NEW.published = true)
-EXECUTE FUNCTION notify_new_blog_article();

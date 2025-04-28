@@ -1,8 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,24 +50,41 @@ const handler = async (req: Request): Promise<Response> => {
     const fullLink = link && !link.startsWith('http') ? 
       `${new URL(req.url).origin}${link}` : link;
 
-    const emailResponse = await resend.emails.send({
-      from: "Veno Notifications <onboarding@resend.dev>",
-      to: [to],
-      subject: title,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>${title}</h2>
-          <p>${message}</p>
-          ${fullLink ? `<p><a href="${fullLink}" style="color: #2563eb; background-color: #eff6ff; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500;">View Details</a></p>` : ''}
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-          <p style="color: #666; font-size: 0.875rem;">This is an automated notification from Veno.</p>
-        </div>
-      `,
+    // Send the email using Brevo API
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': Deno.env.get('BREVO_API_KEY') || '',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: 'Veno Notifications',
+          email: 'notifications@veno.com'
+        },
+        to: [{ email: to }],
+        subject: title,
+        htmlContent: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>${title}</h2>
+            <p>${message}</p>
+            ${fullLink ? `<p><a href="${fullLink}" style="color: #2563eb; background-color: #eff6ff; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 500;">View Details</a></p>` : ''}
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+            <p style="color: #666; font-size: 0.875rem;">This is an automated notification from Veno.</p>
+          </div>
+        `
+      })
     });
 
-    console.log("Notification email sent successfully:", emailResponse);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Brevo API error: ${JSON.stringify(errorData)}`);
+    }
 
-    return new Response(JSON.stringify(emailResponse), {
+    console.log("Notification email sent successfully to:", to);
+
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
