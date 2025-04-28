@@ -1,8 +1,11 @@
+
 -- Create a function to notify users when a blog article is published
 CREATE OR REPLACE FUNCTION public.notify_new_blog_article()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  notification_record RECORD;
 BEGIN
     -- Get all user emails from the profiles table
     INSERT INTO notifications (user_email, title, message, type, link)
@@ -16,21 +19,28 @@ BEGIN
     WHERE email IS NOT NULL;
     
     -- For each inserted notification, invoke the email function
-    SELECT net.http_post(
-        url := 'https://oavauprgngpftanumlzs.functions.supabase.co/send-notification-email',
-        headers := jsonb_build_object(
-            'Content-Type', 'application/json',
-            'Authorization', 'Bearer ' || current_setting('request.headers')::json->>'apikey'
-        ),
-        body := json_build_object(
-            'to', NEW.user_email,
-            'title', 'New Blog Article Published',
-            'message', 'Check out our new article: ' || NEW.title,
-            'link', '/blog/' || NEW.id
-        )::text
-    )
-    FROM notifications
-    WHERE id = NEW.id;
+    FOR notification_record IN 
+      SELECT n.*
+      FROM notifications n 
+      INNER JOIN auth.users u ON n.user_email = u.email
+      WHERE n.created_at >= NOW() - INTERVAL '5 seconds'
+        AND n.type = 'blog_article'
+        AND link = '/blog/' || NEW.id
+    LOOP
+      PERFORM net.http_post(
+          url := 'https://oavauprgngpftanumlzs.functions.supabase.co/send-notification-email',
+          headers := jsonb_build_object(
+              'Content-Type', 'application/json',
+              'Authorization', 'Bearer ' || current_setting('request.headers')::json->>'apikey'
+          ),
+          body := json_build_object(
+              'to', notification_record.user_email,
+              'title', notification_record.title,
+              'message', notification_record.message,
+              'link', notification_record.link
+          )::text
+      );
+    END LOOP;
     
     RETURN NEW;
 END;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +66,10 @@ export const NotificationBell = () => {
             description: typedNotification.message,
             action: {
               label: 'View',
-              onClick: () => navigate(typedNotification.link || '/blog')
+              onClick: () => {
+                markNotificationAsRead(typedNotification.id);
+                navigate(typedNotification.link || '/blog');
+              }
             }
           });
         }
@@ -114,57 +118,43 @@ export const NotificationBell = () => {
     }
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.is_read) {
-      try {
-        const { error } = await supabase
-          .from('notifications')
-          .update({ is_read: true })
-          .eq('id', notification.id)
-          .select();
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
 
-        if (error) {
-          console.error('Error marking notification as read:', error);
-          toast.error('Failed to mark notification as read');
-          return;
-        }
-
-        setNotifications(prevNotifications =>
-          prevNotifications.map(n =>
-            n.id === notification.id ? { ...n, is_read: true } : n
-          )
-        );
-        
-        setUnreadCount(prev => Math.max(0, prev - 1));
-
-      } catch (error) {
-        console.error('Unexpected error marking notification as read:', error);
-        toast.error('An unexpected error occurred');
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        toast.error('Failed to update notification status');
         return;
       }
+
+      // Update the local state
+      setNotifications(prevNotifications =>
+        prevNotifications.map(n =>
+          n.id === notificationId ? { ...n, is_read: true } : n
+        )
+      );
+      
+      // Recalculate unread count
+      const updatedUnread = notifications.filter(n => n.id !== notificationId && !n.is_read).length;
+      setUnreadCount(updatedUnread);
+      
+    } catch (error) {
+      console.error('Unexpected error marking notification as read:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.is_read) {
+      await markNotificationAsRead(notification.id);
     }
 
     if (notification.link) {
       navigate(notification.link);
-    }
-  };
-
-  const sendEmailNotification = async (notification: Notification) => {
-    try {
-      const { error } = await supabase.functions.invoke('send-notification-email', {
-        body: {
-          to: notification.user_email,
-          title: notification.title,
-          message: notification.message,
-          link: notification.link ? `${window.location.origin}${notification.link}` : undefined,
-        },
-      });
-
-      if (error) {
-        console.error('Error sending email notification:', error);
-      }
-    } catch (error) {
-      console.error('Error invoking send-notification-email function:', error);
     }
   };
 
