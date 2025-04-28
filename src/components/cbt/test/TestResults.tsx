@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -58,7 +57,6 @@ const formSchema = z.object({
   }),
 });
 
-// Function to get the color class for the progress bar based on the percentage
 const getProgressColorClass = (percentage: number): string => {
   if (percentage >= 80) return "bg-green-500";
   if (percentage >= 70) return "bg-blue-500";
@@ -131,7 +129,6 @@ const TestResults: React.FC<TestResultsProps> = ({
     },
   });
 
-  // Function to find the rank of the current user in the leaderboard
   const findRank = (): string => {
     if (!publicResults || publicResults.length === 0 || 
         (!testTakerInfo?.email && !user?.email)) {
@@ -166,15 +163,6 @@ const TestResults: React.FC<TestResultsProps> = ({
         });
       }
     }
-  };
-
-  const shareAsLink = () => {
-    const shareUrl = window.location.href;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-      title: "Link copied!",
-      description: "Share link has been copied to clipboard",
-    });
   };
 
   const onFlaggedSubmit = (values: z.infer<typeof formSchema>) => {
@@ -483,16 +471,10 @@ const TestResults: React.FC<TestResultsProps> = ({
           <Share className="h-4 w-4 mr-2 text-veno-primary" />
           Share Results
         </h3>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={shareAsImage}>
-            <FileText className="h-4 w-4 mr-2" />
-            Save as Image
-          </Button>
-          <Button variant="outline" onClick={shareAsLink}>
-            <Share className="h-4 w-4 mr-2" />
-            Copy Link
-          </Button>
-        </div>
+        <Button variant="outline" onClick={shareAsImage}>
+          <FileText className="h-4 w-4 mr-2" />
+          Save as Image
+        </Button>
       </div>
 
       <Dialog>
