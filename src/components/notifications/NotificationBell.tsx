@@ -22,7 +22,7 @@ interface Notification {
   link: string | null;
   is_read: boolean;
   created_at: string;
-  user_email?: string;
+  user_id?: string;
 }
 
 export const NotificationBell = () => {
@@ -79,8 +79,10 @@ export const NotificationBell = () => {
       return;
     }
 
-    setNotifications(data || []);
-    setUnreadCount((data || []).filter(n => !n.is_read).length);
+    // Ensure that the fetched data conforms to our Notification interface
+    const typedData = data as unknown as Notification[];
+    setNotifications(typedData);
+    setUnreadCount(typedData.filter(n => !n.is_read).length);
   };
 
   const handleNotificationClick = async (notification: Notification) => {
