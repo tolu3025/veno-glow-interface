@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { VenoLogo } from "@/components/ui/logo";
 import { supabase } from '@/integrations/supabase/client';
 import CertificatesSection from '@/components/certificate/CertificatesSection';
+
 const DashboardPage = () => {
   const {
     user
@@ -28,7 +29,12 @@ const DashboardPage = () => {
     },
     blogStats: {
       articlesRead: 0,
-      commentsPosted: 0
+      commentsPosted: 0,
+      articlesReadList: [] as {
+        article_id: string;
+        article_title: string;
+        timestamp: string;
+      }[]
     },
     botStats: {
       conversationsStarted: 0,
@@ -76,9 +82,24 @@ const DashboardPage = () => {
         // Get blog activities
         let articlesRead = 0;
         let commentsPosted = 0;
+        let articlesReadList: {
+          article_id: string;
+          article_title: string;
+          timestamp: string;
+        }[] = [];
+        
         if (userProfile?.activities) {
           const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
-          articlesRead = activities.filter((activity: any) => activity.type === 'blog_read').length;
+          const blogReadActivities = activities.filter((activity: any) => activity.type === 'blog_read');
+          articlesRead = blogReadActivities.length;
+          
+          // Extract article information for reading history
+          articlesReadList = blogReadActivities.map((activity: any) => ({
+            article_id: activity.article_id,
+            article_title: activity.article_title || 'Untitled Article',
+            timestamp: activity.timestamp
+          })).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          
           commentsPosted = activities.filter((activity: any) => activity.type === 'blog_comment').length;
         }
 
@@ -115,7 +136,8 @@ const DashboardPage = () => {
           },
           blogStats: {
             articlesRead,
-            commentsPosted
+            commentsPosted,
+            articlesReadList
           },
           botStats: {
             conversationsStarted: botConversations,
@@ -250,10 +272,6 @@ const DashboardPage = () => {
                         <Progress className="mt-2 h-1" value={userData.cbtStats.avgScore} />
                       </CardContent>
                     </Card>
-                    
-                    
-                    
-                    
                   </div>
 
                   <h2 className="text-xl font-medium mb-4">Quick Access</h2>
@@ -377,6 +395,30 @@ const DashboardPage = () => {
                               </div>
                               <Progress value={userData.blogStats.commentsPosted / 15 * 100} className="h-2" />
                             </div>
+                            
+                            {/* Reading history */}
+                            {userData.blogStats.articlesReadList.length > 0 && (
+                              <div className="mt-6">
+                                <h3 className="text-sm font-medium mb-3">Recently Read Articles</h3>
+                                <ul className="space-y-2">
+                                  {userData.blogStats.articlesReadList.slice(0, 5).map((article, idx) => (
+                                    <li key={idx} className="flex justify-between items-center text-sm p-2 bg-background/50 rounded">
+                                      <Button 
+                                        variant="link" 
+                                        className="p-0 h-auto text-left justify-start"
+                                        onClick={() => navigate(`/blog/${article.article_id}`)}
+                                      >
+                                        {article.article_title}
+                                      </Button>
+                                      <span className="text-muted-foreground text-xs">
+                                        {new Date(article.timestamp).toLocaleDateString()}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
                             <div className="flex justify-end">
                               <Button variant="outline" onClick={() => navigate('/blog')} className="border-veno-primary/30 text-veno-primary text-xs mt-2">
                                 Read Blog

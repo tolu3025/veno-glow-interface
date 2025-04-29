@@ -3,7 +3,7 @@ import React from 'react';
 import AdComponent from './AdComponent';
 
 interface AdPlacementProps {
-  location: 'header' | 'sidebar' | 'footer' | 'content' | 'article';
+  location: 'header' | 'sidebar' | 'footer' | 'content' | 'article' | 'article-middle';
   contentCheck?: boolean;
 }
 
@@ -48,6 +48,13 @@ const AdPlacement: React.FC<AdPlacementProps> = ({
           // Replace with your actual ad slot ID
           adFormat: 'auto' as const,
           className: 'my-6'
+        };
+      case 'article-middle':
+        return {
+          adSlot: '5678901234',
+          // Replace with your actual ad slot ID
+          adFormat: 'rectangle' as const,
+          className: 'my-8 mx-auto max-w-md'
         };
       default:
         return {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +13,14 @@ import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
 import AdPlacement from '@/components/ads/AdPlacement';
 import { BlogArticle, BlogComment, BlogCommentReactions } from '@/types/blog';
+import { useAuth } from "@/providers/AuthProvider";
+import { appendToActivities } from '@/functions/appendToActivities';
 
 const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
   const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [commentorEmail, setCommentorEmail] = React.useState('');
+  const { user } = useAuth();
 
   const { data: article, isLoading: isLoadingPost, error: postError } = useQuery({
     queryKey: ['blog-article', postId],
@@ -64,6 +67,30 @@ const BlogPostPage = () => {
       });
     },
   });
+
+  // Record article read when user views the article
+  useEffect(() => {
+    if (article && user) {
+      const recordArticleRead = async () => {
+        try {
+          // Add to user's activities that they read this article
+          await appendToActivities(user.id, {
+            type: 'blog_read',
+            article_id: article.id,
+            article_title: article.title,
+            timestamp: new Date().toISOString(),
+            description: `Read article: ${article.title}`
+          });
+          
+          console.log('Article read recorded');
+        } catch (error) {
+          console.error('Error recording article read:', error);
+        }
+      };
+      
+      recordArticleRead();
+    }
+  }, [article, user]);
 
   const handleSubmitComment = async (content: string) => {
     try {
@@ -194,6 +221,11 @@ const BlogPostPage = () => {
     );
   }
 
+  // Split article content into paragraphs
+  const articleParagraphs = article?.content.split('\n\n') || [];
+  // Calculate middle point for ad insertion
+  const middleIndex = Math.floor(articleParagraphs.length / 2);
+
   return (
     <div className="relative min-h-screen">
       <WaveBackground />
@@ -210,23 +242,18 @@ const BlogPostPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Top advertisement */}
-          <div className="mb-8">
-            <AdPlacement location="article" />
-          </div>
-          
           <header className="mb-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <span>{new Date(article.created_at).toLocaleDateString()}</span>
+              <span>{new Date(article?.created_at || '').toLocaleDateString()}</span>
               <span>•</span>
               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {article.category}
+                {article?.category}
               </span>
             </div>
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              {article.title}
+              {article?.title}
             </h1>
-            {article.author_name && (
+            {article?.author_name && (
               <p className="text-muted-foreground">By {article.author_name}</p>
             )}
             
@@ -280,7 +307,7 @@ const BlogPostPage = () => {
             </div>
           </header>
 
-          {article.image_url && (
+          {article?.image_url && (
             <img 
               src={article.image_url} 
               alt={article.title}
@@ -289,9 +316,18 @@ const BlogPostPage = () => {
           )}
 
           <div className="prose prose-slate dark:prose-invert max-w-none">
-            {/* Display content without ads in between paragraphs */}
-            {article.content.split('\n\n').map((paragraph, index) => (
-              <p key={index} className="text-lg leading-relaxed mb-6">{paragraph}</p>
+            {/* Display content with ad in the middle */}
+            {articleParagraphs.map((paragraph, index) => (
+              <React.Fragment key={index}>
+                <p className="text-lg leading-relaxed mb-6">{paragraph}</p>
+                
+                {/* Insert ad in the middle of the article */}
+                {index === middleIndex && (
+                  <div className="my-6">
+                    <AdPlacement location="article-middle" />
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
           
