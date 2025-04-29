@@ -52,6 +52,12 @@ export const QuestionsList = ({
   const [selectedQuestion, setSelectedQuestion] = React.useState<Question | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [localQuestions, setLocalQuestions] = React.useState<Question[]>([]);
+
+  // Update local questions when prop changes
+  useEffect(() => {
+    setLocalQuestions(questions);
+  }, [questions]);
 
   const onEditClick = (question: Question) => {
     setSelectedQuestion(question);
@@ -81,6 +87,12 @@ export const QuestionsList = ({
   const handleSaveQuestion = async (updatedQuestion: Question) => {
     try {
       await handleEditQuestion(updatedQuestion);
+      
+      // Update local state immediately
+      setLocalQuestions(prev => 
+        prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
+      );
+      
       setIsEditDialogOpen(false);
       toast({
         title: "Question Updated",
@@ -96,7 +108,28 @@ export const QuestionsList = ({
     }
   };
 
-  // Initially load questions and set up interval for refreshing
+  const handleLocalDelete = async (questionId: string) => {
+    try {
+      await handleDeleteQuestion(questionId);
+      
+      // Remove from local state immediately
+      setLocalQuestions(prev => prev.filter(q => q.id !== questionId));
+      
+      toast({
+        title: "Question Deleted",
+        description: "The question has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete question. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Refresh questions periodically
   useEffect(() => {
     // Auto-refresh questions every 30 seconds while this component is open
     const refreshInterval = setInterval(() => {
@@ -115,7 +148,7 @@ export const QuestionsList = ({
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-veno-primary" />
-          <h2 className="text-xl font-bold">Questions ({questions.length})</h2>
+          <h2 className="text-xl font-bold">Questions ({localQuestions.length})</h2>
         </div>
         <Button 
           variant="outline" 
@@ -139,7 +172,7 @@ export const QuestionsList = ({
             <Loader2 className="h-8 w-8 animate-spin text-veno-primary" />
           </CardContent>
         </Card>
-      ) : questions.length === 0 ? (
+      ) : localQuestions.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <p className="text-muted-foreground mb-4">
@@ -149,7 +182,7 @@ export const QuestionsList = ({
         </Card>
       ) : (
         <div className="space-y-4">
-          {questions.map((question, index) => (
+          {localQuestions.map((question, index) => (
             <motion.div 
               key={question.id}
               initial={{ opacity: 0, y: 10 }}
@@ -191,7 +224,7 @@ export const QuestionsList = ({
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteQuestion(question.id)}
+                              onClick={() => handleLocalDelete(question.id)}
                               className="bg-destructive hover:bg-destructive/90"
                             >
                               Delete Question

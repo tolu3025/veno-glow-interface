@@ -1,9 +1,12 @@
+
 import React from 'react';
 import AdComponent from './AdComponent';
+
 interface AdPlacementProps {
   location: 'header' | 'sidebar' | 'footer' | 'content' | 'article';
   contentCheck?: boolean;
 }
+
 const AdPlacement: React.FC<AdPlacementProps> = ({
   location,
   contentCheck = true
@@ -55,7 +58,17 @@ const AdPlacement: React.FC<AdPlacementProps> = ({
         };
     }
   };
+
   const config = getAdConfig();
-  return;
+  
+  return (
+    <AdComponent
+      adSlot={config.adSlot}
+      adFormat={config.adFormat}
+      className={config.className}
+      contentCheck={contentCheck}
+    />
+  );
 };
+
 export default AdPlacement;

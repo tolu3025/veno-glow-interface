@@ -43,7 +43,11 @@ export const TestHeader = ({
   const handleToggleStatus = async () => {
     setToggling(true);
     try {
+      // Call the parent function to toggle test status
       await toggleTestStatus();
+      
+      // Show success message
+      toast.success(testActive ? 'Test deactivated' : 'Test activated');
     } catch (error) {
       console.error("Error toggling test status:", error);
       toast.error("Failed to update test status");
