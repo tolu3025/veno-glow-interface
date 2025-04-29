@@ -279,9 +279,7 @@ const DashboardPage = () => {
                       <TabsTrigger value="cbt" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                         <Book size={16} className="mr-2" /> CBT
                       </TabsTrigger>
-                      <TabsTrigger value="marketplace" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
-                        <ShoppingCart size={16} className="mr-2" /> Marketplace
-                      </TabsTrigger>
+                      
                       <TabsTrigger value="blog" className="data-[state=active]:bg-veno-primary/10 data-[state=active]:text-veno-primary">
                         <FileText size={16} className="mr-2" /> Blog
                       </TabsTrigger>
