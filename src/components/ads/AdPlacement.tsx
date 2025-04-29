@@ -17,49 +17,42 @@ const AdPlacement: React.FC<AdPlacementProps> = ({
       case 'header':
         return {
           adSlot: '1234567890',
-          // Replace with your actual ad slot ID
           adFormat: 'horizontal' as const,
-          className: 'w-full h-auto my-4'
+          className: 'w-full h-auto my-6'
         };
       case 'sidebar':
         return {
           adSlot: '2345678901',
-          // Replace with your actual ad slot ID
           adFormat: 'vertical' as const,
-          className: 'h-full my-4'
+          className: 'h-full w-[300px] my-4'
         };
       case 'footer':
         return {
           adSlot: '3456789012',
-          // Replace with your actual ad slot ID
           adFormat: 'horizontal' as const,
-          className: 'w-full my-6'
+          className: 'w-full py-4 min-h-[90px]'
         };
       case 'content':
         return {
           adSlot: '4567890123',
-          // Replace with your actual ad slot ID
           adFormat: 'rectangle' as const,
-          className: 'mx-auto max-w-md my-8'
+          className: 'mx-auto max-w-[336px] my-8'
         };
       case 'article':
         return {
           adSlot: '5678901234',
-          // Replace with your actual ad slot ID
           adFormat: 'auto' as const,
           className: 'my-6'
         };
       case 'article-middle':
         return {
           adSlot: '5678901234',
-          // Replace with your actual ad slot ID
           adFormat: 'rectangle' as const,
-          className: 'my-8 mx-auto max-w-md'
+          className: 'my-8 mx-auto max-w-[336px] min-h-[280px]'
         };
       default:
         return {
           adSlot: '6789012345',
-          // Replace with your actual ad slot ID
           adFormat: 'auto' as const,
           className: ''
         };
