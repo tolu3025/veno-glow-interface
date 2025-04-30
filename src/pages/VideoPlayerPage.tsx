@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Share2 } from 'lucide-react';
 import Comments from '@/components/tutorials/Comments';
 import { toast } from '@/hooks/use-toast';
+import { appendToUserActivities } from '@/utils/activityHelpers';
 
 const VideoPlayerPage = () => {
   const [tutorial, setTutorial] = useState<any>(null);
@@ -55,19 +55,13 @@ const VideoPlayerPage = () => {
         const user = (await supabase.auth.getUser()).data.user;
         if (user) {
           try {
-            // Create an activity record instead of trying to use tutorial_views
-            await supabase.from('user_profiles')
-              .update({
-                activities: supabase.rpc('array_append', { 
-                  arr: [{ 
-                    type: 'tutorial_view',
-                    tutorial_id: data.id,
-                    tutorial_title: data.title,
-                    timestamp: new Date().toISOString()
-                  }]
-                })
-              })
-              .eq('user_id', user.id);
+            // Create an activity record by using the appendToUserActivities utility function
+            await appendToUserActivities(user.id, {
+              type: 'tutorial_view',
+              tutorial_id: data.id,
+              tutorial_title: data.title,
+              timestamp: new Date().toISOString()
+            });
             
             console.log('Tutorial view tracked successfully');
           } catch (viewErr) {
