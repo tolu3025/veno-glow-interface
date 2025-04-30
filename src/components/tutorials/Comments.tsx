@@ -126,7 +126,14 @@ const Comments = ({ tutorialId }: CommentsProps) => {
 
     try {
       setIsSubmitting(true);
-      const { error } = await supabase
+      console.log("Submitting comment:", {
+        tutorial_id: tutorialId,
+        user_id: user.id,
+        content,
+        parent_id: replyingTo
+      });
+
+      const { data, error } = await supabase
         .from('tutorial_comments')
         .insert([
           {
@@ -135,10 +142,15 @@ const Comments = ({ tutorialId }: CommentsProps) => {
             content,
             parent_id: replyingTo
           }
-        ]);
+        ])
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error posting comment:", error);
+        throw error;
+      }
 
+      console.log("Comment posted successfully:", data);
       toast({
         title: "Comment posted",
         description: "Your comment has been added successfully",
@@ -146,11 +158,11 @@ const Comments = ({ tutorialId }: CommentsProps) => {
       
       setReplyingTo(null);
       await fetchComments();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error posting comment:", err);
       toast({
         title: "Error posting comment",
-        description: "An unexpected error occurred",
+        description: err.message || "An unexpected error occurred",
         variant: "destructive"
       });
     } finally {
@@ -203,6 +215,14 @@ const Comments = ({ tutorialId }: CommentsProps) => {
                       parentId={comment.id}
                       isSubmitting={isSubmitting}
                     />
+                    <div className="mt-2 text-right">
+                      <button 
+                        className="text-sm text-muted-foreground hover:text-primary"
+                        onClick={() => setReplyingTo(null)}
+                      >
+                        Cancel reply
+                      </button>
+                    </div>
                   </div>
                 )}
                 {comments
@@ -214,6 +234,23 @@ const Comments = ({ tutorialId }: CommentsProps) => {
                         onReply={handleReply}
                         onReactionUpdate={fetchComments}
                       />
+                      {replyingTo === reply.id && (
+                        <div className="ml-12 mt-2">
+                          <CommentForm 
+                            onSubmit={handleSubmitComment}
+                            parentId={reply.id}
+                            isSubmitting={isSubmitting}
+                          />
+                          <div className="mt-2 text-right">
+                            <button 
+                              className="text-sm text-muted-foreground hover:text-primary"
+                              onClick={() => setReplyingTo(null)}
+                            >
+                              Cancel reply
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>
