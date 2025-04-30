@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +49,18 @@ const VideoPlayerPage = () => {
 
         console.log("Fetched tutorial data:", data);
         setTutorial(data);
+        
+        // Track tutorial view
+        if (data) {
+          try {
+            await supabase.from('tutorial_views').insert({
+              tutorial_id: data.id,
+              user_id: (await supabase.auth.getUser()).data.user?.id
+            });
+          } catch (viewErr) {
+            console.error('Error tracking tutorial view:', viewErr);
+          }
+        }
       } catch (err) {
         console.error('Unexpected error fetching tutorial:', err);
         setError("An unexpected error occurred");
@@ -114,16 +127,18 @@ const VideoPlayerPage = () => {
         Back
       </Button>
       
-      {tutorial.video_url ? (
-        <VideoPlayer 
-          videoUrl={tutorial.video_url} 
-          thumbnailUrl={tutorial.thumbnail_url} 
-        />
-      ) : (
-        <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-lg">
-          <p className="text-muted-foreground">No video available for this tutorial</p>
-        </div>
-      )}
+      <div className="relative">
+        {tutorial.video_url ? (
+          <VideoPlayer 
+            videoUrl={tutorial.video_url} 
+            thumbnailUrl={tutorial.thumbnail_url} 
+          />
+        ) : (
+          <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-lg">
+            <p className="text-muted-foreground">No video available for this tutorial</p>
+          </div>
+        )}
+      </div>
       
       <div>
         <h1 className="text-2xl font-bold">{tutorial.title}</h1>
