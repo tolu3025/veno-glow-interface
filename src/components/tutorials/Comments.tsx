@@ -190,6 +190,30 @@ const Comments = ({ tutorialId }: CommentsProps) => {
     setReplyingTo(parentId);
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    // After deletion on the backend, update the UI by filtering out the deleted comment
+    setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
+    
+    // Also remove any replies to this comment
+    setComments(prevComments => prevComments.filter(comment => comment.parent_id !== commentId));
+  };
+
+  // Function to organize comments into a hierarchical structure
+  const organizeComments = () => {
+    // Group comments by parent/child
+    const parentComments = comments.filter(comment => !comment.parent_id);
+    const childComments = comments.filter(comment => comment.parent_id);
+    
+    // Get child comments by parent ID
+    const getChildComments = (parentId: string) => {
+      return childComments.filter(comment => comment.parent_id === parentId);
+    };
+    
+    return { parentComments, getChildComments };
+  };
+
+  const { parentComments, getChildComments } = organizeComments();
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Comments</h3>
@@ -201,68 +225,76 @@ const Comments = ({ tutorialId }: CommentsProps) => {
         />
       )}
       
-      <div className="space-y-4 mt-6">
+      <div className="space-y-6 mt-6">
         {isLoading ? (
           <p className="text-center py-4">Loading comments...</p>
-        ) : comments.length === 0 ? (
+        ) : parentComments.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">No comments yet. Be the first to comment!</p>
         ) : (
-          comments
-            .filter(comment => !comment.parent_id)
-            .map((comment) => (
-              <div key={comment.id} className="space-y-4">
-                <CommentItem 
-                  comment={comment}
-                  onReply={handleReply}
-                  onReactionUpdate={fetchComments}
-                />
-                {replyingTo === comment.id && (
-                  <div className="ml-12">
-                    <CommentForm 
-                      onSubmit={handleSubmitComment}
-                      parentId={comment.id}
-                      isSubmitting={isSubmitting}
-                    />
-                    <div className="mt-2 text-right">
-                      <button 
-                        className="text-sm text-muted-foreground hover:text-primary"
-                        onClick={() => setReplyingTo(null)}
-                      >
-                        Cancel reply
-                      </button>
-                    </div>
+          parentComments.map((comment) => (
+            <div key={comment.id} className="space-y-4">
+              <CommentItem 
+                comment={comment}
+                onReply={handleReply}
+                onReactionUpdate={fetchComments}
+                onDelete={handleDeleteComment}
+              />
+              
+              {replyingTo === comment.id && (
+                <div className="ml-12 mt-2">
+                  <CommentForm 
+                    onSubmit={handleSubmitComment}
+                    parentId={comment.id}
+                    isSubmitting={isSubmitting}
+                  />
+                  <div className="mt-2 text-right">
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      className="text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => setReplyingTo(null)}
+                    >
+                      Cancel reply
+                    </Button>
                   </div>
-                )}
-                {comments
-                  .filter(reply => reply.parent_id === comment.id)
-                  .map(reply => (
-                    <div key={reply.id} className="ml-12">
-                      <CommentItem 
-                        comment={reply}
-                        onReply={handleReply}
-                        onReactionUpdate={fetchComments}
-                      />
-                      {replyingTo === reply.id && (
-                        <div className="ml-12 mt-2">
-                          <CommentForm 
-                            onSubmit={handleSubmitComment}
-                            parentId={reply.id}
-                            isSubmitting={isSubmitting}
-                          />
-                          <div className="mt-2 text-right">
-                            <button 
-                              className="text-sm text-muted-foreground hover:text-primary"
-                              onClick={() => setReplyingTo(null)}
-                            >
-                              Cancel reply
-                            </button>
-                          </div>
+                </div>
+              )}
+              
+              {/* Display replies to this comment */}
+              <div className="ml-12 space-y-4">
+                {getChildComments(comment.id).map(reply => (
+                  <div key={reply.id}>
+                    <CommentItem 
+                      comment={reply}
+                      onReply={handleReply}
+                      onReactionUpdate={fetchComments}
+                      onDelete={handleDeleteComment}
+                    />
+                    
+                    {replyingTo === reply.id && (
+                      <div className="ml-12 mt-2">
+                        <CommentForm 
+                          onSubmit={handleSubmitComment}
+                          parentId={reply.id}
+                          isSubmitting={isSubmitting}
+                        />
+                        <div className="mt-2 text-right">
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            className="text-sm text-muted-foreground hover:text-primary"
+                            onClick={() => setReplyingTo(null)}
+                          >
+                            Cancel reply
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))
+            </div>
+          ))
         )}
       </div>
     </div>
