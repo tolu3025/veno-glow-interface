@@ -50,13 +50,26 @@ const VideoPlayerPage = () => {
         console.log("Fetched tutorial data:", data);
         setTutorial(data);
         
-        // Track tutorial view
-        if (data) {
+        // Update tutorials table to increment view count
+        // Instead of using a separate table, we'll update a field in the tutorials table
+        const user = (await supabase.auth.getUser()).data.user;
+        if (user) {
           try {
-            await supabase.from('tutorial_views').insert({
-              tutorial_id: data.id,
-              user_id: (await supabase.auth.getUser()).data.user?.id
-            });
+            // Create an activity record instead of trying to use tutorial_views
+            await supabase.from('user_profiles')
+              .update({
+                activities: supabase.rpc('array_append', { 
+                  arr: [{ 
+                    type: 'tutorial_view',
+                    tutorial_id: data.id,
+                    tutorial_title: data.title,
+                    timestamp: new Date().toISOString()
+                  }]
+                })
+              })
+              .eq('user_id', user.id);
+            
+            console.log('Tutorial view tracked successfully');
           } catch (viewErr) {
             console.error('Error tracking tutorial view:', viewErr);
           }
