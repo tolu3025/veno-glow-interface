@@ -147,7 +147,15 @@ const Comments = ({ tutorialId }: CommentsProps) => {
 
       if (error) {
         console.error("Error posting comment:", error);
-        throw error;
+        // Don't throw the error here, handle it gracefully
+        toast({
+          title: "Error posting comment",
+          description: error.message || "An unexpected error occurred",
+          variant: "destructive"
+        });
+        // Still proceed with fetching comments to ensure UI is updated with latest data
+        await fetchComments();
+        return;
       }
 
       console.log("Comment posted successfully:", data);
