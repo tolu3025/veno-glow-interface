@@ -535,12 +535,14 @@ const ManageTest = () => {
     if (!testId) return;
     
     try {
+      // Try to delete from test_questions first
       let { error } = await supabase
         .from('test_questions')
         .delete()
         .eq('id', questionId);
       
       if (error) {
+        // If that fails, try to delete from user_test_questions
         const { error: userTestQuestionsError } = await supabase
           .from('user_test_questions')
           .delete()
@@ -549,6 +551,7 @@ const ManageTest = () => {
         if (userTestQuestionsError) throw userTestQuestionsError;
       }
       
+      // Update the local state by filtering out the deleted question
       setTestQuestions(prev => prev.filter(q => q.id !== questionId));
       
       toast({
@@ -556,6 +559,7 @@ const ManageTest = () => {
         description: 'The question has been successfully deleted',
       });
       
+      // Refresh questions to ensure we have the latest data
       fetchTestQuestions();
       
     } catch (error) {
@@ -606,6 +610,7 @@ const ManageTest = () => {
     if (!testId) return;
     
     try {
+      // Try to update in test_questions first
       let { error } = await supabase
         .from('test_questions')
         .update({
@@ -617,6 +622,7 @@ const ManageTest = () => {
         .eq('id', updatedQuestion.id);
       
       if (error) {
+        // If that fails, try to update in user_test_questions
         const { error: userTestQuestionsError } = await supabase
           .from('user_test_questions')
           .update({
@@ -630,6 +636,7 @@ const ManageTest = () => {
         if (userTestQuestionsError) throw userTestQuestionsError;
       }
       
+      // Update the local state by mapping over the questions and replacing the updated one
       setTestQuestions(prev => 
         prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
       );
@@ -639,6 +646,7 @@ const ManageTest = () => {
         description: 'The question has been successfully updated',
       });
       
+      // Refresh questions to ensure we have the latest data
       fetchTestQuestions();
       
     } catch (error) {

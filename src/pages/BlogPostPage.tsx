@@ -99,7 +99,7 @@ const BlogPostPage = () => {
         .insert({
           article_id: postId,
           content,
-          user_email: commentorEmail || 'Anonymous',
+          user_email: commentorEmail || (user?.email || 'Anonymous'),
           parent_id: replyTo
         });
 
