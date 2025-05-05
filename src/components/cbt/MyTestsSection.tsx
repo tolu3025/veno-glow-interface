@@ -32,10 +32,16 @@ type TestAttempt = {
 };
 
 interface MyTestsSectionProps {
-  onShare: (testId: string) => void;
+  tests?: any[];
+  loading?: boolean;
+  onShare?: (testId: string) => void;
 }
 
-const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
+const MyTestsSection: React.FC<MyTestsSectionProps> = ({ 
+  tests: externalTests, 
+  loading: externalLoading,
+  onShare 
+}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedTest, setSelectedTest] = useState<string | null>(null);
@@ -57,10 +63,10 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
     };
   }, []);
 
-  // Fetch user tests with React Query
+  // Fetch user tests with React Query only if external tests are not provided
   const { 
-    data: tests, 
-    isLoading, 
+    data: fetchedTests, 
+    isLoading: fetchLoading, 
     error,
     refetch: refetchTests 
   } = useQuery({
@@ -81,10 +87,14 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
       
       return data || [];
     },
-    enabled: !!user && !isOffline,
+    enabled: !!user && !isOffline && !externalTests, // Don't fetch if external tests are provided
     refetchOnWindowFocus: false,
     staleTime: 60000, // 1 minute
   });
+
+  // Use either external tests or fetched tests
+  const tests = externalTests || fetchedTests;
+  const isLoading = externalLoading !== undefined ? externalLoading : fetchLoading;
 
   // Effect to show error notifications
   useEffect(() => {
@@ -309,7 +319,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => onShare(test.id)}
+                      onClick={() => onShare ? onShare(test.id) : null}
                       className="text-veno-primary h-8 w-8"
                     >
                       <Share2 size={16} />
@@ -341,7 +351,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({ onShare }) => {
                   </Button>
                   <Button 
                     size="sm" 
-                    onClick={() => handleTakeTestClick(test.id)}
+                    onClick={() => handleTakeTestClick(test.share_code)}
                   >
                     Take Test
                   </Button>

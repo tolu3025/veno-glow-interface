@@ -55,24 +55,27 @@ const PublicLeaderboards = () => {
       
       // Get participant counts for each test
       const testIds = testsData.map(test => test.id);
-      const { data: attemptsData, error: attemptsError } = await supabase
-        .from('test_attempts')
-        .select('test_id, count')
-        .in('test_id', testIds)
-        .group('test_id');
-        
-      if (attemptsError) {
-        console.error('Error fetching participant counts:', attemptsError);
-      }
       
-      // Map participant counts to tests
-      const testsWithCounts = testsData.map(test => {
-        const attemptData = attemptsData?.find(a => a.test_id === test.id);
+      // Use a separate query to count attempts for each test
+      const testsWithCounts = await Promise.all(testsData.map(async test => {
+        const { count, error } = await supabase
+          .from('test_attempts')
+          .select('*', { count: 'exact', head: true })
+          .eq('test_id', test.id);
+          
+        if (error) {
+          console.error('Error fetching count:', error);
+          return {
+            ...test,
+            participants_count: 0
+          };
+        }
+        
         return {
           ...test,
-          participants_count: attemptData?.count || 0
+          participants_count: count || 0
         };
-      });
+      }));
       
       setPublicTests(testsWithCounts);
     } catch (error) {

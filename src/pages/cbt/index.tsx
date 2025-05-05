@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,6 +44,17 @@ const CBTIndex = () => {
     fetchUserTests();
   }, [user]);
 
+  const handleShare = (testId: string) => {
+    // Add a handling function for the share action
+    const test = tests.find(t => t.id === testId);
+    if (test) {
+      // Copy share code to clipboard
+      navigator.clipboard.writeText(test.share_code)
+        .then(() => toast.success(`Share code '${test.share_code}' copied to clipboard!`))
+        .catch(err => toast.error("Failed to copy share code"));
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex flex-col gap-6">
@@ -76,7 +88,7 @@ const CBTIndex = () => {
         <QuizSection />
         
         {/* My Tests Section */}
-        <MyTestsSection tests={tests} loading={loading} />
+        <MyTestsSection tests={tests} loading={loading} onShare={handleShare} />
       </div>
     </div>
   );
