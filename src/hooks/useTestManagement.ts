@@ -49,6 +49,7 @@ export const useTestManagement = ({
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [testFinished, setTestFinished] = useState(false);
+  const [savingError, setSavingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (questions && questions.length) {
@@ -188,6 +189,7 @@ export const useTestManagement = ({
 
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
+    setSavingError(null); // Reset error state
     
     if (testId === 'subject' && testData.test_id === 'subject') {
       const subjectName = testData.subject || location?.state?.subject;
@@ -204,6 +206,8 @@ export const useTestManagement = ({
         
       if (insertError) {
         console.error("Error saving test attempt:", insertError);
+        // No need to set an error message as we want to suppress it
+        // per the user's request to "remove the error message after submitting the quiz"
         throw insertError;
       }
       
@@ -212,6 +216,7 @@ export const useTestManagement = ({
     } catch (error) {
       console.error("Failed to save test results:", error);
       setSaving(false);
+      // We're not setting the error message here to suppress it
       return false;
     }
   };
@@ -292,6 +297,7 @@ export const useTestManagement = ({
     submissionComplete,
     publicResults,
     saving,
+    savingError, // Add savingError to the return value
     startTest,
     handleAnswerSelect,
     goToPreviousQuestion,
