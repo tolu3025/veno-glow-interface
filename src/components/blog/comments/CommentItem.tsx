@@ -2,19 +2,16 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Reply } from 'lucide-react';
 import { BlogComment } from '@/types/blog';
 
 interface CommentItemProps {
   comment: BlogComment;
-  onReply: (commentId: string) => void;
   onReactionUpdate: () => void;
   children?: React.ReactNode;
 }
 
 export const CommentItem = ({ 
   comment, 
-  onReply,
   children 
 }: CommentItemProps) => {
   return (
@@ -32,17 +29,6 @@ export const CommentItem = ({
               </p>
             </div>
             <p className="mt-1 text-sm">{comment.content}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground h-8 px-2"
-                onClick={() => onReply(comment.id)}
-              >
-                <Reply className="h-4 w-4 mr-1" />
-                Reply
-              </Button>
-            </div>
           </div>
         </div>
       </Card>

@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -50,7 +49,6 @@ interface TestResultsProps {
   onFinish: () => void;
   onTryAgain: () => void;
   formatTime: (seconds: number) => string;
-  savingError?: string | null;
 }
 
 const formSchema = z.object({
@@ -80,7 +78,6 @@ const TestResults: React.FC<TestResultsProps> = ({
   onFinish,
   onTryAgain,
   formatTime,
-  savingError,
 }) => {
   const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   

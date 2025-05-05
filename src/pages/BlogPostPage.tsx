@@ -18,7 +18,6 @@ import { appendToActivities } from '@/functions/appendToActivities';
 
 const BlogPostPage = () => {
   const { postId } = useParams<{ postId: string }>();
-  const [replyTo, setReplyTo] = React.useState<string | null>(null);
   const [commentorEmail, setCommentorEmail] = React.useState('');
   const { user } = useAuth();
 
@@ -99,8 +98,7 @@ const BlogPostPage = () => {
         .insert({
           article_id: postId,
           content,
-          user_email: commentorEmail || (user?.email || 'Anonymous'),
-          parent_id: replyTo
+          user_email: commentorEmail || (user?.email || 'Anonymous')
         });
 
       if (error) throw error;
@@ -110,7 +108,6 @@ const BlogPostPage = () => {
         description: "Your comment has been added successfully",
       });
       
-      setReplyTo(null);
       setCommentorEmail('');
       refetchComments();
     } catch (error) {
@@ -356,18 +353,7 @@ const BlogPostPage = () => {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </div>
-              <CommentForm onSubmit={handleSubmitComment} parentId={replyTo} />
-              {replyTo && (
-                <div className="flex mt-4 justify-end">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setReplyTo(null)}
-                  >
-                    Cancel Reply
-                  </Button>
-                </div>
-              )}
+              <CommentForm onSubmit={handleSubmitComment} />
             </Card>
           
             {isLoadingComments ? (
@@ -397,7 +383,6 @@ const BlogPostPage = () => {
               <div className="mt-8">
                 <CommentList 
                   comments={commentsData} 
-                  onReply={(commentId) => setReplyTo(commentId)} 
                   onReactionUpdate={refetchComments}
                 />
               </div>

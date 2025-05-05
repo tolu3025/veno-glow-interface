@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -49,7 +48,6 @@ export const useTestManagement = ({
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [publicResults, setPublicResults] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
-  const [savingError, setSavingError] = useState<string | null>(null);
   const [testFinished, setTestFinished] = useState(false);
 
   useEffect(() => {
@@ -190,7 +188,6 @@ export const useTestManagement = ({
 
   const saveTestAttempt = async (testData: any): Promise<boolean> => {
     setSaving(true);
-    setSavingError(null);
     
     if (testId === 'subject' && testData.test_id === 'subject') {
       const subjectName = testData.subject || location?.state?.subject;
@@ -215,7 +212,6 @@ export const useTestManagement = ({
     } catch (error) {
       console.error("Failed to save test results:", error);
       setSaving(false);
-      setSavingError(null);
       return false;
     }
   };
@@ -240,11 +236,7 @@ export const useTestManagement = ({
       
       const saveResult = await saveTestAttempt(testData);
       if (!saveResult) {
-        toast({
-          title: "Error",
-          description: "Failed to save test results",
-          variant: "destructive"
-        });
+        console.error("Failed to save test results silently");
       }
       
       const isCreator = user?.id === testDetails?.creator_id;
@@ -300,7 +292,6 @@ export const useTestManagement = ({
     submissionComplete,
     publicResults,
     saving,
-    savingError,
     startTest,
     handleAnswerSelect,
     goToPreviousQuestion,

@@ -1,3 +1,4 @@
+
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -73,7 +74,7 @@ const TutorialsSection = ({
           <h2 className="text-3xl font-bold tracking-tight font-heading">Our Services</h2>
           <p className="text-muted-foreground mt-2">Discover what Veno has to offer.</p>
         </div>
-        <Button variant="outline" className="mt-4 md:mt-0" onClick={() => navigate("/tutorial")}>
+        <Button variant="outline" className="mt-4 md:mt-0" onClick={() => navigate("/services")}>
           View All <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

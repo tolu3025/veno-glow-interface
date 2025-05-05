@@ -5,11 +5,10 @@ import { CommentItem } from './CommentItem';
 
 interface CommentListProps {
   comments: BlogComment[];
-  onReply: (commentId: string) => void;
   onReactionUpdate: () => void;
 }
 
-export const CommentList = ({ comments, onReply, onReactionUpdate }: CommentListProps) => {
+export const CommentList = ({ comments, onReactionUpdate }: CommentListProps) => {
   const parentComments = comments.filter(comment => !comment.parent_id);
   const childComments = comments.filter(comment => comment.parent_id);
 
@@ -23,7 +22,6 @@ export const CommentList = ({ comments, onReply, onReactionUpdate }: CommentList
         <CommentItem 
           key={comment.id}
           comment={comment}
-          onReply={onReply}
           onReactionUpdate={onReactionUpdate}
         >
           <div className="ml-12 mt-4 space-y-4">
@@ -31,7 +29,6 @@ export const CommentList = ({ comments, onReply, onReactionUpdate }: CommentList
               <CommentItem 
                 key={reply.id}
                 comment={reply}
-                onReply={onReply}
                 onReactionUpdate={onReactionUpdate}
               />
             ))}
