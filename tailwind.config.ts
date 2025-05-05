@@ -20,6 +20,9 @@ export default {
       },
     },
     extend: {
+      screens: {
+        'xs': '480px',
+      },
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", ...fontFamily.sans],
         heading: ["Montserrat", "sans-serif"],

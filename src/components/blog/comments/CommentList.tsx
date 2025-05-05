@@ -24,7 +24,7 @@ export const CommentList = ({ comments, onReactionUpdate }: CommentListProps) =>
           comment={comment}
           onReactionUpdate={onReactionUpdate}
         >
-          <div className="ml-12 mt-4 space-y-4">
+          <div className="ml-6 sm:ml-12 mt-4 space-y-4">
             {getChildComments(comment.id).map(reply => (
               <CommentItem 
                 key={reply.id}

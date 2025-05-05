@@ -85,6 +85,8 @@ const AppRoutes = () => {
         <Route path="/cbt/library" element={<Library />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
+        <Route path="/tutorial" element={<TutorialPage />} />
+        <Route path="/tutorial/info" element={<TutorialInfo />} />
         <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
         
         {/* Protected routes that require authentication */}
@@ -159,10 +161,6 @@ const AppRoutes = () => {
             <ProfilePage />
           </ProtectedRoute>
         } />
-        
-        <Route path="/tutorial" element={<TutorialPage />} />
-
-        <Route path="/tutorial/info" element={<TutorialInfo />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />
