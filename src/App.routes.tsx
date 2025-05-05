@@ -6,6 +6,8 @@ import Index from './pages/Index';
 import CbtPage from './pages/CbtPage';
 import TutorialPage from './pages/TutorialPage';
 import TutorialInfo from './pages/TutorialInfo';
+import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
+import TutorialLearnMore from './pages/TutorialLearnMore';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import BotPage from './pages/BotPage';

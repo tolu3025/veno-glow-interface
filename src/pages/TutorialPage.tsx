@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -339,14 +340,17 @@ const TutorialPage = () => {
               <h2 className="text-xl md:text-2xl font-bold mb-2 md:mb-4">Welcome to Veno Tutorials Library</h2>
               <p className="text-sm md:text-base mb-4">Your premier resource for educational materials, study guides, and academic tools. Find everything you need to excel in your academic journey, develop professional skills, and explore new interests.</p>
               <div className="flex flex-wrap gap-2 md:gap-3">
-                <Button size={isMobile ? "sm" : "default"}>
+                <Button 
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => navigate('/tutorial/categories')}
+                >
                   <School className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                   Explore Categories
                 </Button>
                 <Button 
                   variant="outline" 
                   size={isMobile ? "sm" : "default"}
-                  onClick={() => navigate('/tutorial/info')}
+                  onClick={() => navigate('/tutorial/learn-more')}
                 >
                   <BookOpen className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                   Learn More
