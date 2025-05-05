@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, ArrowLeft, Clock, Medal, Users } from 'lucide-react';
+import { Trophy, ArrowLeft, Clock, Medal, Users, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -147,9 +147,14 @@ const Leaderboard = () => {
             <p className="text-muted-foreground mb-4">
               This leaderboard is only visible to the test creator
             </p>
-            <Button onClick={() => navigate('/cbt')}>
-              Go to Tests
-            </Button>
+            <div className="flex justify-center gap-3">
+              <Button onClick={() => navigate('/cbt')}>
+                Go to Tests
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/cbt/public-leaderboards')}>
+                View Public Leaderboards
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -165,15 +170,26 @@ const Leaderboard = () => {
               <VenoLogo className="h-6 w-6" />
               <CardTitle>Leaderboard</CardTitle>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/cbt/public-leaderboards')}
+                className="flex items-center gap-1"
+              >
+                <List className="h-4 w-4" />
+                All Leaderboards
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            </div>
           </div>
           {testDetails && (
             <CardDescription>
@@ -317,13 +333,20 @@ const Leaderboard = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex justify-center gap-3">
           <Button 
             variant="outline" 
             className="flex items-center gap-2"
             onClick={() => navigate('/cbt')}
           >
             Back to Tests
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate('/cbt/public-leaderboards')}
+          >
+            View All Leaderboards
           </Button>
         </CardFooter>
       </Card>

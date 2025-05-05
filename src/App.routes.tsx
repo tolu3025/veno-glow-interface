@@ -24,6 +24,7 @@ import ManageTest from './pages/cbt/ManageTest';
 import Analytics from './pages/cbt/Analytics';
 import Library from './pages/cbt/Library';
 import Leaderboard from './pages/cbt/Leaderboard';
+import PublicLeaderboards from './pages/cbt/PublicLeaderboards';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AdsPolicy from './pages/AdsPolicy';
@@ -101,7 +102,8 @@ export const routes: RouteObject[] = [
           { path: 'analytics', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'analytics/:testId', element: <ProtectedRoute><Analytics /></ProtectedRoute> },
           { path: 'library', element: <Library /> },
-          { path: 'leaderboard/:testId', element: <ProtectedRoute><Leaderboard /></ProtectedRoute> }
+          { path: 'public-leaderboards', element: <PublicLeaderboards /> },
+          { path: 'leaderboard/:testId', element: <Leaderboard /> }
         ]
       },
       { 
