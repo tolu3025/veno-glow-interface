@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -16,8 +15,10 @@ import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
+import PublicLeaderboards from "./pages/cbt/PublicLeaderboards";
 import TutorialPage from "./pages/TutorialPage";
 import TutorialInfo from "./pages/TutorialInfo";
+import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BotPage from "./pages/BotPage";
 import BlogPage from "./pages/BlogPage";
@@ -83,6 +84,8 @@ const AppRoutes = () => {
         <Route path="/blog/:postId" element={<BlogPostPage />} />
         <Route path="/cbt/library" element={<Library />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
+        <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
         
         {/* Protected routes that require authentication */}
         <Route path="/dashboard" element={
@@ -157,35 +160,9 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         
-        <Route path="/tutorial" element={
-          <ProtectedRoute>
-            <TutorialPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/tutorial" element={<TutorialPage />} />
 
-        <Route path="/tutorial/info" element={
-          <ProtectedRoute>
-            <TutorialInfo />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/tutorial/watch" element={
-          <ProtectedRoute>
-            <VideoPlayerPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/orders" element={
-          <ProtectedRoute>
-            <OrdersPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/bot" element={
-          <ProtectedRoute>
-            <BotPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/tutorial/info" element={<TutorialInfo />} />
       </Route>
       
       <Route path="*" element={<NotFound />} />

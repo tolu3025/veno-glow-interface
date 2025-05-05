@@ -56,6 +56,12 @@ export const routes: RouteObject[] = [
       { path: 'blog', element: <BlogPage /> },
       { path: 'blog/:postId', element: <BlogPostPage /> },
       
+      // Tutorial routes
+      { path: 'tutorial', element: <TutorialPage /> },
+      { path: 'tutorial/info', element: <TutorialInfo /> },
+      { path: 'tutorial/categories', element: <TutorialCategoriesPage /> },
+      { path: 'tutorial/learn-more', element: <TutorialLearnMore /> },
+      
       // Protected routes that require authentication
       { 
         path: 'bot', 
