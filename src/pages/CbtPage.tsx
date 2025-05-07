@@ -40,6 +40,25 @@ const CbtPage = () => {
         <h1 className="text-2xl font-bold">Veno CBT</h1>
       </div>
       
+      <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-xl mb-6">
+        <h2 className="text-lg font-semibold mb-2">Computer Based Testing</h2>
+        <p className="text-muted-foreground text-sm">Create tests, manage questions, and track performance with our comprehensive CBT platform.</p>
+        <div className="flex flex-wrap gap-3 mt-4">
+          <button 
+            onClick={() => navigate('/cbt/create')}
+            className="bg-veno-primary hover:bg-veno-primary/90 text-white px-4 py-2 rounded-md text-sm"
+          >
+            Create New Test
+          </button>
+          <button
+            onClick={() => navigate('/cbt/public-leaderboards')}
+            className="bg-secondary/80 hover:bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm flex items-center gap-1"
+          >
+            Leaderboards
+          </button>
+        </div>
+      </div>
+      
       <p className="text-muted-foreground mb-6">Your personal computer-based training platform.</p>
       
       <div className="space-y-4">
