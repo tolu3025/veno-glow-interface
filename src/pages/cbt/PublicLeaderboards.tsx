@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, Search, ArrowRight } from 'lucide-react';
+import { Trophy, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import LoadingState from '@/components/cbt/test/LoadingState';
 
@@ -139,42 +139,34 @@ const PublicLeaderboards = () => {
         </CardHeader>
 
         <CardContent>
-          {/* Search Bar - Improved for mobile */}
-          <div className="flex flex-col gap-4 mb-8">
-            <div className="relative w-full">
+          {/* Search Bar */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={searchType === 'name' ? "Search by test name or subject..." : "Enter test share code..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-9"
               />
             </div>
-            <div className="flex flex-wrap gap-2 w-full">
+            <div className="flex gap-2">
               <Button
                 variant={searchType === 'name' ? 'default' : 'outline'} 
                 onClick={() => setSearchType('name')}
-                className="flex-1 min-w-[120px] sm:flex-none"
-                size="sm"
+                className="whitespace-nowrap"
               >
                 Search by Name
               </Button>
               <Button
                 variant={searchType === 'code' ? 'default' : 'outline'}
                 onClick={() => setSearchType('code')}
-                className="flex-1 min-w-[120px] sm:flex-none"
-                size="sm"
+                className="whitespace-nowrap"
               >
                 Search by Code
               </Button>
-              <Button 
-                onClick={handleSearch}
-                className="flex-1 sm:flex-none"
-                size="sm"
-              >
-                Search
-              </Button>
             </div>
+            <Button onClick={handleSearch}>Search</Button>
           </div>
 
           {filteredTests.length === 0 ? (
@@ -187,50 +179,39 @@ const PublicLeaderboards = () => {
             </div>
           ) : (
             <div className="rounded-lg border overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Test Name</TableHead>
-                      <TableHead className="hidden xs:table-cell">Subject</TableHead>
-                      <TableHead className="hidden md:table-cell">Questions</TableHead>
-                      <TableHead className="hidden md:table-cell">Participants</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Test Name</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead className="hidden md:table-cell">Questions</TableHead>
+                    <TableHead className="hidden md:table-cell">Participants</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTests.map((test) => (
+                    <TableRow key={test.id}>
+                      <TableCell className="font-medium">{test.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {test.subject}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{test.question_count}</TableCell>
+                      <TableCell className="hidden md:table-cell">{test.participants_count || 0}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => viewLeaderboard(test.id)}
+                        >
+                          View Leaderboard
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTests.map((test) => (
-                      <TableRow key={test.id} className="group">
-                        <TableCell className="font-medium">
-                          <div className="flex flex-col">
-                            <span className="truncate max-w-[200px]">{test.title}</span>
-                            <Badge variant="outline" className="mt-1 w-fit xs:hidden capitalize">
-                              {test.subject}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden xs:table-cell">
-                          <Badge variant="outline" className="capitalize">
-                            {test.subject}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">{test.question_count}</TableCell>
-                        <TableCell className="hidden md:table-cell">{test.participants_count || 0}</TableCell>
-                        <TableCell className="text-right p-2">
-                          <Button
-                            size="sm"
-                            onClick={() => viewLeaderboard(test.id)}
-                            className="w-full sm:w-auto flex items-center gap-1"
-                          >
-                            View <span className="hidden xs:inline">Leaderboard</span>
-                            <ArrowRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
