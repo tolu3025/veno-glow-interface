@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, FileCheck, Monitor } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AdPlacement from "@/components/ads/AdPlacement";
+import { SoundToggle } from "@/components/ui/SoundToggle"; 
 
 const CbtPage = () => {
   const navigate = useNavigate();
@@ -30,14 +31,17 @@ const CbtPage = () => {
 
   return (
     <div className="pb-6">
-      <div className="flex items-center space-x-4 mb-6">
-        <button 
-          onClick={() => navigate('/')}
-          className="p-2 rounded-full bg-secondary/70 hover:bg-secondary"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <h1 className="text-2xl font-bold">Veno CBT</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={() => navigate('/')}
+            className="p-2 rounded-full bg-secondary/70 hover:bg-secondary"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-2xl font-bold">Veno CBT</h1>
+        </div>
+        <SoundToggle />
       </div>
       
       <p className="text-muted-foreground mb-6">Your personal computer-based training platform.</p>
@@ -77,7 +81,7 @@ const CbtPage = () => {
         <AdPlacement location="content" contentCheck={false} />
       </div>
       
-      <div className="flex flex-col md:flex-row gap-4 mt-6">
+      <div className="flex flex-col sm:flex-row gap-4 mt-6">
         <button 
           className="veno-button flex-1"
           onClick={() => navigate('/cbt')}
@@ -86,7 +90,6 @@ const CbtPage = () => {
         </button>
         <button 
           className="veno-button-outline flex-1"
-          // Updated to navigate to services page instead of tutorial page
           onClick={() => navigate('/services')}
         >
           View All Services

@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
+import { soundSystem } from '@/utils/sound';
 
 // Components
 import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
@@ -14,6 +15,7 @@ import TestInstructions from '@/components/cbt/test/TestInstructions';
 import QuestionDisplay from '@/components/cbt/test/QuestionDisplay';
 import TestResults from '@/components/cbt/test/TestResults';
 import AnswersReview from '@/components/cbt/test/AnswersReview';
+import { SoundToggle } from '@/components/ui/SoundToggle';
 
 // Hooks
 import { useTestManagement } from '@/hooks/useTestManagement';
@@ -248,6 +250,9 @@ const TakeTest = () => {
     setTestTakerInfo(data);
     setShowTakerForm(false);
     testManagement.startTest();
+    
+    // Play sound when test starts
+    soundSystem.play('notification');
   };
 
   useEffect(() => {
@@ -292,10 +297,15 @@ const TakeTest = () => {
 
   if (testManagement.submissionComplete) {
     return (
-      <SubmissionComplete 
-        testDetails={testDetails} 
-        testTakerInfo={testTakerInfo} 
-      />
+      <div className="relative">
+        <div className="absolute top-4 right-4">
+          <SoundToggle />
+        </div>
+        <SubmissionComplete 
+          testDetails={testDetails} 
+          testTakerInfo={testTakerInfo} 
+        />
+      </div>
     );
   }
 
@@ -316,16 +326,24 @@ const TakeTest = () => {
     }
 
     return (
-      <TestInstructions
-        testDetails={testDetails}
-        questions={questions}
-        location={location}
-        previousAttempts={previousAttempts}
-        onStartTest={testManagement.startTest}
-        onShowTakerForm={() => setShowTakerForm(true)}
-        user={user}
-        testId={testId || ''}
-      />
+      <div className="relative">
+        <div className="absolute top-4 right-4">
+          <SoundToggle />
+        </div>
+        <TestInstructions
+          testDetails={testDetails}
+          questions={questions}
+          location={location}
+          previousAttempts={previousAttempts}
+          onStartTest={() => {
+            testManagement.startTest();
+            soundSystem.play('notification');
+          }}
+          onShowTakerForm={() => setShowTakerForm(true)}
+          user={user}
+          testId={testId || ''}
+        />
+      </div>
     );
   }
 
@@ -334,16 +352,24 @@ const TakeTest = () => {
     
     if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
       return (
-        <SubmissionComplete 
-          testDetails={testDetails} 
-          testTakerInfo={testTakerInfo} 
-        />
+        <div className="relative">
+          <div className="absolute top-4 right-4">
+            <SoundToggle />
+          </div>
+          <SubmissionComplete 
+            testDetails={testDetails} 
+            testTakerInfo={testTakerInfo} 
+          />
+        </div>
       );
     }
 
     if (testManagement.reviewMode) {
       return (
-        <div className="pb-10">
+        <div className="relative pb-10">
+          <div className="absolute top-4 right-4">
+            <SoundToggle />
+          </div>
           <AnswersReview
             questions={questions}
             userAnswers={testManagement.userAnswers}
@@ -360,22 +386,27 @@ const TakeTest = () => {
     }
     
     return (
-      <TestResults
-        score={testManagement.score}
-        questions={questions}
-        testDetails={testDetails}
-        timeRemaining={testManagement.timeRemaining}
-        location={location}
-        testId={testId || ''}
-        publicResults={testManagement.publicResults}
-        testTakerInfo={testTakerInfo}
-        user={user}
-        onReviewAnswers={() => testManagement.setReviewMode(true)}
-        onFinish={() => navigate('/cbt')}
-        onTryAgain={testManagement.resetTest}
-        formatTime={testManagement.formatTime}
-        savingError={testManagement.savingError}
-      />
+      <div className="relative">
+        <div className="absolute top-4 right-4">
+          <SoundToggle />
+        </div>
+        <TestResults
+          score={testManagement.score}
+          questions={questions}
+          testDetails={testDetails}
+          timeRemaining={testManagement.timeRemaining}
+          location={location}
+          testId={testId || ''}
+          publicResults={testManagement.publicResults}
+          testTakerInfo={testTakerInfo}
+          user={user}
+          onReviewAnswers={() => testManagement.setReviewMode(true)}
+          onFinish={() => navigate('/cbt')}
+          onTryAgain={testManagement.resetTest}
+          formatTime={testManagement.formatTime}
+          savingError={testManagement.savingError}
+        />
+      </div>
     );
   }
 
@@ -386,16 +417,24 @@ const TakeTest = () => {
   }
 
   return (
-    <QuestionDisplay
-      currentQuestion={testManagement.currentQuestion}
-      questions={questions}
-      timeRemaining={testManagement.timeRemaining}
-      selectedAnswer={testManagement.selectedAnswer}
-      onAnswerSelect={testManagement.handleAnswerSelect}
-      onPreviousQuestion={testManagement.goToPreviousQuestion}
-      onNextQuestion={testManagement.goToNextQuestion}
-      formatTime={testManagement.formatTime}
-    />
+    <div className="relative">
+      <div className="absolute top-4 right-4">
+        <SoundToggle />
+      </div>
+      <QuestionDisplay
+        currentQuestion={testManagement.currentQuestion}
+        questions={questions}
+        timeRemaining={testManagement.timeRemaining}
+        selectedAnswer={testManagement.selectedAnswer}
+        onAnswerSelect={(answer) => {
+          testManagement.handleAnswerSelect(answer);
+          soundSystem.play('notification');
+        }}
+        onPreviousQuestion={testManagement.goToPreviousQuestion}
+        onNextQuestion={testManagement.goToNextQuestion}
+        formatTime={testManagement.formatTime}
+      />
+    </div>
   );
 };
 
