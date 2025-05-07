@@ -42,8 +42,17 @@ const TestResults = ({
   savingError
 }: TestResultsProps) => {
   const percentScore = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
-  const resultTitle = getResultTitle(percentScore);
   const isPracticeQuiz = testId === 'subject' || location?.state?.subject;
+  
+  // Define getResultTitle function before using it
+  const getResultTitle = (percent: number) => {
+    if (percent >= 90) return "Excellent!";
+    if (percent >= 70) return "Great job!";
+    if (percent >= 50) return "Good effort!";
+    return "Keep practicing!";
+  };
+  
+  const resultTitle = getResultTitle(percentScore);
   
   // Play sound when results are shown
   useEffect(() => {
@@ -55,13 +64,6 @@ const TestResults = ({
       soundSystem.play('error');
     }
   }, [percentScore]);
-
-  const getResultTitle = (percent: number) => {
-    if (percent >= 90) return "Excellent!";
-    if (percent >= 70) return "Great job!";
-    if (percent >= 50) return "Good effort!";
-    return "Keep practicing!";
-  };
 
   return (
     <div className="container max-w-2xl mx-auto p-4">
