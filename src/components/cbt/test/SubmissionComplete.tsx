@@ -1,11 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MailCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { soundSystem } from '@/utils/sound';
 
 interface SubmissionCompleteProps {
   testDetails: any;
@@ -14,11 +13,6 @@ interface SubmissionCompleteProps {
 
 const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, testTakerInfo }) => {
   const navigate = useNavigate();
-
-  // Play completion sound when component mounts
-  useEffect(() => {
-    soundSystem.play('complete');
-  }, []);
 
   const getCompletionMessage = () => {
     if (testDetails?.results_visibility === 'creator_only') {

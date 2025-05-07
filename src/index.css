@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&display=swap');
@@ -144,10 +145,6 @@
   
   .veno-button {
     @apply bg-veno-primary text-white rounded-lg px-4 py-2 text-sm md:px-5 md:py-2.5 md:text-base font-medium transition-all duration-200 hover:bg-veno-primary/90 active:scale-95 disabled:opacity-70 disabled:pointer-events-none;
-  }
-  
-  .veno-button-outline {
-    @apply border border-veno-primary text-veno-primary bg-transparent rounded-lg px-4 py-2 text-sm md:px-5 md:py-2.5 md:text-base font-medium transition-all duration-200 hover:bg-veno-primary/10 active:scale-95 disabled:opacity-70 disabled:pointer-events-none;
   }
   
   .veno-glass {
