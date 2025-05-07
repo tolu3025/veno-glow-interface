@@ -77,7 +77,7 @@ const CbtPage = () => {
         <AdPlacement location="content" contentCheck={false} />
       </div>
       
-      <div className="flex flex-col md:flex-row gap-4 mt-6">
+      <div className="flex flex-col sm:flex-row gap-4 mt-6">
         <button 
           className="veno-button flex-1"
           onClick={() => navigate('/cbt')}
@@ -86,7 +86,6 @@ const CbtPage = () => {
         </button>
         <button 
           className="veno-button-outline flex-1"
-          // Updated to navigate to services page instead of tutorial page
           onClick={() => navigate('/services')}
         >
           View All Services

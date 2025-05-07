@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Trophy, Search } from 'lucide-react';
+import { Trophy, Search, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import LoadingState from '@/components/cbt/test/LoadingState';
+import { playSound } from '@/utils/soundEffects';
 
 interface PublicTest {
   id: string;
@@ -87,6 +88,8 @@ const PublicLeaderboards = () => {
   };
 
   const handleSearch = () => {
+    playSound('click');
+    
     if (!searchTerm.trim()) {
       toast.error('Please enter a search term');
       return;
@@ -118,6 +121,7 @@ const PublicLeaderboards = () => {
   });
 
   const viewLeaderboard = (testId: string) => {
+    playSound('click');
     navigate(`/cbt/leaderboard/${testId}`);
   };
 
@@ -139,9 +143,9 @@ const PublicLeaderboards = () => {
         </CardHeader>
 
         <CardContent>
-          {/* Search Bar */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <div className="relative flex-1">
+          {/* Search Bar - Restructured for mobile responsiveness */}
+          <div className="flex flex-col gap-4 mb-8">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={searchType === 'name' ? "Search by test name or subject..." : "Enter test share code..."}
@@ -150,23 +154,31 @@ const PublicLeaderboards = () => {
                 className="pl-9"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={searchType === 'name' ? 'default' : 'outline'} 
                 onClick={() => setSearchType('name')}
-                className="whitespace-nowrap"
+                size="sm"
+                className="flex-1 sm:flex-none"
               >
-                Search by Name
+                By Name
               </Button>
               <Button
                 variant={searchType === 'code' ? 'default' : 'outline'}
                 onClick={() => setSearchType('code')}
-                className="whitespace-nowrap"
+                size="sm"
+                className="flex-1 sm:flex-none"
               >
-                Search by Code
+                By Code
+              </Button>
+              <Button 
+                onClick={handleSearch}
+                size="sm"
+                className="flex-1 sm:flex-none"
+              >
+                Search
               </Button>
             </div>
-            <Button onClick={handleSearch}>Search</Button>
           </div>
 
           {filteredTests.length === 0 ? (
@@ -183,7 +195,7 @@ const PublicLeaderboards = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Test Name</TableHead>
-                    <TableHead>Subject</TableHead>
+                    <TableHead className="hidden sm:table-cell">Subject</TableHead>
                     <TableHead className="hidden md:table-cell">Questions</TableHead>
                     <TableHead className="hidden md:table-cell">Participants</TableHead>
                     <TableHead className="text-right">Action</TableHead>
@@ -192,8 +204,17 @@ const PublicLeaderboards = () => {
                 <TableBody>
                   {filteredTests.map((test) => (
                     <TableRow key={test.id}>
-                      <TableCell className="font-medium">{test.title}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium">
+                        <div className="truncate max-w-[150px] sm:max-w-none">
+                          {test.title}
+                        </div>
+                        <div className="sm:hidden">
+                          <Badge variant="outline" className="mt-1 capitalize">
+                            {test.subject}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Badge variant="outline" className="capitalize">
                           {test.subject}
                         </Badge>
@@ -204,8 +225,11 @@ const PublicLeaderboards = () => {
                         <Button
                           size="sm"
                           onClick={() => viewLeaderboard(test.id)}
+                          className="whitespace-nowrap"
                         >
-                          View Leaderboard
+                          <span className="hidden sm:inline">View Leaderboard</span>
+                          <span className="sm:hidden">View</span>
+                          <ArrowRight className="ml-1 h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -222,7 +246,10 @@ const PublicLeaderboards = () => {
             <p className="text-sm text-muted-foreground mb-2">
               If you have a test share code, you can enter it above to view its leaderboard.
             </p>
-            <Button variant="outline" onClick={() => navigate('/cbt')}>
+            <Button variant="outline" onClick={() => {
+              playSound('click');
+              navigate('/cbt');
+            }}>
               Back to Tests
             </Button>
           </div>

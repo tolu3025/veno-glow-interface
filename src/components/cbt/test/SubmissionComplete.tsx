@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MailCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { playSound } from '@/utils/soundEffects';
 
 interface SubmissionCompleteProps {
   testDetails: any;
@@ -13,6 +14,11 @@ interface SubmissionCompleteProps {
 
 const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, testTakerInfo }) => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Play completion sound when component mounts
+    playSound('complete');
+  }, []);
 
   const getCompletionMessage = () => {
     if (testDetails?.results_visibility === 'creator_only') {
@@ -36,6 +42,11 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
 
   const content = getCompletionMessage();
 
+  const handleReturn = () => {
+    playSound('click');
+    navigate('/cbt');
+  };
+
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
@@ -53,7 +64,7 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
         <p className="text-muted-foreground mb-6">
           {content.message}
         </p>
-        <Button onClick={() => navigate('/cbt')} className="mt-4">
+        <Button onClick={handleReturn} className="mt-4">
           Return to Tests
         </Button>
       </CardContent>

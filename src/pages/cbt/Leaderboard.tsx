@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import LoadingState from '@/components/cbt/test/LoadingState';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { playSound } from '@/utils/soundEffects';
 
 interface TestAttempt {
   id: string;
@@ -115,6 +116,15 @@ const Leaderboard = () => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  const handleButtonClick = (destination: string | number) => {
+    playSound('click');
+    if (typeof destination === 'string') {
+      navigate(destination);
+    } else {
+      navigate(destination);
+    }
+  };
+
   if (loading) {
     return <LoadingState />;
   }
@@ -133,7 +143,7 @@ const Leaderboard = () => {
                 variant="outline" 
                 size="sm" 
                 className="flex items-center gap-1"
-                onClick={() => navigate(-1)}
+                onClick={() => handleButtonClick(-1)}
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
@@ -148,10 +158,10 @@ const Leaderboard = () => {
               This leaderboard is only visible to the test creator
             </p>
             <div className="flex justify-center gap-3">
-              <Button onClick={() => navigate('/cbt')}>
+              <Button onClick={() => handleButtonClick('/cbt')}>
                 Go to Tests
               </Button>
-              <Button variant="outline" onClick={() => navigate('/cbt/public-leaderboards')}>
+              <Button variant="outline" onClick={() => handleButtonClick('/cbt/public-leaderboards')}>
                 View Public Leaderboards
               </Button>
             </div>
@@ -165,26 +175,27 @@ const Leaderboard = () => {
     <div className="container mx-auto py-8 px-4">
       <Card className="w-full max-w-4xl mx-auto">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <VenoLogo className="h-6 w-6" />
               <CardTitle>Leaderboard</CardTitle>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate('/cbt/public-leaderboards')}
+                onClick={() => handleButtonClick('/cbt/public-leaderboards')}
                 className="flex items-center gap-1"
               >
                 <List className="h-4 w-4" />
-                All Leaderboards
+                <span className="hidden sm:inline">All Leaderboards</span>
+                <span className="sm:hidden">All</span>
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="flex items-center gap-1"
-                onClick={() => navigate(-1)}
+                onClick={() => handleButtonClick(-1)}
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
@@ -333,18 +344,18 @@ const Leaderboard = () => {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center gap-3">
+        <CardFooter className="flex flex-wrap justify-center gap-3">
           <Button 
             variant="outline" 
             className="flex items-center gap-2"
-            onClick={() => navigate('/cbt')}
+            onClick={() => handleButtonClick('/cbt')}
           >
             Back to Tests
           </Button>
           <Button
             variant="outline"
             className="flex items-center gap-2"
-            onClick={() => navigate('/cbt/public-leaderboards')}
+            onClick={() => handleButtonClick('/cbt/public-leaderboards')}
           >
             View All Leaderboards
           </Button>
