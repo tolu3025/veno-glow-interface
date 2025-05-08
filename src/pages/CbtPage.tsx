@@ -1,5 +1,5 @@
 
-import { ArrowLeft, BookOpen, FileCheck, Monitor } from "lucide-react";
+import { ArrowLeft, BookOpen, FileCheck, Monitor, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,10 +59,10 @@ const CbtPage = () => {
           <p className="text-muted-foreground text-sm mb-5">
             Create tests, manage questions, and track performance with our comprehensive CBT platform.
           </p>
-          <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-3 items-center">
             <Button 
               onClick={() => handleNavigation('/cbt/create')}
-              className="bg-veno-primary hover:bg-veno-primary/90 w-full"
+              className="bg-veno-primary hover:bg-veno-primary/90 w-full md:max-w-xs"
               size={isMobile ? "sm" : "default"}
             >
               Create New Test
@@ -71,8 +71,9 @@ const CbtPage = () => {
               onClick={() => handleNavigation('/cbt/public-leaderboards')}
               variant="secondary"
               size={isMobile ? "sm" : "default"}
-              className="w-full"
+              className="w-full md:max-w-xs flex items-center gap-2 justify-center"
             >
+              <Trophy size={16} />
               Leaderboards
             </Button>
           </div>
