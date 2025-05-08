@@ -389,7 +389,7 @@ const MarketplacePage = () => {
         </div>
 
         <div className="w-full">
-          <AdPlacement location="header" />
+          <AdPlacement location="header" contentCheck={false} />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -522,7 +522,7 @@ const MarketplacePage = () => {
         </div>
 
         <div className="my-4 md:my-8">
-          <AdPlacement location="content" />
+          <AdPlacement location="content" contentCheck={false} />
         </div>
 
         <div>
@@ -623,7 +623,7 @@ const MarketplacePage = () => {
             </Card>
           </div>
           <div className="md:col-span-1 flex flex-col">
-            <AdPlacement location="sidebar" />
+            <AdPlacement location="sidebar" contentCheck={false} />
           </div>
         </div>
 
@@ -661,7 +661,7 @@ const MarketplacePage = () => {
         <Separator />
 
         <div className="my-3 md:my-4">
-          <AdPlacement location="footer" />
+          <AdPlacement location="footer" contentCheck={false} />
         </div>
 
         <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">

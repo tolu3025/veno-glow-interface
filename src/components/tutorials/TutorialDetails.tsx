@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import Comments from './Comments';
+import AdPlacement from '@/components/ads/AdPlacement';
 
 interface TutorialDetailsProps {
   tutorial: {
@@ -79,9 +80,19 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
       </div>
 
       <p className="text-muted-foreground">{tutorial.description}</p>
+      
+      {/* Added ad placement with content check disabled */}
+      <div className="my-6">
+        <AdPlacement location="article" contentCheck={false} />
+      </div>
 
       <div className="mt-8 pt-8 border-t">
         <Comments tutorialId={tutorial.id} />
+      </div>
+      
+      {/* Added another ad placement at the bottom */}
+      <div className="mt-8">
+        <AdPlacement location="article-middle" contentCheck={false} />
       </div>
     </div>
   );

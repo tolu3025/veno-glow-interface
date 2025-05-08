@@ -250,7 +250,7 @@ const TutorialPage = () => {
         </div>
 
         <div className="w-full">
-          <AdPlacement location="header" />
+          <AdPlacement location="header" contentCheck={false} />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -324,7 +324,7 @@ const TutorialPage = () => {
         </div>
 
         <div className="my-4 md:my-8">
-          <AdPlacement location="content" />
+          <AdPlacement location="content" contentCheck={false} />
         </div>
 
         <div>
@@ -428,7 +428,7 @@ const TutorialPage = () => {
             </Card>
           </div>
           <div className="md:col-span-1 flex flex-col">
-            <AdPlacement location="sidebar" />
+            <AdPlacement location="sidebar" contentCheck={false} />
           </div>
         </div>
 
@@ -454,7 +454,7 @@ const TutorialPage = () => {
         <Separator />
 
         <div className="my-3 md:my-4">
-          <AdPlacement location="footer" />
+          <AdPlacement location="footer" contentCheck={false} />
         </div>
       </div>
       

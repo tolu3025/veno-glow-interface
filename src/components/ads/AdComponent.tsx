@@ -5,7 +5,7 @@ interface AdComponentProps {
   adSlot: string;
   adFormat?: 'auto' | 'horizontal' | 'vertical' | 'rectangle';
   className?: string;
-  contentCheck?: boolean; // New prop to check if there's enough content
+  contentCheck?: boolean; // Prop to check if there's enough content
 }
 
 const AdComponent: React.FC<AdComponentProps> = ({ 
@@ -38,9 +38,9 @@ const AdComponent: React.FC<AdComponentProps> = ({
       const contentText = mainContent.textContent || '';
       const wordCount = contentText.split(/\s+/).filter(word => word.length > 0).length;
       
-      // Reduced thresholds to allow more ads to display
-      // Only show ads if there's substantial content (at least 200px height and 100 words)
-      const hasSubstantialContent = contentHeight > 200 && wordCount > 100;
+      // Further reduced thresholds to allow more ads to display
+      // Only show ads if there's substantial content (at least 100px height and 50 words)
+      const hasSubstantialContent = contentHeight > 100 && wordCount > 50;
       setShouldRenderAd(hasSubstantialContent);
 
       // Log content metrics for debugging
