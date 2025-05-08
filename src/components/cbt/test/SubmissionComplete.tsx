@@ -52,16 +52,16 @@ const SubmissionComplete: React.FC<SubmissionCompleteProps> = ({ testDetails, te
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />
-          <CardTitle>{content.title}</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">{content.title}</CardTitle>
         </div>
-        <CardDescription>
+        <CardDescription className="line-clamp-1">
           {testDetails?.title || "Quiz"}
         </CardDescription>
       </CardHeader>
       <CardContent className="py-6 text-center">
         {content.icon}
-        <h2 className="text-2xl font-bold mb-2">{content.heading}</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2">{content.heading}</h2>
+        <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
           {content.message}
         </p>
         <Button onClick={handleReturn} className="mt-4">

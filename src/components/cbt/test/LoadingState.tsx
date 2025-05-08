@@ -4,9 +4,9 @@ import { VenoLogo } from '@/components/ui/logo';
 
 const LoadingState: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-xl mx-auto">
-      <div className="animate-bounce">
-        <VenoLogo className="h-12 w-12" />
+    <div className="flex items-center justify-center min-h-[60vh] w-full">
+      <div className="animate-pulse">
+        <VenoLogo className="h-16 w-16" />
       </div>
     </div>
   );
