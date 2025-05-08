@@ -26,7 +26,7 @@ const AdComponent: React.FC<AdComponentProps> = ({
       }
       
       // Get the main content element
-      const mainContent = document.querySelector('main');
+      const mainContent = document.querySelector('main') || document.body;
       
       if (!mainContent) {
         setShouldRenderAd(false);
@@ -38,22 +38,24 @@ const AdComponent: React.FC<AdComponentProps> = ({
       const contentText = mainContent.textContent || '';
       const wordCount = contentText.split(/\s+/).filter(word => word.length > 0).length;
       
-      // Only show ads if there's substantial content (at least 300px height and 150 words)
-      const hasSubstantialContent = contentHeight > 300 && wordCount > 150;
+      // Reduced thresholds to allow more ads to display
+      // Only show ads if there's substantial content (at least 200px height and 100 words)
+      const hasSubstantialContent = contentHeight > 200 && wordCount > 100;
       setShouldRenderAd(hasSubstantialContent);
 
       // Log content metrics for debugging
       console.log('Content metrics:', {
         contentHeight,
         wordCount,
-        hasSubstantialContent
+        hasSubstantialContent,
+        adSlot
       });
     };
     
     // Run content verification after a short delay to ensure content is rendered
     const timer = setTimeout(verifyContent, 1000);
     return () => clearTimeout(timer);
-  }, [contentCheck]);
+  }, [contentCheck, adSlot]);
   
   useEffect(() => {
     // Push commands to Google AdSense to refresh ads when component mounts and should display
