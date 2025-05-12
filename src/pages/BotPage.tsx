@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -317,9 +316,9 @@ const BotPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-background">
+    <div className="flex flex-col h-screen max-h-screen bg-background w-full">
       {/* Mobile-friendly header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b shadow-sm">
+      <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b shadow-sm w-full">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/")}
@@ -363,7 +362,7 @@ const BotPage = () => {
       </div>
 
       {/* Chat messages area */}
-      <ScrollArea className="flex-1 py-2 px-1 md:py-4 md:px-2 overflow-y-auto">
+      <ScrollArea className="flex-1 py-2 px-1 md:py-4 md:px-2 overflow-y-auto w-full">
         <div className="max-w-3xl mx-auto space-y-3 md:space-y-5 px-1.5">
           {messages.map((message, i) => (
             <div
@@ -398,7 +397,7 @@ const BotPage = () => {
                       : "bg-muted border border-muted-foreground/10 rounded-tl-sm"
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap">
+                  <div className="text-sm whitespace-pre-wrap overflow-hidden">
                     {message.role === "assistant" ? (
                       <BotResponse message={message.content} />
                     ) : (
@@ -420,7 +419,7 @@ const BotPage = () => {
                   <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                 </Avatar>
                 <div className="rounded-xl py-2 px-3 bg-muted border border-muted-foreground/10 rounded-tl-sm shadow-sm">
-                  <div className="text-sm whitespace-pre-wrap">
+                  <div className="text-sm whitespace-pre-wrap overflow-hidden">
                     <BotResponse message={streamingMessage} />
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
@@ -437,7 +436,7 @@ const BotPage = () => {
       </ScrollArea>
 
       {/* Input area */}
-      <div className="bg-background border-t p-2 md:p-3">
+      <div className="bg-background border-t p-2 md:p-3 w-full">
         <form 
           onSubmit={handleSendMessage} 
           className="flex gap-1 items-center max-w-3xl mx-auto relative bg-muted p-1 rounded-full shadow-sm border border-border"

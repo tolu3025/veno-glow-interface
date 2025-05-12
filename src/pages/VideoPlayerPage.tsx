@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,7 +52,6 @@ const VideoPlayerPage = () => {
         setTutorial(data);
         
         // Update tutorials table to increment view count
-        // Instead of using a separate table, we'll update a field in the tutorials table
         const user = (await supabase.auth.getUser()).data.user;
         if (user) {
           try {

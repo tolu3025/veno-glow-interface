@@ -40,8 +40,7 @@ const TutorialDetails = ({ tutorial }: TutorialDetailsProps) => {
 
   const handleWatchVideo = () => {
     console.log("Navigating to video player with ID:", tutorial.id);
-    // Use navigate with replace: true to avoid needing a refresh
-    navigate(`/tutorial/watch?id=${tutorial.id}`, { replace: true });
+    navigate(`/tutorial/watch?id=${tutorial.id}`);
   };
 
   return (
