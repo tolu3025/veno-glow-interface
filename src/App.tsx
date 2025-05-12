@@ -52,7 +52,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Convert the AppRoutes to a proper React function component
+// Define AppRoutes as a separate component to avoid React Router issues
 const AppRoutes = () => {
   const location = useLocation();
   
@@ -172,22 +172,24 @@ const AppRoutes = () => {
   );
 };
 
-// Define App component as a proper function component
+// App component as a proper React function component
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 };
 
