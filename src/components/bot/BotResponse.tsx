@@ -41,38 +41,51 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
           },
           // Enhanced paragraph rendering
           p: ({children}) => (
-            <p className="mb-4 leading-7">{children}</p>
+            <p className="mb-2 leading-relaxed">{children}</p>
           ),
           // Enhanced list rendering
           ul: ({children}) => (
-            <ul className="list-disc pl-6 mb-4">{children}</ul>
+            <ul className="list-disc pl-5 mb-2 text-sm">{children}</ul>
           ),
           ol: ({children}) => (
-            <ol className="list-decimal pl-6 mb-4">{children}</ol>
+            <ol className="list-decimal pl-5 mb-2 text-sm">{children}</ol>
           ),
           // Enhanced blockquote rendering
           blockquote: ({children}) => (
-            <blockquote className="border-l-4 border-primary pl-4 italic my-4">
+            <blockquote className="border-l-2 border-primary pl-3 italic my-2 text-sm">
               {children}
             </blockquote>
           ),
-          // Enhanced table rendering
+          // Enhanced table rendering for Excel-like appearance
           table: ({children}) => (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse border border-border">
+            <div className="overflow-x-auto my-2">
+              <table className="min-w-full border-collapse border border-border text-sm">
                 {children}
               </table>
             </div>
           ),
+          thead: ({children}) => (
+            <thead className="bg-secondary/10">
+              {children}
+            </thead>
+          ),
           th: ({children}) => (
-            <th className="border border-border bg-muted px-4 py-2 text-left">
+            <th className="border border-border bg-muted px-2 py-1.5 text-left font-medium text-sm">
               {children}
             </th>
           ),
           td: ({children}) => (
-            <td className="border border-border px-4 py-2">
+            <td className="border border-border px-2 py-1.5 text-sm">
               {children}
             </td>
+          ),
+          // Improve inline math rendering
+          inlineMath: ({value}) => (
+            <span className="math math-inline">{value}</span>
+          ),
+          // Display math blocks
+          math: ({value}) => (
+            <div className="math math-display py-1">{value}</div>
           ),
         }}
       >

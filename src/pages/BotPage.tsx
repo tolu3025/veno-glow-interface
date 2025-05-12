@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -8,11 +9,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import 'katex/dist/katex.min.css';
 import { VenoLogo } from "@/components/ui/logo";
+import BotResponse from "@/components/bot/BotResponse";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
   role: "user" | "assistant";
@@ -51,6 +50,7 @@ const BotPage = () => {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [aiConfig, setAiConfig] = useState<OpenAIConfig | null>(null);
+  const isMobile = useIsMobile();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,7 +135,7 @@ const BotPage = () => {
       return {
         apiKey: data.apiKey,
         model: data.model || "gpt-4o",
-        systemPrompt: data.systemPrompt || "You are a helpful, friendly assistant."
+        systemPrompt: data.systemPrompt || "You are a helpful, friendly assistant. Format mathematical expressions and equations using LaTeX notation (like $\\frac{1}{2}$ for fractions). When creating tables, use markdown format. Always provide well-formatted responses with proper spacing and organization. Use your full capabilities to give the best possible answers."
       };
     } catch (error) {
       console.error("Failed to get OpenAI API config:", error);
@@ -317,21 +317,22 @@ const BotPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-screen">
-      <div className="flex items-center justify-between px-4 py-3 bg-secondary/30 border-b">
+    <div className="flex flex-col h-screen max-h-screen bg-background">
+      {/* Mobile-friendly header */}
+      <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b shadow-sm">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/")}
-            className="p-2 rounded-full bg-secondary/70 hover:bg-secondary"
+            className="p-1.5 rounded-full bg-secondary/70 hover:bg-secondary"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={isMobile ? 16 : 18} />
           </button>
-          <Avatar className="h-10 w-10 border-2 border-primary">
+          <Avatar className="h-8 w-8 border-2 border-primary">
             <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
           </Avatar>
           <div>
-            <h1 className="text-lg font-medium flex items-center gap-1">
-              AI Assistant <Bot className="text-primary h-4 w-4" />
+            <h1 className="text-base md:text-lg font-medium flex items-center gap-1">
+              AI Assistant <Bot className="text-primary h-3 w-3 md:h-4 md:w-4" />
             </h1>
             <p className="text-xs text-muted-foreground">
               {aiConfig?.model || 'GPT-4o'} • Online
@@ -339,30 +340,31 @@ const BotPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full bg-secondary/40"
+            className="rounded-full h-7 w-7 bg-secondary/40"
             onClick={handleClearChat}
             title="Clear conversation"
           >
-            <X size={16} />
+            <X size={14} />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full bg-secondary/40"
+            className="rounded-full h-7 w-7 bg-secondary/40"
             onClick={handleDownloadChat}
             title="Download conversation"
           >
-            <Download size={16} />
+            <Download size={14} />
           </Button>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 py-4 px-2 md:px-4 bg-background overflow-y-auto">
-        <div className="max-w-4xl mx-auto space-y-6">
+      {/* Chat messages area */}
+      <ScrollArea className="flex-1 py-2 px-1 md:py-4 md:px-2 overflow-y-auto">
+        <div className="max-w-3xl mx-auto space-y-3 md:space-y-5 px-1.5">
           {messages.map((message, i) => (
             <div
               key={i}
@@ -371,16 +373,16 @@ const BotPage = () => {
               }`}
             >
               <div
-                className={`flex items-start gap-3 max-w-[85%] ${
+                className={`flex items-start gap-2 max-w-[85%] ${
                   message.role === "user" ? "flex-row-reverse" : ""
                 }`}
               >
                 {message.role === "assistant" ? (
-                  <Avatar className="h-10 w-10 border-2 border-primary shadow-md">
+                  <Avatar className="h-8 w-8 border-2 border-primary shadow-sm mt-0.5">
                     <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                   </Avatar>
                 ) : (
-                  <Avatar className="h-8 w-8 shadow-sm">
+                  <Avatar className="h-7 w-7 shadow-sm mt-0.5">
                     {user.user_metadata?.avatar_url ? (
                       <AvatarImage src={user.user_metadata.avatar_url} alt={user.email || ""} />
                     ) : (
@@ -390,21 +392,20 @@ const BotPage = () => {
                 )}
                 
                 <div
-                  className={`rounded-2xl py-3 px-4 shadow-sm ${
+                  className={`rounded-xl py-2 px-3 shadow-sm ${
                     message.role === "user"
                       ? "bg-primary text-primary-foreground rounded-tr-sm"
                       : "bg-muted border border-muted-foreground/10 rounded-tl-sm"
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    {message.role === "assistant" ? (
+                      <BotResponse message={message.content} />
+                    ) : (
+                      message.content
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1 flex justify-end">
+                  <div className="text-[10px] text-muted-foreground mt-1 flex justify-end">
                     {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                   </div>
                 </div>
@@ -414,20 +415,15 @@ const BotPage = () => {
           
           {isStreaming && (
             <div className="flex justify-start">
-              <div className="flex items-start gap-3 max-w-[85%]">
-                <Avatar className="h-10 w-10 border-2 border-primary shadow-md">
+              <div className="flex items-start gap-2 max-w-[85%]">
+                <Avatar className="h-8 w-8 border-2 border-primary shadow-sm mt-0.5">
                   <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                 </Avatar>
-                <div className="rounded-2xl py-3 px-4 bg-muted border border-muted-foreground/10 rounded-tl-sm">
+                <div className="rounded-xl py-2 px-3 bg-muted border border-muted-foreground/10 rounded-tl-sm shadow-sm">
                   <div className="text-sm whitespace-pre-wrap">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                    >
-                      {streamingMessage}
-                    </ReactMarkdown>
+                    <BotResponse message={streamingMessage} />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     <span>Typing...</span>
                   </div>
@@ -440,23 +436,24 @@ const BotPage = () => {
         </div>
       </ScrollArea>
 
-      <div className="bg-background border-t p-3">
+      {/* Input area */}
+      <div className="bg-background border-t p-2 md:p-3">
         <form 
           onSubmit={handleSendMessage} 
-          className="flex gap-2 items-center max-w-4xl mx-auto relative bg-muted p-1 rounded-full shadow-sm border border-border"
+          className="flex gap-1 items-center max-w-3xl mx-auto relative bg-muted p-1 rounded-full shadow-sm border border-border"
         >
           <Input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Type a message..."
             disabled={isLoading}
-            className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 py-3 px-4 rounded-full"
+            className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 py-2 px-3 rounded-full text-sm"
           />
           <Button 
             type="submit" 
             disabled={isLoading || !prompt.trim()} 
             size="icon"
-            className="rounded-full h-9 w-9 bg-primary hover:bg-primary/90 shrink-0"
+            className="rounded-full h-8 w-8 bg-primary hover:bg-primary/90 shrink-0"
           >
             {isLoading ? 
               <Loader2 className="h-4 w-4 animate-spin" /> : 
@@ -464,9 +461,9 @@ const BotPage = () => {
             }
           </Button>
         </form>
-        <div className="flex justify-center mt-2">
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <MessageSquare size={12} /> Powered by <Sparkles size={12} className="text-primary" /> {aiConfig?.model || 'GPT-4o'}
+        <div className="flex justify-center mt-1">
+          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+            <MessageSquare size={10} /> Powered by <Sparkles size={10} className="text-primary" /> {aiConfig?.model || 'GPT-4o'}
           </span>
         </div>
       </div>
