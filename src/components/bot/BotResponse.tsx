@@ -79,14 +79,6 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
               {children}
             </td>
           ),
-          // Improve inline math rendering
-          inlineMath: ({value}) => (
-            <span className="math math-inline">{value}</span>
-          ),
-          // Display math blocks
-          math: ({value}) => (
-            <div className="math math-display py-1">{value}</div>
-          ),
         }}
       >
         {message}
