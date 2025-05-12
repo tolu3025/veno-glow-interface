@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -61,6 +60,7 @@ export const routes: RouteObject[] = [
       { path: 'tutorial/info', element: <TutorialInfo /> },
       { path: 'tutorial/categories', element: <TutorialCategoriesPage /> },
       { path: 'tutorial/learn-more', element: <TutorialLearnMore /> },
+      { path: 'tutorial/watch', element: <VideoPlayerPage /> }, // Update: make this route public
       
       // Bot route - adding it here as a regular route within the main layout
       { path: 'bot', element: <BotPage /> },
@@ -110,10 +110,6 @@ export const routes: RouteObject[] = [
           { path: 'public-leaderboards', element: <PublicLeaderboards /> },
           { path: 'leaderboard/:testId', element: <Leaderboard /> }
         ]
-      },
-      { 
-        path: 'tutorial/watch', 
-        element: <ProtectedRoute><VideoPlayerPage /></ProtectedRoute>
       },
       { path: '*', element: <NotFound /> }
     ]

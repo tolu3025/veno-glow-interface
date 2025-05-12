@@ -12,6 +12,7 @@ import AdPlacement from "@/components/ads/AdPlacement";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+
 interface Tutorial {
   id: string;
   title: string;
@@ -216,7 +217,9 @@ const TutorialPage = () => {
     preview_url: "https://assets.mixkit.co/videos/preview/mixkit-woman-scrolling-on-her-smartphone-at-an-office-5712-large.mp4",
     duration_seconds: 3300
   }];
+  // Updated handleWatchVideo function to ensure proper navigation
   const handleWatchVideo = (tutorial: Tutorial) => {
+    console.log("Navigating to video player with ID:", tutorial.id);
     navigate(`/tutorial/watch?id=${tutorial.id}`);
   };
   const togglePlayPause = () => {
@@ -354,7 +357,7 @@ const TutorialPage = () => {
                       <TableCell className="text-sm">{tutorial.level}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
-                          <Button size="sm" onClick={() => navigate(`/tutorial/watch?id=${tutorial.id}`)}>Watch Now</Button>
+                          <Button size="sm" onClick={() => handleWatchVideo(tutorial)}>Watch Now</Button>
                         </div>
                       </TableCell>
                     </TableRow>)}
