@@ -68,11 +68,18 @@ const CBTIndex = () => {
               <p className="text-muted-foreground max-w-lg">
                 Create tests, manage questions, and track performance with our comprehensive CBT platform.
               </p>
-              <div className="flex gap-3 mt-4">
-                <Button onClick={() => navigate('/cbt/create')}>
+              <div className="flex flex-col items-center md:items-start gap-3 mt-4 w-full">
+                <Button 
+                  onClick={() => navigate('/cbt/create')}
+                  className="w-full max-w-xs"
+                >
                   Create New Test
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/cbt/public-leaderboards')} className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/cbt/public-leaderboards')} 
+                  className="flex items-center gap-2 w-full max-w-xs"
+                >
                   <Trophy className="h-4 w-4" />
                   Leaderboards
                 </Button>
