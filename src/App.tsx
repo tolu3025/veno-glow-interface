@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -88,6 +89,9 @@ const AppRoutes = () => {
         <Route path="/tutorial" element={<TutorialPage />} />
         <Route path="/tutorial/info" element={<TutorialInfo />} />
         <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
+        
+        {/* Bot route - adding it here as a regular route */}
+        <Route path="/bot" element={<BotPage />} />
         
         {/* Protected routes that require authentication */}
         <Route path="/dashboard" element={

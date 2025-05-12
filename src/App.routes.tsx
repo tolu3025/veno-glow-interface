@@ -62,11 +62,10 @@ export const routes: RouteObject[] = [
       { path: 'tutorial/categories', element: <TutorialCategoriesPage /> },
       { path: 'tutorial/learn-more', element: <TutorialLearnMore /> },
       
+      // Bot route - adding it here as a regular route within the main layout
+      { path: 'bot', element: <BotPage /> },
+      
       // Protected routes that require authentication
-      { 
-        path: 'bot', 
-        element: <ProtectedRoute><BotPage /></ProtectedRoute>
-      },
       { path: 'auth', element: <AuthPage /> },
       { path: 'signin', element: <AuthPage initialMode="signin" /> },
       { path: 'signup', element: <AuthPage initialMode="signup" /> },
