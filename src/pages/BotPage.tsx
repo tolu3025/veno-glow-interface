@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -316,7 +317,7 @@ const BotPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-background w-full">
+    <div className="flex flex-col h-screen max-h-screen bg-background w-full overflow-hidden">
       {/* Mobile-friendly header */}
       <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b shadow-sm w-full">
         <div className="flex items-center gap-2">
