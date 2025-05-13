@@ -30,7 +30,7 @@ const VideoPlayerPage = () => {
           .from('tutorials')
           .select('*')
           .eq('id', tutorialId)
-          .single();
+          .maybeSingle();
 
         if (fetchError) {
           console.error('Error fetching tutorial:', fetchError);
@@ -99,17 +99,17 @@ const VideoPlayerPage = () => {
             Back to Tutorials
           </Button>
         </div>
-        <div className="bg-destructive/10 text-destructive p-6 rounded-lg flex items-center">
-          <Info className="h-12 w-12 mr-4" />
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-lg flex items-center">
+          <Info className="h-12 w-12 mr-4 text-yellow-600" />
           <div>
-            <h2 className="text-xl font-bold mb-2">Tutorial Not Found</h2>
+            <h2 className="text-xl font-bold mb-2">Tutorial Not Available</h2>
             <p>{error || 'The requested tutorial could not be found'}</p>
             <Button 
               onClick={handleBack} 
               className="mt-4"
               variant="default"
             >
-              Return to Tutorial List
+              Browse Available Tutorials
             </Button>
           </div>
         </div>
