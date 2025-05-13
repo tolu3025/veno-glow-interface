@@ -471,7 +471,11 @@ const BotPage = () => {
             <Sparkles size={10} className="text-primary hidden md:block" />
             {aiConfig?.model || 'GPT-4o'}
           </span>
-          <Smartphone size={8} className="ml-1 text-muted-foreground md:hidden" title="Mobile view optimized" />
+          <Smartphone 
+            size={8} 
+            className="ml-1 text-muted-foreground md:hidden"
+            aria-label="Mobile view optimized"
+          />
         </div>
       </div>
     </div>
