@@ -345,7 +345,6 @@ const BotPage = () => {
             size="icon"
             className="rounded-full h-6 w-6 md:h-7 md:w-7 bg-secondary/40"
             onClick={handleClearChat}
-            title="Clear conversation"
             aria-label="Clear conversation"
           >
             <X size={isMobile ? 12 : 14} />
@@ -355,7 +354,6 @@ const BotPage = () => {
             size="icon"
             className="rounded-full h-6 w-6 md:h-7 md:w-7 bg-secondary/40"
             onClick={handleDownloadChat}
-            title="Download conversation"
             aria-label="Download conversation"
           >
             <Download size={isMobile ? 12 : 14} />
