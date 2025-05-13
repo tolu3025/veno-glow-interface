@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Captions, CaptionsOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,10 @@ import { Slider } from '@/components/ui/slider';
 interface VideoPlayerProps {
   videoUrl: string;
   thumbnailUrl?: string;
+  title?: string; // Added title prop as optional
 }
 
-const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
+const VideoPlayer = ({ videoUrl, thumbnailUrl, title }: VideoPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -165,6 +165,12 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl }: VideoPlayerProps) => {
       onClick={togglePlay}
       onMouseMove={handleMouseMove}
     >
+      {title && (
+        <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
+          <h2 className="text-white text-lg font-medium truncate">{title}</h2>
+        </div>
+      )}
+      
       <video
         ref={videoRef}
         src={videoUrl}
