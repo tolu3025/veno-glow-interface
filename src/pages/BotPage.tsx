@@ -317,23 +317,23 @@ const BotPage = () => {
 
   return (
     <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-background w-full overflow-hidden">
-      {/* Improved mobile-friendly header */}
-      <div className="flex items-center justify-between px-3 py-2 md:py-3 bg-secondary/30 border-b shadow-sm w-full">
-        <div className="flex items-center gap-2">
+      {/* Mobile-friendly header with reduced height */}
+      <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary/30 border-b shadow-sm w-full">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => navigate("/")}
-            className="p-1.5 rounded-full bg-secondary/70 hover:bg-secondary"
+            className="p-1 sm:p-1.5 rounded-full bg-secondary/70 hover:bg-secondary"
           >
             <ArrowLeft size={isMobile ? 16 : 18} />
           </button>
-          <Avatar className="h-7 w-7 md:h-8 md:w-8 border-2 border-primary">
+          <Avatar className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 border-2 border-primary">
             <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
           </Avatar>
           <div>
-            <h1 className="text-sm md:text-lg font-medium flex items-center gap-1">
+            <h1 className="text-xs sm:text-sm md:text-lg font-medium flex items-center gap-1">
               AI Assistant <Bot className="text-primary h-3 w-3 md:h-4 md:w-4" />
             </h1>
-            <p className="text-[10px] md:text-xs text-muted-foreground">
+            <p className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground">
               {aiConfig?.model || 'GPT-4o'} • Online
             </p>
           </div>
@@ -343,27 +343,27 @@ const BotPage = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full h-6 w-6 md:h-7 md:w-7 bg-secondary/40"
+            className="rounded-full h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 bg-secondary/40"
             onClick={handleClearChat}
             aria-label="Clear conversation"
           >
-            <X size={isMobile ? 12 : 14} />
+            <X size={isMobile ? 10 : 12} />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full h-6 w-6 md:h-7 md:w-7 bg-secondary/40"
+            className="rounded-full h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 bg-secondary/40"
             onClick={handleDownloadChat}
             aria-label="Download conversation"
           >
-            <Download size={isMobile ? 12 : 14} />
+            <Download size={isMobile ? 10 : 12} />
           </Button>
         </div>
       </div>
 
       {/* Chat messages area - improved padding for mobile */}
-      <ScrollArea className="flex-1 py-2 px-1 md:py-4 md:px-2 overflow-y-auto w-full">
-        <div className="max-w-3xl mx-auto space-y-2.5 md:space-y-5 px-1.5">
+      <ScrollArea className="flex-1 py-1 px-0.5 sm:py-2 sm:px-1 md:py-4 md:px-2 overflow-y-auto w-full">
+        <div className="max-w-3xl mx-auto space-y-1.5 sm:space-y-2.5 md:space-y-5 px-1 sm:px-1.5">
           {messages.map((message, i) => (
             <div
               key={i}
@@ -372,16 +372,16 @@ const BotPage = () => {
               }`}
             >
               <div
-                className={`flex items-start gap-1.5 md:gap-2 max-w-[90%] md:max-w-[85%] ${
+                className={`flex items-start gap-1 sm:gap-1.5 md:gap-2 max-w-[92%] sm:max-w-[90%] md:max-w-[85%] ${
                   message.role === "user" ? "flex-row-reverse" : ""
                 }`}
               >
                 {message.role === "assistant" ? (
-                  <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-primary shadow-sm mt-0.5">
+                  <Avatar className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 border border-primary shadow-sm mt-0.5 shrink-0">
                     <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                   </Avatar>
                 ) : (
-                  <Avatar className="h-6 w-6 md:h-7 md:w-7 shadow-sm mt-0.5">
+                  <Avatar className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 shadow-sm mt-0.5 shrink-0">
                     {user.user_metadata?.avatar_url ? (
                       <AvatarImage src={user.user_metadata.avatar_url} alt={user.email || ""} />
                     ) : (
@@ -391,20 +391,20 @@ const BotPage = () => {
                 )}
                 
                 <div
-                  className={`rounded-xl py-1.5 px-2.5 md:py-2 md:px-3 shadow-sm ${
+                  className={`rounded-xl py-1 px-2 sm:py-1.5 sm:px-2.5 md:py-2 md:px-3 shadow-sm ${
                     message.role === "user"
                       ? "bg-primary text-primary-foreground rounded-tr-sm"
                       : "bg-muted border border-muted-foreground/10 rounded-tl-sm"
                   }`}
                 >
-                  <div className="text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
+                  <div className="text-[10px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
                     {message.role === "assistant" ? (
                       <BotResponse message={message.content} />
                     ) : (
                       message.content
                     )}
                   </div>
-                  <div className="text-[8px] md:text-[10px] text-muted-foreground mt-1 flex justify-end">
+                  <div className="text-[6px] sm:text-[8px] md:text-[10px] text-muted-foreground mt-1 flex justify-end">
                     {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                   </div>
                 </div>
@@ -414,16 +414,16 @@ const BotPage = () => {
           
           {isStreaming && (
             <div className="flex justify-start">
-              <div className="flex items-start gap-1.5 md:gap-2 max-w-[90%] md:max-w-[85%]">
-                <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-primary shadow-sm mt-0.5">
+              <div className="flex items-start gap-1 sm:gap-1.5 md:gap-2 max-w-[92%] sm:max-w-[90%] md:max-w-[85%]">
+                <Avatar className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 border border-primary shadow-sm mt-0.5 shrink-0">
                   <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                 </Avatar>
-                <div className="rounded-xl py-1.5 px-2.5 md:py-2 md:px-3 bg-muted border border-muted-foreground/10 rounded-tl-sm shadow-sm">
-                  <div className="text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
+                <div className="rounded-xl py-1 px-2 sm:py-1.5 sm:px-2.5 md:py-2 md:px-3 bg-muted border border-muted-foreground/10 rounded-tl-sm shadow-sm">
+                  <div className="text-[10px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
                     <BotResponse message={streamingMessage} />
                   </div>
-                  <div className="text-[8px] md:text-[10px] text-muted-foreground mt-1 flex items-center gap-0.5 md:gap-1">
-                    <Loader2 className="h-2 w-2 md:h-3 md:w-3 animate-spin" />
+                  <div className="text-[6px] sm:text-[8px] md:text-[10px] text-muted-foreground mt-1 flex items-center gap-0.5">
+                    <Loader2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-3 md:w-3 animate-spin" />
                     <span>Typing...</span>
                   </div>
                 </div>
@@ -435,8 +435,8 @@ const BotPage = () => {
         </div>
       </ScrollArea>
 
-      {/* Input area - improved for mobile */}
-      <div className="bg-background border-t p-2 md:p-3 w-full">
+      {/* Input area - improved for mobile with fixed height */}
+      <div className="bg-background border-t p-1.5 sm:p-2 md:p-3 w-full">
         <form 
           onSubmit={handleSendMessage} 
           className="flex gap-1 items-center max-w-3xl mx-auto relative bg-muted p-1 rounded-full shadow-sm border border-border"
@@ -446,33 +446,35 @@ const BotPage = () => {
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Type a message..."
             disabled={isLoading}
-            className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 py-1.5 md:py-2 px-2.5 md:px-3 rounded-full text-xs md:text-sm h-8 md:h-10"
+            className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 py-1 sm:py-1.5 md:py-2 px-2 sm:px-2.5 md:px-3 rounded-full text-[10px] sm:text-xs md:text-sm h-7 sm:h-8 md:h-10"
           />
           <Button 
             type="submit" 
             disabled={isLoading || !prompt.trim()} 
             size="icon"
-            className="rounded-full h-6 w-6 md:h-8 md:w-8 bg-primary hover:bg-primary/90 shrink-0"
+            className="rounded-full h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 bg-primary hover:bg-primary/90 shrink-0"
           >
             {isLoading ? 
-              <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" /> : 
-              <Send className="h-3 w-3 md:h-4 md:w-4" />
+              <Loader2 className="h-2 w-2 sm:h-3 sm:w-3 md:h-4 md:w-4 animate-spin" /> : 
+              <Send className="h-2 w-2 sm:h-3 sm:w-3 md:h-4 md:w-4" />
             }
           </Button>
         </form>
-        <div className="flex justify-center items-center gap-0.5 mt-1">
-          <span className="text-[8px] md:text-[10px] text-muted-foreground flex items-center gap-0.5">
-            <MessageSquare size={8} className="md:hidden" />
+        <div className="flex justify-center items-center gap-0.5 mt-0.5 sm:mt-1">
+          <span className="text-[7px] sm:text-[8px] md:text-[10px] text-muted-foreground flex items-center gap-0.5">
+            <MessageSquare size={7} className="sm:hidden" />
+            <MessageSquare size={8} className="hidden sm:block md:hidden" />
             <MessageSquare size={10} className="hidden md:block" />
             Powered by
-            <Sparkles size={8} className="text-primary md:hidden" />
+            <Sparkles size={7} className="text-primary sm:hidden" />
+            <Sparkles size={8} className="text-primary hidden sm:block md:hidden" />
             <Sparkles size={10} className="text-primary hidden md:block" />
             {aiConfig?.model || 'GPT-4o'}
           </span>
           <Smartphone 
-            size={8} 
-            className="ml-1 text-muted-foreground md:hidden"
-            aria-label="Mobile view optimized"
+            size={7} 
+            className="ml-1 text-muted-foreground sm:hidden"
+            aria-label="Mobile view optimized" 
           />
         </div>
       </div>
