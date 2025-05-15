@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download, MessageSquare, Smartphone } from "lucide-react";
+import { ArrowLeft, Send, Loader2, X, Download, Bot, MessageSquare, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,7 @@ const BotPage = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [aiConfig, setAiConfig] = useState<OpenAIConfig | null>(null);
   const isMobile = useIsMobile();
-
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -316,72 +316,77 @@ const BotPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-background w-full overflow-hidden">
-      {/* Mobile-friendly header with reduced height */}
-      <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary/30 border-b shadow-sm w-full">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <button
-            onClick={() => navigate("/")}
-            className="p-1 sm:p-1.5 rounded-full bg-secondary/70 hover:bg-secondary"
-          >
-            <ArrowLeft size={isMobile ? 16 : 18} />
-          </button>
-          <Avatar className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 border-2 border-primary">
-            <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
-          </Avatar>
-          <div>
-            <h1 className="text-xs sm:text-sm md:text-lg font-medium flex items-center gap-1">
-              AI Assistant <Bot className="text-primary h-3 w-3 md:h-4 md:w-4" />
-            </h1>
-            <p className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground">
-              {aiConfig?.model || 'GPT-4o'} • Online
-            </p>
+    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100 p-4">
+      {/* Chat container that mimics the image */}
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 bg-purple-600">
+              <VenoLogo className="h-6 w-6 text-white" alt="Bot" />
+            </Avatar>
+            <div>
+              <h1 className="font-medium">AI Assistant</h1>
+              <p className="text-xs text-gray-500">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-8 w-8"
+              onClick={() => {}}
+              aria-label="Refresh"
+            >
+              <ArrowLeft size={18} className="text-purple-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-8 w-8"
+              onClick={() => navigate("/")}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </Button>
           </div>
         </div>
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 bg-secondary/40"
-            onClick={handleClearChat}
-            aria-label="Clear conversation"
-          >
-            <X size={isMobile ? 10 : 12} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 bg-secondary/40"
-            onClick={handleDownloadChat}
-            aria-label="Download conversation"
-          >
-            <Download size={isMobile ? 10 : 12} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Chat messages area - improved padding for mobile */}
-      <ScrollArea className="flex-1 py-0.5 px-0.5 sm:py-1 sm:px-1 md:py-2 md:px-2 overflow-y-auto w-full">
-        <div className="max-w-3xl mx-auto space-y-1 sm:space-y-2 md:space-y-4 px-1 sm:px-1.5">
-          {messages.map((message, i) => (
-            <div
-              key={i}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+      
+        {/* Messages area */}
+        <ScrollArea className="flex-1 p-4 overflow-y-auto">
+          <div className="space-y-4">
+            {messages.map((message, i) => (
               <div
-                className={`flex items-start gap-1 sm:gap-1.5 md:gap-2 max-w-[85%] ${
-                  message.role === "user" ? "flex-row-reverse" : ""
+                key={i}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {message.role === "assistant" ? (
-                  <Avatar className="h-4 w-4 sm:h-5 sm:w-5 md:h-7 md:w-7 border border-primary shadow-sm mt-0.5 shrink-0">
-                    <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
+                {message.role === "assistant" && (
+                  <Avatar className="h-8 w-8 mr-2 mt-1 bg-purple-600">
+                    <VenoLogo className="h-5 w-5 text-white" alt="Bot" />
                   </Avatar>
-                ) : (
-                  <Avatar className="h-4 w-4 sm:h-5 sm:w-5 md:h-7 md:w-7 shadow-sm mt-0.5 shrink-0">
+                )}
+                <div
+                  className={`max-w-[80%] rounded-2xl py-3 px-4 ${
+                    message.role === "user"
+                      ? "bg-purple-600 text-white rounded-br-none"
+                      : "bg-gray-100 text-gray-800 rounded-bl-none"
+                  }`}
+                >
+                  <div className="text-sm">
+                    {message.role === "assistant" ? (
+                      <BotResponse message={message.content} />
+                    ) : (
+                      message.content
+                    )}
+                  </div>
+                  <div className="text-xs mt-1 text-right opacity-70">
+                    {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
+                </div>
+                {message.role === "user" && (
+                  <Avatar className="h-8 w-8 ml-2 mt-1 bg-purple-600">
                     {user.user_metadata?.avatar_url ? (
                       <AvatarImage src={user.user_metadata.avatar_url} alt={user.email || ""} />
                     ) : (
@@ -389,93 +394,82 @@ const BotPage = () => {
                     )}
                   </Avatar>
                 )}
-                
-                <div
-                  className={`rounded-xl py-1 px-1.5 sm:py-1 sm:px-2 md:py-2 md:px-3 shadow-sm ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : "bg-muted border border-muted-foreground/10 rounded-tl-sm"
-                  }`}
-                >
-                  <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
-                    {message.role === "assistant" ? (
-                      <BotResponse message={message.content} />
-                    ) : (
-                      message.content
-                    )}
-                  </div>
-                  <div className="text-[6px] sm:text-[8px] md:text-[10px] text-muted-foreground mt-0.5 sm:mt-1 flex justify-end">
-                    {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                  </div>
-                </div>
               </div>
-            </div>
-          ))}
-          
-          {isStreaming && (
-            <div className="flex justify-start">
-              <div className="flex items-start gap-1 sm:gap-1.5 md:gap-2 max-w-[85%]">
-                <Avatar className="h-4 w-4 sm:h-5 sm:w-5 md:h-7 md:w-7 border border-primary shadow-sm mt-0.5 shrink-0">
-                  <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
+            ))}
+            
+            {isStreaming && (
+              <div className="flex justify-start">
+                <Avatar className="h-8 w-8 mr-2 mt-1 bg-purple-600">
+                  <VenoLogo className="h-5 w-5 text-white" alt="Bot" />
                 </Avatar>
-                <div className="rounded-xl py-1 px-1.5 sm:py-1 sm:px-2 md:py-2 md:px-3 bg-muted border border-muted-foreground/10 rounded-tl-sm shadow-sm">
-                  <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
+                <div className="max-w-[80%] rounded-2xl py-3 px-4 bg-gray-100 text-gray-800 rounded-bl-none">
+                  <div className="text-sm">
                     <BotResponse message={streamingMessage} />
                   </div>
-                  <div className="text-[6px] sm:text-[8px] md:text-[10px] text-muted-foreground mt-0.5 sm:mt-1 flex items-center gap-0.5">
-                    <Loader2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-3 md:w-3 animate-spin" />
+                  <div className="text-xs mt-1 flex items-center gap-1 text-gray-500">
+                    <Loader2 className="h-3 w-3 animate-spin" />
                     <span>Typing...</span>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Input area - improved for mobile with fixed height */}
-      <div className="bg-background border-t p-1 sm:p-1.5 md:p-3 w-full">
-        <form 
-          onSubmit={handleSendMessage} 
-          className="flex gap-1 items-center max-w-3xl mx-auto relative bg-muted p-0.5 sm:p-1 rounded-full shadow-sm border border-border"
-        >
-          <Input
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Type a message..."
-            disabled={isLoading}
-            className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 py-0.5 sm:py-1 md:py-2 px-1.5 sm:px-2.5 md:px-3 rounded-full text-[10px] sm:text-xs md:text-sm h-6 sm:h-8 md:h-10"
-          />
-          <Button 
-            type="submit" 
-            disabled={isLoading || !prompt.trim()} 
-            size="icon"
-            className="rounded-full h-4 w-4 sm:h-6 sm:w-6 md:h-8 md:w-8 bg-primary hover:bg-primary/90 shrink-0"
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      
+        {/* Option buttons (based on the image) */}
+        {messages.length <= 2 && !isStreaming && (
+          <div className="px-4 py-3 space-y-2">
+            <button
+              onClick={() => setPrompt("Tell me more about AI assistants")}
+              className="w-full py-3 px-4 rounded-full border border-purple-300 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+            >
+              An AI chatbot to suggest products, generate leads, or handle customer inquiries
+            </button>
+            <button
+              onClick={() => setPrompt("Tell me about omnichannel messaging")}
+              className="w-full py-3 px-4 rounded-full border border-purple-300 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+            >
+              Omnichannel business messaging
+            </button>
+            <button
+              onClick={() => setPrompt("How secure is this chat?")}
+              className="w-full py-3 px-4 rounded-full bg-purple-600 text-sm text-white hover:bg-purple-700 transition-colors"
+            >
+              Secure and scalable in-app chat
+            </button>
+          </div>
+        )}
+      
+        {/* Input area */}
+        <div className="border-t p-4">
+          <form 
+            onSubmit={handleSendMessage}
+            className="flex gap-2 items-center relative"
           >
-            {isLoading ? 
-              <Loader2 className="h-1.5 w-1.5 sm:h-3 sm:w-3 md:h-4 md:w-4 animate-spin" /> : 
-              <Send className="h-1.5 w-1.5 sm:h-3 sm:w-3 md:h-4 md:w-4" />
-            }
-          </Button>
-        </form>
-        <div className="flex justify-center items-center gap-0.5 mt-0.5 sm:mt-1">
-          <span className="text-[6px] sm:text-[8px] md:text-[10px] text-muted-foreground flex items-center gap-0.5">
-            <MessageSquare size={6} className="sm:hidden" />
-            <MessageSquare size={8} className="hidden sm:block md:hidden" />
-            <MessageSquare size={10} className="hidden md:block" />
-            Powered by
-            <Sparkles size={6} className="text-primary sm:hidden" />
-            <Sparkles size={8} className="text-primary hidden sm:block md:hidden" />
-            <Sparkles size={10} className="text-primary hidden md:block" />
-            {aiConfig?.model || 'GPT-4o'}
-          </span>
-          <Smartphone 
-            size={6} 
-            className="ml-1 text-muted-foreground sm:hidden"
-            aria-label="Mobile view optimized" 
-          />
+            <Input
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Type a message..."
+              disabled={isLoading}
+              className="flex-1 border rounded-full py-2 px-4 focus:ring-0"
+            />
+            <Button 
+              type="submit" 
+              disabled={isLoading || !prompt.trim()} 
+              size="icon"
+              className="rounded-full h-10 w-10 bg-purple-600 hover:bg-purple-700"
+            >
+              {isLoading ? 
+                <Loader2 className="h-5 w-5 animate-spin text-white" /> : 
+                <Send className="h-5 w-5 text-white" />
+              }
+            </Button>
+          </form>
+          <div className="flex justify-center mt-2">
+            <span className="text-xs text-gray-400">Powered by VenoBot</span>
+          </div>
         </div>
       </div>
     </div>
