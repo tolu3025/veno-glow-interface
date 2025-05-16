@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,6 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { StreakProvider } from "@/providers/StreakProvider";
+import { StreakMissedDialog } from "@/components/streak/StreakMissedDialog";
 import { RouteTracker } from "@/components/RouteTracker";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
@@ -73,6 +73,7 @@ const AppRoutes = () => {
   return (
     <>
       <RouteTracker />
+      <StreakMissedDialog />
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signup" element={<AuthPage initialMode="signup" />} />

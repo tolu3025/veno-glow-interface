@@ -16,6 +16,7 @@ import NotFound from './pages/NotFound';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
+import StreakAnalyticsPage from './pages/StreakAnalyticsPage';
 import CBTIndex from './pages/cbt/index';
 import CreateTest from './pages/cbt/CreateTest';
 import QuestionBank from './pages/cbt/QuestionBank';
@@ -61,10 +62,13 @@ export const routes: RouteObject[] = [
       { path: 'tutorial/info', element: <TutorialInfo /> },
       { path: 'tutorial/categories', element: <TutorialCategoriesPage /> },
       { path: 'tutorial/learn-more', element: <TutorialLearnMore /> },
-      { path: 'tutorial/watch', element: <VideoPlayerPage /> }, // Update: make this route public
+      { path: 'tutorial/watch', element: <VideoPlayerPage /> },
       
-      // Bot route - adding it here as a regular route within the main layout
+      // Bot route
       { path: 'bot', element: <BotPage /> },
+      
+      // Streak route
+      { path: 'streak-analytics', element: <ProtectedRoute><StreakAnalyticsPage /></ProtectedRoute> },
       
       // Protected routes that require authentication
       { path: 'auth', element: <AuthPage /> },
