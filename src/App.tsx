@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { StreakProvider } from "@/providers/StreakProvider";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
@@ -89,6 +90,7 @@ const AppRoutes = () => {
         <Route path="/tutorial" element={<TutorialPage />} />
         <Route path="/tutorial/info" element={<TutorialInfo />} />
         <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
+        <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
         
         {/* Bot route - adding it here as a regular route */}
         <Route path="/bot" element={<BotPage />} />
@@ -179,13 +181,15 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </TooltipProvider>
+            <StreakProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </TooltipProvider>
+            </StreakProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

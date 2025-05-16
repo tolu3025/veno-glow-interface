@@ -1,3 +1,4 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,8 @@ import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { StreakDisplay } from "@/components/streak/StreakDisplay";
+import { FloatingPaths } from "@/components/ui/background-paths";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
@@ -38,7 +41,13 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Background paths */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <FloatingPaths position={1} />
+        <FloatingPaths position={-1} />
+      </div>
+
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between px-4 md:px-6">
           <div className="flex items-center space-x-2">
@@ -61,6 +70,9 @@ const MainLayout = () => {
           </nav>
           
           <div className="ml-auto flex items-center space-x-4">
+            {/* Streak display */}
+            <StreakDisplay variant="compact" />
+            
             <NotificationBell />
             <Button 
               variant="ghost" 
@@ -114,13 +126,13 @@ const MainLayout = () => {
         </div>
       </header>
       
-      <main className="flex-1">
+      <main className="flex-1 relative z-10">
         <div className="container mx-auto px-4 md:px-6 py-4 max-w-7xl">
           <Outlet />
         </div>
       </main>
       
-      <footer className="border-t mt-8">
+      <footer className="border-t mt-8 relative z-10 bg-background/95">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 md:h-14 text-muted-foreground">
           <p className="text-sm">
             © {new Date().getFullYear()} Veno. All rights reserved.

@@ -2,14 +2,16 @@ import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Captions, CaptionsOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { useStreak } from '@/providers/StreakProvider';
 
 interface VideoPlayerProps {
   videoUrl: string;
   thumbnailUrl?: string;
-  title?: string; // Added title prop as optional
+  title?: string;
+  videoId?: string; // Added videoId prop to track unique videos
 }
 
-const VideoPlayer = ({ videoUrl, thumbnailUrl, title }: VideoPlayerProps) => {
+const VideoPlayer = ({ videoUrl, thumbnailUrl, title, videoId = 'default' }: VideoPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -18,6 +20,8 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl, title }: VideoPlayerProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
+  const { addVideoWatch } = useStreak();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
@@ -33,6 +37,15 @@ const VideoPlayer = ({ videoUrl, thumbnailUrl, title }: VideoPlayerProps) => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Track video watch time for streak
+  useEffect(() => {
+    if (isPlaying && currentTime > duration * 0.3 && !hasTrackedView && videoId) {
+      // When user has watched 30% of the video, count it as watched
+      addVideoWatch(videoId);
+      setHasTrackedView(true);
+    }
+  }, [isPlaying, currentTime, duration, hasTrackedView, videoId, addVideoWatch]);
 
   // Hide controls after 3 seconds of inactivity when playing
   useEffect(() => {
