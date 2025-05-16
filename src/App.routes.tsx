@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -11,7 +10,6 @@ import TutorialLearnMore from './pages/TutorialLearnMore';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import BotPage from './pages/BotPage';
-import StreakPage from './pages/StreakPage';
 import AuthPage from './pages/AuthPage';
 import NotFound from './pages/NotFound';
 import ProfilePage from './pages/ProfilePage';
@@ -62,13 +60,10 @@ export const routes: RouteObject[] = [
       { path: 'tutorial/info', element: <TutorialInfo /> },
       { path: 'tutorial/categories', element: <TutorialCategoriesPage /> },
       { path: 'tutorial/learn-more', element: <TutorialLearnMore /> },
-      { path: 'tutorial/watch', element: <VideoPlayerPage /> },
+      { path: 'tutorial/watch', element: <VideoPlayerPage /> }, // Update: make this route public
       
-      // Bot route
+      // Bot route - adding it here as a regular route within the main layout
       { path: 'bot', element: <BotPage /> },
-      
-      // Streak route
-      { path: 'streaks', element: <ProtectedRoute><StreakPage /></ProtectedRoute> },
       
       // Protected routes that require authentication
       { path: 'auth', element: <AuthPage /> },

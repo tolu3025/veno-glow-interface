@@ -1,18 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download, MessageSquare, Smartphone, Trophy } from "lucide-react";
+import { ArrowLeft, Send, Loader2, X, Sparkles, Bot, Download, MessageSquare, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { VenoLogo } from "@/components/ui/logo";
 import BotResponse from "@/components/bot/BotResponse";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import Certificate from "@/components/certificate/Certificate";
 
 interface Message {
   role: "user" | "assistant";
@@ -34,13 +32,6 @@ interface OpenAIConfig {
   systemPrompt: string;
 }
 
-interface StreakData {
-  currentStreak: number;
-  lastInteraction: string;
-  longestStreak: number;
-  streakStartDate: string;
-}
-
 const BotPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -59,11 +50,6 @@ const BotPage = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [aiConfig, setAiConfig] = useState<OpenAIConfig | null>(null);
   const isMobile = useIsMobile();
-  
-  // Add streak-related state
-  const [streakData, setStreakData] = useState<StreakData | null>(null);
-  const [showStreakBadge, setShowStreakBadge] = useState(false);
-  const [isStreakCertificateOpen, setIsStreakCertificateOpen] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,9 +87,6 @@ const BotPage = () => {
           
           setMessages(formattedMessages);
         }
-        
-        // After loading chat history, check streak data
-        loadStreakData();
       } catch (error) {
         console.error("Failed to load chat history:", error);
       } finally {
@@ -113,151 +96,6 @@ const BotPage = () => {
     
     loadChatHistory();
   }, [user]);
-
-  // Add streak functions
-  const loadStreakData = async () => {
-    if (!user) return;
-    
-    try {
-      // Get user's streak data from user_profiles
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError) {
-        console.error("Error loading user profile:", profileError);
-        return;
-      }
-      
-      const today = new Date().toISOString().split('T')[0];
-      let streak = {
-        currentStreak: 0,
-        lastInteraction: today,
-        longestStreak: 0,
-        streakStartDate: today
-      };
-      
-      // If streak data exists in the profile
-      if (profileData && profileData.activities) {
-        const activities = Array.isArray(profileData.activities) ? profileData.activities : [];
-        const streakActivity = activities.find((a: any) => a.type === 'streak_data');
-        
-        if (streakActivity) {
-          streak = streakActivity.data as StreakData;
-          
-          // Check if the streak needs to be updated
-          const lastDate = new Date(streak.lastInteraction);
-          const currentDate = new Date();
-          const timeDiff = currentDate.getTime() - lastDate.getTime();
-          const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-          
-          if (daysDiff === 1) {
-            // Continuing the streak
-            streak.currentStreak += 1;
-            streak.lastInteraction = today;
-            
-            if (streak.currentStreak > streak.longestStreak) {
-              streak.longestStreak = streak.currentStreak;
-            }
-            
-            // Update the streak data
-            await updateStreakData(streak);
-            
-            // Show a celebration toast for continuing the streak
-            toast.success(`🔥 ${streak.currentStreak} day streak! Keep it up!`);
-            setShowStreakBadge(true);
-            
-            // Check if the user has earned a certificate (7-day streak)
-            if (streak.currentStreak === 7 || streak.currentStreak === 30 || streak.currentStreak === 100) {
-              setIsStreakCertificateOpen(true);
-            }
-          } else if (daysDiff > 1) {
-            // Streak broken
-            const oldStreak = streak.currentStreak;
-            streak.currentStreak = 1;
-            streak.lastInteraction = today;
-            streak.streakStartDate = today;
-            
-            await updateStreakData(streak);
-            
-            if (oldStreak > 1) {
-              toast.error(`😢 Your ${oldStreak} day streak has been reset. Start again today!`);
-            }
-          } else if (daysDiff === 0) {
-            // Already interacted today, just load the data
-            setShowStreakBadge(true);
-          }
-        } else {
-          // First time streak
-          await updateStreakData(streak);
-          toast.success("🎉 You've started your first streak! Come back tomorrow to continue.");
-        }
-      } else {
-        // First time streak
-        await updateStreakData(streak);
-        toast.success("🎉 You've started your first streak! Come back tomorrow to continue.");
-      }
-      
-      setStreakData(streak);
-    } catch (error) {
-      console.error("Failed to load streak data:", error);
-    }
-  };
-  
-  const updateStreakData = async (streakData: StreakData) => {
-    if (!user) return;
-    
-    try {
-      // Get current user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('activities')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError) {
-        console.error("Error getting user profile:", profileError);
-        return;
-      }
-      
-      let activities = Array.isArray(profileData.activities) ? [...profileData.activities] : [];
-      const streakIndex = activities.findIndex((a: any) => a.type === 'streak_data');
-      
-      if (streakIndex >= 0) {
-        // Update existing streak data
-        activities[streakIndex] = {
-          type: 'streak_data',
-          description: `Maintained a streak of ${streakData.currentStreak} days`,
-          timestamp: new Date().toISOString(),
-          data: streakData
-        };
-      } else {
-        // Add new streak data
-        activities.push({
-          type: 'streak_data',
-          description: `Started a daily streak`,
-          timestamp: new Date().toISOString(),
-          data: streakData
-        });
-      }
-      
-      // Update the profile with new activities
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({
-          activities: activities
-        })
-        .eq('id', user.id);
-        
-      if (updateError) {
-        console.error("Error updating streak data:", updateError);
-      }
-    } catch (error) {
-      console.error("Failed to update streak data:", error);
-    }
-  };
 
   const saveMessageToHistory = async (message: Message) => {
     if (!user) return;
@@ -407,11 +245,6 @@ const BotPage = () => {
         setIsStreaming(false);
         
         await saveMessageToHistory(botMessage);
-        
-        // Update streak data after successful interaction
-        if (user) {
-          await loadStreakData();
-        }
       }
     } catch (error) {
       console.error("Error calling AI API:", error);
@@ -466,10 +299,6 @@ const BotPage = () => {
     URL.revokeObjectURL(url);
   };
 
-  const viewStreakPage = () => {
-    navigate('/streaks');
-  };
-
   if (!user) {
     navigate("/auth");
     return null;
@@ -488,7 +317,7 @@ const BotPage = () => {
 
   return (
     <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-background w-full overflow-hidden">
-      {/* Header with streak info */}
+      {/* Mobile-friendly header with reduced height */}
       <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary/30 border-b shadow-sm w-full">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
@@ -510,18 +339,7 @@ const BotPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {streakData && streakData.currentStreak > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full h-6 sm:h-7 md:h-8 text-[8px] sm:text-[10px] md:text-xs flex items-center gap-1 border-primary/30"
-              onClick={viewStreakPage}
-            >
-              <Trophy size={isMobile ? 10 : 12} className="text-primary" />
-              {streakData.currentStreak} day{streakData.currentStreak !== 1 ? 's' : ''}
-            </Button>
-          )}
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -543,7 +361,7 @@ const BotPage = () => {
         </div>
       </div>
 
-      {/* Chat messages area */}
+      {/* Chat messages area - improved padding for mobile */}
       <ScrollArea className="flex-1 py-0.5 px-0.5 sm:py-1 sm:px-1 md:py-2 md:px-2 overflow-y-auto w-full">
         <div className="max-w-3xl mx-auto space-y-1 sm:space-y-2 md:space-y-4 px-1 sm:px-1.5">
           {messages.map((message, i) => (
@@ -581,11 +399,7 @@ const BotPage = () => {
                 >
                   <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
                     {message.role === "assistant" ? (
-                      <BotResponse 
-                        message={message.content} 
-                        streakCount={i === 0 && streakData ? streakData.currentStreak : undefined}
-                        showStreakBadge={i === 0 && showStreakBadge}
-                      />
+                      <BotResponse message={message.content} />
                     ) : (
                       message.content
                     )}
@@ -621,7 +435,7 @@ const BotPage = () => {
         </div>
       </ScrollArea>
 
-      {/* Input area */}
+      {/* Input area - improved for mobile with fixed height */}
       <div className="bg-background border-t p-1 sm:p-1.5 md:p-3 w-full">
         <form 
           onSubmit={handleSendMessage} 
@@ -664,19 +478,6 @@ const BotPage = () => {
           />
         </div>
       </div>
-
-      {/* Streak Certificate Dialog */}
-      <Dialog open={isStreakCertificateOpen} onOpenChange={setIsStreakCertificateOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <Certificate 
-            participantName={user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-            testTitle="Streak Achievement"
-            testDescription={`Successfully maintained a ${streakData?.currentStreak || 0}-day streak on Veno`}
-            completedAt={new Date().toISOString()}
-            score={100}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
