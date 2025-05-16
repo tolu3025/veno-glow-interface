@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
 
@@ -31,7 +30,6 @@ const StreakContext = createContext<StreakContextType | undefined>(undefined);
 
 export function StreakProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const location = useLocation();
   const [streak, setStreak] = useState<StreakState>(() => {
     const savedStreak = localStorage.getItem("veno-streak");
     if (savedStreak) {
@@ -91,13 +89,6 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [user]);
-
-  // Track page visits
-  useEffect(() => {
-    if (user && location.pathname) {
-      addPageVisit(location.pathname);
-    }
-  }, [location.pathname, user]);
 
   // Check if the lastActivity date is the day before today
   const isConsecutiveDay = (lastActivityDate: string | null): boolean => {

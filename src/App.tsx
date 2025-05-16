@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { StreakProvider } from "@/providers/StreakProvider";
+import { RouteTracker } from "@/components/RouteTracker";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
@@ -70,107 +71,110 @@ const AppRoutes = () => {
   }, [location]);
 
   return (
-    <Routes>
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/signup" element={<AuthPage initialMode="signup" />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      <Route path="/terms-of-service" element={<TermsOfService />} />
-      <Route path="/ads-policy" element={<AdsPolicy />} />
-      <Route path="/maintenance" element={<UnderMaintenancePage />} />
-      <Route path="/services" element={<ServicesPage />} />
-      
-      <Route element={<MainLayout />}>
-        {/* Public routes that don't require authentication */}
-        <Route path="/" element={<Index />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/blog/:postId" element={<BlogPostPage />} />
-        <Route path="/cbt/library" element={<Library />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
-        <Route path="/tutorial" element={<TutorialPage />} />
-        <Route path="/tutorial/info" element={<TutorialInfo />} />
-        <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
-        <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
+    <>
+      <RouteTracker />
+      <Routes>
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/signup" element={<AuthPage initialMode="signup" />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/ads-policy" element={<AdsPolicy />} />
+        <Route path="/maintenance" element={<UnderMaintenancePage />} />
+        <Route path="/services" element={<ServicesPage />} />
         
-        {/* Bot route - adding it here as a regular route */}
-        <Route path="/bot" element={<BotPage />} />
+        <Route element={<MainLayout />}>
+          {/* Public routes that don't require authentication */}
+          <Route path="/" element={<Index />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:postId" element={<BlogPostPage />} />
+          <Route path="/cbt/library" element={<Library />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
+          <Route path="/tutorial/info" element={<TutorialInfo />} />
+          <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
+          <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
+          
+          {/* Bot route - adding it here as a regular route */}
+          <Route path="/bot" element={<BotPage />} />
+          
+          {/* Protected routes that require authentication */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt" element={
+            <ProtectedRoute>
+              <CbtPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/question-bank" element={
+            <ProtectedRoute>
+              <QuestionBank />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/take/:testId" element={
+            <ProtectedRoute>
+              <TakeTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/leaderboard/:testId" element={
+            <ProtectedRoute>
+              <Leaderboard />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/create" element={
+            <ProtectedRoute>
+              <CreateTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/edit/:testId" element={
+            <ProtectedRoute>
+              <CreateTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/manage/:testId" element={
+            <ProtectedRoute>
+              <ManageTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/stats/:testId" element={
+            <ProtectedRoute>
+              <ManageTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/analytics" element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+        </Route>
         
-        {/* Protected routes that require authentication */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt" element={
-          <ProtectedRoute>
-            <CbtPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/question-bank" element={
-          <ProtectedRoute>
-            <QuestionBank />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/take/:testId" element={
-          <ProtectedRoute>
-            <TakeTest />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/leaderboard/:testId" element={
-          <ProtectedRoute>
-            <Leaderboard />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/create" element={
-          <ProtectedRoute>
-            <CreateTest />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/edit/:testId" element={
-          <ProtectedRoute>
-            <CreateTest />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/manage/:testId" element={
-          <ProtectedRoute>
-            <ManageTest />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/stats/:testId" element={
-          <ProtectedRoute>
-            <ManageTest />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/cbt/analytics" element={
-          <ProtectedRoute>
-            <Analytics />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } />
-      </Route>
-      
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 };
 
@@ -180,17 +184,17 @@ const App = () => {
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <StreakProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
+          <BrowserRouter>
+            <AuthProvider>
+              <StreakProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
                   <AppRoutes />
-                </BrowserRouter>
-              </TooltipProvider>
-            </StreakProvider>
-          </AuthProvider>
+                </TooltipProvider>
+              </StreakProvider>
+            </AuthProvider>
+          </BrowserRouter>
         </ThemeProvider>
       </QueryClientProvider>
     </React.StrictMode>
