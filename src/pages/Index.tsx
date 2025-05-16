@@ -11,6 +11,10 @@ import { bannerSlides, features, tutorials, testimonial } from "@/data/homePageD
 import { Button } from "@/components/ui/button";
 import { StreakDisplay } from "@/components/streak/StreakDisplay";
 import { useStreak } from "@/providers/StreakProvider";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Award, Certificate } from "lucide-react";
 
 // Update the tutorials data to include the required 'id' property
 const tutorialsWithIds = tutorials.map((tutorial, index) => ({
@@ -19,7 +23,17 @@ const tutorialsWithIds = tutorials.map((tutorial, index) => ({
 }));
 
 const Index = () => {
-  const { streak, getStreakMessage } = useStreak();
+  const { streak, getStreakMessage, isCourseUnlocked } = useStreak();
+  const isMobile = useIsMobile();
+  
+  // Certification courses available - this would come from your backend in a real app
+  const certificationCourses = [
+    { id: "basic-certification", name: "Basic Certification", requiredPoints: 50, difficulty: "Beginner" },
+    { id: "intermediate-certification", name: "Intermediate Certification", requiredPoints: 100, difficulty: "Intermediate" },
+    { id: "advanced-certification", name: "Advanced Certification", requiredPoints: 200, difficulty: "Advanced" },
+    { id: "expert-certification", name: "Expert Certification", requiredPoints: 500, difficulty: "Expert" },
+    { id: "master-certification", name: "Master Certification", requiredPoints: 1000, difficulty: "Master" }
+  ];
   
   return (
     <div className="pb-6 relative overflow-hidden">
@@ -38,8 +52,8 @@ const Index = () => {
           </p>
         </div>
         
-        {/* User streak display */}
-        {streak.currentStreak > 0 && (
+        {/* User streak display - hidden on mobile */}
+        {streak.currentStreak > 0 && !isMobile && (
           <div className="max-w-md mx-auto mb-8 p-4 rounded-lg border bg-card/50 backdrop-blur-sm">
             <StreakDisplay variant="full" className="items-center" />
           </div>
@@ -51,6 +65,51 @@ const Index = () => {
       
       <FeaturesSection features={features} />
       <TutorialsSection tutorials={tutorialsWithIds} />
+      
+      {/* Certificate courses section */}
+      <div className="container my-10">
+        <h2 className="text-2xl font-bold mb-6 text-center">Certification Courses</h2>
+        <p className="text-center text-muted-foreground mb-8">Unlock certificates by earning streak points through daily activity and watching tutorials</p>
+        
+        <div className="overflow-x-auto">
+          <Table className="min-w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[180px]">Certificate</TableHead>
+                <TableHead>Level</TableHead>
+                <TableHead className="text-right">Required Points</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {certificationCourses.map((course) => (
+                <TableRow key={course.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Certificate className="h-5 w-5 text-primary" />
+                      {course.name}
+                    </div>
+                  </TableCell>
+                  <TableCell>{course.difficulty}</TableCell>
+                  <TableCell className="text-right">{course.requiredPoints}</TableCell>
+                  <TableCell className="text-right">
+                    {isCourseUnlocked(course.id) ? (
+                      <Badge variant="success" className="ml-auto">
+                        <Award className="h-3.5 w-3.5 mr-1" />
+                        Unlocked
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-muted ml-auto">
+                        {streak.points}/{course.requiredPoints} Points
+                      </Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
       
       {/* Content-rich section with contextual ad */}
       <div className="container my-10">
@@ -69,6 +128,7 @@ const Index = () => {
               <li>Community features to connect with fellow learners</li>
               <li>Streak system to keep you motivated and engaged every day</li>
               <li>Points rewards for watching educational content</li>
+              <li>Course certifications unlocked through consistent learning</li>
             </ul>
             <p>
               Whether you're preparing for exams, developing professional skills, or exploring new interests,

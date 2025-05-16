@@ -333,7 +333,7 @@ const BotPage = () => {
             <h1 className="text-xs sm:text-sm md:text-lg font-medium flex items-center gap-1">
               AI Assistant <Bot className="text-primary h-3 w-3 md:h-4 md:w-4" />
             </h1>
-            <p className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground">
+            <p className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-[200px] md:max-w-none">
               {aiConfig?.model || 'GPT-4o'} • Online
             </p>
           </div>
@@ -397,7 +397,7 @@ const BotPage = () => {
                       : "bg-muted border border-muted-foreground/10 rounded-tl-sm"
                   }`}
                 >
-                  <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
+                  <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap break-words overflow-hidden max-w-full">
                     {message.role === "assistant" ? (
                       <BotResponse message={message.content} />
                     ) : (
@@ -419,7 +419,7 @@ const BotPage = () => {
                   <VenoLogo className="h-full w-full rounded-full" alt="Veno AI" />
                 </Avatar>
                 <div className="rounded-xl py-1 px-1.5 sm:py-1 sm:px-2 md:py-2 md:px-3 bg-muted border border-muted-foreground/10 rounded-tl-sm shadow-sm">
-                  <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap overflow-hidden">
+                  <div className="text-[9px] sm:text-xs md:text-sm whitespace-pre-wrap break-words overflow-hidden max-w-full">
                     <BotResponse message={streamingMessage} />
                   </div>
                   <div className="text-[6px] sm:text-[8px] md:text-[10px] text-muted-foreground mt-0.5 sm:mt-1 flex items-center gap-0.5">

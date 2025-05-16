@@ -9,6 +9,7 @@ interface StreakState {
   points: number;
   visitedPages: Set<string>;
   watchedVideos: Set<string>;
+  unlockedCourses: Set<string>;
 }
 
 interface StreakContextType {
@@ -16,6 +17,7 @@ interface StreakContextType {
   addPageVisit: (page: string) => void;
   addVideoWatch: (videoId: string, points?: number) => void;
   getStreakMessage: () => string;
+  isCourseUnlocked: (courseId: string) => boolean;
 }
 
 const DEFAULT_STREAK_STATE: StreakState = {
@@ -24,6 +26,16 @@ const DEFAULT_STREAK_STATE: StreakState = {
   points: 0,
   visitedPages: new Set(),
   watchedVideos: new Set(),
+  unlockedCourses: new Set(["intro-course"]), // Default unlocked course
+};
+
+// Certification courses that can be unlocked with streak points
+const CERTIFICATION_COURSES = {
+  "basic-certification": { name: "Basic Certification", requiredPoints: 50 },
+  "intermediate-certification": { name: "Intermediate Certification", requiredPoints: 100 },
+  "advanced-certification": { name: "Advanced Certification", requiredPoints: 200 },
+  "expert-certification": { name: "Expert Certification", requiredPoints: 500 },
+  "master-certification": { name: "Master Certification", requiredPoints: 1000 },
 };
 
 const StreakContext = createContext<StreakContextType | undefined>(undefined);
@@ -38,6 +50,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         ...parsed,
         visitedPages: new Set(parsed.visitedPages || []),
         watchedVideos: new Set(parsed.watchedVideos || []),
+        unlockedCourses: new Set(parsed.unlockedCourses || ["intro-course"]),
       };
     }
     return DEFAULT_STREAK_STATE;
@@ -49,6 +62,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
       ...streak,
       visitedPages: Array.from(streak.visitedPages),
       watchedVideos: Array.from(streak.watchedVideos),
+      unlockedCourses: Array.from(streak.unlockedCourses),
     };
     localStorage.setItem("veno-streak", JSON.stringify(serializedStreak));
   }, [streak]);
@@ -89,6 +103,38 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [user]);
+
+  // Check for course unlocks when points change
+  useEffect(() => {
+    if (!user) return;
+    
+    // Check each certification course to see if it can be unlocked
+    Object.entries(CERTIFICATION_COURSES).forEach(([courseId, courseInfo]) => {
+      if (
+        streak.points >= courseInfo.requiredPoints && 
+        !streak.unlockedCourses.has(courseId)
+      ) {
+        // Unlock this course!
+        setStreak(prev => {
+          const newUnlockedCourses = new Set(prev.unlockedCourses);
+          newUnlockedCourses.add(courseId);
+          
+          toast.success(
+            <div className="flex flex-col gap-1">
+              <p className="font-bold">🎓 New Course Unlocked!</p>
+              <p>{courseInfo.name} is now available</p>
+              <p className="text-xs text-muted-foreground">Earned with {courseInfo.requiredPoints} streak points</p>
+            </div>
+          );
+          
+          return {
+            ...prev,
+            unlockedCourses: newUnlockedCourses
+          };
+        });
+      }
+    });
+  }, [streak.points, user]);
 
   // Check if the lastActivity date is the day before today
   const isConsecutiveDay = (lastActivityDate: string | null): boolean => {
@@ -161,13 +207,18 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
     return "Start your streak today!";
   };
 
+  const isCourseUnlocked = (courseId: string): boolean => {
+    return streak.unlockedCourses.has(courseId);
+  };
+
   return (
     <StreakContext.Provider 
       value={{ 
         streak, 
         addPageVisit, 
         addVideoWatch,
-        getStreakMessage
+        getStreakMessage,
+        isCourseUnlocked
       }}
     >
       {children}

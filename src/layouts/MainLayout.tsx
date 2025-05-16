@@ -70,7 +70,7 @@ const MainLayout = () => {
           </nav>
           
           <div className="ml-auto flex items-center space-x-4">
-            {/* Streak display */}
+            {/* Streak display - hidden on mobile via the component's internal styling */}
             <StreakDisplay variant="compact" />
             
             <NotificationBell />

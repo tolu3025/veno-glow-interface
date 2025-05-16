@@ -14,7 +14,7 @@ export function StreakDisplay({ variant = "compact", className }: StreakDisplayP
   
   if (variant === "compact") {
     return (
-      <div className={cn("flex items-center gap-1", className)}>
+      <div className={cn("hidden md:flex items-center gap-1", className)}>
         <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 px-2 py-0">
           <Flame className="h-3.5 w-3.5 mr-1 text-orange-500" />
           <span>{streak.currentStreak}</span>

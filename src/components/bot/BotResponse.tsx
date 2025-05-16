@@ -12,7 +12,7 @@ interface BotResponseProps {
 
 const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
+    <div className="prose prose-sm dark:prose-invert max-w-none break-words">
       <ReactMarkdown
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[rehypeKatex]}
@@ -41,7 +41,7 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
           },
           // Enhanced paragraph rendering
           p: ({children}) => (
-            <p className="mb-2 leading-relaxed">{children}</p>
+            <p className="mb-2 leading-relaxed break-words">{children}</p>
           ),
           // Enhanced list rendering
           ul: ({children}) => (
@@ -58,27 +58,38 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
           ),
           // Enhanced table rendering for Excel-like appearance
           table: ({children}) => (
-            <div className="overflow-x-auto my-2">
-              <table className="min-w-full border-collapse border border-border text-sm">
+            <div className="overflow-x-auto my-2 border border-border rounded-md">
+              <table className="min-w-full border-collapse text-sm">
                 {children}
               </table>
             </div>
           ),
           thead: ({children}) => (
-            <thead className="bg-secondary/10">
+            <thead className="bg-muted">
               {children}
             </thead>
           ),
           th: ({children}) => (
-            <th className="border border-border bg-muted px-2 py-1.5 text-left font-medium text-sm">
+            <th className="border-b border-r last:border-r-0 border-border bg-muted/70 px-3 py-2 text-left font-medium text-sm">
               {children}
             </th>
           ),
           td: ({children}) => (
-            <td className="border border-border px-2 py-1.5 text-sm">
+            <td className="border-b border-r last:border-r-0 border-border px-3 py-2 text-sm">
               {children}
             </td>
           ),
+          // Make sure inline math is properly formatted
+          span: ({className, children, ...props}) => {
+            if (className === 'math math-inline') {
+              return (
+                <span className="math math-inline inline-block align-middle" {...props}>
+                  {children}
+                </span>
+              );
+            }
+            return <span {...props}>{children}</span>;
+          }
         }}
       >
         {message}
