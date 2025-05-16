@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -32,6 +33,7 @@ import ContactPage from './pages/ContactPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import VideoPlayerPage from './pages/VideoPlayerPage';
+import BackgroundPathsPage from './pages/BackgroundPathsPage';
 
 const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   const LazyComponent = React.lazy(() => 
@@ -61,6 +63,9 @@ export const routes: RouteObject[] = [
       { path: 'tutorial/categories', element: <TutorialCategoriesPage /> },
       { path: 'tutorial/learn-more', element: <TutorialLearnMore /> },
       { path: 'tutorial/watch', element: <VideoPlayerPage /> }, // Update: make this route public
+      
+      // Background Paths demo page
+      { path: 'background-paths', element: <BackgroundPathsPage /> },
       
       // Bot route - adding it here as a regular route within the main layout
       { path: 'bot', element: <BotPage /> },

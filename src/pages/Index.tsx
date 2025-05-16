@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import BannerCarousel from "@/components/home/BannerCarousel";
 import FeaturesSection from "@/components/home/FeaturesSection";
@@ -7,6 +8,8 @@ import CallToAction from "@/components/home/CallToAction";
 import BackgroundBubbles from "@/components/home/BackgroundBubbles";
 import AdPlacement from "@/components/ads/AdPlacement";
 import { bannerSlides, features, tutorials, testimonial } from "@/data/homePageData";
+import { BackgroundPathsDemo } from "@/components/demo/BackgroundPathsDemo";
+import { Button } from "@/components/ui/button";
 
 // Update the tutorials data to include the required 'id' property
 const tutorialsWithIds = tutorials.map((tutorial, index) => ({
@@ -72,6 +75,29 @@ const Index = () => {
       {/* Footer ad placement */}
       <div className="mt-10">
         <AdPlacement location="footer" contentCheck={false} />
+      </div>
+      
+      {/* New section to showcase BackgroundPaths */}
+      <div className="mt-16 border-t pt-16">
+        <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center font-heading">Interactive Background Demo</h2>
+        <div className="h-[600px] w-full overflow-hidden rounded-xl border shadow-sm">
+          <BackgroundPathsDemo />
+        </div>
+        <div className="mt-6 text-center">
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-4">
+            Experience our new interactive animated background with dynamic paths and animated typography.
+            This component can be used for hero sections, feature highlights, or special announcements.
+          </p>
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => document.querySelector('.h-\\[600px\\]')?.scrollIntoView({ behavior: 'smooth' })}
+              className="mr-4"
+            >
+              View Again
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
