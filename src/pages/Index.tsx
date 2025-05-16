@@ -14,7 +14,7 @@ import { useStreak } from "@/providers/StreakProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, Certificate } from "lucide-react";
+import { Award, GraduationCap } from "lucide-react";
 
 // Update the tutorials data to include the required 'id' property
 const tutorialsWithIds = tutorials.map((tutorial, index) => ({
@@ -86,7 +86,7 @@ const Index = () => {
                 <TableRow key={course.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <Certificate className="h-5 w-5 text-primary" />
+                      <GraduationCap className="h-5 w-5 text-primary" />
                       {course.name}
                     </div>
                   </TableCell>
