@@ -43,6 +43,12 @@ import ContentManagement from './pages/admin/ContentManagement';
 import NotificationsCenter from './pages/admin/NotificationsCenter';
 import SettingsPanel from './pages/admin/SettingsPanel';
 
+// // Type for our extended route object that includes `index` as optional
+type ExtendedRouteObject = RouteObject & {
+  index?: boolean;
+  children?: ExtendedRouteObject[];
+};
+
 const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   const LazyComponent = React.lazy(() => 
     Promise.resolve({ default: Component })
@@ -55,7 +61,7 @@ const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   );
 };
 
-export const routes: RouteObject[] = [
+export const routes: ExtendedRouteObject[] = [
   {
     path: '/admin',
     element: (

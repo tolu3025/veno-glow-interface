@@ -51,16 +51,16 @@ const AppRoutes = () => {
             {route.children?.map((childRoute, childIndex) => (
               <Route
                 key={`${index}-${childIndex}`}
-                index={childRoute.index}
                 path={childRoute.path}
                 element={childRoute.element}
+                index={childRoute.index || undefined}
               >
                 {childRoute.children?.map((grandchildRoute, grandchildIndex) => (
                   <Route
                     key={`${index}-${childIndex}-${grandchildIndex}`}
-                    index={grandchildRoute.index}
                     path={grandchildRoute.path}
                     element={grandchildRoute.element}
+                    index={grandchildRoute.index || undefined}
                   />
                 ))}
               </Route>

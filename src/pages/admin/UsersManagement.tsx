@@ -13,12 +13,21 @@ import { Plus, Search, Trash, Edit, MoreVertical } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define a type for the user role
+type UserRole = 'admin' | 'educator' | 'user';
+
 type User = {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
   lastActive?: string;
   createdAt?: string;
+};
+
+type NewUser = {
+  email: string;
+  password: string;
+  role: UserRole;
 };
 
 const UsersManagement = () => {
@@ -26,7 +35,7 @@ const UsersManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<NewUser>({
     email: "",
     password: "",
     role: "user"
@@ -54,15 +63,17 @@ const UsersManagement = () => {
       if (rolesError) throw new Error(rolesError.message);
       
       // Map users with their roles
-      const roleMap = (roles || []).reduce((acc: Record<string, string>, curr) => {
-        acc[curr.user_id] = curr.role;
+      const roleMap = (roles || []).reduce((acc: Record<string, UserRole>, curr) => {
+        // Ensure the role is one of our allowed types
+        const role = curr.role as UserRole;
+        acc[curr.user_id] = role;
         return acc;
       }, {});
       
       const mappedUsers = authUsers.users.map(user => ({
         id: user.id,
         email: user.email || 'No email',
-        role: roleMap[user.id] || 'user',
+        role: roleMap[user.id] || 'user' as UserRole,
         lastActive: user.last_sign_in_at,
         createdAt: user.created_at
       }));
@@ -97,13 +108,13 @@ const UsersManagement = () => {
       if (error) throw new Error(error.message);
       
       if (data.user) {
-        // Set their role
+        // Set their role - make sure to use the correctly typed role value
         const { error: roleError } = await supabase
           .from('user_roles')
-          .insert([{ 
+          .insert({
             user_id: data.user.id, 
-            role: newUser.role 
-          }]);
+            role: newUser.role
+          });
         
         if (roleError) throw new Error(roleError.message);
         
@@ -240,7 +251,7 @@ const UsersManagement = () => {
               <Label htmlFor="role">Role</Label>
               <Select 
                 value={newUser.role} 
-                onValueChange={(value) => setNewUser({...newUser, role: value})}
+                onValueChange={(value: UserRole) => setNewUser({...newUser, role: value})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
