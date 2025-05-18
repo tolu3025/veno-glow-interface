@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,7 +112,8 @@ const UsersManagement = () => {
           .from('user_roles')
           .insert({
             user_id: data.user.id, 
-            role: newUser.role
+            // Cast the role to the database expected type
+            role: newUser.role as 'admin' | 'user' | 'moderator'
           });
         
         if (roleError) throw new Error(roleError.message);
