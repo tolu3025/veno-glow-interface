@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
-import AdminLayout from './layouts/AdminLayout';
 import Index from './pages/Index';
 import CbtPage from './pages/CbtPage';
 import TutorialPage from './pages/TutorialPage';
@@ -36,19 +34,6 @@ import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 
-// Admin pages
-import AdminDashboard from './pages/admin/Dashboard';
-import UsersManagement from './pages/admin/UsersManagement';
-import ContentManagement from './pages/admin/ContentManagement';
-import NotificationsCenter from './pages/admin/NotificationsCenter';
-import SettingsPanel from './pages/admin/SettingsPanel';
-
-// // Type for our extended route object that includes `index` as optional
-type ExtendedRouteObject = RouteObject & {
-  index?: boolean;
-  children?: ExtendedRouteObject[];
-};
-
 const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   const LazyComponent = React.lazy(() => 
     Promise.resolve({ default: Component })
@@ -61,22 +46,7 @@ const lazyLoad = (Component: React.ComponentType<any>): React.ReactNode => {
   );
 };
 
-export const routes: ExtendedRouteObject[] = [
-  {
-    path: '/admin',
-    element: (
-      <ProtectedRoute>
-        <AdminLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <AdminDashboard /> },
-      { path: 'users', element: <UsersManagement /> },
-      { path: 'content', element: <ContentManagement /> },
-      { path: 'notifications', element: <NotificationsCenter /> },
-      { path: 'settings', element: <SettingsPanel /> },
-    ]
-  },
+export const routes: RouteObject[] = [
   {
     path: '/',
     element: <MainLayout />,

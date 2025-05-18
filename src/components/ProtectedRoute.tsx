@@ -1,64 +1,21 @@
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
-import { isOnline, testSupabaseConnection, supabase } from "@/integrations/supabase/client";
+import { isOnline, testSupabaseConnection } from "@/integrations/supabase/client";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
-  requireAdmin?: boolean;
 };
 
-const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const [offlineMode, setOfflineMode] = useState(false);
   const [dbConnectionStatus, setDbConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isCheckingAdmin, setIsCheckingAdmin] = useState(requireAdmin);
   
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
-  const isAdminRoute = location.pathname.startsWith('/admin');
-
-  useEffect(() => {
-    // Check if the user is an admin when required
-    const checkAdminStatus = async () => {
-      if (requireAdmin && user && !isAdmin) {
-        try {
-          setIsCheckingAdmin(true);
-          const { data, error } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          if (error) {
-            throw error;
-          }
-          
-          const userIsAdmin = data?.role === 'admin';
-          setIsAdmin(userIsAdmin);
-          
-          if (!userIsAdmin && isAdminRoute) {
-            toast({
-              title: "Access Denied",
-              description: "You don't have admin privileges",
-              variant: "destructive",
-            });
-          }
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        } finally {
-          setIsCheckingAdmin(false);
-        }
-      } else if (!requireAdmin) {
-        setIsCheckingAdmin(false);
-      }
-    };
-    
-    checkAdminStatus();
-  }, [user, requireAdmin, isAdminRoute, isAdmin]);
 
   useEffect(() => {
     const checkConnectivity = async () => {
@@ -145,7 +102,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     };
   }, [offlineMode, dbConnectionStatus]);
 
-  if (isLoading || isCheckingAdmin) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -161,16 +118,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
       variant: "warning",
     });
     return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  // Check if admin privileges are required and the user doesn't have them
-  if (requireAdmin && isAdmin === false) {
-    toast({
-      title: "Access Denied",
-      description: "You don't have permission to access this area",
-      variant: "destructive",
-    });
-    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
