@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -40,6 +41,7 @@ import UnderMaintenancePage from "./pages/UnderMaintenancePage";
 import ContactPage from "./pages/ContactPage";
 import ServicesPage from "./pages/ServicesPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
+import StreakAnalyticsPage from "./pages/StreakAnalyticsPage";
 
 import "./functions/appendToActivities";
 
@@ -98,6 +100,9 @@ const AppRoutes = () => {
           
           {/* Bot route - adding it here as a regular route */}
           <Route path="/bot" element={<BotPage />} />
+          
+          {/* Streak analytics route */}
+          <Route path="/streak-analytics" element={<StreakAnalyticsPage />} />
           
           {/* Protected routes that require authentication */}
           <Route path="/dashboard" element={

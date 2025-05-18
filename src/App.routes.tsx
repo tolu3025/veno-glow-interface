@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
@@ -68,7 +67,7 @@ export const routes: RouteObject[] = [
       { path: 'bot', element: <BotPage /> },
       
       // Streak route
-      { path: 'streak-analytics', element: <ProtectedRoute><StreakAnalyticsPage /></ProtectedRoute> },
+      { path: 'streak-analytics', element: <StreakAnalyticsPage /> },
       
       // Protected routes that require authentication
       { path: 'auth', element: <AuthPage /> },
