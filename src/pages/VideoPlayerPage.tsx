@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Info } from 'lucide-react';
 import TutorialDetails from '@/components/tutorials/TutorialDetails';
 import VideoPlayer from '@/components/tutorials/VideoPlayer';
+import { useStreak } from '@/providers/StreakProvider';
+import { toast } from 'sonner';
 
 const VideoPlayerPage = () => {
   const [searchParams] = useSearchParams();
@@ -16,6 +18,7 @@ const VideoPlayerPage = () => {
   const [error, setError] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { addVideoWatch } = useStreak();
 
   useEffect(() => {
     const fetchTutorial = async () => {
@@ -30,7 +33,7 @@ const VideoPlayerPage = () => {
           .from('tutorials')
           .select('*')
           .eq('id', tutorialId)
-          .maybeSingle();
+          .single();
 
         if (fetchError) {
           console.error('Error fetching tutorial:', fetchError);
@@ -45,13 +48,15 @@ const VideoPlayerPage = () => {
           return;
         }
         
+        console.log('Tutorial data:', data);
         setTutorial(data);
         
         // Update tutorials table to increment view count if user is logged in
         const user = (await supabase.auth.getUser()).data.user;
         if (user) {
           try {
-            // Record user view in a separate table or analytics if needed
+            // Record user view in the streak system
+            addVideoWatch(tutorialId);
             console.log("User viewed tutorial:", tutorialId);
           } catch (err) {
             console.error("Error recording view:", err);
@@ -60,13 +65,14 @@ const VideoPlayerPage = () => {
       } catch (err) {
         console.error('Error fetching tutorial:', err);
         setError('An unexpected error occurred');
+        toast.error('Failed to load tutorial data');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTutorial();
-  }, [tutorialId]);
+  }, [tutorialId, addVideoWatch]);
 
   const handleBack = () => {
     navigate('/tutorial');
@@ -99,8 +105,8 @@ const VideoPlayerPage = () => {
             Back to Tutorials
           </Button>
         </div>
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-lg flex items-center">
-          <Info className="h-12 w-12 mr-4 text-yellow-600" />
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 p-6 rounded-lg flex items-center">
+          <Info className="h-12 w-12 mr-4 text-yellow-600 dark:text-yellow-400" />
           <div>
             <h2 className="text-xl font-bold mb-2">Tutorial Not Available</h2>
             <p>{error || 'The requested tutorial could not be found'}</p>
@@ -131,6 +137,7 @@ const VideoPlayerPage = () => {
           videoUrl={tutorial.video_url}
           thumbnailUrl={tutorial.thumbnail_url}
           title={tutorial.title}
+          videoId={tutorial.id}
         />
       ) : (
         <div className="bg-muted p-8 rounded-lg text-center mb-6">

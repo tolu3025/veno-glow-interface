@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import WaveBackground from '@/components/blog/WaveBackground';
 import { motion } from 'framer-motion';
 import AdPlacement from '@/components/ads/AdPlacement';
-import { Share2 } from 'lucide-react';
+import { Share2, AlertCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { BlogArticle } from '@/types/blog';
 
@@ -22,6 +22,7 @@ const BlogPage = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      console.log('Blog data fetched:', data);
       return data as BlogArticle[];
     }
   });
@@ -46,6 +47,24 @@ const BlogPage = () => {
           variant: "destructive"
         }));
     }
+  };
+  
+  const getImageUrl = (url: string | null) => {
+    if (!url) return "/placeholder.svg";
+    
+    // If URL is already a full URL (starts with http/https), use it as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If URL is a relative path starting with /, it's a local path
+    if (url.startsWith('/')) {
+      return url;
+    }
+    
+    // Otherwise, assume it needs to be completed with base URL
+    // This is a fallback approach - adjust based on how your URLs are stored
+    return `${window.location.origin}/${url}`;
   };
 
   if (isLoading) {
@@ -98,6 +117,10 @@ const BlogPage = () => {
     );
   }
 
+  // Show warning if there are blog articles but no images
+  const hasImageIssues = articles && articles.length > 0 && 
+    articles.every(article => !article.image_url || article.image_url === "/placeholder.svg");
+
   return (
     <div className="relative min-h-screen">
       <WaveBackground />
@@ -116,6 +139,20 @@ const BlogPage = () => {
           </p>
         </motion.div>
 
+        {hasImageIssues && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-yellow-800 dark:text-yellow-300">Image Loading Issue</h3>
+                <p className="text-yellow-700 dark:text-yellow-400 text-sm">
+                  Some blog images might not be displaying correctly. This could be due to missing or incorrect image paths.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-10">
           <AdPlacement location="header" />
         </div>
@@ -133,9 +170,13 @@ const BlogPage = () => {
                   <Link to={`/blog/${article.id}`} className="block">
                     <div className="relative overflow-hidden">
                       <img 
-                        src={article.image_url || "/placeholder.svg"} 
+                        src={getImageUrl(article.image_url)}
                         alt={article.title}
                         className="w-full h-48 object-cover transition-transform hover:scale-105"
+                        onError={(e) => {
+                          console.error(`Failed to load image: ${article.image_url}`);
+                          (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>

@@ -40,7 +40,7 @@ export function StreakMissedDialog() {
             Your streak was reset!
           </DialogTitle>
           <DialogDescription>
-            You missed some days and your streak has been reset to 1.
+            You missed some days and your streak has been reset. All your points have been cleared.
           </DialogDescription>
         </DialogHeader>
         
@@ -51,12 +51,15 @@ export function StreakMissedDialog() {
           
           <p className="text-center mb-4">
             Your last visit was on <span className="font-medium">{format(new Date(streak.lastActivity || new Date()), 'MMMM d, yyyy')}</span>.
-            Keep visiting daily to build your streak again!
+            Keep visiting daily to build your streak and points again!
           </p>
           
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Calendar className="h-5 w-5 text-muted-foreground" />
             <span className="text-muted-foreground">Your current streak: <span className="font-bold">{streak.currentStreak}</span> day(s)</span>
+          </div>
+          <div className="text-sm text-red-500 font-medium">
+            Points reset to 0. Start earning again today!
           </div>
         </div>
         

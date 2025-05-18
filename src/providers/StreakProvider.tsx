@@ -10,6 +10,7 @@ interface StreakState {
   visitedPages: Set<string>;
   watchedVideos: Set<string>;
   unlockedCourses: Set<string>;
+  inactiveDays: string[]; // Add tracking for inactive days
 }
 
 interface StreakContextType {
@@ -27,6 +28,7 @@ const DEFAULT_STREAK_STATE: StreakState = {
   visitedPages: new Set(),
   watchedVideos: new Set(),
   unlockedCourses: new Set(["intro-course"]), // Default unlocked course
+  inactiveDays: [], // Initialize empty inactive days array
 };
 
 // Certification courses that can be unlocked with streak points
@@ -51,6 +53,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         visitedPages: new Set(parsed.visitedPages || []),
         watchedVideos: new Set(parsed.watchedVideos || []),
         unlockedCourses: new Set(parsed.unlockedCourses || ["intro-course"]),
+        inactiveDays: parsed.inactiveDays || [],
       };
     }
     return DEFAULT_STREAK_STATE;
@@ -85,13 +88,23 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
           toast.success(`🔥 Day ${streak.currentStreak + 1} streak! Keep it up!`);
         }
       } else if (streak.lastActivity) {
-        // User broke their streak
+        // User broke their streak - RESET POINTS
+        const inactiveDate = streak.lastActivity;
+        const newInactiveDays = [...streak.inactiveDays];
+        
+        // Add the inactive day if it's not already in the list
+        if (inactiveDate && !newInactiveDays.includes(inactiveDate)) {
+          newInactiveDays.push(inactiveDate);
+        }
+        
         setStreak(prev => ({
           ...prev,
           currentStreak: 1,
           lastActivity: today,
+          points: 0, // Reset points when streak breaks
+          inactiveDays: newInactiveDays, // Update inactive days
         }));
-        toast.info("Welcome back! You've started a new streak today.");
+        toast.info("Your streak was reset. Points have been cleared. Start fresh today!");
       } else {
         // First time user
         setStreak(prev => ({
