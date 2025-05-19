@@ -1650,7 +1650,7 @@ export type Database = {
         | "urinary"
         | "lymphatic"
         | "integumentary"
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "educator" | "superadmin"
       order_status: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
       product_condition: "new" | "like_new" | "good" | "fair" | "poor"
       question_difficulty: "beginner" | "intermediate" | "advanced"
@@ -1785,7 +1785,7 @@ export const Constants = {
         "lymphatic",
         "integumentary",
       ],
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "educator", "superadmin"],
       order_status: ["pending", "paid", "shipped", "delivered", "cancelled"],
       product_condition: ["new", "like_new", "good", "fair", "poor"],
       question_difficulty: ["beginner", "intermediate", "advanced"],
