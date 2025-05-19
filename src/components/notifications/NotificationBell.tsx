@@ -28,14 +28,22 @@ interface Notification {
 export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
   // Fetch notifications from database
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
+      setLoading(true);
+      setError(null);
+      
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -44,7 +52,14 @@ export const NotificationBell = () => {
 
       if (error) {
         console.error('Error fetching notifications:', error);
+        setError('Failed to fetch notifications');
         toast.error('Failed to fetch notifications');
+        return;
+      }
+
+      if (!data) {
+        setNotifications([]);
+        setUnreadCount(0);
         return;
       }
 
@@ -66,103 +81,125 @@ export const NotificationBell = () => {
       setUnreadCount(unreadNotifications.length);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
+      setError('An unexpected error occurred');
       toast.error('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
     
     fetchNotifications();
     
     // Subscribe to new notifications
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_email=eq.${user.email}`,
-        },
-        (payload) => {
-          const newNotification = payload.new as any;
-          const typedNotification: Notification = {
-            id: newNotification.id,
-            title: newNotification.title,
-            message: newNotification.message,
-            type: newNotification.type as 'blog_article' | 'comment_reply',
-            link: newNotification.link,
-            is_read: newNotification.is_read,
-            created_at: newNotification.created_at,
-            user_email: newNotification.user_email
-          };
-          
-          setNotifications(prev => [typedNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          toast.info(typedNotification.title, {
-            description: typedNotification.message,
-            action: {
-              label: 'View',
-              onClick: () => {
-                markNotificationAsRead(typedNotification.id);
-                navigate(typedNotification.link || '/blog');
-              }
+    let channel;
+    let updateChannel;
+    
+    try {
+      channel = supabase
+        .channel('notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_email=eq.${user.email}`,
+          },
+          (payload) => {
+            const newNotification = payload.new as any;
+            if (!newNotification || newNotification.user_email !== user.email) {
+              return;
             }
-          });
-        }
-      )
-      .subscribe();
+            
+            const typedNotification: Notification = {
+              id: newNotification.id,
+              title: newNotification.title,
+              message: newNotification.message,
+              type: newNotification.type as 'blog_article' | 'comment_reply',
+              link: newNotification.link,
+              is_read: newNotification.is_read,
+              created_at: newNotification.created_at,
+              user_email: newNotification.user_email
+            };
+            
+            setNotifications(prev => [typedNotification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            
+            toast.info(typedNotification.title, {
+              description: typedNotification.message,
+              action: {
+                label: 'View',
+                onClick: () => {
+                  markNotificationAsRead(typedNotification.id);
+                  navigate(typedNotification.link || '/blog');
+                }
+              }
+            });
+          }
+        )
+        .subscribe();
 
-    // Subscribe to notification updates (read status changes)
-    const updateChannel = supabase
-      .channel('notification_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_email=eq.${user.email}`,
-        },
-        (payload) => {
-          const updatedNotification = payload.new as any;
-          
-          setNotifications(prev => 
-            prev.map(n => 
-              n.id === updatedNotification.id 
-                ? { ...n, is_read: updatedNotification.is_read } 
-                : n
-            )
-          );
-          
-          // Recalculate unread count from the updated notifications array
-          setUnreadCount(prev => {
-            const newCount = notifications
-              .map(n => n.id === updatedNotification.id ? {...n, is_read: updatedNotification.is_read} : n)
-              .filter(n => !n.is_read)
-              .length;
-            return newCount;
-          });
-        }
-      )
-      .subscribe();
+      // Subscribe to notification updates (read status changes)
+      updateChannel = supabase
+        .channel('notification_updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_email=eq.${user.email}`,
+          },
+          (payload) => {
+            const updatedNotification = payload.new as any;
+            if (!updatedNotification || updatedNotification.user_email !== user.email) {
+              return;
+            }
+            
+            setNotifications(prev => 
+              prev.map(n => 
+                n.id === updatedNotification.id 
+                  ? { ...n, is_read: updatedNotification.is_read } 
+                  : n
+              )
+            );
+            
+            // Recalculate unread count
+            setNotifications(prevNotifications => {
+              const newUnreadCount = prevNotifications.filter(n => !n.is_read).length;
+              setUnreadCount(newUnreadCount);
+              return prevNotifications;
+            });
+          }
+        )
+        .subscribe();
+    } catch (subError) {
+      console.error('Error setting up notification subscriptions:', subError);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(updateChannel);
+      if (channel) supabase.removeChannel(channel);
+      if (updateChannel) supabase.removeChannel(updateChannel);
     };
   }, [user, navigate]);
 
   const markNotificationAsRead = async (notificationId: string) => {
+    if (!user) return;
+    
     try {
       // Update in the database
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_email', user.email);
 
       if (error) {
         console.error('Error marking notification as read:', error);
@@ -170,17 +207,15 @@ export const NotificationBell = () => {
         return;
       }
 
-      // Update the local state immediately rather than waiting for the subscription
+      // Update the local state
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId ? { ...n, is_read: true } : n
         )
       );
       
-      // Recalculate unread count directly from the updated state
-      setUnreadCount(prev => {
-        return prev > 0 ? prev - 1 : 0;
-      });
+      // Recalculate unread count
+      setUnreadCount(prev => Math.max(0, prev - 1));
       
     } catch (error) {
       console.error('Unexpected error marking notification as read:', error);
@@ -218,7 +253,15 @@ export const NotificationBell = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[300px]">
-        {notifications.length > 0 ? (
+        {loading ? (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            Loading notifications...
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-sm text-red-500">
+            {error}
+          </div>
+        ) : notifications.length > 0 ? (
           <>
             <div className="px-2 py-1.5 text-sm font-semibold">
               {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'No unread notifications'}
@@ -240,9 +283,9 @@ export const NotificationBell = () => {
             ))}
           </>
         ) : (
-          <DropdownMenuItem disabled className="text-center">
+          <div className="p-4 text-center text-sm text-muted-foreground">
             No notifications
-          </DropdownMenuItem>
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

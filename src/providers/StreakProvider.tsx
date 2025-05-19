@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "./AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StreakState {
   currentStreak: number;
@@ -45,30 +46,46 @@ const StreakContext = createContext<StreakContextType | undefined>(undefined);
 export function StreakProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [streak, setStreak] = useState<StreakState>(() => {
-    const savedStreak = localStorage.getItem("veno-streak");
+    // Initialize with default state
+    return DEFAULT_STREAK_STATE;
+  });
+
+  // Load streak data from localStorage when component mounts and user is authenticated
+  useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id;
+    const savedStreakKey = `veno-streak-${userId}`; // User-specific storage key
+    
+    const savedStreak = localStorage.getItem(savedStreakKey);
     if (savedStreak) {
       const parsed = JSON.parse(savedStreak);
-      return {
+      setStreak({
         ...parsed,
         visitedPages: new Set(parsed.visitedPages || []),
         watchedVideos: new Set(parsed.watchedVideos || []),
         unlockedCourses: new Set(parsed.unlockedCourses || ["intro-course"]),
         inactiveDays: parsed.inactiveDays || [],
-      };
+      });
     }
-    return DEFAULT_STREAK_STATE;
-  });
+  }, [user]);
 
-  // Save streak to localStorage whenever it changes
+  // Save streak to localStorage whenever it changes and user is authenticated
   useEffect(() => {
+    if (!user) return;
+    
+    const userId = user.id;
+    const savedStreakKey = `veno-streak-${userId}`; // User-specific storage key
+    
     const serializedStreak = {
       ...streak,
       visitedPages: Array.from(streak.visitedPages),
       watchedVideos: Array.from(streak.watchedVideos),
       unlockedCourses: Array.from(streak.unlockedCourses),
     };
-    localStorage.setItem("veno-streak", JSON.stringify(serializedStreak));
-  }, [streak]);
+    
+    localStorage.setItem(savedStreakKey, JSON.stringify(serializedStreak));
+  }, [streak, user]);
 
   // Check if user is active today
   useEffect(() => {
@@ -164,7 +181,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addPageVisit = (page: string) => {
-    if (streak.visitedPages.has(page)) return;
+    if (!user || streak.visitedPages.has(page)) return;
     
     setStreak(prev => {
       const newPoints = prev.points + 1;
@@ -189,7 +206,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addVideoWatch = (videoId: string, points = 10) => {
-    if (streak.watchedVideos.has(videoId)) return;
+    if (!user || streak.watchedVideos.has(videoId)) return;
     
     setStreak(prev => {
       const newWatchedVideos = new Set(prev.watchedVideos);
