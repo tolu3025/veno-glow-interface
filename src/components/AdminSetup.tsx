@@ -11,41 +11,37 @@ export const AdminSetup = () => {
       // Define our admin emails
       const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
       
-      for (const adminEmail of adminEmails) {
-        // Check if email exists in user_profiles
-        const { data: existingUser, error: emailError } = await supabase
-          .from('user_profiles')
-          .select('user_id')
-          .eq('email', adminEmail)
-          .maybeSingle();
-        
-        if (emailError || !existingUser) {
-          console.log(`Admin user not found in profiles: ${adminEmail}`);
-          continue; // Skip to next email
-        }
+      if (!user) return;
+
+      // Check if the current user is in the admin whitelist
+      if (adminEmails.includes(user.email || '')) {
+        console.log('Current user is in admin whitelist, ensuring admin role');
         
         // Check if admin role exists for this user
         const { data: existingRole } = await supabase
           .from('user_roles')
           .select('*')
-          .eq('user_id', existingUser.user_id)
+          .eq('user_id', user.id)
           .eq('role', 'admin')
           .maybeSingle();
         
         // If no admin role, assign it
         if (!existingRole) {
+          console.log('No admin role found, assigning admin role to', user.email);
           const { error: insertError } = await supabase
             .from('user_roles')
             .insert({
-              user_id: existingUser.user_id,
+              user_id: user.id,
               role: 'admin'
             });
             
           if (insertError) {
-            console.error(`Error assigning admin role to ${adminEmail}:`, insertError);
+            console.error(`Error assigning admin role to ${user.email}:`, insertError);
           } else {
-            console.log(`Admin role assigned to ${adminEmail}`);
+            console.log(`Admin role assigned to ${user.email}`);
           }
+        } else {
+          console.log('User already has admin role:', user.email);
         }
       }
     };

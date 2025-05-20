@@ -6,6 +6,7 @@ import { User } from '@supabase/supabase-js';
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isLoading = loading;
 
   useEffect(() => {
     // Get initial session
@@ -44,6 +45,7 @@ export const useAuth = () => {
   return {
     user,
     loading,
+    isLoading,
     signOut: () => supabase.auth.signOut(),
   };
 };

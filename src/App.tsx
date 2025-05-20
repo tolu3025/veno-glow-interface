@@ -143,7 +143,7 @@ const AppRoutes = () => {
         
         {/* Admin Routes - IMPORTANT: These must be outside the MainLayout */}
         <Route path="/admin" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute>
             <AdminLayout />
           </ProtectedRoute>
         }>

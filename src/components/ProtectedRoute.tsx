@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { isOnline, testSupabaseConnection, supabase } from "@/integrations/supabase/client";
 
 type ProtectedRouteProps = {
@@ -18,6 +18,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const [roleLoading, setRoleLoading] = useState(false);
   
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   // Check user role when user is authenticated
   useEffect(() => {
@@ -38,15 +39,15 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
         if (error) {
           console.error('Error fetching user role:', error);
-          toast({
-            title: "Error",
-            description: "Could not verify your permissions",
-            variant: "destructive",
-          });
-        } else {
-          const role = data?.role || 'user';
+          toast.error("Could not verify your permissions");
+        } else if (data) {
+          const role = data.role || 'user';
           console.log('User role found:', role);
           setUserRole(role);
+        } else {
+          // No role found, default to user
+          console.log('No user role found, defaulting to user');
+          setUserRole('user');
         }
       } catch (error) {
         console.error('Unexpected error checking role:', error);
@@ -55,10 +56,10 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       }
     };
 
-    if (user && (requiredRole || location.pathname.includes('/admin'))) {
+    if (user && (requiredRole || isAdminRoute)) {
       checkUserRole();
     }
-  }, [user, requiredRole, location.pathname]);
+  }, [user, requiredRole, location.pathname, isAdminRoute]);
 
   // Keep connectivity check logic
   useEffect(() => {
@@ -146,7 +147,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     };
   }, [offlineMode, dbConnectionStatus]);
 
-  if (isLoading || (user && requiredRole && roleLoading)) {
+  if (isLoading || (user && (requiredRole || isAdminRoute) && roleLoading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -156,27 +157,33 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
   // If not authenticated, redirect to auth page
   if (!user) {
-    toast({
-      title: "Authentication Required",
-      description: "Please sign in to access this feature",
-      variant: "warning",
+    toast.error("Authentication Required", {
+      description: "Please sign in to access this feature"
     });
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check if path includes '/admin' which requires admin privileges
-  const isAdminRoute = location.pathname.includes('/admin');
-  if (isAdminRoute && userRole !== 'admin' && userRole !== 'superadmin') {
-    toast({
-      title: "Access Denied",
-      description: "You need admin permissions to access this page",
-      variant: "destructive",
-    });
-    return <Navigate to="/" replace />;
+  // Check if path is admin route which requires admin privileges
+  if (isAdminRoute) {
+    console.log('Admin route detected, user role:', userRole);
+    // Allow special admin accounts directly
+    const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
+    
+    if (adminEmails.includes(user.email || '')) {
+      console.log('User is in admin whitelist, granting access');
+      return <>{children}</>;
+    }
+    
+    if (userRole !== 'admin' && userRole !== 'superadmin') {
+      toast.error("Access Denied", {
+        description: "You need admin permissions to access this page"
+      });
+      return <Navigate to="/" replace />;
+    }
   }
 
   // If role check is required and user doesn't have sufficient permissions
-  if (requiredRole && userRole && userRole !== requiredRole) {
+  if (requiredRole && userRole) {
     const rolePriority = {
       'user': 0,
       'moderator': 1,
@@ -190,10 +197,8 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     const requiredPriority = rolePriority[requiredRole as keyof typeof rolePriority] || 0;
     
     if (userPriority < requiredPriority) {
-      toast({
-        title: "Access Denied",
-        description: `You need ${requiredRole} permissions to access this page`,
-        variant: "destructive",
+      toast.error("Access Denied", {
+        description: `You need ${requiredRole} permissions to access this page`
       });
       return <Navigate to="/" replace />;
     }
