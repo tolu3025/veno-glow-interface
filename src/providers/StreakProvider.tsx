@@ -52,21 +52,29 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
 
   // Load streak data from localStorage when component mounts and user is authenticated
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setStreak(DEFAULT_STREAK_STATE);
+      return;
+    }
     
     const userId = user.id;
     const savedStreakKey = `veno-streak-${userId}`; // User-specific storage key
     
     const savedStreak = localStorage.getItem(savedStreakKey);
     if (savedStreak) {
-      const parsed = JSON.parse(savedStreak);
-      setStreak({
-        ...parsed,
-        visitedPages: new Set(parsed.visitedPages || []),
-        watchedVideos: new Set(parsed.watchedVideos || []),
-        unlockedCourses: new Set(parsed.unlockedCourses || ["intro-course"]),
-        inactiveDays: parsed.inactiveDays || [],
-      });
+      try {
+        const parsed = JSON.parse(savedStreak);
+        setStreak({
+          ...parsed,
+          visitedPages: new Set(parsed.visitedPages || []),
+          watchedVideos: new Set(parsed.watchedVideos || []),
+          unlockedCourses: new Set(parsed.unlockedCourses || ["intro-course"]),
+          inactiveDays: parsed.inactiveDays || [],
+        });
+      } catch (error) {
+        console.error("Error parsing saved streak data:", error);
+        setStreak(DEFAULT_STREAK_STATE);
+      }
     }
   }, [user]);
 
@@ -77,14 +85,18 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
     const userId = user.id;
     const savedStreakKey = `veno-streak-${userId}`; // User-specific storage key
     
-    const serializedStreak = {
-      ...streak,
-      visitedPages: Array.from(streak.visitedPages),
-      watchedVideos: Array.from(streak.watchedVideos),
-      unlockedCourses: Array.from(streak.unlockedCourses),
-    };
-    
-    localStorage.setItem(savedStreakKey, JSON.stringify(serializedStreak));
+    try {
+      const serializedStreak = {
+        ...streak,
+        visitedPages: Array.from(streak.visitedPages),
+        watchedVideos: Array.from(streak.watchedVideos),
+        unlockedCourses: Array.from(streak.unlockedCourses),
+      };
+      
+      localStorage.setItem(savedStreakKey, JSON.stringify(serializedStreak));
+    } catch (error) {
+      console.error("Error saving streak data:", error);
+    }
   }, [streak, user]);
 
   // Check if user is active today

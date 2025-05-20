@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +8,10 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { StreakProvider } from "@/providers/StreakProvider";
 import { StreakMissedDialog } from "@/components/streak/StreakMissedDialog";
+import { StreakMilestoneDialog } from "@/components/streak/StreakMilestoneDialog";
 import { RouteTracker } from "@/components/RouteTracker";
+import { InstructionPopup } from "@/components/popups/InstructionPopup";
+import { AdminSetup } from "@/components/AdminSetup";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
@@ -72,10 +74,58 @@ const AppRoutes = () => {
     }
   }, [location]);
 
+  // Determine whether to show instruction popups based on the current path
+  const showTestInstructions = location.pathname === '/cbt';
+  const showQuizInstructions = location.pathname === '/cbt' && location.search.includes('tab=quiz');
+
   return (
     <>
       <RouteTracker />
       <StreakMissedDialog />
+      <StreakMilestoneDialog />
+      
+      {/* Test Creation Instruction Popup */}
+      {showTestInstructions && (
+        <InstructionPopup
+          id="test-creation-instructions"
+          title="Create Custom Tests"
+          description={
+            <div className="space-y-2">
+              <p>Welcome to the CBT platform! Here's how to get started:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Click "Create New Test" to build a custom assessment</li>
+                <li>Add your own questions or import them from our question bank</li>
+                <li>Set time limits and difficulty levels</li>
+                <li>Share your test with others using the generated code</li>
+              </ul>
+            </div>
+          }
+          actionText="Create Test"
+          actionUrl="/cbt/create"
+        />
+      )}
+      
+      {/* Quiz Instruction Popup */}
+      {showQuizInstructions && (
+        <InstructionPopup
+          id="quiz-instructions"
+          title="Take a Practice Quiz"
+          description={
+            <div className="space-y-2">
+              <p>Practice makes perfect! Our quiz system helps you improve:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Select your preferred subject and difficulty</li>
+                <li>Answer generated questions to test your knowledge</li>
+                <li>Track your progress over time</li>
+                <li>Earn streak points for consistent practice</li>
+              </ul>
+            </div>
+          }
+          actionText="Start Quiz"
+          actionUrl="/cbt?tab=quiz"
+        />
+      )}
+
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signup" element={<AuthPage initialMode="signup" />} />
@@ -196,6 +246,7 @@ const App = () => {
                 <TooltipProvider>
                   <Toaster />
                   <Sonner />
+                  <AdminSetup />
                   <AppRoutes />
                 </TooltipProvider>
               </StreakProvider>

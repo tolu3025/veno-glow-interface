@@ -29,6 +29,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
       setRoleLoading(true);
       try {
+        console.log('Checking role for user:', user.id);
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
@@ -43,7 +44,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
             variant: "destructive",
           });
         } else {
-          setUserRole(data?.role || 'user'); // Default to 'user' if no specific role is assigned
+          const role = data?.role || 'user';
+          console.log('User role found:', role);
+          setUserRole(role);
         }
       } catch (error) {
         console.error('Unexpected error checking role:', error);
@@ -52,10 +55,10 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       }
     };
 
-    if (user && requiredRole) {
+    if (user && (requiredRole || location.pathname.includes('/admin'))) {
       checkUserRole();
     }
-  }, [user, requiredRole]);
+  }, [user, requiredRole, location.pathname]);
 
   // Keep connectivity check logic
   useEffect(() => {
@@ -161,6 +164,17 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // Check if path includes '/admin' which requires admin privileges
+  const isAdminRoute = location.pathname.includes('/admin');
+  if (isAdminRoute && userRole !== 'admin' && userRole !== 'superadmin') {
+    toast({
+      title: "Access Denied",
+      description: "You need admin permissions to access this page",
+      variant: "destructive",
+    });
+    return <Navigate to="/" replace />;
+  }
+
   // If role check is required and user doesn't have sufficient permissions
   if (requiredRole && userRole && userRole !== requiredRole) {
     const rolePriority = {
@@ -172,8 +186,10 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     };
     
     // Allow access if user has higher privileges than required
-    if ((rolePriority[userRole as keyof typeof rolePriority] || 0) < 
-        (rolePriority[requiredRole as keyof typeof rolePriority] || 0)) {
+    const userPriority = rolePriority[userRole as keyof typeof rolePriority] || 0;
+    const requiredPriority = rolePriority[requiredRole as keyof typeof rolePriority] || 0;
+    
+    if (userPriority < requiredPriority) {
       toast({
         title: "Access Denied",
         description: `You need ${requiredRole} permissions to access this page`,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { RouteObject } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
+import AdminLayout from './layouts/AdminLayout';
 import Index from './pages/Index';
 import CbtPage from './pages/CbtPage';
 import TutorialPage from './pages/TutorialPage';
@@ -16,6 +17,7 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
 import StreakAnalyticsPage from './pages/StreakAnalyticsPage';
+import AssignAdmin from './pages/admin/AssignAdmin';
 import CBTIndex from './pages/cbt/index';
 import CreateTest from './pages/cbt/CreateTest';
 import QuestionBank from './pages/cbt/QuestionBank';
@@ -113,6 +115,16 @@ export const routes: RouteObject[] = [
           { path: 'library', element: <Library /> },
           { path: 'public-leaderboards', element: <PublicLeaderboards /> },
           { path: 'leaderboard/:testId', element: <Leaderboard /> }
+        ]
+      },
+      // Admin routes
+      { 
+        path: 'admin',
+        element: <ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>,
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: 'users', element: <DashboardPage /> },
+          { path: 'assign-admin', element: <AssignAdmin /> },
         ]
       },
       { path: '*', element: <NotFound /> }
