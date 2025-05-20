@@ -47,6 +47,12 @@ import StreakAnalyticsPage from "./pages/StreakAnalyticsPage";
 
 import "./functions/appendToActivities";
 
+// Import admin pages
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AssignAdmin from "./pages/admin/AssignAdmin";
+
 // Create a new QueryClient instance but make sure it's outside of the component
 // to prevent recreation on every render
 const queryClient = new QueryClient({
@@ -134,6 +140,17 @@ const AppRoutes = () => {
         <Route path="/ads-policy" element={<AdsPolicy />} />
         <Route path="/maintenance" element={<UnderMaintenancePage />} />
         <Route path="/services" element={<ServicesPage />} />
+        
+        {/* Admin Routes - IMPORTANT: These must be outside the MainLayout */}
+        <Route path="/admin" element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="assign-admin" element={<AssignAdmin />} />
+        </Route>
         
         <Route element={<MainLayout />}>
           {/* Public routes that don't require authentication */}
