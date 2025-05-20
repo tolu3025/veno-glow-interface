@@ -8,7 +8,7 @@ export const AdminSetup = () => {
   
   useEffect(() => {
     const setupAdmin = async () => {
-      // Check if williamsbenjaminacc@gmail.com exists and has admin role
+      // Check if williamsbenjaminacc@gmail.com exists in user_profiles
       const { data: existingUser, error: emailError } = await supabase
         .from('user_profiles')
         .select('user_id')

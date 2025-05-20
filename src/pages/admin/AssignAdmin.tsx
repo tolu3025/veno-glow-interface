@@ -20,86 +20,47 @@ const AssignAdmin = () => {
     
     setLoading(true);
     try {
-      // First, get the user ID from the email
-      const { data: userData, error: userError } = await supabase
-        .from('auth.users')
-        .select('id')
+      // First, get the user ID from the email using the user_profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('user_id')
         .eq('email', email)
         .maybeSingle();
       
-      if (userError || !userData) {
-        // Try looking in the profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('user_id')
-          .eq('email', email)
-          .maybeSingle();
-          
-        if (profileError || !profileData) {
-          toast.error(`User not found with email: ${email}`);
-          setLoading(false);
-          return;
-        }
+      if (profileError || !profileData) {
+        toast.error(`User not found with email: ${email}`);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if role already exists
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', profileData.user_id)
+        .eq('role', 'admin')
+        .maybeSingle();
         
-        // Check if role already exists
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', profileData.user_id)
-          .eq('role', 'admin')
-          .maybeSingle();
-          
-        if (existingRole) {
-          toast.info(`User ${email} is already an admin`);
-          setLoading(false);
-          return;
-        }
+      if (existingRole) {
+        toast.info(`User ${email} is already an admin`);
+        setLoading(false);
+        return;
+      }
+      
+      // Assign admin role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: profileData.user_id,
+          role: 'admin'
+        });
         
-        // Assign admin role
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: profileData.user_id,
-            role: 'admin'
-          });
-          
-        if (insertError) {
-          toast.error('Failed to assign admin role');
-          console.error('Error assigning admin role:', insertError);
-        } else {
-          toast.success(`Admin role assigned to ${email}`);
-          setEmail('');
-        }
+      if (insertError) {
+        toast.error('Failed to assign admin role');
+        console.error('Error assigning admin role:', insertError);
       } else {
-        // Check if role already exists
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', userData.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-          
-        if (existingRole) {
-          toast.info(`User ${email} is already an admin`);
-          setLoading(false);
-          return;
-        }
-        
-        // Assign admin role
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: userData.id,
-            role: 'admin'
-          });
-          
-        if (insertError) {
-          toast.error('Failed to assign admin role');
-          console.error('Error assigning admin role:', insertError);
-        } else {
-          toast.success(`Admin role assigned to ${email}`);
-          setEmail('');
-        }
+        toast.success(`Admin role assigned to ${email}`);
+        setEmail('');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
