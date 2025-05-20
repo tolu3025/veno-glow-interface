@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/providers/AuthProvider';
-import { Chart } from '@/components/ui/chart';
+import { Chart } from "@/components/ui/chart";
 import { Activity, Users, FileText, Settings, Loader } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
               series={[
                 {
                   name: "New Users",
-                  data: weeklySignups,
+                  data: weeklySignups.map((value, index) => ({ name: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index], value })),
                 },
               ]}
               options={{

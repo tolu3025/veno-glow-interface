@@ -353,7 +353,116 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+// Create a Chart component that uses ChartContainer for easier usage
+interface ChartProps {
+  type: 'line' | 'bar' | 'area' | 'pie' | 'radar' | 'scatter';
+  width?: number;
+  height?: number;
+  series: any[];
+  options?: any;
+  className?: string;
+}
+
+const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
+  ({ type, width, height, series, options, className }, ref) => {
+    const chartConfig: ChartConfig = {};
+    
+    // Create series config from series data
+    series.forEach((item) => {
+      if (item.name) {
+        chartConfig[item.name] = {
+          label: item.name,
+          color: item.color || '#3b82f6',
+        };
+      }
+    });
+
+    // Select the appropriate chart type component
+    const ChartComponent = (() => {
+      switch (type) {
+        case 'bar':
+          return RechartsPrimitive.BarChart;
+        case 'line':
+          return RechartsPrimitive.LineChart;
+        case 'area':
+          return RechartsPrimitive.AreaChart;
+        case 'pie':
+          return RechartsPrimitive.PieChart;
+        case 'radar':
+          return RechartsPrimitive.RadarChart;
+        case 'scatter':
+          return RechartsPrimitive.ScatterChart;
+        default:
+          return RechartsPrimitive.BarChart;
+      }
+    })();
+    
+    return (
+      <ChartContainer 
+        ref={ref} 
+        className={className} 
+        config={chartConfig} 
+        style={{ width: width || '100%', height: height || 300 }}
+      >
+        <ChartComponent data={series[0]?.data?.map ? series[0].data : []}>
+          {options?.xaxis && <RechartsPrimitive.XAxis dataKey="name" />}
+          {options?.yaxis !== false && <RechartsPrimitive.YAxis />}
+          {options?.grid !== false && <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" />}
+          {options?.tooltip !== false && <ChartTooltip />}
+          {options?.legend !== false && <RechartsPrimitive.Legend />}
+          
+          {series.map((item, index) => {
+            if (type === 'bar') {
+              return (
+                <RechartsPrimitive.Bar 
+                  key={index}
+                  dataKey="value" 
+                  name={item.name}
+                  fill={item.color || '#3b82f6'}
+                />
+              );
+            }
+            if (type === 'line') {
+              return (
+                <RechartsPrimitive.Line
+                  key={index}
+                  type="monotone"
+                  dataKey="value"
+                  name={item.name}
+                  stroke={item.color || '#3b82f6'}
+                />
+              );
+            }
+            if (type === 'area') {
+              return (
+                <RechartsPrimitive.Area
+                  key={index}
+                  type="monotone"
+                  dataKey="value"
+                  name={item.name}
+                  fill={item.color || '#3b82f6'}
+                />
+              );
+            }
+            // Default to Bar
+            return (
+              <RechartsPrimitive.Bar 
+                key={index}
+                dataKey="value" 
+                name={item.name}
+                fill={item.color || '#3b82f6'}
+              />
+            );
+          })}
+        </ChartComponent>
+      </ChartContainer>
+    );
+  }
+);
+Chart.displayName = "Chart";
+
 export {
+  Chart, // Export our new Chart component
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
