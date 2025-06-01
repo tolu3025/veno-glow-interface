@@ -3,7 +3,7 @@ import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { Settings, User, Home } from 'lucide-react';
+import { Settings, User, Home, HelpCircle, FileText, Users, Ban } from 'lucide-react';
 
 const AdminLayout = () => {
   const { user } = useAuth();
@@ -41,6 +41,27 @@ const AdminLayout = () => {
           }>
             <User size={18} className="mr-2" />
             Users
+          </NavLink>
+
+          <NavLink to="/admin/user-management" className={({isActive}) => 
+            `flex items-center p-2 rounded-lg ${isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'}`
+          }>
+            <Users size={18} className="mr-2" />
+            User Management
+          </NavLink>
+
+          <NavLink to="/admin/questions" className={({isActive}) => 
+            `flex items-center p-2 rounded-lg ${isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'}`
+          }>
+            <HelpCircle size={18} className="mr-2" />
+            Questions
+          </NavLink>
+
+          <NavLink to="/admin/blog" className={({isActive}) => 
+            `flex items-center p-2 rounded-lg ${isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'}`
+          }>
+            <FileText size={18} className="mr-2" />
+            Blog Posts
           </NavLink>
           
           <NavLink to="/admin/assign-admin" className={({isActive}) => 

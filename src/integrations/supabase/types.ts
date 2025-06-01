@@ -42,6 +42,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_actions: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          target_resource_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          target_resource_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          target_resource_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       anatomy_option_sets: {
         Row: {
           category: Database["public"]["Enums"]["anatomy_question_category"]
@@ -1170,6 +1203,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bans: {
+        Row: {
+          banned_at: string | null
+          banned_by: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          reason: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string | null
+          banned_by: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_at?: string | null
+          banned_by?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           activities: Json | null
@@ -1478,6 +1547,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ban_user: {
+        Args: { target_user_id: string; reason: string; expires_at?: string }
+        Returns: string
+      }
       check_if_table_exists: {
         Args: { table_name: string }
         Returns: boolean
@@ -1622,6 +1695,10 @@ export type Database = {
         Args: { user_id: string; role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      is_user_banned: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       register_investor: {
         Args: {
           p_email: string
@@ -1633,9 +1710,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      send_admin_notification: {
+        Args: {
+          target_user_email: string
+          notification_title: string
+          notification_message: string
+          notification_type?: string
+        }
+        Returns: string
+      }
       test_ai_chat_function: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      unban_user: {
+        Args: { target_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

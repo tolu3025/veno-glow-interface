@@ -51,6 +51,9 @@ import "./functions/appendToActivities";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminQuestions from "./pages/admin/AdminQuestions";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AssignAdmin from "./pages/admin/AssignAdmin";
 
 // Create a new QueryClient instance but make sure it's outside of the component
@@ -149,6 +152,9 @@ const AppRoutes = () => {
         }>
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="user-management" element={<AdminUserManagement />} />
+          <Route path="questions" element={<AdminQuestions />} />
+          <Route path="blog" element={<AdminBlog />} />
           <Route path="assign-admin" element={<AssignAdmin />} />
         </Route>
         
