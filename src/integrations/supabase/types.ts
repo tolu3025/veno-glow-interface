@@ -1695,6 +1695,10 @@ export type Database = {
         Args: { user_id: string; role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       is_user_banned: {
         Args: { user_id: string }
         Returns: boolean

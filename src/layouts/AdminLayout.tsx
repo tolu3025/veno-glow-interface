@@ -3,7 +3,7 @@ import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { Settings, User, Home, HelpCircle, FileText, Users, Ban } from 'lucide-react';
+import { Settings, User, Home, HelpCircle, FileText, Users, UserMinus } from 'lucide-react';
 
 const AdminLayout = () => {
   const { user } = useAuth();
@@ -46,7 +46,7 @@ const AdminLayout = () => {
           <NavLink to="/admin/user-management" className={({isActive}) => 
             `flex items-center p-2 rounded-lg ${isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'}`
           }>
-            <Users size={18} className="mr-2" />
+            <UserMinus size={18} className="mr-2" />
             User Management
           </NavLink>
 
