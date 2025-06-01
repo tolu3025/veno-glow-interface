@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,9 +15,9 @@ type Question = {
   id: string;
   subject: string;
   question: string;
-  options: string[];
+  options: any; // Using any to match the Json type from database
   answer: number;
-  difficulty: 'easy' | 'intermediate' | 'hard';
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
   explanation?: string;
   created_at: string;
 };
@@ -37,7 +36,7 @@ const AdminQuestions = () => {
     question: '',
     options: ['', '', '', ''],
     answer: 0,
-    difficulty: 'intermediate' as 'easy' | 'intermediate' | 'hard',
+    difficulty: 'intermediate' as 'beginner' | 'intermediate' | 'advanced',
     explanation: ''
   });
 
@@ -59,7 +58,14 @@ const AdminQuestions = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setQuestions(data || []);
+      
+      // Transform the data to match our Question type
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        options: Array.isArray(item.options) ? item.options : JSON.parse(item.options as string)
+      }));
+      
+      setQuestions(transformedData);
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast.error('Failed to fetch questions');
@@ -125,7 +131,7 @@ const AdminQuestions = () => {
     setFormData({
       subject: question.subject,
       question: question.question,
-      options: question.options,
+      options: Array.isArray(question.options) ? question.options : [],
       answer: question.answer,
       difficulty: question.difficulty,
       explanation: question.explanation || ''
@@ -203,9 +209,9 @@ const AdminQuestions = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="beginner">Beginner</SelectItem>
                       <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="hard">Hard</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -326,7 +332,7 @@ const AdminQuestions = () => {
                     <TableCell>{question.subject}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        question.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                        question.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
                         question.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
                         'bg-red-100 text-red-700'
                       }`}>

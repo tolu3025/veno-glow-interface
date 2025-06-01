@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -351,7 +350,6 @@ const AdminBlog = () => {
                         <Switch
                           checked={article.published}
                           onCheckedChange={() => togglePublished(article.id, article.published)}
-                          size="sm"
                         />
                       </div>
                     </TableCell>
