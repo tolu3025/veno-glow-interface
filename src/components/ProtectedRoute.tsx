@@ -71,11 +71,8 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         setOfflineMode(true);
         setDbConnectionStatus('disconnected');
         
-        toast({
-          title: "You're offline",
+        toast("You're offline", {
           description: "Some features may be limited until connection is restored.",
-          variant: "warning",
-          duration: 5000,
         });
       } else if (online && offlineMode) {
         const result = await testSupabaseConnection();
@@ -84,21 +81,15 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
           setOfflineMode(false);
           setDbConnectionStatus('connected');
           
-          toast({
-            title: "Connection restored",
+          toast("Connection restored", {
             description: "You're back online with full functionality.",
-            variant: "default",
-            duration: 3000,
           });
         } else {
           setOfflineMode(true);
           setDbConnectionStatus('disconnected');
           
-          toast({
-            title: "Limited connectivity",
+          toast("Limited connectivity", {
             description: "You're online but can't reach our database. Some features will be limited.",
-            variant: "warning",
-            duration: 5000,
           });
         }
       } else if (online && !wasOffline && dbConnectionStatus === 'unknown') {
@@ -106,11 +97,8 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         setDbConnectionStatus(result.success ? 'connected' : 'disconnected');
         
         if (!result.success) {
-          toast({
-            title: "Database connection issue",
+          toast("Database connection issue", {
             description: "Unable to connect to our database. Some features may be limited.",
-            variant: "warning",
-            duration: 5000,
           });
         }
       }
@@ -123,11 +111,8 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       setOfflineMode(true);
       setDbConnectionStatus('disconnected');
       
-      toast({
-        title: "You're offline",
+      toast("You're offline", {
         description: "Some features may be limited until connection is restored.",
-        variant: "warning",
-        duration: 5000,
       });
     };
     
@@ -157,7 +142,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
   // If not authenticated, redirect to auth page
   if (!user) {
-    toast.error("Authentication Required", {
+    toast("Authentication Required", {
       description: "Please sign in to access this feature"
     });
     return <Navigate to="/auth" state={{ from: location }} replace />;
@@ -175,7 +160,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     }
     
     if (userRole !== 'admin' && userRole !== 'superadmin') {
-      toast.error("Access Denied", {
+      toast("Access Denied", {
         description: "You need admin permissions to access this page"
       });
       return <Navigate to="/" replace />;
@@ -197,7 +182,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     const requiredPriority = rolePriority[requiredRole as keyof typeof rolePriority] || 0;
     
     if (userPriority < requiredPriority) {
-      toast.error("Access Denied", {
+      toast("Access Denied", {
         description: `You need ${requiredRole} permissions to access this page`
       });
       return <Navigate to="/" replace />;
