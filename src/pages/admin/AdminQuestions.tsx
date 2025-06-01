@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,26 +10,34 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Loader } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader, BookOpen, Filter } from 'lucide-react';
 
 type Question = {
   id: string;
   subject: string;
   question: string;
-  options: any; // Using any to match the Json type from database
+  options: any;
   answer: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   explanation?: string;
   created_at: string;
 };
 
+type Subject = {
+  name: string;
+  question_count: number;
+};
+
 const AdminQuestions = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(false);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [isAddingNewSubject, setIsAddingNewSubject] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -40,14 +49,40 @@ const AdminQuestions = () => {
     explanation: ''
   });
 
-  const subjects = [
-    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Geography', 
-    'History', 'Literature', 'Computer Science', 'Economics'
-  ];
-
   useEffect(() => {
     fetchQuestions();
+    fetchSubjects();
   }, []);
+
+  const fetchSubjects = async () => {
+    setSubjectsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('subject')
+        .order('subject');
+      
+      if (error) throw error;
+      
+      // Get unique subjects and count questions
+      const subjectCounts = (data || []).reduce((acc: Record<string, number>, item) => {
+        acc[item.subject] = (acc[item.subject] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const subjectList = Object.entries(subjectCounts).map(([name, count]) => ({
+        name,
+        question_count: count
+      }));
+      
+      setSubjects(subjectList);
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      toast.error('Failed to fetch subjects');
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
 
   const fetchQuestions = async () => {
     setLoading(true);
@@ -59,7 +94,6 @@ const AdminQuestions = () => {
       
       if (error) throw error;
       
-      // Transform the data to match our Question type
       const transformedData = (data || []).map(item => ({
         ...item,
         options: Array.isArray(item.options) ? item.options : JSON.parse(item.options as string)
@@ -84,6 +118,7 @@ const AdminQuestions = () => {
       explanation: ''
     });
     setEditingQuestion(null);
+    setIsAddingNewSubject(false);
   };
 
   const handleCreateQuestion = async () => {
@@ -120,6 +155,7 @@ const AdminQuestions = () => {
       setIsDialogOpen(false);
       resetForm();
       fetchQuestions();
+      fetchSubjects(); // Refresh subjects in case a new one was added
     } catch (error) {
       console.error('Error saving question:', error);
       toast.error('Failed to save question');
@@ -152,9 +188,20 @@ const AdminQuestions = () => {
 
       toast.success('Question deleted successfully');
       fetchQuestions();
+      fetchSubjects(); // Refresh subjects in case count changed
     } catch (error) {
       console.error('Error deleting question:', error);
       toast.error('Failed to delete question');
+    }
+  };
+
+  const handleSubjectChange = (value: string) => {
+    if (value === 'add_new') {
+      setIsAddingNewSubject(true);
+      setFormData(prev => ({ ...prev, subject: '' }));
+    } else {
+      setIsAddingNewSubject(false);
+      setFormData(prev => ({ ...prev, subject: value }));
     }
   };
 
@@ -170,7 +217,7 @@ const AdminQuestions = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Question Management</h1>
-          <p className="text-muted-foreground">Create and manage quiz questions</p>
+          <p className="text-muted-foreground">Create and manage quiz questions with custom subjects</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -191,16 +238,47 @@ const AdminQuestions = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="subject">Subject</Label>
-                  <Select value={formData.subject} onValueChange={(value) => setFormData(prev => ({...prev, subject: value}))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map(subject => (
-                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isAddingNewSubject ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={formData.subject}
+                        onChange={(e) => setFormData(prev => ({...prev, subject: e.target.value}))}
+                        placeholder="Enter new subject name"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsAddingNewSubject(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select value={formData.subject} onValueChange={handleSubjectChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select or add subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subjectsLoading ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : (
+                          <>
+                            {subjects.map(subject => (
+                              <SelectItem key={subject.name} value={subject.name}>
+                                {subject.name} ({subject.question_count} questions)
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="add_new">
+                              <div className="flex items-center">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add New Subject
+                              </div>
+                            </SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="difficulty">Difficulty</Label>
@@ -278,6 +356,37 @@ const AdminQuestions = () => {
         </Dialog>
       </div>
 
+      {/* Subjects Overview Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Subjects Overview
+          </CardTitle>
+          <CardDescription>
+            Manage subjects and their question counts
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {subjectsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subjects.map((subject) => (
+                <div key={subject.name} className="p-4 border rounded-lg">
+                  <h3 className="font-medium">{subject.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {subject.question_count} question{subject.question_count !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Questions</CardTitle>
@@ -296,12 +405,13 @@ const AdminQuestions = () => {
             </div>
             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
               <SelectTrigger className="w-48">
+                <Filter className="mr-2 h-4 w-4" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
                 {subjects.map(subject => (
-                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                  <SelectItem key={subject.name} value={subject.name}>{subject.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

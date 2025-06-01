@@ -1,3 +1,4 @@
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const [dbConnectionStatus, setDbConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -25,12 +27,26 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     const checkUserRole = async () => {
       if (!user) {
         setUserRole(null);
+        setPermissionError(null);
         return;
       }
 
       setRoleLoading(true);
+      setPermissionError(null);
+      
       try {
-        console.log('Checking role for user:', user.id);
+        console.log('Checking role for user:', user.id, user.email);
+        
+        // First check if user is in admin whitelist
+        const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
+        if (adminEmails.includes(user.email || '')) {
+          console.log('User is in admin whitelist:', user.email);
+          setUserRole('admin');
+          setRoleLoading(false);
+          return;
+        }
+        
+        // Check user_roles table with proper error handling
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
@@ -39,7 +55,14 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
         if (error) {
           console.error('Error fetching user role:', error);
-          toast.error("Could not verify your permissions");
+          // If it's a permissions error, still allow whitelisted admins
+          if (adminEmails.includes(user.email || '')) {
+            console.log('Permissions error but user is whitelisted admin');
+            setUserRole('admin');
+          } else {
+            setPermissionError("Could not verify permissions. Please contact an administrator.");
+            setUserRole('user'); // Default fallback
+          }
         } else if (data) {
           const role = data.role || 'user';
           console.log('User role found:', role);
@@ -51,6 +74,8 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         }
       } catch (error) {
         console.error('Unexpected error checking role:', error);
+        setPermissionError("Unexpected error verifying permissions.");
+        setUserRole('user'); // Fallback
       } finally {
         setRoleLoading(false);
       }
@@ -150,19 +175,31 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
   // Check if path is admin route which requires admin privileges
   if (isAdminRoute) {
-    console.log('Admin route detected, user role:', userRole);
+    console.log('Admin route detected, user role:', userRole, 'user email:', user.email);
+    
     // Allow special admin accounts directly
     const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
     
     if (adminEmails.includes(user.email || '')) {
       console.log('User is in admin whitelist, granting access');
+      if (permissionError) {
+        toast("Permission Warning", {
+          description: "Database permission issues detected, but you have admin access through whitelist."
+        });
+      }
       return <>{children}</>;
     }
     
     if (userRole !== 'admin' && userRole !== 'superadmin') {
-      toast("Access Denied", {
-        description: "You need admin permissions to access this page"
-      });
+      if (permissionError) {
+        toast("Permission Error", {
+          description: permissionError
+        });
+      } else {
+        toast("Access Denied", {
+          description: "You need admin permissions to access this page"
+        });
+      }
       return <Navigate to="/" replace />;
     }
   }
