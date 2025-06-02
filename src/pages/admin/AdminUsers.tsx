@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,7 @@ type UserProfile = {
   points: number;
   created_at: string;
   is_verified: boolean;
-  role?: string;
+  role: string;
 }
 
 const AdminUsers = () => {
@@ -31,30 +30,17 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Get profiles
-      const { data: profiles, error } = await supabase
-        .from('user_profiles')
+      // Fetch user data from the admin_user_view
+      const { data, error } = await supabase
+        .from('admin_user_view')
         .select('*');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
       
-      // Get roles for all users
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-        
-      if (rolesError) throw rolesError;
-      
-      // Combine the data
-      const usersWithRoles = profiles.map(profile => {
-        const userRole = roles.find(role => role.user_id === profile.user_id);
-        return {
-          ...profile,
-          role: userRole ? userRole.role : 'user'
-        };
-      });
-      
-      setUsers(usersWithRoles);
+      setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');
@@ -183,13 +169,13 @@ const AdminUsers = () => {
                     <div key={user.id} className="grid grid-cols-6 border-t p-3 text-sm">
                       <div className="truncate">{user.email}</div>
                       <div>
-                        {user.role === 'admin' ? (
+                        {user.role === 'admin' || user.role === 'superadmin' ? (
                           <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                            <Shield className="mr-1 h-3 w-3" /> Admin
+                            <Shield className="mr-1 h-3 w-3" /> {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                            <User className="mr-1 h-3 w-3" /> User
+                            <User className="mr-1 h-3 w-3" /> {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                           </span>
                         )}
                       </div>

@@ -4,15 +4,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, FileText, HelpCircle, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { Users, FileText, HelpCircle, TrendingUp, Activity, AlertCircle, UserCheck, Clock } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+type UserActivitySummary = {
+  total_users: number;
+  verified_users: number;
+  total_points: number;
+  recent_signups: number;
+}
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalQuestions: 0,
     totalBlogPosts: 0,
-    recentActivity: 0
+    recentActivity: 0,
+    verifiedUsers: 0,
+    totalPoints: 0,
+    recentSignups: 0
   });
   const [loading, setLoading] = useState(true);
   const [activityData, setActivityData] = useState([]);
@@ -24,10 +34,11 @@ const AdminDashboard = () => {
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      // Fetch user count
-      const { count: userCount } = await supabase
-        .from('user_profiles')
-        .select('*', { count: 'exact', head: true });
+      // Get user activity summary using the new function
+      const { data: userActivity, error: userActivityError } = await supabase
+        .rpc('get_user_activity_summary');
+
+      if (userActivityError) throw userActivityError;
 
       // Fetch questions count  
       const { count: questionCount } = await supabase
@@ -64,8 +75,12 @@ const AdminDashboard = () => {
         count
       }));
 
+      // Consolidate all stats
       setStats({
-        totalUsers: userCount || 0,
+        totalUsers: userActivity?.[0]?.total_users || 0,
+        verifiedUsers: userActivity?.[0]?.verified_users || 0,
+        totalPoints: userActivity?.[0]?.total_points || 0,
+        recentSignups: userActivity?.[0]?.recent_signups || 0,
         totalQuestions: questionCount || 0,
         totalBlogPosts: blogCount || 0,
         recentActivity: activityCount || 0
@@ -106,9 +121,10 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Registered users on the platform
-            </p>
+            <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <UserCheck className="mr-1 h-3 w-3" />
+              {stats.verifiedUsers} verified ({Math.round((stats.verifiedUsers / stats.totalUsers) * 100) || 0}%)
+            </div>
           </CardContent>
         </Card>
 
@@ -151,6 +167,47 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* New User Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>User Statistics</CardTitle>
+          <CardDescription>
+            Overview of user activity and engagement
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">New Signups (7 days)</div>
+              <div className="flex items-center">
+                <Clock className="mr-2 h-4 w-4 text-primary" />
+                <div className="text-2xl font-bold">{stats.recentSignups}</div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">Total Points Earned</div>
+              <div className="flex items-center">
+                <TrendingUp className="mr-2 h-4 w-4 text-primary" />
+                <div className="text-2xl font-bold">{stats.totalPoints.toLocaleString()}</div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">Average Points per User</div>
+              <div className="flex items-center">
+                <Users className="mr-2 h-4 w-4 text-primary" />
+                <div className="text-2xl font-bold">
+                  {stats.totalUsers > 0 
+                    ? Math.round(stats.totalPoints / stats.totalUsers).toLocaleString() 
+                    : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Activity Chart */}
       <Card>

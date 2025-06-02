@@ -1544,7 +1544,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_user_view: {
+        Row: {
+          activities: Json | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          is_verified: boolean | null
+          points: number | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       ban_user: {
@@ -1628,6 +1641,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_new_questions: {
         Args: { p_user_id: string; p_subject: string }
         Returns: {
@@ -1687,6 +1704,15 @@ export type Database = {
           count: number
         }[]
       }
+      get_user_activity_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users: number
+          verified_users: number
+          total_points: number
+          recent_signups: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1697,6 +1723,10 @@ export type Database = {
       }
       is_admin: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_user_banned: {

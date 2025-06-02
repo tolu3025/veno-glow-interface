@@ -1,4 +1,3 @@
-
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
@@ -46,12 +45,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
           return;
         }
         
-        // Check user_roles table with proper error handling
+        // Use the new security definer function to get user role
         const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .rpc('get_current_user_role');
 
         if (error) {
           console.error('Error fetching user role:', error);
@@ -64,9 +60,8 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
             setUserRole('user'); // Default fallback
           }
         } else if (data) {
-          const role = data.role || 'user';
-          console.log('User role found:', role);
-          setUserRole(role);
+          console.log('User role found:', data);
+          setUserRole(data || 'user');
         } else {
           // No role found, default to user
           console.log('No user role found, defaulting to user');
