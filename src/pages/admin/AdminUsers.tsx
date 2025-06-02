@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ type UserProfile = {
   points: number;
   created_at: string;
   is_verified: boolean;
-  role: string;
+  role?: string;
 }
 
 const AdminUsers = () => {
@@ -30,20 +31,57 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Fetch user data from the admin_user_view
-      const { data, error } = await supabase
-        .from('admin_user_view')
-        .select('*');
+      console.log('Fetching users from user_profiles table...');
       
-      if (error) {
-        console.error('Error fetching users:', error);
-        throw error;
+      // First try to get users from user_profiles table with role information
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select(`
+          id,
+          user_id,
+          email,
+          points,
+          created_at,
+          is_verified
+        `);
+      
+      if (profilesError) {
+        console.error('Error fetching from user_profiles:', profilesError);
+        throw profilesError;
       }
+
+      console.log('Profiles data:', profilesData);
+
+      // Get user roles separately
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) {
+        console.warn('Could not fetch user roles:', rolesError);
+      }
+
+      // Merge profile data with roles
+      const usersWithRoles = (profilesData || []).map(profile => {
+        const userRole = rolesData?.find(role => role.user_id === profile.user_id);
+        return {
+          ...profile,
+          role: userRole?.role || 'user'
+        };
+      });
+
+      console.log('Users with roles:', usersWithRoles);
+      setUsers(usersWithRoles);
       
-      setUsers(data || []);
+      if (usersWithRoles.length === 0) {
+        toast.info('No users found in the database');
+      } else {
+        toast.success(`Loaded ${usersWithRoles.length} users`);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error('Failed to fetch users');
+      toast.error(`Failed to fetch users: ${error.message}`);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -51,10 +89,8 @@ const AdminUsers = () => {
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      // Toggle direction if same field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // New field, default to descending
       setSortField(field);
       setSortDirection("desc");
     }
@@ -161,7 +197,7 @@ const AdminUsers = () => {
               
               {filteredUsers.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  No users found
+                  {users.length === 0 ? 'No users found in database' : 'No users match your search'}
                 </div>
               ) : (
                 <div>
@@ -175,7 +211,7 @@ const AdminUsers = () => {
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                            <User className="mr-1 h-3 w-3" /> {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            <User className="mr-1 h-3 w-3" /> {user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || 'User'}
                           </span>
                         )}
                       </div>

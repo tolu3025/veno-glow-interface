@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,13 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users, FileText, HelpCircle, TrendingUp, Activity, AlertCircle, UserCheck, Clock } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-
-type UserActivitySummary = {
-  total_users: number;
-  verified_users: number;
-  total_points: number;
-  recent_signups: number;
-}
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -34,34 +26,68 @@ const AdminDashboard = () => {
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      // Get user activity summary using the new function
-      const { data: userActivity, error: userActivityError } = await supabase
-        .rpc('get_user_activity_summary');
+      console.log('Fetching dashboard statistics...');
 
-      if (userActivityError) throw userActivityError;
+      // Fetch user profiles directly instead of using the function
+      const { data: userProfiles, error: userProfilesError } = await supabase
+        .from('user_profiles')
+        .select('*');
+
+      if (userProfilesError) {
+        console.warn('Error fetching user profiles:', userProfilesError);
+      }
+
+      // Calculate user stats manually
+      const totalUsers = userProfiles?.length || 0;
+      const verifiedUsers = userProfiles?.filter(user => user.is_verified).length || 0;
+      const totalPoints = userProfiles?.reduce((sum, user) => sum + (user.points || 0), 0) || 0;
+      
+      // Calculate recent signups (last 7 days)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentSignups = userProfiles?.filter(user => 
+        new Date(user.created_at) >= sevenDaysAgo
+      ).length || 0;
+
+      console.log('User stats:', { totalUsers, verifiedUsers, totalPoints, recentSignups });
 
       // Fetch questions count  
-      const { count: questionCount } = await supabase
+      const { count: questionCount, error: questionsError } = await supabase
         .from('questions')
         .select('*', { count: 'exact', head: true });
 
+      if (questionsError) {
+        console.warn('Error fetching questions count:', questionsError);
+      }
+
       // Fetch blog posts count
-      const { count: blogCount } = await supabase
+      const { count: blogCount, error: blogError } = await supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true });
 
+      if (blogError) {
+        console.warn('Error fetching blog count:', blogError);
+      }
+
       // Fetch recent test attempts for activity
-      const { count: activityCount } = await supabase
+      const { count: activityCount, error: activityError } = await supabase
         .from('test_attempts')
         .select('*', { count: 'exact', head: true })
         .gte('completed_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
+      if (activityError) {
+        console.warn('Error fetching activity count:', activityError);
+      }
+
       // Fetch activity data for chart
-      const { data: chartData } = await supabase
+      const { data: chartData, error: chartError } = await supabase
         .from('test_attempts')
         .select('completed_at')
         .gte('completed_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('completed_at', { ascending: true });
+
+      if (chartError) {
+        console.warn('Error fetching chart data:', chartError);
+      }
 
       // Process chart data
       const dailyActivity = chartData?.reduce((acc, attempt) => {
@@ -77,19 +103,21 @@ const AdminDashboard = () => {
 
       // Consolidate all stats
       setStats({
-        totalUsers: userActivity?.[0]?.total_users || 0,
-        verifiedUsers: userActivity?.[0]?.verified_users || 0,
-        totalPoints: userActivity?.[0]?.total_points || 0,
-        recentSignups: userActivity?.[0]?.recent_signups || 0,
+        totalUsers,
+        verifiedUsers,
+        totalPoints,
+        recentSignups,
         totalQuestions: questionCount || 0,
         totalBlogPosts: blogCount || 0,
         recentActivity: activityCount || 0
       });
 
       setActivityData(chartArray);
+      console.log('Dashboard stats loaded successfully');
+      toast.success('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      toast.error('Failed to load dashboard statistics');
+      toast.error(`Failed to load dashboard statistics: ${error.message}`);
     } finally {
       setLoading(false);
     }

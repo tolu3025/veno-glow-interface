@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Loader, BookOpen, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader, BookOpen, Filter, Save, X } from 'lucide-react';
 
 type Question = {
   id: string;
@@ -38,6 +38,7 @@ const AdminQuestions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isAddingNewSubject, setIsAddingNewSubject] = useState(false);
+  const [editingSubjectName, setEditingSubjectName] = useState<string>("");
   
   // Form state
   const [formData, setFormData] = useState({
@@ -57,16 +58,24 @@ const AdminQuestions = () => {
   const fetchSubjects = async () => {
     setSubjectsLoading(true);
     try {
+      console.log('Fetching subjects...');
       const { data, error } = await supabase
         .from('questions')
         .select('subject')
         .order('subject');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subjects:', error);
+        throw error;
+      }
+      
+      console.log('Raw subject data:', data);
       
       // Get unique subjects and count questions
       const subjectCounts = (data || []).reduce((acc: Record<string, number>, item) => {
-        acc[item.subject] = (acc[item.subject] || 0) + 1;
+        if (item.subject && item.subject.trim()) {
+          acc[item.subject] = (acc[item.subject] || 0) + 1;
+        }
         return acc;
       }, {});
       
@@ -75,10 +84,12 @@ const AdminQuestions = () => {
         question_count: count
       }));
       
+      console.log('Processed subjects:', subjectList);
       setSubjects(subjectList);
     } catch (error) {
       console.error('Error fetching subjects:', error);
       toast.error('Failed to fetch subjects');
+      setSubjects([]);
     } finally {
       setSubjectsLoading(false);
     }
@@ -87,12 +98,18 @@ const AdminQuestions = () => {
   const fetchQuestions = async () => {
     setLoading(true);
     try {
+      console.log('Fetching questions...');
       const { data, error } = await supabase
         .from('questions')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching questions:', error);
+        throw error;
+      }
+      
+      console.log('Questions data:', data);
       
       const transformedData = (data || []).map(item => ({
         ...item,
@@ -100,9 +117,11 @@ const AdminQuestions = () => {
       }));
       
       setQuestions(transformedData);
+      toast.success(`Loaded ${transformedData.length} questions`);
     } catch (error) {
       console.error('Error fetching questions:', error);
-      toast.error('Failed to fetch questions');
+      toast.error(`Failed to fetch questions: ${error.message}`);
+      setQuestions([]);
     } finally {
       setLoading(false);
     }
@@ -122,47 +141,70 @@ const AdminQuestions = () => {
   };
 
   const handleCreateQuestion = async () => {
-    if (!formData.subject || !formData.question || formData.options.some(opt => !opt.trim())) {
-      toast.error('Please fill in all required fields');
+    // Validation
+    if (!formData.subject?.trim()) {
+      toast.error('Please enter a subject name');
+      return;
+    }
+
+    if (!formData.question?.trim()) {
+      toast.error('Please enter a question');
+      return;
+    }
+
+    if (formData.options.some(opt => !opt.trim())) {
+      toast.error('Please fill in all answer options');
       return;
     }
 
     try {
+      console.log('Saving question with data:', formData);
+      
       const questionData = {
-        subject: formData.subject,
-        question: formData.question,
-        options: formData.options,
+        subject: formData.subject.trim(),
+        question: formData.question.trim(),
+        options: formData.options.map(opt => opt.trim()),
         answer: formData.answer,
         difficulty: formData.difficulty,
-        explanation: formData.explanation || null
+        explanation: formData.explanation?.trim() || null
       };
 
       let result;
       if (editingQuestion) {
+        console.log('Updating question:', editingQuestion.id);
         result = await supabase
           .from('questions')
           .update(questionData)
-          .eq('id', editingQuestion.id);
+          .eq('id', editingQuestion.id)
+          .select();
       } else {
+        console.log('Creating new question');
         result = await supabase
           .from('questions')
-          .insert([questionData]);
+          .insert([questionData])
+          .select();
       }
 
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('Error saving question:', result.error);
+        throw result.error;
+      }
 
+      console.log('Question saved successfully:', result.data);
       toast.success(editingQuestion ? 'Question updated successfully' : 'Question created successfully');
       setIsDialogOpen(false);
       resetForm();
-      fetchQuestions();
-      fetchSubjects(); // Refresh subjects in case a new one was added
+      
+      // Refresh both questions and subjects
+      await Promise.all([fetchQuestions(), fetchSubjects()]);
     } catch (error) {
       console.error('Error saving question:', error);
-      toast.error('Failed to save question');
+      toast.error(`Failed to save question: ${error.message}`);
     }
   };
 
   const handleEditQuestion = (question: Question) => {
+    console.log('Editing question:', question);
     setEditingQuestion(question);
     setFormData({
       subject: question.subject,
@@ -179,19 +221,22 @@ const AdminQuestions = () => {
     if (!confirm('Are you sure you want to delete this question?')) return;
 
     try {
+      console.log('Deleting question:', questionId);
       const { error } = await supabase
         .from('questions')
         .delete()
         .eq('id', questionId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting question:', error);
+        throw error;
+      }
 
       toast.success('Question deleted successfully');
-      fetchQuestions();
-      fetchSubjects(); // Refresh subjects in case count changed
+      await Promise.all([fetchQuestions(), fetchSubjects()]);
     } catch (error) {
       console.error('Error deleting question:', error);
-      toast.error('Failed to delete question');
+      toast.error(`Failed to delete question: ${error.message}`);
     }
   };
 
@@ -202,6 +247,38 @@ const AdminQuestions = () => {
     } else {
       setIsAddingNewSubject(false);
       setFormData(prev => ({ ...prev, subject: value }));
+    }
+  };
+
+  const handleEditSubjectName = (oldName: string) => {
+    setEditingSubjectName(oldName);
+  };
+
+  const handleSaveSubjectName = async (oldName: string, newName: string) => {
+    if (!newName.trim() || newName.trim() === oldName) {
+      setEditingSubjectName("");
+      return;
+    }
+
+    try {
+      console.log(`Updating subject name from "${oldName}" to "${newName}"`);
+      
+      const { error } = await supabase
+        .from('questions')
+        .update({ subject: newName.trim() })
+        .eq('subject', oldName);
+
+      if (error) {
+        console.error('Error updating subject name:', error);
+        throw error;
+      }
+
+      toast.success(`Subject name updated from "${oldName}" to "${newName}"`);
+      setEditingSubjectName("");
+      await Promise.all([fetchQuestions(), fetchSubjects()]);
+    } catch (error) {
+      console.error('Error updating subject name:', error);
+      toast.error(`Failed to update subject name: ${error.message}`);
     }
   };
 
@@ -376,10 +453,57 @@ const AdminQuestions = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {subjects.map((subject) => (
                 <div key={subject.name} className="p-4 border rounded-lg">
-                  <h3 className="font-medium">{subject.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {subject.question_count} question{subject.question_count !== 1 ? 's' : ''}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    {editingSubjectName === subject.name ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Input
+                          defaultValue={subject.name}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveSubjectName(subject.name, e.currentTarget.value);
+                            } else if (e.key === 'Escape') {
+                              setEditingSubjectName("");
+                            }
+                          }}
+                          className="text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            const input = e.currentTarget.parentElement?.querySelector('input');
+                            if (input) {
+                              handleSaveSubjectName(subject.name, input.value);
+                            }
+                          }}
+                        >
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingSubjectName("")}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <h3 className="font-medium">{subject.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {subject.question_count} question{subject.question_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditSubjectName(subject.name)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -434,44 +558,52 @@ const AdminQuestions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredQuestions.map((question) => (
-                  <TableRow key={question.id}>
-                    <TableCell className="max-w-md">
-                      <div className="truncate">{question.question}</div>
-                    </TableCell>
-                    <TableCell>{question.subject}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        question.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
-                        question.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {question.difficulty}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(question.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditQuestion(question)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteQuestion(question.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {filteredQuestions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      {questions.length === 0 ? 'No questions found. Create your first question!' : 'No questions match your search.'}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredQuestions.map((question) => (
+                    <TableRow key={question.id}>
+                      <TableCell className="max-w-md">
+                        <div className="truncate">{question.question}</div>
+                      </TableCell>
+                      <TableCell>{question.subject}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          question.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+                          question.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {question.difficulty}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(question.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditQuestion(question)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteQuestion(question.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           )}
