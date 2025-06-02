@@ -39,6 +39,7 @@ const AdminQuestions = () => {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isAddingNewSubject, setIsAddingNewSubject] = useState(false);
   const [editingSubjectName, setEditingSubjectName] = useState<string>("");
+  const [newSubjectName, setNewSubjectName] = useState<string>("");
   
   // Form state
   const [formData, setFormData] = useState({
@@ -138,11 +139,24 @@ const AdminQuestions = () => {
     });
     setEditingQuestion(null);
     setIsAddingNewSubject(false);
+    setNewSubjectName('');
   };
 
   const handleCreateQuestion = async () => {
+    // Get the final subject name - either from existing selection or new subject input
+    const finalSubjectName = isAddingNewSubject ? newSubjectName.trim() : formData.subject.trim();
+    
+    console.log('Validation check:', {
+      finalSubjectName,
+      isAddingNewSubject,
+      newSubjectName,
+      formDataSubject: formData.subject,
+      question: formData.question,
+      options: formData.options
+    });
+
     // Validation
-    if (!formData.subject?.trim()) {
+    if (!finalSubjectName) {
       toast.error('Please enter a subject name');
       return;
     }
@@ -158,10 +172,13 @@ const AdminQuestions = () => {
     }
 
     try {
-      console.log('Saving question with data:', formData);
+      console.log('Saving question with data:', {
+        ...formData,
+        subject: finalSubjectName
+      });
       
       const questionData = {
-        subject: formData.subject.trim(),
+        subject: finalSubjectName,
         question: formData.question.trim(),
         options: formData.options.map(opt => opt.trim()),
         answer: formData.answer,
@@ -214,6 +231,8 @@ const AdminQuestions = () => {
       difficulty: question.difficulty,
       explanation: question.explanation || ''
     });
+    setIsAddingNewSubject(false);
+    setNewSubjectName('');
     setIsDialogOpen(true);
   };
 
@@ -241,12 +260,15 @@ const AdminQuestions = () => {
   };
 
   const handleSubjectChange = (value: string) => {
+    console.log('Subject change:', value);
     if (value === 'add_new') {
       setIsAddingNewSubject(true);
       setFormData(prev => ({ ...prev, subject: '' }));
+      setNewSubjectName('');
     } else {
       setIsAddingNewSubject(false);
       setFormData(prev => ({ ...prev, subject: value }));
+      setNewSubjectName('');
     }
   };
 
@@ -255,17 +277,19 @@ const AdminQuestions = () => {
   };
 
   const handleSaveSubjectName = async (oldName: string, newName: string) => {
-    if (!newName.trim() || newName.trim() === oldName) {
+    const trimmedNewName = newName.trim();
+    
+    if (!trimmedNewName || trimmedNewName === oldName) {
       setEditingSubjectName("");
       return;
     }
 
     try {
-      console.log(`Updating subject name from "${oldName}" to "${newName}"`);
+      console.log(`Updating subject name from "${oldName}" to "${trimmedNewName}"`);
       
       const { error } = await supabase
         .from('questions')
-        .update({ subject: newName.trim() })
+        .update({ subject: trimmedNewName })
         .eq('subject', oldName);
 
       if (error) {
@@ -273,7 +297,7 @@ const AdminQuestions = () => {
         throw error;
       }
 
-      toast.success(`Subject name updated from "${oldName}" to "${newName}"`);
+      toast.success(`Subject name updated from "${oldName}" to "${trimmedNewName}"`);
       setEditingSubjectName("");
       await Promise.all([fetchQuestions(), fetchSubjects()]);
     } catch (error) {
@@ -318,14 +342,17 @@ const AdminQuestions = () => {
                   {isAddingNewSubject ? (
                     <div className="space-y-2">
                       <Input
-                        value={formData.subject}
-                        onChange={(e) => setFormData(prev => ({...prev, subject: e.target.value}))}
+                        value={newSubjectName}
+                        onChange={(e) => setNewSubjectName(e.target.value)}
                         placeholder="Enter new subject name"
                       />
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => setIsAddingNewSubject(false)}
+                        onClick={() => {
+                          setIsAddingNewSubject(false);
+                          setNewSubjectName('');
+                        }}
                       >
                         Cancel
                       </Button>
@@ -465,6 +492,10 @@ const AdminQuestions = () => {
                               setEditingSubjectName("");
                             }
                           }}
+                          onBlur={(e) => {
+                            handleSaveSubjectName(subject.name, e.target.value);
+                          }}
+                          autoFocus
                           className="text-sm"
                         />
                         <Button
