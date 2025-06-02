@@ -15,7 +15,7 @@ type UserDetail = {
   created_at: string;
   is_verified: boolean;
   role?: string;
-  activities?: any[];
+  activities?: any;
 }
 
 const AdminUserDetails = () => {
