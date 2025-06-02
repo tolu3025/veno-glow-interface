@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ type UserProfile = {
 }
 
 const AdminUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,17 +35,10 @@ const AdminUsers = () => {
     try {
       console.log('Fetching users from user_profiles table...');
       
-      // First try to get users from user_profiles table with role information
+      // Get users from user_profiles table
       const { data: profilesData, error: profilesError } = await supabase
         .from('user_profiles')
-        .select(`
-          id,
-          user_id,
-          email,
-          points,
-          created_at,
-          is_verified
-        `);
+        .select('*');
       
       if (profilesError) {
         console.error('Error fetching from user_profiles:', profilesError);
@@ -94,6 +89,11 @@ const AdminUsers = () => {
       setSortField(field);
       setSortDirection("desc");
     }
+  };
+
+  const handleViewDetails = (userId: string) => {
+    console.log('Navigating to user details for:', userId);
+    navigate(`/admin/users/${userId}`);
   };
 
   const filteredUsers = users
@@ -231,7 +231,13 @@ const AdminUsers = () => {
                         )}
                       </div>
                       <div>
-                        <Button variant="ghost" size="sm">View Details</Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleViewDetails(user.user_id)}
+                        >
+                          View Details
+                        </Button>
                       </div>
                     </div>
                   ))}

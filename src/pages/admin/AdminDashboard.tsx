@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ const AdminDashboard = () => {
     try {
       console.log('Fetching dashboard statistics...');
 
-      // Fetch user profiles directly instead of using the function
+      // Fetch user profiles directly
       const { data: userProfiles, error: userProfilesError } = await supabase
         .from('user_profiles')
         .select('*');
@@ -68,7 +69,7 @@ const AdminDashboard = () => {
         console.warn('Error fetching blog count:', blogError);
       }
 
-      // Fetch recent test attempts for activity
+      // Fetch recent test attempts for activity (last 7 days instead of 24 hours)
       const { count: activityCount, error: activityError } = await supabase
         .from('test_attempts')
         .select('*', { count: 'exact', head: true })
@@ -78,7 +79,7 @@ const AdminDashboard = () => {
         console.warn('Error fetching activity count:', activityError);
       }
 
-      // Fetch activity data for chart
+      // Fetch activity data for chart (last 7 days)
       const { data: chartData, error: chartError } = await supabase
         .from('test_attempts')
         .select('completed_at')
@@ -89,17 +90,31 @@ const AdminDashboard = () => {
         console.warn('Error fetching chart data:', chartError);
       }
 
-      // Process chart data
-      const dailyActivity = chartData?.reduce((acc, attempt) => {
-        const date = new Date(attempt.completed_at).toLocaleDateString();
-        acc[date] = (acc[date] || 0) + 1;
-        return acc;
-      }, {});
+      // Process chart data - group by day for the last 7 days
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        last7Days.push({
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          fullDate: date.toDateString(),
+          count: 0
+        });
+      }
 
-      const chartArray = Object.entries(dailyActivity || {}).map(([date, count]) => ({
-        date,
-        count
-      }));
+      // Count attempts per day
+      if (chartData) {
+        chartData.forEach(attempt => {
+          const attemptDate = new Date(attempt.completed_at).toDateString();
+          const dayData = last7Days.find(day => day.fullDate === attemptDate);
+          if (dayData) {
+            dayData.count++;
+          }
+        });
+      }
+
+      // Remove fullDate for chart display
+      const chartArray = last7Days.map(({ date, count }) => ({ date, count }));
 
       // Consolidate all stats
       setStats({
