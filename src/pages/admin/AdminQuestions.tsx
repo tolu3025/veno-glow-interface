@@ -203,13 +203,7 @@ const AdminQuestions = () => {
 
       if (result.error) {
         console.error('Error saving question:', result.error);
-        
-        // Handle specific constraint errors
-        if (result.error.message.includes('valid_subject')) {
-          toast.error('Invalid subject name. Please check allowed subjects and try again.');
-        } else {
-          toast.error(`Failed to save question: ${result.error.message}`);
-        }
+        toast.error(`Failed to save question: ${result.error.message}`);
         return;
       }
 
@@ -300,13 +294,7 @@ const AdminQuestions = () => {
 
       if (error) {
         console.error('Error updating subject name:', error);
-        
-        // Handle specific constraint errors
-        if (error.message.includes('valid_subject')) {
-          toast.error(`Invalid subject name "${trimmedNewName}". This name is not allowed by the system constraints.`);
-        } else {
-          toast.error(`Failed to update subject name: ${error.message}`);
-        }
+        toast.error(`Failed to update subject name: ${error.message}`);
         return;
       }
 
