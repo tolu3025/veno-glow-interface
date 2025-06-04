@@ -87,7 +87,7 @@ export class BillingService {
         return null;
       }
 
-      return data;
+      return data as UserFeatureAccess;
     } catch (error) {
       console.error('Error getting feature access:', error);
       return null;
@@ -148,7 +148,7 @@ export class BillingService {
   }
 
   /**
-   * Create a payment session for a feature
+   * Create a payment session for a feature using Flutterwave
    */
   static async createPaymentSession(featureType: FeatureType): Promise<string | null> {
     try {
@@ -180,11 +180,27 @@ export class BillingService {
         return null;
       }
 
-      // For now, simulate payment completion (in real implementation, integrate with Stripe)
-      // This is a placeholder - you would integrate with actual payment gateway
-      setTimeout(async () => {
-        await this.completePayment(payment.id, featureType);
-      }, 2000);
+      // Call Flutterwave payment edge function
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('flutterwave-payment', {
+        body: {
+          paymentId: payment.id,
+          amount: pricing.amount / 100, // Convert from kobo to naira
+          currency: pricing.currency,
+          featureType: featureType,
+          userEmail: user.email
+        }
+      });
+
+      if (paymentError || !paymentData) {
+        console.error('Error initiating Flutterwave payment:', paymentError);
+        toast.error('Failed to initiate payment');
+        return null;
+      }
+
+      // Open payment link in new tab
+      if (paymentData.link) {
+        window.open(paymentData.link, '_blank');
+      }
 
       return payment.id;
     } catch (error) {
@@ -266,7 +282,7 @@ export class BillingService {
         return [];
       }
 
-      return data || [];
+      return (data || []) as UserPayment[];
     } catch (error) {
       console.error('Error fetching payment history:', error);
       return [];

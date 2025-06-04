@@ -1,4 +1,3 @@
-
 import { ArrowLeft, BookOpen, FileCheck, Monitor, Trophy, Crown, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -76,8 +75,7 @@ const CbtPage = () => {
 
   const handleAiTest = () => {
     if (hasAiAccess) {
-      // Navigate to AI test creation (not implemented yet)
-      console.log('AI test creation coming soon');
+      handleNavigation('/cbt/ai-create');
     } else {
       setSelectedFeature('ai_test');
       setShowPaymentDialog(true);
@@ -96,6 +94,8 @@ const CbtPage = () => {
     // Navigate to appropriate page
     if (selectedFeature === 'manual_test') {
       handleNavigation('/cbt/create');
+    } else if (selectedFeature === 'ai_test') {
+      handleNavigation('/cbt/ai-create');
     }
   };
   
