@@ -1239,6 +1239,84 @@ export type Database = {
         }
         Relationships: []
       }
+      user_feature_access: {
+        Row: {
+          access_count: number | null
+          created_at: string
+          expires_at: string | null
+          feature_type: string
+          id: string
+          unlimited_access: boolean | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          created_at?: string
+          expires_at?: string | null
+          feature_type: string
+          id?: string
+          unlimited_access?: boolean | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          created_at?: string
+          expires_at?: string | null
+          feature_type?: string
+          id?: string
+          unlimited_access?: boolean | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_payments: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          expires_at: string | null
+          id: string
+          payment_type: string
+          region: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          payment_type: string
+          region?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          payment_type?: string
+          region?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           activities: Json | null

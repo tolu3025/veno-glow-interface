@@ -1,5 +1,5 @@
 
-import { ArrowLeft, BookOpen, FileCheck, Monitor, Trophy } from "lucide-react";
+import { ArrowLeft, BookOpen, FileCheck, Monitor, Trophy, Crown, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -9,16 +9,31 @@ import AdPlacement from "@/components/ads/AdPlacement";
 import { playSound } from "@/utils/soundEffects";
 import LoadingState from "@/components/cbt/test/LoadingState";
 import { useState, useEffect } from "react";
+import { BillingService } from "@/services/billingService";
+import PaymentDialog from "@/components/billing/PaymentDialog";
 
 const CbtPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
+  const [hasManualAccess, setHasManualAccess] = useState(false);
+  const [hasAiAccess, setHasAiAccess] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<'manual_test' | 'ai_test'>('manual_test');
   
   useEffect(() => {
-    // Simulate loading state to improve user experience
-    const timer = setTimeout(() => {
+    const checkAccess = async () => {
+      const [manual, ai] = await Promise.all([
+        BillingService.hasFeatureAccess('manual_test'),
+        BillingService.hasFeatureAccess('ai_test')
+      ]);
+      setHasManualAccess(manual);
+      setHasAiAccess(ai);
       setIsLoading(false);
+    };
+
+    const timer = setTimeout(() => {
+      checkAccess();
     }, 800);
     
     return () => clearTimeout(timer);
@@ -48,6 +63,40 @@ const CbtPage = () => {
   const handleNavigation = (path: string) => {
     playSound('click', 0.3);
     navigate(path);
+  };
+
+  const handleCreateTest = () => {
+    if (hasManualAccess) {
+      handleNavigation('/cbt/create');
+    } else {
+      setSelectedFeature('manual_test');
+      setShowPaymentDialog(true);
+    }
+  };
+
+  const handleAiTest = () => {
+    if (hasAiAccess) {
+      // Navigate to AI test creation (not implemented yet)
+      console.log('AI test creation coming soon');
+    } else {
+      setSelectedFeature('ai_test');
+      setShowPaymentDialog(true);
+    }
+  };
+
+  const handlePaymentComplete = async () => {
+    // Refresh access status
+    const [manual, ai] = await Promise.all([
+      BillingService.hasFeatureAccess('manual_test'),
+      BillingService.hasFeatureAccess('ai_test')
+    ]);
+    setHasManualAccess(manual);
+    setHasAiAccess(ai);
+
+    // Navigate to appropriate page
+    if (selectedFeature === 'manual_test') {
+      handleNavigation('/cbt/create');
+    }
   };
   
   if (isLoading) {
@@ -84,12 +133,41 @@ const CbtPage = () => {
             </p>
             <div className="flex flex-col gap-3 items-center">
               <Button 
-                onClick={() => handleNavigation('/cbt/create')}
-                className="bg-veno-primary hover:bg-veno-primary/90 w-full md:max-w-xs"
+                onClick={handleCreateTest}
+                className={`w-full md:max-w-xs ${hasManualAccess ? 'bg-veno-primary hover:bg-veno-primary/90' : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'}`}
                 size={isMobile ? "sm" : "default"}
               >
-                Create New Test
+                {hasManualAccess ? (
+                  <>
+                    <Crown className="mr-2 h-4 w-4" />
+                    Create Manual Test
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Create Manual Test (₦1,000)
+                  </>
+                )}
               </Button>
+
+              <Button 
+                onClick={handleAiTest}
+                className={`w-full md:max-w-xs ${hasAiAccess ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600' : 'bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600'}`}
+                size={isMobile ? "sm" : "default"}
+              >
+                {hasAiAccess ? (
+                  <>
+                    <Crown className="mr-2 h-4 w-4" />
+                    AI Test Creation
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    AI Test Creation (₦2,000)
+                  </>
+                )}
+              </Button>
+
               <Button
                 onClick={() => handleNavigation('/cbt/public-leaderboards')}
                 variant="secondary"
@@ -197,6 +275,13 @@ const CbtPage = () => {
           View All Services
         </Button>
       </div>
+
+      <PaymentDialog
+        isOpen={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        featureType={selectedFeature}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </div>
   );
 };
