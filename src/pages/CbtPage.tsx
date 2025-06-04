@@ -130,8 +130,8 @@ const CbtPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-sm mb-5">
-              Create tests, manage questions, and track performance with our comprehensive CBT platform.
-              Choose between manual test creation with full control or AI-powered generation for quick setup.
+              Create unlimited tests with our monthly subscription plans. Choose between manual test creation 
+              with full control or AI-powered generation for quick setup.
             </p>
             <div className="flex flex-col gap-3 items-center">
               <Button 
@@ -147,7 +147,7 @@ const CbtPage = () => {
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Starter Plan (₦{(starterPricing.amount / 100).toLocaleString()})
+                    Starter Plan (₦{(starterPricing.amount / 100).toLocaleString()}/month)
                   </>
                 )}
               </Button>
@@ -165,7 +165,7 @@ const CbtPage = () => {
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Pro Plan (₦{(proPricing.amount / 100).toLocaleString()})
+                    Pro Plan (₦{(proPricing.amount / 100).toLocaleString()}/month)
                   </>
                 )}
               </Button>
@@ -185,17 +185,17 @@ const CbtPage = () => {
         
         <Card className="bg-veno-primary/5">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Pricing Plans</CardTitle>
+            <CardTitle className="text-lg">Monthly Plans</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
                 <div className="font-medium text-sm">Starter Plan</div>
-                <div className="text-xs text-muted-foreground">₦{(starterPricing.amount / 100).toLocaleString()} • {starterPricing.accessCount} manual tests</div>
+                <div className="text-xs text-muted-foreground">₦{(starterPricing.amount / 100).toLocaleString()}/month • Unlimited manual tests</div>
               </div>
               <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
                 <div className="font-medium text-sm">Pro Plan</div>
-                <div className="text-xs text-muted-foreground">₦{(proPricing.amount / 100).toLocaleString()} • {proPricing.accessCount} AI tests</div>
+                <div className="text-xs text-muted-foreground">₦{(proPricing.amount / 100).toLocaleString()}/month • Unlimited AI tests</div>
               </div>
               <Button
                 onClick={() => handleNavigation('/pricing')}

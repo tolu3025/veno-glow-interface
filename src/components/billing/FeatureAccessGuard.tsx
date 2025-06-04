@@ -4,7 +4,7 @@ import { BillingService, FeatureType } from '@/services/billingService';
 import PaymentDialog from './PaymentDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, Crown, Zap } from 'lucide-react';
+import { Lock, Crown, Zap, Calendar } from 'lucide-react';
 
 interface FeatureAccessGuardProps {
   featureType: FeatureType;
@@ -50,13 +50,17 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
   }
 
   if (hasAccess) {
+    const formatExpiry = (expiryDate: string) => {
+      return new Date(expiryDate).toLocaleDateString();
+    };
+
     return (
       <div>
-        {accessDetails && !accessDetails.unlimited_access && (
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+        {accessDetails && accessDetails.expires_at && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+            <p className="text-sm text-green-700 dark:text-green-300">
               <Crown className="inline h-4 w-4 mr-1" />
-              You have {accessDetails.access_count} remaining uses for this feature.
+              Active subscription - Expires: {formatExpiry(accessDetails.expires_at)}
             </p>
           </div>
         )}
@@ -85,9 +89,9 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
               <Zap className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
             )}
           </div>
-          <CardTitle>Unlock {planName}</CardTitle>
+          <CardTitle>Subscribe to {planName}</CardTitle>
           <CardDescription>
-            This is a premium feature. Upgrade to access {featureName.toLowerCase()} with {pricing.accessCount} test creations.
+            This is a premium feature. Subscribe to get unlimited {featureName.toLowerCase()} with monthly billing.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -97,28 +101,31 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
               <ul className="text-sm text-muted-foreground space-y-1">
                 {featureType === 'manual_test' ? (
                   <>
-                    <li>• Create custom tests with your own questions</li>
+                    <li>• Unlimited custom test creation</li>
                     <li>• Add multiple subjects and topics</li>
                     <li>• Set custom difficulty levels</li>
                     <li>• Manage test settings and time limits</li>
                   </>
                 ) : (
                   <>
-                    <li>• Generate tests automatically using AI</li>
+                    <li>• Unlimited AI-generated tests</li>
                     <li>• Choose from various subjects and topics</li>
                     <li>• Adjust difficulty and question count</li>
                     <li>• Get instant question generation</li>
                   </>
                 )}
-                <li>• {pricing.accessCount} test creations included</li>
-                <li>• No expiration date</li>
+                <li>• Monthly subscription billing</li>
+                <li>• Cancel anytime</li>
                 <li>• {featureType === 'manual_test' ? 'Email support' : 'Priority support'}</li>
               </ul>
             </div>
             
             <div className="text-center">
               <div className="text-3xl font-bold text-veno-primary">{formattedAmount}</div>
-              <p className="text-sm text-muted-foreground">One-time payment • {pricing.accessCount} test creations</p>
+              <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                <Calendar className="h-4 w-4" />
+                per month • Cancel anytime
+              </p>
             </div>
           </div>
 
@@ -131,7 +138,7 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
             size="lg"
           >
             <Crown className="mr-2 h-4 w-4" />
-            Get {planName}
+            Subscribe to {planName}
           </Button>
         </CardContent>
       </Card>

@@ -66,18 +66,19 @@ serve(async (req) => {
             .single();
 
           if (payment) {
-            // Determine access count based on feature type
-            const accessCount = featureType === 'manual_test' ? 40 : 200;
+            // Calculate expiry date (1 month from now)
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 1);
             
-            // Grant feature access with updated counts
+            // Grant feature access with unlimited access for monthly subscription
             await supabase
               .from('user_feature_access')
               .upsert({
                 user_id: payment.user_id,
                 feature_type: featureType,
-                access_count: accessCount,
-                unlimited_access: false,
-                expires_at: null,
+                access_count: -1, // Unlimited for monthly subscription
+                unlimited_access: true,
+                expires_at: expiryDate.toISOString(),
                 updated_at: new Date().toISOString()
               }, {
                 onConflict: 'user_id,feature_type'

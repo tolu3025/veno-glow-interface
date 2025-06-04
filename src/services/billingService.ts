@@ -135,20 +135,22 @@ export class BillingService {
   /**
    * Get pricing for a feature based on user's region
    */
-  static getFeaturePricing(featureType: FeatureType, region?: string): { amount: number; currency: string; accessCount: number; planName: string } {
-    // Updated pricing structure
+  static getFeaturePricing(featureType: FeatureType, region?: string): { amount: number; currency: string; accessCount: number; planName: string; isMonthly: boolean } {
+    // Updated monthly subscription pricing structure
     const pricingPlans = {
       manual_test: { 
-        amount: 500000, // ₦5000 in kobo for Starter plan
+        amount: 100000, // ₦1000 in kobo for Starter plan
         currency: 'NGN',
-        accessCount: 40,
-        planName: 'Starter Plan'
+        accessCount: -1, // Unlimited for monthly subscription
+        planName: 'Starter Plan',
+        isMonthly: true
       },
       ai_test: { 
-        amount: 1000000, // ₦10000 in kobo for Pro plan
+        amount: 300000, // ₦3000 in kobo for Pro plan
         currency: 'NGN',
-        accessCount: 200,
-        planName: 'Pro Plan'
+        accessCount: -1, // Unlimited for monthly subscription
+        planName: 'Pro Plan',
+        isMonthly: true
       }
     };
 
@@ -171,6 +173,10 @@ export class BillingService {
       
       console.log('Creating payment session with pricing:', pricing);
       
+      // Calculate expiry date (1 month from now)
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+      
       // Create payment record
       const { data: payment, error } = await supabase
         .from('user_payments')
@@ -179,7 +185,8 @@ export class BillingService {
           payment_type: featureType,
           amount: pricing.amount,
           currency: pricing.currency,
-          status: 'pending'
+          status: 'pending',
+          expires_at: expiryDate.toISOString()
         })
         .select()
         .single();
@@ -258,15 +265,19 @@ export class BillingService {
 
       if (!payment) return;
 
-      // Grant or update feature access with new counts
+      // Calculate expiry date (1 month from now)
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+      // Grant or update feature access with unlimited access for monthly subscription
       const { error: accessError } = await supabase
         .from('user_feature_access')
         .upsert({
           user_id: payment.user_id,
           feature_type: featureType,
-          access_count: pricing.accessCount, // Use new access counts
-          unlimited_access: false,
-          expires_at: null,
+          access_count: -1, // Unlimited for monthly subscription
+          unlimited_access: true,
+          expires_at: expiryDate.toISOString(),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id,feature_type'
@@ -277,7 +288,7 @@ export class BillingService {
         return;
       }
 
-      toast.success(`Payment completed! You now have ${pricing.accessCount} ${featureType.replace('_', ' ')} creations.`);
+      toast.success(`Payment completed! You now have unlimited ${featureType.replace('_', ' ')} access for 1 month.`);
     } catch (error) {
       console.error('Error completing payment:', error);
     }

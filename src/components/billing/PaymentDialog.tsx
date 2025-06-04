@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BillingService, FeatureType } from "@/services/billingService";
-import { CreditCard, Loader, CheckCircle, Crown, Zap } from 'lucide-react';
+import { CreditCard, Loader, CheckCircle, Crown, Zap, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PaymentDialogProps {
@@ -73,10 +73,10 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconComponent className="h-5 w-5 text-veno-primary" />
-            Upgrade to {planName}
+            Subscribe to {planName}
           </DialogTitle>
           <DialogDescription>
-            Unlock {featureName.toLowerCase()} capabilities
+            Monthly subscription for unlimited {featureName.toLowerCase()} capabilities
           </DialogDescription>
         </DialogHeader>
 
@@ -85,7 +85,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
             <h3 className="text-lg font-semibold mb-2">Payment Window Opened!</h3>
             <p className="text-muted-foreground text-center">
-              Complete your payment in the new tab. You'll get access to {pricing.accessCount} test creations once payment is confirmed.
+              Complete your payment in the new tab. You'll get unlimited access once payment is confirmed.
             </p>
           </div>
         ) : (
@@ -98,25 +98,29 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 </CardTitle>
                 <CardDescription>
                   {featureType === 'manual_test' 
-                    ? 'Create custom tests with your own questions and subjects. Perfect for educators who want full control over their test content.'
-                    : 'Generate tests automatically using advanced AI. Choose from various subjects, topics, and difficulty levels with instant question generation.'
+                    ? 'Unlimited manual test creation with full control over your content. Perfect for educators who want complete customization.'
+                    : 'Unlimited AI-powered test generation. Choose from various subjects, topics, and difficulty levels with instant question creation.'
                   }
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">Price:</span>
+                    <span className="font-medium">Monthly Price:</span>
                     <span className="text-2xl font-bold text-veno-primary">{formattedAmount}</span>
                   </div>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="font-medium text-foreground mb-2">What's included:</div>
-                    <div>• {pricing.accessCount} test creations</div>
+                    <div className="font-medium text-foreground mb-2 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      What's included:
+                    </div>
+                    <div>• Unlimited test creations</div>
                     <div>• {featureType === 'manual_test' ? 'Manual question input' : 'AI-powered question generation'}</div>
                     <div>• {featureType === 'manual_test' ? 'Custom subjects and topics' : 'Multiple subjects and difficulty levels'}</div>
                     <div>• Full access to test settings</div>
                     <div>• Results tracking and analytics</div>
-                    <div>• No expiration date</div>
+                    <div>• Monthly billing cycle</div>
+                    <div>• Cancel anytime</div>
                     <div>• {featureType === 'manual_test' ? 'Email support' : 'Priority support'}</div>
                   </div>
                 </div>
@@ -143,7 +147,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 ) : (
                   <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Pay {formattedAmount}
+                    Subscribe for {formattedAmount}/month
                   </>
                 )}
               </Button>

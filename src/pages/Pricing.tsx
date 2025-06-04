@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Crown, Zap, ArrowLeft, Sparkles } from 'lucide-react';
+import { Check, Crown, Zap, ArrowLeft, Sparkles, Calendar } from 'lucide-react';
 import { BillingService } from '@/services/billingService';
 import PaymentDialog from '@/components/billing/PaymentDialog';
 import { useNavigate } from 'react-router-dom';
@@ -57,6 +57,12 @@ const Pricing = () => {
   const starterPricing = BillingService.getFeaturePricing('manual_test');
   const proPricing = BillingService.getFeaturePricing('ai_test');
 
+  const formatExpiry = (accessDetails: any) => {
+    if (!accessDetails?.expires_at) return '';
+    const expiryDate = new Date(accessDetails.expires_at);
+    return expiryDate.toLocaleDateString();
+  };
+
   const plans = [
     {
       name: "Starter Plan",
@@ -67,13 +73,13 @@ const Pricing = () => {
       color: "from-blue-500 to-cyan-500",
       popular: false,
       features: [
-        `${starterPricing.accessCount} Manual test creations`,
+        "Unlimited manual test creations",
         "Custom questions and subjects",
         "Multiple choice questions",
         "Basic test settings",
         "Results tracking",
         "Email support",
-        "No expiration date"
+        "Monthly subscription"
       ],
       hasAccess: hasManualAccess,
       accessDetails: manualAccessDetails
@@ -87,14 +93,14 @@ const Pricing = () => {
       color: "from-purple-500 to-pink-500",
       popular: true,
       features: [
-        `${proPricing.accessCount} AI test creations`,
+        "Unlimited AI test creations",
         "AI-generated questions",
         "Multiple subjects & topics",
         "Various difficulty levels",
         "Instant question generation",
         "Advanced analytics",
         "Priority support",
-        "No expiration date"
+        "Monthly subscription"
       ],
       hasAccess: hasAiAccess,
       accessDetails: aiAccessDetails
@@ -111,15 +117,19 @@ const Pricing = () => {
         >
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-3xl font-bold">Pricing Plans</h1>
+        <h1 className="text-3xl font-bold">Subscription Plans</h1>
       </div>
 
       <div className="text-center mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Choose Your CBT Creation Plan</h2>
+        <h2 className="text-2xl font-semibold mb-4">Choose Your Monthly CBT Subscription</h2>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Select the perfect plan for your test creation needs. Whether you prefer manual control 
+          Select the perfect monthly subscription for your test creation needs. Whether you prefer manual control 
           or AI-powered automation, we have the right solution for you.
         </p>
+        <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground">
+          <Calendar className="h-4 w-4 mr-2" />
+          Monthly billing • Cancel anytime
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -151,8 +161,13 @@ const Pricing = () => {
                 {plan.hasAccess && plan.accessDetails && (
                   <div className="mt-3 p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
                     <p className="text-sm text-green-700 dark:text-green-300 font-medium">
-                      ✓ Active Plan - {plan.accessDetails.access_count} uses remaining
+                      ✓ Active Subscription
                     </p>
+                    {plan.accessDetails.expires_at && (
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        Expires: {formatExpiry(plan.accessDetails)}
+                      </p>
+                    )}
                   </div>
                 )}
               </CardHeader>
@@ -160,7 +175,7 @@ const Pricing = () => {
               <CardContent className="space-y-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold">{plan.price}</div>
-                  <p className="text-sm text-muted-foreground">One-time payment</p>
+                  <p className="text-sm text-muted-foreground">per month</p>
                 </div>
 
                 <ul className="space-y-3">
@@ -187,12 +202,12 @@ const Pricing = () => {
                   {plan.hasAccess ? (
                     <>
                       <Check className="mr-2 h-4 w-4" />
-                      Active Plan
+                      Active Subscription
                     </>
                   ) : (
                     <>
                       <plan.icon className="mr-2 h-4 w-4" />
-                      Get {plan.name}
+                      Subscribe to {plan.name}
                     </>
                   )}
                 </Button>
@@ -208,20 +223,22 @@ const Pricing = () => {
           <div>
             <h4 className="font-medium mb-2">What's the difference between plans?</h4>
             <p className="text-sm text-muted-foreground">
-              The Starter plan allows manual test creation with custom questions, while the Pro plan 
-              includes AI-powered question generation with more test creation credits.
+              The Starter plan allows unlimited manual test creation, while the Pro plan 
+              includes unlimited AI-powered question generation.
             </p>
           </div>
           <div>
-            <h4 className="font-medium mb-2">Do the credits expire?</h4>
+            <h4 className="font-medium mb-2">Can I cancel anytime?</h4>
             <p className="text-sm text-muted-foreground">
-              No, your test creation credits never expire. Use them at your own pace whenever you need them.
+              Yes, you can cancel your subscription at any time. You'll continue to have access 
+              until the end of your current billing period.
             </p>
           </div>
           <div>
             <h4 className="font-medium mb-2">Can I upgrade my plan?</h4>
             <p className="text-sm text-muted-foreground">
-              Yes, you can purchase the Pro plan even if you have the Starter plan. Both plans work independently.
+              Yes, you can upgrade from Starter to Pro at any time. You can also have both subscriptions 
+              if you want access to all features.
             </p>
           </div>
           <div>
