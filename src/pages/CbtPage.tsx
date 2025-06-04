@@ -99,6 +99,9 @@ const CbtPage = () => {
     }
   };
   
+  const starterPricing = BillingService.getFeaturePricing('manual_test');
+  const proPricing = BillingService.getFeaturePricing('ai_test');
+  
   if (isLoading) {
     return (
       <div className="container px-4 py-6 max-w-4xl mx-auto">
@@ -128,13 +131,12 @@ const CbtPage = () => {
           <CardContent>
             <p className="text-muted-foreground text-sm mb-5">
               Create tests, manage questions, and track performance with our comprehensive CBT platform.
-              Our system enables educators to design custom assessments while providing students with
-              immediate feedback and performance analytics.
+              Choose between manual test creation with full control or AI-powered generation for quick setup.
             </p>
             <div className="flex flex-col gap-3 items-center">
               <Button 
                 onClick={handleCreateTest}
-                className={`w-full md:max-w-xs ${hasManualAccess ? 'bg-veno-primary hover:bg-veno-primary/90' : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'}`}
+                className={`w-full md:max-w-xs ${hasManualAccess ? 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600' : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'}`}
                 size={isMobile ? "sm" : "default"}
               >
                 {hasManualAccess ? (
@@ -145,7 +147,7 @@ const CbtPage = () => {
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Create Manual Test (₦1,000)
+                    Starter Plan (₦{(starterPricing.amount / 100).toLocaleString()})
                   </>
                 )}
               </Button>
@@ -163,7 +165,7 @@ const CbtPage = () => {
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    AI Test Creation (₦2,000)
+                    Pro Plan (₦{(proPricing.amount / 100).toLocaleString()})
                   </>
                 )}
               </Button>
@@ -183,22 +185,26 @@ const CbtPage = () => {
         
         <Card className="bg-veno-primary/5">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Quick Stats</CardTitle>
+            <CardTitle className="text-lg">Pricing Plans</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Tests Created</span>
-                <span className="font-medium">12</span>
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                <div className="font-medium text-sm">Starter Plan</div>
+                <div className="text-xs text-muted-foreground">₦{(starterPricing.amount / 100).toLocaleString()} • {starterPricing.accessCount} manual tests</div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Tests Taken</span>
-                <span className="font-medium">48</span>
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
+                <div className="font-medium text-sm">Pro Plan</div>
+                <div className="text-xs text-muted-foreground">₦{(proPricing.amount / 100).toLocaleString()} • {proPricing.accessCount} AI tests</div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Average Score</span>
-                <span className="font-medium">72%</span>
-              </div>
+              <Button
+                onClick={() => handleNavigation('/pricing')}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                View All Plans
+              </Button>
             </div>
           </CardContent>
         </Card>

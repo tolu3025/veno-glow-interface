@@ -135,16 +135,24 @@ export class BillingService {
   /**
    * Get pricing for a feature based on user's region
    */
-  static getFeaturePricing(featureType: FeatureType, region?: string): { amount: number; currency: string } {
-    // Default to Nigerian pricing
-    const defaultPricing = {
-      manual_test: { amount: 100000, currency: 'NGN' }, // ₦1000 in kobo
-      ai_test: { amount: 200000, currency: 'NGN' } // ₦2000 in kobo
+  static getFeaturePricing(featureType: FeatureType, region?: string): { amount: number; currency: string; accessCount: number; planName: string } {
+    // Updated pricing structure
+    const pricingPlans = {
+      manual_test: { 
+        amount: 500000, // ₦5000 in kobo for Starter plan
+        currency: 'NGN',
+        accessCount: 40,
+        planName: 'Starter Plan'
+      },
+      ai_test: { 
+        amount: 1000000, // ₦10000 in kobo for Pro plan
+        currency: 'NGN',
+        accessCount: 200,
+        planName: 'Pro Plan'
+      }
     };
 
-    // For other regions, you can add more pricing logic here
-    // For now, we'll stick with NGN pricing
-    return defaultPricing[featureType];
+    return pricingPlans[featureType];
   }
 
   /**
@@ -160,6 +168,8 @@ export class BillingService {
 
       // Get pricing for the feature
       const pricing = this.getFeaturePricing(featureType);
+      
+      console.log('Creating payment session with pricing:', pricing);
       
       // Create payment record
       const { data: payment, error } = await supabase
@@ -180,6 +190,8 @@ export class BillingService {
         return null;
       }
 
+      console.log('Payment record created:', payment);
+
       // Call Flutterwave payment edge function
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke('flutterwave-payment', {
         body: {
@@ -193,13 +205,19 @@ export class BillingService {
 
       if (paymentError || !paymentData) {
         console.error('Error initiating Flutterwave payment:', paymentError);
-        toast.error('Failed to initiate payment');
+        toast.error('Failed to initiate payment. Please try again.');
         return null;
       }
 
+      console.log('Flutterwave payment response:', paymentData);
+
       // Open payment link in new tab
-      if (paymentData.link) {
+      if (paymentData.success && paymentData.link) {
         window.open(paymentData.link, '_blank');
+        toast.success('Payment page opened in new tab');
+      } else {
+        toast.error('Failed to get payment link');
+        return null;
       }
 
       return payment.id;
@@ -215,6 +233,8 @@ export class BillingService {
    */
   static async completePayment(paymentId: string, featureType: FeatureType): Promise<void> {
     try {
+      const pricing = this.getFeaturePricing(featureType);
+      
       // Update payment status
       const { error: paymentError } = await supabase
         .from('user_payments')
@@ -238,15 +258,15 @@ export class BillingService {
 
       if (!payment) return;
 
-      // Grant or update feature access
+      // Grant or update feature access with new counts
       const { error: accessError } = await supabase
         .from('user_feature_access')
         .upsert({
           user_id: payment.user_id,
           feature_type: featureType,
-          access_count: 5, // Grant 5 uses per payment
+          access_count: pricing.accessCount, // Use new access counts
           unlimited_access: false,
-          expires_at: null, // No expiration for now
+          expires_at: null,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id,feature_type'
@@ -257,7 +277,7 @@ export class BillingService {
         return;
       }
 
-      toast.success(`Payment completed! You now have access to ${featureType.replace('_', ' ')} creation.`);
+      toast.success(`Payment completed! You now have ${pricing.accessCount} ${featureType.replace('_', ' ')} creations.`);
     } catch (error) {
       console.error('Error completing payment:', error);
     }

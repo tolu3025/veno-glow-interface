@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BillingService, FeatureType } from "@/services/billingService";
-import { CreditCard, Loader, CheckCircle } from 'lucide-react';
+import { CreditCard, Loader, CheckCircle, Crown, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PaymentDialogProps {
@@ -26,6 +26,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const pricing = BillingService.getFeaturePricing(featureType);
   const featureName = featureType === 'manual_test' ? 'Manual Test Creation' : 'AI-Powered Test Creation';
   const formattedAmount = `₦${(pricing.amount / 100).toLocaleString()}`;
+  const planName = pricing.planName;
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -34,20 +35,21 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       const paymentId = await BillingService.createPaymentSession(featureType);
       
       if (paymentId) {
-        // Simulate payment processing
+        // Payment window opened, show success state
         setTimeout(() => {
           setPaymentCompleted(true);
           setIsProcessing(false);
           
-          // Auto close and trigger callback after 2 seconds
+          // Auto close and trigger callback after 3 seconds
           setTimeout(() => {
             onPaymentComplete?.();
             onOpenChange(false);
             setPaymentCompleted(false);
-          }, 2000);
-        }, 2000);
+          }, 3000);
+        }, 1000);
       } else {
         setIsProcessing(false);
+        toast.error('Failed to initiate payment. Please try again.');
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -63,23 +65,27 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   };
 
+  const IconComponent = featureType === 'manual_test' ? Crown : Zap;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Upgrade to {featureName}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <IconComponent className="h-5 w-5 text-veno-primary" />
+            Upgrade to {planName}
+          </DialogTitle>
           <DialogDescription>
-            Unlock advanced test creation capabilities
+            Unlock {featureName.toLowerCase()} capabilities
           </DialogDescription>
         </DialogHeader>
 
         {paymentCompleted ? (
           <div className="flex flex-col items-center py-8">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Payment Successful!</h3>
+            <h3 className="text-lg font-semibold mb-2">Payment Window Opened!</h3>
             <p className="text-muted-foreground text-center">
-              You now have access to {featureName.toLowerCase()}. 
-              You'll be redirected shortly.
+              Complete your payment in the new tab. You'll get access to {pricing.accessCount} test creations once payment is confirmed.
             </p>
           </div>
         ) : (
@@ -87,13 +93,13 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  {featureName}
+                  <IconComponent className="h-5 w-5" />
+                  {planName}
                 </CardTitle>
                 <CardDescription>
                   {featureType === 'manual_test' 
-                    ? 'Create custom tests with your own questions and subjects'
-                    : 'Generate tests automatically using AI with various subjects and difficulty levels'
+                    ? 'Create custom tests with your own questions and subjects. Perfect for educators who want full control over their test content.'
+                    : 'Generate tests automatically using advanced AI. Choose from various subjects, topics, and difficulty levels with instant question generation.'
                   }
                 </CardDescription>
               </CardHeader>
@@ -103,11 +109,15 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     <span className="font-medium">Price:</span>
                     <span className="text-2xl font-bold text-veno-primary">{formattedAmount}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    • 5 test creations included
-                    • No expiration date
-                    • Full access to all features
-                    • Priority support
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="font-medium text-foreground mb-2">What's included:</div>
+                    <div>• {pricing.accessCount} test creations</div>
+                    <div>• {featureType === 'manual_test' ? 'Manual question input' : 'AI-powered question generation'}</div>
+                    <div>• {featureType === 'manual_test' ? 'Custom subjects and topics' : 'Multiple subjects and difficulty levels'}</div>
+                    <div>• Full access to test settings</div>
+                    <div>• Results tracking and analytics</div>
+                    <div>• No expiration date</div>
+                    <div>• {featureType === 'manual_test' ? 'Email support' : 'Priority support'}</div>
                   </div>
                 </div>
               </CardContent>
@@ -120,12 +130,15 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
               <Button 
                 onClick={handlePayment} 
                 disabled={isProcessing}
-                className="bg-veno-primary hover:bg-veno-primary/90"
+                className={featureType === 'manual_test' 
+                  ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600" 
+                  : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                }
               >
                 {isProcessing ? (
                   <>
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Opening Payment...
                   </>
                 ) : (
                   <>

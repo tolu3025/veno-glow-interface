@@ -69,9 +69,10 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
     return <>{fallback}</>;
   }
 
-  const featureName = featureType === 'manual_test' ? 'Manual Test Creation' : 'AI-Powered Test Creation';
   const pricing = BillingService.getFeaturePricing(featureType);
+  const featureName = featureType === 'manual_test' ? 'Manual Test Creation' : 'AI-Powered Test Creation';
   const formattedAmount = `₦${(pricing.amount / 100).toLocaleString()}`;
+  const planName = pricing.planName;
 
   return (
     <>
@@ -84,9 +85,9 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
               <Zap className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
             )}
           </div>
-          <CardTitle>Unlock {featureName}</CardTitle>
+          <CardTitle>Unlock {planName}</CardTitle>
           <CardDescription>
-            This is a premium feature. Upgrade to access advanced test creation capabilities.
+            This is a premium feature. Upgrade to access {featureName.toLowerCase()} with {pricing.accessCount} test creations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -109,25 +110,28 @@ const FeatureAccessGuard: React.FC<FeatureAccessGuardProps> = ({
                     <li>• Get instant question generation</li>
                   </>
                 )}
-                <li>• 5 test creations included</li>
+                <li>• {pricing.accessCount} test creations included</li>
                 <li>• No expiration date</li>
-                <li>• Priority support</li>
+                <li>• {featureType === 'manual_test' ? 'Email support' : 'Priority support'}</li>
               </ul>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-bold text-veno-primary mb-2">{formattedAmount}</div>
-              <p className="text-sm text-muted-foreground">One-time payment</p>
+              <div className="text-3xl font-bold text-veno-primary">{formattedAmount}</div>
+              <p className="text-sm text-muted-foreground">One-time payment • {pricing.accessCount} test creations</p>
             </div>
           </div>
 
           <Button 
             onClick={() => setShowPaymentDialog(true)}
-            className="w-full bg-veno-primary hover:bg-veno-primary/90"
+            className={featureType === 'manual_test' 
+              ? "w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600" 
+              : "w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            }
             size="lg"
           >
             <Crown className="mr-2 h-4 w-4" />
-            Upgrade Now
+            Get {planName}
           </Button>
         </CardContent>
       </Card>

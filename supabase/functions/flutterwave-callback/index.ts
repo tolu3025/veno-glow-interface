@@ -66,13 +66,16 @@ serve(async (req) => {
             .single();
 
           if (payment) {
-            // Grant feature access
+            // Determine access count based on feature type
+            const accessCount = featureType === 'manual_test' ? 40 : 200;
+            
+            // Grant feature access with updated counts
             await supabase
               .from('user_feature_access')
               .upsert({
                 user_id: payment.user_id,
                 feature_type: featureType,
-                access_count: 5,
+                access_count: accessCount,
                 unlimited_access: false,
                 expires_at: null,
                 updated_at: new Date().toISOString()
