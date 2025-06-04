@@ -1,5 +1,5 @@
 
-import { Index } from "@/pages/Index";
+import Index from "@/pages/Index";
 import Services from "@/pages/Services";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
