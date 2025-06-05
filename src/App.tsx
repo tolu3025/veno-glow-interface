@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -15,6 +16,7 @@ import { AdminSetup } from "@/components/AdminSetup";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
+import AiCreateTest from "./pages/cbt/AiCreateTest";
 import QuestionBank from "./pages/cbt/QuestionBank";
 import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
@@ -211,6 +213,12 @@ const AppRoutes = () => {
           <Route path="/cbt/create" element={
             <ProtectedRoute>
               <CreateTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/ai-create" element={
+            <ProtectedRoute>
+              <AiCreateTest />
             </ProtectedRoute>
           } />
           
