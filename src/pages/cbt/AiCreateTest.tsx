@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -119,7 +118,7 @@ const AiCreateTest = () => {
     if (!accessConsumed) {
       toast({
         title: "Access limit reached",
-        description: "You have reached your AI test creation limit. Please purchase more access.",
+        description: "You have reached your AI test creation limit. Please subscribe to continue.",
         variant: "destructive",
       });
       return;
@@ -128,6 +127,14 @@ const AiCreateTest = () => {
     setGenerating(true);
     
     try {
+      console.log('Calling generate-ai-questions function with data:', {
+        subject: watchedValues.subject,
+        difficulty: watchedValues.difficulty,
+        questionCount: watchedValues.questionCount,
+        topic: watchedValues.topic,
+        questionTypes: watchedValues.questionTypes
+      });
+
       const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
         body: {
           subject: watchedValues.subject,
@@ -138,9 +145,16 @@ const AiCreateTest = () => {
         }
       });
 
+      console.log('Response from generate-ai-questions:', { data, error });
+
       if (error) {
-        console.error('Error generating questions:', error);
-        throw error;
+        console.error('Error from edge function:', error);
+        throw new Error(error.message || 'Failed to generate questions');
+      }
+
+      if (!data || !data.success) {
+        console.error('Function returned unsuccessful response:', data);
+        throw new Error(data?.error || 'Failed to generate questions');
       }
 
       setGeneratedQuestions(data.questions || []);
@@ -150,13 +164,22 @@ const AiCreateTest = () => {
         title: "Questions generated successfully!",
         description: `Generated ${data.questions?.length || 0} questions. Review them below.`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating questions:', error);
-      toast({
-        title: "Error generating questions",
-        description: "Failed to generate questions. Please try again.",
-        variant: "destructive",
-      });
+      
+      if (error.message?.includes('API key not configured')) {
+        toast({
+          title: "API Key Required",
+          description: "Please configure your OpenAI API key to use AI question generation.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error generating questions",
+          description: error.message || "Failed to generate questions. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setGenerating(false);
     }

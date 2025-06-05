@@ -17,7 +17,15 @@ serve(async (req) => {
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not found in environment variables');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'OpenAI API key not configured. Please add your API key in the project settings.',
+        questions: []
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const topicInstruction = topic ? ` specifically about "${topic}"` : '';
@@ -73,9 +81,16 @@ The correctAnswer should be the index (0-3) of the correct option in the options
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
     
     if (!data.choices || !data.choices[0]) {
+      console.error('Invalid response structure from OpenAI:', data);
       throw new Error('Invalid response from OpenAI');
     }
 
@@ -88,10 +103,12 @@ The correctAnswer should be the index (0-3) of the correct option in the options
       questionsData = JSON.parse(generatedContent);
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', parseError);
-      throw new Error('Failed to parse AI response');
+      console.error('Raw content:', generatedContent);
+      throw new Error('Failed to parse AI response as JSON');
     }
 
     if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+      console.error('Invalid questions format:', questionsData);
       throw new Error('Invalid questions format from AI');
     }
 
@@ -122,7 +139,7 @@ The correctAnswer should be the index (0-3) of the correct option in the options
     console.error('Error in generate-ai-questions function:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message,
+      error: error.message || 'An unexpected error occurred',
       questions: []
     }), {
       status: 500,
