@@ -123,7 +123,8 @@ const AiCreateTest = () => {
       if (questionError) throw questionError;
       
       toast.success('Test created successfully!');
-      navigate(`/cbt/manage-test/${testData.id}`);
+      // Fix: Update route to match the correct path pattern defined in App.tsx
+      navigate(`/cbt/manage/${testData.id}`);
       
     } catch (error) {
       console.error('Error creating test:', error);
