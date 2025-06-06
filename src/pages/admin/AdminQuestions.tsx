@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -51,8 +50,8 @@ const AdminQuestions = () => {
   const [aiCount, setAiCount] = useState(5);
 
   // Filters
-  const [filterSubject, setFilterSubject] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState('');
+  const [filterSubject, setFilterSubject] = useState('all');
+  const [filterDifficulty, setFilterDifficulty] = useState('all');
 
   useEffect(() => {
     fetchQuestions();
@@ -237,8 +236,8 @@ const AdminQuestions = () => {
   };
 
   const filteredQuestions = questions.filter(q => {
-    if (filterSubject && q.subject !== filterSubject) return false;
-    if (filterDifficulty && q.difficulty !== filterDifficulty) return false;
+    if (filterSubject !== 'all' && q.subject !== filterSubject) return false;
+    if (filterDifficulty !== 'all' && q.difficulty !== filterDifficulty) return false;
     return true;
   });
 
@@ -327,7 +326,7 @@ const AdminQuestions = () => {
             <SelectValue placeholder="Filter by subject" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All subjects</SelectItem>
+            <SelectItem value="all">All subjects</SelectItem>
             {subjects.map(subject => (
               <SelectItem key={subject} value={subject}>{subject}</SelectItem>
             ))}
@@ -339,7 +338,7 @@ const AdminQuestions = () => {
             <SelectValue placeholder="Filter by difficulty" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All difficulties</SelectItem>
+            <SelectItem value="all">All difficulties</SelectItem>
             <SelectItem value="beginner">Beginner</SelectItem>
             <SelectItem value="intermediate">Intermediate</SelectItem>
             <SelectItem value="advanced">Advanced</SelectItem>
