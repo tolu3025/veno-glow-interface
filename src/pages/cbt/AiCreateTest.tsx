@@ -13,6 +13,9 @@ import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import { Wand2 } from 'lucide-react';
 
+// Define the allowed difficulty values as a union type
+type TestDifficulty = "beginner" | "intermediate" | "advanced";
+
 const AiCreateTest = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -21,7 +24,7 @@ const AiCreateTest = () => {
   const [subject, setSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [topic, setTopic] = useState('');
-  const [difficulty, setDifficulty] = useState('intermediate');
+  const [difficulty, setDifficulty] = useState<TestDifficulty>('intermediate');
   const [questionCount, setQuestionCount] = useState(10);
   const [timeLimit, setTimeLimit] = useState(30);
   const [instructions, setInstructions] = useState('');
@@ -91,7 +94,7 @@ const AiCreateTest = () => {
           title: `${finalSubject} ${topic ? '- ' + topic : ''} Test`,
           description: instructions || `AI-generated test on ${finalSubject}${topic ? ' about ' + topic : ''}.`,
           subject: finalSubject,
-          difficulty,
+          difficulty: difficulty as TestDifficulty, // Ensure difficulty is properly typed
           question_count: data.questions.length,
           time_limit: timeLimit,
           results_visibility: 'after_completion',
@@ -181,7 +184,10 @@ const AiCreateTest = () => {
           
           <div>
             <Label>Difficulty</Label>
-            <Select value={difficulty} onValueChange={setDifficulty}>
+            <Select 
+              value={difficulty} 
+              onValueChange={(value: TestDifficulty) => setDifficulty(value)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
