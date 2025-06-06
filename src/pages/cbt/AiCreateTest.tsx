@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -130,27 +131,10 @@ const AiCreateTest = () => {
       return;
     }
 
-    // Temporarily bypass billing check for demo
-    // const accessConsumed = await BillingService.consumeFeatureAccess('ai_test');
-    // if (!accessConsumed) {
-    //   toast({
-    //     title: "Access limit reached",
-    //     description: "You have reached your AI test creation limit. Please subscribe to continue.",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
-
-    // Demo mode notification
-    toast({
-      title: "Demo Mode",
-      description: "Running in demo mode - no payment required for testing",
-    });
-
     setGenerating(true);
     
     try {
-      console.log('Calling generate-ai-questions function with data:', {
+      console.log('Starting AI question generation with data:', {
         subject: watchedValues.subject,
         difficulty: watchedValues.difficulty,
         questionCount: watchedValues.questionCount,
@@ -168,24 +152,35 @@ const AiCreateTest = () => {
         }
       });
 
-      console.log('Response from generate-ai-questions:', { data, error });
+      console.log('AI generation response:', { data, error });
 
       if (error) {
         console.error('Error from edge function:', error);
         throw new Error(error.message || 'Failed to generate questions');
       }
 
-      if (!data || !data.success) {
-        console.error('Function returned unsuccessful response:', data);
-        throw new Error(data?.error || 'Failed to generate questions');
+      if (!data) {
+        console.error('No data returned from edge function');
+        throw new Error('No response from AI service');
       }
 
-      setGeneratedQuestions(data.questions || []);
+      if (!data.success) {
+        console.error('Function returned unsuccessful response:', data);
+        throw new Error(data.error || 'Failed to generate questions');
+      }
+
+      if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+        console.error('No questions in response:', data);
+        throw new Error('No questions were generated. Please try again with different parameters.');
+      }
+
+      console.log(`Successfully generated ${data.questions.length} questions`);
+      setGeneratedQuestions(data.questions);
       setPreviewMode(true);
       
       toast({
         title: "Questions generated successfully!",
-        description: `Generated ${data.questions?.length || 0} questions. Review them below.`,
+        description: `Generated ${data.questions.length} questions. Review them below.`,
       });
     } catch (error: any) {
       console.error('Error generating questions:', error);

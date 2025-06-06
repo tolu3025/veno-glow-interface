@@ -1,311 +1,271 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { useNavigate, useLocation, Location } from 'react-router-dom';
+import { useAuth } from '@/providers/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
 
-type LocationWithState = Location & {
-  state?: {
-    subject?: string;
-    settings?: {
-      difficulty?: string;
-      timeLimit?: number;
-      questionsCount?: number;
-    };
-  };
-};
-
-interface UseTestManagementProps {
-  testId: string | undefined;
-  user: any;
-  questions: any[];
-  testDetails: any;
-  testTakerInfo: any;
+interface TestData {
+  id: string;
+  title: string;
+  description?: string;
+  subject: string;
+  difficulty: string;
+  question_count: number;
+  time_limit?: number;
+  results_visibility: string;
+  allow_retakes: boolean;
+  share_code?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export type UserAnswer = {
-  questionId: string;
-  selectedOption: number | null;
-  isCorrect: boolean;
-};
+interface Question {
+  id: string;
+  question_text: string;
+  options: string[];
+  answer: number;
+  explanation?: string;
+  subject: string;
+}
 
-export const useTestManagement = ({ 
-  testId, 
-  user, 
-  questions, 
-  testDetails, 
-  testTakerInfo 
-}: UseTestManagementProps) => {
-  const navigate = useNavigate();
-  const location = useLocation() as LocationWithState;
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [showResults, setShowResults] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [testStarted, setTestStarted] = useState(false);
-  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
-  const [reviewMode, setReviewMode] = useState(false);
-  const [submissionComplete, setSubmissionComplete] = useState(false);
-  const [publicResults, setPublicResults] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [testFinished, setTestFinished] = useState(false);
-  const [savingError, setSavingError] = useState<string | null>(null);
+interface Participant {
+  id: string;
+  participant_name?: string;
+  participant_email: string;
+  score: number;
+  total_questions: number;
+  completed_at: string;
+}
 
-  useEffect(() => {
-    if (questions && questions.length) {
-      console.log('Questions loaded in hook:', questions.length);
-    }
-  }, [questions]);
+export const useTestManagement = (testId: string) => {
+  const [test, setTest] = useState<TestData | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    if (testStarted && timeRemaining > 0 && !testFinished) {
-      const timer = setTimeout(() => {
-        setTimeRemaining(time => time - 1);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    } else if (testStarted && timeRemaining === 0 && !testFinished) {
-      finishTest();
-    }
-  }, [timeRemaining, testStarted, testFinished]);
-
-  const startTest = () => {
-    const timeLimit = testDetails?.time_limit || 15;
-    setTimeRemaining(timeLimit * 60);
-    setTestStarted(true);
-    setTestFinished(false);
-  };
-
-  const handleAnswerSelect = (optionIndex: number) => {
-    setSelectedAnswer(optionIndex);
-    
-    const currentQuestionData = questions[currentQuestion];
-    if (!currentQuestionData) return;
-    
-    let correctAnswer: number | null = null;
-    
-    if (typeof currentQuestionData.correctOption !== 'undefined') {
-      correctAnswer = Number(currentQuestionData.correctOption);
-    } else if (typeof currentQuestionData.answer !== 'undefined') {
-      correctAnswer = Number(currentQuestionData.answer);
-    } else if (typeof currentQuestionData.correct_answer !== 'undefined') {
-      correctAnswer = Number(currentQuestionData.correct_answer);
-    }
-    
-    if (correctAnswer === null) {
-      console.error("Cannot determine correct answer for question:", currentQuestionData);
-      return;
-    }
-    
-    const isCorrect = optionIndex === correctAnswer;
-    
-    const updatedAnswers = [...userAnswers];
-    
-    const existingAnswerIndex = updatedAnswers.findIndex(
-      answer => answer.questionId === currentQuestionData.id
-    );
-    
-    if (existingAnswerIndex >= 0) {
-      updatedAnswers[existingAnswerIndex] = {
-        questionId: currentQuestionData.id,
-        selectedOption: optionIndex,
-        isCorrect: isCorrect
-      };
-    } else {
-      updatedAnswers[currentQuestion] = {
-        questionId: currentQuestionData.id,
-        selectedOption: optionIndex,
-        isCorrect: isCorrect
-      };
-    }
-    
-    setUserAnswers(updatedAnswers);
-  };
-
-  const goToPreviousQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-      
-      const previousAnswer = userAnswers[currentQuestion - 1];
-      if (previousAnswer) {
-        setSelectedAnswer(previousAnswer.selectedOption);
-      } else {
-        setSelectedAnswer(null);
-      }
-    }
-  };
-
-  const goToNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-      
-      const nextAnswer = userAnswers[currentQuestion + 1];
-      if (nextAnswer) {
-        setSelectedAnswer(nextAnswer.selectedOption);
-      } else {
-        setSelectedAnswer(null);
-      }
-    } else {
-      calculateScore();
-      finishTest();
-    }
-  };
-
-  const calculateScore = () => {
-    const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
-    setScore(correctAnswers);
-    return correctAnswers;
-  };
-
-  const loadPublicResults = async () => {
+  const fetchTestData = async () => {
     if (!testId) return;
     
+    setLoading(true);
     try {
-      console.log('Loading public results for test:', testId);
-      console.log('Result visibility:', testDetails?.results_visibility);
-      
-      // Always load results for test creators or if visibility is public
-      if (testDetails?.results_visibility === 'public' || user?.id === testDetails?.creator_id) {
-        const { data, error } = await supabase
-          .from('test_attempts')
-          .select('*')
-          .eq('test_id', testId)
-          .order('score', { ascending: false });
-          
-        if (error) {
-          console.error("Error loading public results:", error);
-          throw error;
-        }
-        
-        console.log('Public results loaded:', data?.length || 0);
-        if (data) {
-          setPublicResults(data);
-        }
-      }
+      const { data, error } = await supabase
+        .from('user_tests')
+        .select('*')
+        .eq('id', testId)
+        .single();
+
+      if (error) throw error;
+      setTest(data);
     } catch (error) {
-      console.error("Error loading public results:", error);
+      console.error('Error fetching test:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load test data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveTestAttempt = async (testData: any): Promise<boolean> => {
-    setSaving(true);
-    setSavingError(null); // Reset error state
+  const fetchTestQuestions = async () => {
+    if (!testId) return;
     
-    if (testId === 'subject' && testData.test_id === 'subject') {
-      const subjectName = testData.subject || location?.state?.subject;
-      if (subjectName) {
-        const userIdentifier = user?.id || testTakerInfo?.email || 'anonymous';
-        testData.test_id = `subject_${subjectName.replace(/\s+/g, '_').toLowerCase()}_${userIdentifier}`;
-      }
-    }
-    
+    setLoadingQuestions(true);
     try {
-      const { error: insertError } = await supabase
+      const { data, error } = await supabase
+        .from('user_test_questions')
+        .select('*')
+        .eq('test_id', testId);
+
+      if (error) throw error;
+      setQuestions(data || []);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load questions",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  const fetchParticipants = async () => {
+    if (!testId) return;
+    
+    setLoadingParticipants(true);
+    try {
+      const { data, error } = await supabase
         .from('test_attempts')
-        .insert([testData]);
-        
-      if (insertError) {
-        console.error("Error saving test attempt:", insertError);
-        // No need to set an error message as we want to suppress it
-        // per the user's request to "remove the error message after submitting the quiz"
-        throw insertError;
-      }
-      
-      setSaving(false);
-      return true;
+        .select('*')
+        .eq('test_id', testId)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+      setParticipants(data || []);
     } catch (error) {
-      console.error("Failed to save test results:", error);
-      setSaving(false);
-      // We're not setting the error message here to suppress it
-      return false;
+      console.error('Error fetching participants:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load participants",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingParticipants(false);
     }
   };
 
-  const finishTest = async () => {
-    setTestFinished(true);
-    
-    const finalScore = calculateScore();
+  const handleEditQuestion = async (updatedQuestion: Question) => {
+    try {
+      const { error } = await supabase
+        .from('user_test_questions')
+        .update({
+          question_text: updatedQuestion.question_text,
+          options: updatedQuestion.options,
+          answer: updatedQuestion.answer,
+          explanation: updatedQuestion.explanation,
+        })
+        .eq('id', updatedQuestion.id);
+
+      if (error) throw error;
+      
+      await fetchTestQuestions();
+    } catch (error) {
+      console.error('Error updating question:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_test_questions')
+        .delete()
+        .eq('id', questionId);
+
+      if (error) throw error;
+      
+      // Update question count in test
+      if (test) {
+        const newQuestionCount = test.question_count - 1;
+        await supabase
+          .from('user_tests')
+          .update({ question_count: newQuestionCount })
+          .eq('id', testId);
+        
+        setTest(prev => prev ? { ...prev, question_count: newQuestionCount } : null);
+      }
+      
+      await fetchTestQuestions();
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      throw error;
+    }
+  };
+
+  const generateShareCode = async () => {
+    if (!test) return;
     
     try {
-      const testData = {
-        test_id: testId,
-        score: finalScore,
-        total_questions: questions.length,
-        time_taken: (testDetails?.time_limit || 15) * 60 - timeRemaining,
-        user_id: user?.id || null,
-        participant_email: testTakerInfo?.email || user?.email || 'anonymous',
-        participant_name: testTakerInfo?.name || user?.user_metadata?.full_name || 'Anonymous User',
-        completed_at: new Date().toISOString(),
-        subject: location?.state?.subject || testDetails?.subject || 'general',
-      };
+      const shareCode = Math.random().toString(36).substring(2, 15);
       
-      const saveResult = await saveTestAttempt(testData);
-      if (!saveResult) {
-        console.error("Failed to save test results silently");
-      }
+      const { error } = await supabase
+        .from('user_tests')
+        .update({ share_code: shareCode })
+        .eq('id', testId);
+
+      if (error) throw error;
       
-      const isCreator = user?.id === testDetails?.creator_id;
-      
-      if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
-        setSubmissionComplete(true);
-      } else if (isCreator || ['test_takers', 'public'].includes(testDetails?.results_visibility || '')) {
-        setShowResults(true);
-        await loadPublicResults();
-      }
-      
-    } catch (error: any) {
-      console.error("Error finalizing test:", error);
-      
-      const isCreator = user?.id === testDetails?.creator_id;
-      if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
-        setSubmissionComplete(true);
-      } else if (isCreator || ['test_takers', 'public'].includes(testDetails?.results_visibility || '')) {
-        setShowResults(true);
-        await loadPublicResults();
-      }
+      setTest(prev => prev ? { ...prev, share_code: shareCode } : null);
+      return shareCode;
+    } catch (error) {
+      console.error('Error generating share code:', error);
+      throw error;
     }
   };
 
-  const resetTest = () => {
-    setCurrentQuestion(0);
-    setSelectedAnswer(null);
-    setScore(0);
-    setShowResults(false);
-    setUserAnswers([]);
-    setTimeRemaining((testDetails?.time_limit || 15) * 60);
-    setTestStarted(false);
-    setTestFinished(false);
-    setSavingError(null);
-    setSubmissionComplete(false);
+  const copyShareLink = async () => {
+    try {
+      let shareCode = test?.share_code;
+      
+      if (!shareCode) {
+        shareCode = await generateShareCode();
+      }
+      
+      // Create the full URL for sharing
+      const baseUrl = window.location.origin;
+      const shareUrl = `${baseUrl}/cbt/take-test/${shareCode}`;
+      
+      await navigator.clipboard.writeText(shareUrl);
+      
+      toast({
+        title: "Share link copied!",
+        description: "The test link has been copied to your clipboard",
+      });
+    } catch (error) {
+      console.error('Error copying share link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy share link",
+        variant: "destructive",
+      });
+    }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  const updateTest = async (updates: Partial<TestData>) => {
+    if (!test) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_tests')
+        .update(updates)
+        .eq('id', testId);
+
+      if (error) throw error;
+      
+      setTest(prev => prev ? { ...prev, ...updates } : null);
+      
+      toast({
+        title: "Test updated",
+        description: "Test settings have been saved successfully",
+      });
+    } catch (error) {
+      console.error('Error updating test:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update test",
+        variant: "destructive",
+      });
+    }
   };
+
+  useEffect(() => {
+    if (testId && user) {
+      fetchTestData();
+      fetchTestQuestions();
+      fetchParticipants();
+    }
+  }, [testId, user]);
 
   return {
-    currentQuestion,
-    selectedAnswer,
-    score,
-    showResults,
-    timeRemaining,
-    testStarted,
-    userAnswers,
-    reviewMode,
-    submissionComplete,
-    publicResults,
-    saving,
-    savingError, // Add savingError to the return value
-    startTest,
-    handleAnswerSelect,
-    goToPreviousQuestion,
-    goToNextQuestion,
-    finishTest,
-    resetTest,
-    setReviewMode,
-    formatTime,
-    loadPublicResults,
+    test,
+    questions,
+    participants,
+    loading,
+    loadingQuestions,
+    loadingParticipants,
+    handleEditQuestion,
+    handleDeleteQuestion,
+    copyShareLink,
+    updateTest,
+    fetchTestQuestions,
+    fetchParticipants,
   };
 };

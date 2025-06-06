@@ -9,7 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Loader, BookOpen, Filter, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader, BookOpen, Filter, Save, X, Zap, RefreshCw, Brain, Sparkles } from 'lucide-react';
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
 
 type Question = {
   id: string;
@@ -27,6 +29,19 @@ type Subject = {
   question_count: number;
 };
 
+const subjectOptions = [
+  { value: "mathematics", label: "Mathematics", icon: "📊" },
+  { value: "physics", label: "Physics", icon: "⚛️" },
+  { value: "chemistry", label: "Chemistry", icon: "🧪" },
+  { value: "biology", label: "Biology", icon: "🧬" },
+  { value: "english", label: "English Language", icon: "📚" },
+  { value: "computer_science", label: "Computer Science", icon: "💻" },
+  { value: "history", label: "History", icon: "🏛️" },
+  { value: "geography", label: "Geography", icon: "🌍" },
+  { value: "economics", label: "Economics", icon: "💰" },
+  { value: "government", label: "Government", icon: "🏛️" }
+];
+
 const AdminQuestions = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -39,6 +54,15 @@ const AdminQuestions = () => {
   const [isAddingNewSubject, setIsAddingNewSubject] = useState(false);
   const [editingSubjectName, setEditingSubjectName] = useState<string>("");
   const [newSubjectName, setNewSubjectName] = useState<string>("");
+  
+  // AI Generation state
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiQuestionCount, setAiQuestionCount] = useState(5);
+  const [aiSubject, setAiSubject] = useState("");
+  const [aiDifficulty, setAiDifficulty] = useState("intermediate");
+  const [aiTopic, setAiTopic] = useState("");
+  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -124,6 +148,103 @@ const AdminQuestions = () => {
       setQuestions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateAiQuestions = async () => {
+    if (!aiSubject || !aiDifficulty) {
+      toast.error('Please select a subject and difficulty level');
+      return;
+    }
+
+    setAiGenerating(true);
+    
+    try {
+      console.log('Generating AI questions with data:', {
+        subject: aiSubject,
+        difficulty: aiDifficulty,
+        questionCount: aiQuestionCount,
+        topic: aiTopic
+      });
+
+      const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
+        body: {
+          subject: aiSubject,
+          difficulty: aiDifficulty,
+          questionCount: aiQuestionCount,
+          topic: aiTopic,
+          questionTypes: ["multiple_choice"]
+        }
+      });
+
+      console.log('AI generation response:', { data, error });
+
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(error.message || 'Failed to generate questions');
+      }
+
+      if (!data || !data.success) {
+        console.error('Function returned unsuccessful response:', data);
+        throw new Error(data?.error || 'Failed to generate questions');
+      }
+
+      if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+        console.error('No questions in response:', data);
+        throw new Error('No questions were generated. Please try again.');
+      }
+
+      setGeneratedQuestions(data.questions);
+      toast.success(`Generated ${data.questions.length} questions successfully!`);
+    } catch (error: any) {
+      console.error('Error generating questions:', error);
+      
+      if (error.message?.includes('API key not configured')) {
+        toast.error('Please configure your OpenAI API key to use AI question generation.');
+      } else {
+        toast.error(error.message || 'Failed to generate questions. Please try again.');
+      }
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const saveAiQuestions = async () => {
+    if (generatedQuestions.length === 0) {
+      toast.error('No questions to save');
+      return;
+    }
+
+    try {
+      const questionsToInsert = generatedQuestions.map(q => ({
+        subject: aiSubject,
+        question: q.question,
+        options: q.options,
+        answer: q.correctAnswer,
+        difficulty: aiDifficulty,
+        explanation: q.explanation || null
+      }));
+
+      console.log('Saving AI generated questions:', questionsToInsert);
+
+      const { error } = await supabase
+        .from('questions')
+        .insert(questionsToInsert);
+
+      if (error) {
+        console.error('Error saving AI questions:', error);
+        throw error;
+      }
+
+      toast.success(`Successfully saved ${questionsToInsert.length} AI-generated questions!`);
+      setIsAiDialogOpen(false);
+      setGeneratedQuestions([]);
+      
+      // Refresh data
+      await Promise.all([fetchQuestions(), fetchSubjects()]);
+    } catch (error) {
+      console.error('Error saving AI questions:', error);
+      toast.error(`Failed to save questions: ${error.message}`);
     }
   };
 
@@ -321,144 +442,295 @@ const AdminQuestions = () => {
           <h1 className="text-3xl font-bold tracking-tight">Question Management</h1>
           <p className="text-muted-foreground">Create and manage quiz questions with custom subjects</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Question
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingQuestion ? 'Edit Question' : 'Create New Question'}</DialogTitle>
-              <DialogDescription>
-                {editingQuestion ? 'Update the question details' : 'Add a new question to the question bank'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="subject">Subject</Label>
-                  {isAddingNewSubject ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={newSubjectName}
-                        onChange={(e) => setNewSubjectName(e.target.value)}
-                        placeholder="Enter new subject name"
-                      />
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setIsAddingNewSubject(false);
-                          setNewSubjectName('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Select value={formData.subject} onValueChange={handleSubjectChange}>
+        <div className="flex gap-2">
+          <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 border-0">
+                <Brain className="mr-2 h-4 w-4" />
+                Generate with AI
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  AI Question Generation
+                </DialogTitle>
+                <DialogDescription>
+                  Generate high-quality questions using AI technology
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ai-subject">Subject</Label>
+                    <Select value={aiSubject} onValueChange={setAiSubject}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select or add subject" />
+                        <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        {subjectsLoading ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : (
-                          <>
-                            {subjects.map(subject => (
-                              <SelectItem key={subject.name} value={subject.name}>
-                                {subject.name} ({subject.question_count} questions)
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="add_new">
-                              <div className="flex items-center">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add New Subject
-                              </div>
-                            </SelectItem>
-                          </>
-                        )}
+                        {subjectOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <span>{option.icon}</span>
+                              {option.label}
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="ai-difficulty">Difficulty</Label>
+                    <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="beginner">Beginner</SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="ai-topic">Specific Topic (Optional)</Label>
+                  <Input
+                    id="ai-topic"
+                    value={aiTopic}
+                    onChange={(e) => setAiTopic(e.target.value)}
+                    placeholder="e.g., Quadratic Equations, Photosynthesis, etc."
+                  />
+                </div>
+
+                <div>
+                  <Label>Number of Questions: {aiQuestionCount}</Label>
+                  <Slider
+                    min={1}
+                    max={20}
+                    step={1}
+                    value={[aiQuestionCount]}
+                    onValueChange={(value) => setAiQuestionCount(value[0])}
+                    className="w-full py-4"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={generateAiQuestions}
+                    disabled={aiGenerating || !aiSubject}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  >
+                    {aiGenerating ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Generate Questions
+                      </>
+                    )}
+                  </Button>
+                  
+                  {generatedQuestions.length > 0 && (
+                    <Button onClick={saveAiQuestions} variant="outline">
+                      <Save className="mr-2 h-4 w-4" />
+                      Save {generatedQuestions.length} Questions
+                    </Button>
                   )}
                 </div>
+
+                {generatedQuestions.length > 0 && (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <BookOpen className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-700">
+                        {generatedQuestions.length} questions generated successfully!
+                      </span>
+                      <Badge variant="secondary" className="ml-auto">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        AI Generated
+                      </Badge>
+                    </div>
+                    
+                    {generatedQuestions.map((question, index) => (
+                      <Card key={index} className="border border-purple-200">
+                        <CardContent className="p-4">
+                          <h4 className="font-medium mb-2">
+                            {index + 1}. {question.question}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            {question.options?.map((option: string, optIndex: number) => (
+                              <div
+                                key={optIndex}
+                                className={`text-sm p-2 rounded ${
+                                  optIndex === question.correctAnswer
+                                    ? 'bg-green-100 text-green-700 font-medium border border-green-200'
+                                    : 'bg-gray-50'
+                                }`}
+                              >
+                                {String.fromCharCode(65 + optIndex)}. {option}
+                              </div>
+                            ))}
+                          </div>
+                          {question.explanation && (
+                            <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                              <strong>Explanation:</strong> {question.explanation}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Question
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingQuestion ? 'Edit Question' : 'Create New Question'}</DialogTitle>
+                <DialogDescription>
+                  {editingQuestion ? 'Update the question details' : 'Add a new question to the question bank'}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="subject">Subject</Label>
+                    {isAddingNewSubject ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={newSubjectName}
+                          onChange={(e) => setNewSubjectName(e.target.value)}
+                          placeholder="Enter new subject name"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setIsAddingNewSubject(false);
+                            setNewSubjectName('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Select value={formData.subject} onValueChange={handleSubjectChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select or add subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjectsLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : (
+                            <>
+                              {subjects.map(subject => (
+                                <SelectItem key={subject.name} value={subject.name}>
+                                  {subject.name} ({subject.question_count} questions)
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="add_new">
+                                <div className="flex items-center">
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add New Subject
+                                </div>
+                              </SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="difficulty">Difficulty</Label>
+                    <Select value={formData.difficulty} onValueChange={(value: any) => setFormData(prev => ({...prev, difficulty: value}))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="beginner">Beginner</SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="difficulty">Difficulty</Label>
-                  <Select value={formData.difficulty} onValueChange={(value: any) => setFormData(prev => ({...prev, difficulty: value}))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="question">Question</Label>
+                  <Textarea
+                    id="question"
+                    value={formData.question}
+                    onChange={(e) => setFormData(prev => ({...prev, question: e.target.value}))}
+                    placeholder="Enter the question"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label>Options</Label>
+                  {formData.options.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2 mt-2">
+                      <span className="w-8 text-sm">{String.fromCharCode(65 + index)}.</span>
+                      <Input
+                        value={option}
+                        onChange={(e) => {
+                          const newOptions = [...formData.options];
+                          newOptions[index] = e.target.value;
+                          setFormData(prev => ({...prev, options: newOptions}));
+                        }}
+                        placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                      />
+                      <Button
+                        type="button"
+                        variant={formData.answer === index ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormData(prev => ({...prev, answer: index}))}
+                      >
+                        {formData.answer === index ? "Correct" : "Set as Correct"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <Label htmlFor="explanation">Explanation (Optional)</Label>
+                  <Textarea
+                    id="explanation"
+                    value={formData.explanation}
+                    onChange={(e) => setFormData(prev => ({...prev, explanation: e.target.value}))}
+                    placeholder="Explain why this answer is correct"
+                    rows={2}
+                  />
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="question">Question</Label>
-                <Textarea
-                  id="question"
-                  value={formData.question}
-                  onChange={(e) => setFormData(prev => ({...prev, question: e.target.value}))}
-                  placeholder="Enter the question"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label>Options</Label>
-                {formData.options.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2 mt-2">
-                    <span className="w-8 text-sm">{String.fromCharCode(65 + index)}.</span>
-                    <Input
-                      value={option}
-                      onChange={(e) => {
-                        const newOptions = [...formData.options];
-                        newOptions[index] = e.target.value;
-                        setFormData(prev => ({...prev, options: newOptions}));
-                      }}
-                      placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                    />
-                    <Button
-                      type="button"
-                      variant={formData.answer === index ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormData(prev => ({...prev, answer: index}))}
-                    >
-                      {formData.answer === index ? "Correct" : "Set as Correct"}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <Label htmlFor="explanation">Explanation (Optional)</Label>
-                <Textarea
-                  id="explanation"
-                  value={formData.explanation}
-                  onChange={(e) => setFormData(prev => ({...prev, explanation: e.target.value}))}
-                  placeholder="Explain why this answer is correct"
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateQuestion}>
-                {editingQuestion ? 'Update Question' : 'Create Question'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateQuestion}>
+                  {editingQuestion ? 'Update Question' : 'Create Question'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Subjects Overview Card */}
