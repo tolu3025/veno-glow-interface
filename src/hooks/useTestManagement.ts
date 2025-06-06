@@ -1,15 +1,17 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+
+// Define the allowed difficulty values as a union type
+type TestDifficulty = "beginner" | "intermediate" | "advanced";
 
 interface TestData {
   id: string;
   title: string;
   description?: string;
   subject: string;
-  difficulty: string;
+  difficulty: TestDifficulty; // Use the union type here
   question_count: number;
   time_limit?: number;
   results_visibility: string;
@@ -354,14 +356,24 @@ export const useTestManagement = (testId: string) => {
     if (!test) return;
     
     try {
+      // Create a type-safe updates object
+      const sanitizedUpdates: Record<string, any> = { ...updates };
+      
+      // Ensure difficulty is one of the allowed values if it's being updated
+      if (updates.difficulty && !["beginner", "intermediate", "advanced"].includes(updates.difficulty as string)) {
+        // Default to intermediate if an invalid difficulty is provided
+        sanitizedUpdates.difficulty = "intermediate";
+      }
+      
       const { error } = await supabase
         .from('user_tests')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('id', testId);
 
       if (error) throw error;
       
-      setTest(prev => prev ? { ...prev, ...updates } : null);
+      // Update the local state with proper typing
+      setTest(prev => prev ? { ...prev, ...sanitizedUpdates } as TestData : null);
       
       toast({
         title: "Test updated",
