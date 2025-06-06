@@ -94,12 +94,12 @@ const AiCreateTest = () => {
           title: `${finalSubject} ${topic ? '- ' + topic : ''} Test`,
           description: instructions || `AI-generated test on ${finalSubject}${topic ? ' about ' + topic : ''}.`,
           subject: finalSubject,
-          difficulty: difficulty as TestDifficulty, // Ensure difficulty is properly typed
+          difficulty: difficulty as TestDifficulty,
           question_count: data.questions.length,
           time_limit: timeLimit,
           results_visibility: 'after_completion',
           allow_retakes: true,
-          user_id: user.id
+          creator_id: user.id
         })
         .select()
         .single();
