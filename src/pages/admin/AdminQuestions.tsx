@@ -209,7 +209,9 @@ const AdminQuestions = () => {
         options: q.options,
         answer: q.answer,
         difficulty: aiDifficulty as 'beginner' | 'intermediate' | 'advanced',
-        explanation: q.explanation
+        explanation: q.explanation,
+        topic: aiTopic || null,
+        semester: 'first'
       }));
 
       const { error: insertError } = await supabase

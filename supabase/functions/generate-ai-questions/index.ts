@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, difficulty, questionCount, topic, questionTypes } = await req.json();
+    const { subject, difficulty, count, topic } = await req.json();
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -35,7 +35,7 @@ serve(async (req) => {
       advanced: 'complex problems requiring deep understanding and critical thinking'
     };
 
-    const prompt = `Generate ${questionCount} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).
+    const prompt = `Generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).
 
 Requirements:
 - Each question should have exactly 4 options (A, B, C, D)
@@ -51,13 +51,13 @@ Return the response as a valid JSON object with this exact structure:
     {
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0,
+      "answer": 0,
       "explanation": "Brief explanation of why this answer is correct"
     }
   ]
 }
 
-The correctAnswer should be the index (0-3) of the correct option in the options array.`;
+The answer should be the index (0-3) of the correct option in the options array.`;
 
     console.log('Generating questions with prompt:', prompt);
 
@@ -121,7 +121,7 @@ The correctAnswer should be the index (0-3) of the correct option in the options
       return {
         question: q.question,
         options: q.options,
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        answer: typeof q.answer === 'number' ? q.answer : 0,
         explanation: q.explanation || 'No explanation provided'
       };
     });
