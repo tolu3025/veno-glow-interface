@@ -45,6 +45,20 @@ export const useTestManagement = (testId: string) => {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   
+  // Test execution state
+  const [testStarted, setTestStarted] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
+  const [submissionComplete, setSubmissionComplete] = useState(false);
+  const [score, setScore] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [savingError, setSavingError] = useState<string | null>(null);
+  const [publicResults, setPublicResults] = useState<any[]>([]);
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -84,7 +98,19 @@ export const useTestManagement = (testId: string) => {
         .eq('test_id', testId);
 
       if (error) throw error;
-      setQuestions(data || []);
+      
+      // Transform the data to match our Question interface
+      const transformedQuestions: Question[] = (data || []).map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
+        answer: q.answer,
+        explanation: q.explanation,
+        subject: q.subject || ''
+      }));
+      
+      setQuestions(transformedQuestions);
+      setUserAnswers(new Array(transformedQuestions.length).fill(null));
     } catch (error) {
       console.error('Error fetching questions:', error);
       toast({
@@ -120,6 +146,111 @@ export const useTestManagement = (testId: string) => {
     } finally {
       setLoadingParticipants(false);
     }
+  };
+
+  const startTest = () => {
+    setTestStarted(true);
+    if (test?.time_limit) {
+      setTimeRemaining(test.time_limit * 60); // Convert minutes to seconds
+    }
+  };
+
+  const handleAnswerSelect = (optionIndex: number) => {
+    setSelectedAnswer(optionIndex);
+    const newAnswers = [...userAnswers];
+    newAnswers[currentQuestion] = optionIndex;
+    setUserAnswers(newAnswers);
+  };
+
+  const goToNextQuestion = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+      setSelectedAnswer(userAnswers[currentQuestion + 1]);
+    } else {
+      // Finish test
+      finishTest();
+    }
+  };
+
+  const goToPreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+      setSelectedAnswer(userAnswers[currentQuestion - 1]);
+    }
+  };
+
+  const finishTest = async () => {
+    setSaving(true);
+    setSavingError(null);
+    
+    try {
+      // Calculate score
+      let correctAnswers = 0;
+      questions.forEach((question, index) => {
+        if (userAnswers[index] === question.answer) {
+          correctAnswers++;
+        }
+      });
+      
+      const finalScore = correctAnswers;
+      setScore(finalScore);
+      setShowResults(true);
+      setSubmissionComplete(true);
+      
+      // Save test attempt if user is authenticated
+      if (user && testId !== 'subject') {
+        await supabase
+          .from('test_attempts')
+          .insert({
+            test_id: testId,
+            user_id: user.id,
+            score: finalScore,
+            total_questions: questions.length,
+            participant_email: user.email,
+            completed_at: new Date().toISOString()
+          });
+      }
+    } catch (error) {
+      console.error('Error saving test results:', error);
+      setSavingError('Failed to save test results');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetTest = () => {
+    setTestStarted(false);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setUserAnswers(new Array(questions.length).fill(null));
+    setShowResults(false);
+    setReviewMode(false);
+    setSubmissionComplete(false);
+    setScore(0);
+    if (test?.time_limit) {
+      setTimeRemaining(test.time_limit * 60);
+    }
+  };
+
+  const loadPublicResults = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('participant_results')
+        .select('*')
+        .order('score', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setPublicResults(data || []);
+    } catch (error) {
+      console.error('Error loading public results:', error);
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const handleEditQuestion = async (updatedQuestion: Question) => {
@@ -246,6 +377,23 @@ export const useTestManagement = (testId: string) => {
     }
   };
 
+  // Timer effect
+  useEffect(() => {
+    if (testStarted && timeRemaining > 0 && !showResults) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            finishTest();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [testStarted, timeRemaining, showResults]);
+
   useEffect(() => {
     if (testId && user) {
       fetchTestData();
@@ -261,11 +409,32 @@ export const useTestManagement = (testId: string) => {
     loading,
     loadingQuestions,
     loadingParticipants,
+    testStarted,
+    currentQuestion,
+    selectedAnswer,
+    userAnswers,
+    timeRemaining,
+    showResults,
+    reviewMode,
+    submissionComplete,
+    score,
+    saving,
+    savingError,
+    publicResults,
     handleEditQuestion,
     handleDeleteQuestion,
     copyShareLink,
     updateTest,
     fetchTestQuestions,
     fetchParticipants,
+    startTest,
+    handleAnswerSelect,
+    goToNextQuestion,
+    goToPreviousQuestion,
+    finishTest,
+    resetTest,
+    loadPublicResults,
+    formatTime,
+    setReviewMode,
   };
 };

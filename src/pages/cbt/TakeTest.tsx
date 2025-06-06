@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,13 +61,8 @@ const TakeTest = () => {
     questionsCount: 10
   });
 
-  const testManagement = useTestManagement({
-    testId,
-    user,
-    questions,
-    testDetails,
-    testTakerInfo
-  });
+  // Use the test management hook only for user tests (not subject quizzes)
+  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '');
 
   useEffect(() => {
     if (location.state?.settings) {
@@ -84,7 +80,7 @@ const TakeTest = () => {
       }
       
       try {
-        if (testId) {
+        if (testId && testId !== 'subject') {
           console.log(`Loading test with ID: ${testId}`);
           
           const { data: testData, error: testError } = await supabase
@@ -247,42 +243,104 @@ const TakeTest = () => {
     
     setTestTakerInfo(data);
     setShowTakerForm(false);
-    testManagement.startTest();
+    
+    // For user tests, use the test management hook
+    if (testId && testId !== 'subject') {
+      testManagement.startTest();
+    }
   };
+
+  // For subject quizzes, we need our own state management
+  const [subjectTestStarted, setSubjectTestStarted] = useState(false);
+  const [subjectCurrentQuestion, setSubjectCurrentQuestion] = useState(0);
+  const [subjectSelectedAnswer, setSubjectSelectedAnswer] = useState<number | null>(null);
+  const [subjectUserAnswers, setSubjectUserAnswers] = useState<(number | null)[]>([]);
+  const [subjectTimeRemaining, setSubjectTimeRemaining] = useState(0);
+  const [subjectShowResults, setSubjectShowResults] = useState(false);
+  const [subjectScore, setSubjectScore] = useState(0);
+
+  const startSubjectTest = () => {
+    setSubjectTestStarted(true);
+    setSubjectUserAnswers(new Array(questions.length).fill(null));
+    if (testDetails?.time_limit) {
+      setSubjectTimeRemaining(testDetails.time_limit * 60);
+    }
+  };
+
+  const handleSubjectAnswerSelect = (optionIndex: number) => {
+    setSubjectSelectedAnswer(optionIndex);
+    const newAnswers = [...subjectUserAnswers];
+    newAnswers[subjectCurrentQuestion] = optionIndex;
+    setSubjectUserAnswers(newAnswers);
+  };
+
+  const goToSubjectNextQuestion = () => {
+    if (subjectCurrentQuestion < questions.length - 1) {
+      setSubjectCurrentQuestion(prev => prev + 1);
+      setSubjectSelectedAnswer(subjectUserAnswers[subjectCurrentQuestion + 1]);
+    } else {
+      finishSubjectTest();
+    }
+  };
+
+  const goToSubjectPreviousQuestion = () => {
+    if (subjectCurrentQuestion > 0) {
+      setSubjectCurrentQuestion(prev => prev - 1);
+      setSubjectSelectedAnswer(subjectUserAnswers[subjectCurrentQuestion - 1]);
+    }
+  };
+
+  const finishSubjectTest = () => {
+    let correctAnswers = 0;
+    questions.forEach((question, index) => {
+      if (subjectUserAnswers[index] === question.answer) {
+        correctAnswers++;
+      }
+    });
+    
+    setSubjectScore(correctAnswers);
+    setSubjectShowResults(true);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Determine which state to use based on test type
+  const isSubjectQuiz = testId === 'subject';
+  const currentTestStarted = isSubjectQuiz ? subjectTestStarted : testManagement.testStarted;
+  const currentQuestionIndex = isSubjectQuiz ? subjectCurrentQuestion : testManagement.currentQuestion;
+  const currentSelectedAnswer = isSubjectQuiz ? subjectSelectedAnswer : testManagement.selectedAnswer;
+  const currentTimeRemaining = isSubjectQuiz ? subjectTimeRemaining : testManagement.timeRemaining;
+  const currentShowResults = isSubjectQuiz ? subjectShowResults : testManagement.showResults;
+  const currentScore = isSubjectQuiz ? subjectScore : testManagement.score;
 
   useEffect(() => {
     console.log("Current test state:", {
       testId,
       questionsLoaded: questions.length,
-      testStarted: testManagement.testStarted,
-      showResults: testManagement.showResults,
-      reviewMode: testManagement.reviewMode,
+      testStarted: currentTestStarted,
+      showResults: currentShowResults,
       submissionComplete: testManagement.submissionComplete,
       resultsVisibility: testDetails?.results_visibility,
-      score: testManagement.score,
-      currentQuestion: testManagement.currentQuestion,
-      selectedAnswer: testManagement.selectedAnswer,
-      savingStatus: testManagement.saving ? 'in-progress' : testManagement.savingError ? 'error' : 'complete'
+      score: currentScore,
+      currentQuestion: currentQuestionIndex,
+      selectedAnswer: currentSelectedAnswer
     });
-
-    if (testManagement.showResults && testDetails?.results_visibility === 'public' && !testManagement.publicResults.length) {
-      testManagement.loadPublicResults();
-    }
   }, [
     testId, 
     questions, 
-    testManagement.testStarted, 
-    testManagement.showResults, 
-    testManagement.reviewMode,
+    currentTestStarted, 
+    currentShowResults,
     testDetails,
-    testManagement.score,
-    testManagement.currentQuestion,
-    testManagement.selectedAnswer,
-    testManagement.saving,
-    testManagement.savingError
+    currentScore,
+    currentQuestionIndex,
+    currentSelectedAnswer
   ]);
 
-  if (loading) {
+  if (loading || (testId !== 'subject' && testManagement.loading)) {
     return <LoadingState />;
   }
 
@@ -290,7 +348,7 @@ const TakeTest = () => {
     return <NoQuestionsState />;
   }
 
-  if (testManagement.submissionComplete) {
+  if (!isSubjectQuiz && testManagement.submissionComplete) {
     return (
       <SubmissionComplete 
         testDetails={testDetails} 
@@ -299,7 +357,7 @@ const TakeTest = () => {
     );
   }
 
-  if (!testManagement.testStarted) {
+  if (!currentTestStarted) {
     if (user && previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
       return <AttemptBlockedState testDetails={testDetails} />;
     }
@@ -321,7 +379,7 @@ const TakeTest = () => {
         questions={questions}
         location={location}
         previousAttempts={previousAttempts}
-        onStartTest={testManagement.startTest}
+        onStartTest={isSubjectQuiz ? startSubjectTest : testManagement.startTest}
         onShowTakerForm={() => setShowTakerForm(true)}
         user={user}
         testId={testId || ''}
@@ -329,7 +387,7 @@ const TakeTest = () => {
     );
   }
 
-  if (testManagement.showResults) {
+  if (currentShowResults) {
     const isCreator = user?.id === testDetails?.creator_id;
     
     if (testDetails?.results_visibility === 'creator_only' && !isCreator) {
@@ -341,7 +399,7 @@ const TakeTest = () => {
       );
     }
 
-    if (testManagement.reviewMode) {
+    if (!isSubjectQuiz && testManagement.reviewMode) {
       return (
         <div className="pb-10">
           <AnswersReview
@@ -361,25 +419,25 @@ const TakeTest = () => {
     
     return (
       <TestResults
-        score={testManagement.score}
+        score={currentScore}
         questions={questions}
         testDetails={testDetails}
-        timeRemaining={testManagement.timeRemaining}
+        timeRemaining={currentTimeRemaining}
         location={location}
         testId={testId || ''}
         publicResults={testManagement.publicResults}
         testTakerInfo={testTakerInfo}
         user={user}
-        onReviewAnswers={() => testManagement.setReviewMode(true)}
+        onReviewAnswers={!isSubjectQuiz ? () => testManagement.setReviewMode(true) : undefined}
         onFinish={() => navigate('/cbt')}
-        onTryAgain={testManagement.resetTest}
-        formatTime={testManagement.formatTime}
+        onTryAgain={!isSubjectQuiz ? testManagement.resetTest : undefined}
+        formatTime={formatTime}
         savingError={testManagement.savingError}
       />
     );
   }
 
-  const currentQuestionData = questions[testManagement.currentQuestion];
+  const currentQuestionData = questions[currentQuestionIndex];
 
   if (!currentQuestionData) {
     return <NoQuestionsState />;
@@ -387,14 +445,14 @@ const TakeTest = () => {
 
   return (
     <QuestionDisplay
-      currentQuestion={testManagement.currentQuestion}
+      currentQuestion={currentQuestionIndex}
       questions={questions}
-      timeRemaining={testManagement.timeRemaining}
-      selectedAnswer={testManagement.selectedAnswer}
-      onAnswerSelect={testManagement.handleAnswerSelect}
-      onPreviousQuestion={testManagement.goToPreviousQuestion}
-      onNextQuestion={testManagement.goToNextQuestion}
-      formatTime={testManagement.formatTime}
+      timeRemaining={currentTimeRemaining}
+      selectedAnswer={currentSelectedAnswer}
+      onAnswerSelect={isSubjectQuiz ? handleSubjectAnswerSelect : testManagement.handleAnswerSelect}
+      onPreviousQuestion={isSubjectQuiz ? goToSubjectPreviousQuestion : testManagement.goToPreviousQuestion}
+      onNextQuestion={isSubjectQuiz ? goToSubjectNextQuestion : testManagement.goToNextQuestion}
+      formatTime={formatTime}
     />
   );
 };
