@@ -351,7 +351,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({
                   </Button>
                   <Button 
                     size="sm" 
-                    onClick={() => handleTakeTestClick(test.share_code)}
+                    onClick={() => handleTakeTestClick(test.id)}
                   >
                     Take Test
                   </Button>
