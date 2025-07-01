@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -156,6 +157,43 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({
 
   const handleEditTestClick = (testId: string) => {
     navigate(`/cbt/manage/${testId}`);
+  };
+
+  const handleShareTest = async (test: Test) => {
+    try {
+      let shareCode = test.share_code;
+      
+      if (!shareCode) {
+        // Generate a share code if one doesn't exist
+        const { data, error } = await supabase
+          .from('user_tests')
+          .update({ share_code: Math.random().toString(36).substring(2, 15) })
+          .eq('id', test.id)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        shareCode = data.share_code;
+      }
+      
+      // Create the share URL
+      const baseUrl = window.location.origin;
+      const shareUrl = `${baseUrl}/cbt/take/${test.id}`;
+      
+      await navigator.clipboard.writeText(shareUrl);
+      
+      toast({
+        title: "Share link copied!",
+        description: "The test link has been copied to your clipboard",
+      });
+    } catch (error) {
+      console.error('Error sharing test:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy share link",
+        variant: "destructive",
+      });
+    }
   };
 
   const closeResults = () => {
@@ -319,7 +357,7 @@ const MyTestsSection: React.FC<MyTestsSectionProps> = ({
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => onShare ? onShare(test.id) : null}
+                      onClick={() => handleShareTest(test)}
                       className="text-veno-primary h-8 w-8"
                     >
                       <Share2 size={16} />

@@ -317,6 +317,19 @@ const TakeTest = () => {
   const currentShowResults = isSubjectQuiz ? subjectShowResults : testManagement.showResults;
   const currentScore = isSubjectQuiz ? subjectScore : testManagement.score;
 
+  // Create formatted user answers for the review
+  const formatUserAnswersForReview = () => {
+    const answers = isSubjectQuiz ? subjectUserAnswers : testManagement.userAnswers;
+    return answers.map((selectedOption, index) => {
+      const question = questions[index];
+      const correctAnswer = question?.answer !== undefined ? question.answer : question?.correctOption || 0;
+      return {
+        selectedOption,
+        isCorrect: selectedOption === correctAnswer
+      };
+    });
+  };
+
   useEffect(() => {
     console.log("Current test state:", {
       testId,
@@ -404,7 +417,7 @@ const TakeTest = () => {
         <div className="pb-10">
           <AnswersReview
             questions={questions}
-            userAnswers={testManagement.userAnswers}
+            userAnswers={formatUserAnswersForReview()}
             score={testManagement.score}
             timeRemaining={testManagement.timeRemaining}
             testDetails={testDetails}

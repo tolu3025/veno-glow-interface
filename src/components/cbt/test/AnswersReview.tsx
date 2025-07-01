@@ -70,8 +70,15 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
             const question = questions[index];
             if (!question) return null;
             
+            // Normalize question data structure
+            const questionText = question.text || question.question || question.question_text || '';
+            const questionOptions = question.options || [];
+            const correctAnswer = question.correctOption !== undefined ? question.correctOption : 
+                                question.answer !== undefined ? question.answer : 0;
+            const questionExplanation = question.explanation || '';
+            
             return (
-              <Collapsible key={question.id} className="w-full">
+              <Collapsible key={question.id || index} className="w-full">
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -94,15 +101,15 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                         {answer.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-base">{index + 1}. {question.text}</div>
+                        <div className="font-medium text-base">{index + 1}. {questionText}</div>
                         
                         <div className="mt-2 space-y-2 text-sm">
-                          {question.options.map((option: string, optionIndex: number) => (
+                          {questionOptions.map((option: string, optionIndex: number) => (
                             <div 
                               key={optionIndex}
                               className={cn(
                                 "flex items-center gap-2 py-1 px-3 rounded",
-                                optionIndex === question.correctOption 
+                                optionIndex === correctAnswer 
                                   ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
                                   : optionIndex === answer.selectedOption && !answer.isCorrect 
                                     ? "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
@@ -111,7 +118,7 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                             >
                               <div className={cn(
                                 "flex items-center justify-center w-5 h-5 rounded-full text-xs border",
-                                optionIndex === question.correctOption 
+                                optionIndex === correctAnswer 
                                   ? "border-green-500 bg-green-500 text-white" 
                                   : optionIndex === answer.selectedOption && !answer.isCorrect
                                     ? "border-red-500 bg-red-500 text-white"
@@ -120,7 +127,7 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                                 {String.fromCharCode(65 + optionIndex)}
                               </div>
                               <span>{option}</span>
-                              {optionIndex === question.correctOption && 
+                              {optionIndex === correctAnswer && 
                                 <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
                               }
                               {optionIndex === answer.selectedOption && !answer.isCorrect && 
@@ -142,11 +149,10 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                       <Info size={16} className="text-veno-primary mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Detailed Explanation</h4>
-                        {/* Display the explanation properly from the question data */}
                         <p className="text-muted-foreground">
-                          {question.explanation ? question.explanation : 
-                            `The correct answer is ${String.fromCharCode(65 + question.correctOption)}: ${
-                              question.options[question.correctOption]
+                          {questionExplanation || 
+                            `The correct answer is ${String.fromCharCode(65 + correctAnswer)}: ${
+                              questionOptions[correctAnswer] || 'Not available'
                             }.`}
                         </p>
                       </div>
@@ -171,20 +177,20 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
                             You selected {answer.selectedOption !== null ? 
                               `option ${String.fromCharCode(65 + answer.selectedOption)}` : 
                               "no answer"}.
-                            The correct answer is option {String.fromCharCode(65 + question.correctOption)}.
+                            The correct answer is option {String.fromCharCode(65 + correctAnswer)}.
                           </p>
                         </div>
                       </div>
                     )}
                     
                     {/* Enhanced explanation section that always shows */}
-                    {question.explanation && (
+                    {questionExplanation && (
                       <div className="flex items-start gap-2 px-2 bg-blue-50/50 dark:bg-blue-950/10 p-3 mt-2 rounded-md border border-blue-200 dark:border-blue-800/40">
                         <BookOpen size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <h4 className="font-medium text-blue-700 dark:text-blue-400">Learning Point</h4>
                           <div className="text-blue-700/70 dark:text-blue-400/70 prose-sm prose-p:mt-1 prose prose-headings:text-blue-700">
-                            <p>{question.explanation}</p>
+                            <p>{questionExplanation}</p>
                           </div>
                         </div>
                       </div>
