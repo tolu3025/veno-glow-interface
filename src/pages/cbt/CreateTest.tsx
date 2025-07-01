@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import { Plus, Wand2 } from 'lucide-react';
+import FeatureAccessGuard from '@/components/billing/FeatureAccessGuard';
 
 // Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
@@ -102,145 +103,149 @@ const CreateTest = () => {
     <div className="container mx-auto py-8 max-w-3xl">
       <div className="grid gap-6">
         {/* AI Create Test Option */}
-        <Card className="border-2 border-dashed border-veno-primary/20 hover:border-veno-primary/40 transition-colors">
-          <CardHeader>
-            <CardTitle className="text-xl flex items-center">
-              <Wand2 className="mr-2 h-5 w-5 text-veno-primary" />
-              Create Test with AI
-            </CardTitle>
-            <CardDescription>
-              Generate a complete test automatically using AI based on your specifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={handleAICreateTest}
-              className="w-full bg-veno-primary hover:bg-veno-primary/90"
-            >
-              <Wand2 className="mr-2 h-4 w-4" />
-              Create Test with AI
-            </Button>
-          </CardContent>
-        </Card>
+        <FeatureAccessGuard featureType="ai_test">
+          <Card className="border-2 border-dashed border-veno-primary/20 hover:border-veno-primary/40 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center">
+                <Wand2 className="mr-2 h-5 w-5 text-veno-primary" />
+                Create Test with AI
+              </CardTitle>
+              <CardDescription>
+                Generate a complete test automatically using AI based on your specifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleAICreateTest}
+                className="w-full bg-veno-primary hover:bg-veno-primary/90"
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                Create Test with AI
+              </Button>
+            </CardContent>
+          </Card>
+        </FeatureAccessGuard>
 
         {/* Manual Test Creation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl flex items-center">
-              <Plus className="mr-2 h-5 w-5" />
-              Create Test Manually
-            </CardTitle>
-            <CardDescription>
-              Create a test from scratch and add your own questions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div>
-              <Label htmlFor="title">Test Title *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter test title"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter test description (optional)"
-                rows={3}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="subject">Subject *</Label>
-              <Input
-                id="subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Enter subject (e.g., Mathematics, Physics)"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label>Difficulty Level</Label>
-              <Select 
-                value={difficulty} 
-                onValueChange={(value: TestDifficulty) => setDifficulty(value)}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="beginner">Beginner</SelectItem>
-                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                  <SelectItem value="advanced">Advanced</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <div className="flex justify-between">
-                <Label>Time Limit: {timeLimit} minutes</Label>
-              </div>
-              <Slider 
-                value={[timeLimit]}
-                min={10}
-                max={120}
-                step={5}
-                onValueChange={(value) => setTimeLimit(value[0])}
-                className="mt-2"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Allow Retakes</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow participants to take the test multiple times
-                  </p>
-                </div>
-                <Switch
-                  checked={allowRetakes}
-                  onCheckedChange={setAllowRetakes}
+        <FeatureAccessGuard featureType="manual_test">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center">
+                <Plus className="mr-2 h-5 w-5" />
+                Create Test Manually
+              </CardTitle>
+              <CardDescription>
+                Create a test from scratch and add your own questions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <Label htmlFor="title">Test Title *</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter test title"
+                  className="mt-1"
                 />
               </div>
 
               <div>
-                <Label>Results Visibility</Label>
-                <Select value={resultsVisibility} onValueChange={setResultsVisibility}>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter test description (optional)"
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="subject">Subject *</Label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter subject (e.g., Mathematics, Physics)"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Difficulty Level</Label>
+                <Select 
+                  value={difficulty} 
+                  onValueChange={(value: TestDifficulty) => setDifficulty(value)}
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="after_completion">Show after completion</SelectItem>
-                    <SelectItem value="creator_only">Creator only</SelectItem>
-                    <SelectItem value="public">Public leaderboard</SelectItem>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Control who can see test results
-                </p>
               </div>
-            </div>
 
-            <Button 
-              onClick={handleCreateTest}
-              disabled={loading || !title.trim() || !subject.trim()}
-              className="w-full"
-            >
-              {loading ? 'Creating Test...' : 'Create Test'}
-            </Button>
-          </CardContent>
-        </Card>
+              <div>
+                <div className="flex justify-between">
+                  <Label>Time Limit: {timeLimit} minutes</Label>
+                </div>
+                <Slider 
+                  value={[timeLimit]}
+                  min={10}
+                  max={120}
+                  step={5}
+                  onValueChange={(value) => setTimeLimit(value[0])}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Allow Retakes</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Allow participants to take the test multiple times
+                    </p>
+                  </div>
+                  <Switch
+                    checked={allowRetakes}
+                    onCheckedChange={setAllowRetakes}
+                  />
+                </div>
+
+                <div>
+                  <Label>Results Visibility</Label>
+                  <Select value={resultsVisibility} onValueChange={setResultsVisibility}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="after_completion">Show after completion</SelectItem>
+                      <SelectItem value="creator_only">Creator only</SelectItem>
+                      <SelectItem value="public">Public leaderboard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Control who can see test results
+                  </p>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleCreateTest}
+                disabled={loading || !title.trim() || !subject.trim()}
+                className="w-full"
+              >
+                {loading ? 'Creating Test...' : 'Create Test'}
+              </Button>
+            </CardContent>
+          </Card>
+        </FeatureAccessGuard>
       </div>
     </div>
   );
