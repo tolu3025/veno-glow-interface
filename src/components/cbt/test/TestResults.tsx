@@ -117,9 +117,18 @@ const TestResults: React.FC<TestResultsProps> = ({
     resultEmoji = "💪";
   }
 
+  // Fix time calculations
   const timeLimit = testDetails?.time_limit || location?.state?.settings?.timeLimit || 15;
-  const timeTaken = timeLimit * 60 - timeRemaining;
-  const timeEfficiency = Math.round((timeTaken / (timeLimit * 60)) * 100);
+  const timeTaken = Math.max(0, (timeLimit * 60) - timeRemaining);
+  const timeEfficiency = timeLimit > 0 ? Math.min(100, Math.round((timeTaken / (timeLimit * 60)) * 100)) : 0;
+  
+  console.log('Time calculations:', {
+    timeLimit,
+    timeRemaining,
+    timeTaken,
+    timeEfficiency,
+    timeLimitInSeconds: timeLimit * 60
+  });
   
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -270,6 +279,12 @@ const TestResults: React.FC<TestResultsProps> = ({
                       {formatTime(timeTaken)}
                     </span>
                   </li>
+                  <li className="flex justify-between">
+                    <span className="text-muted-foreground">Time limit:</span>
+                    <span className="font-medium">
+                      {formatTime(timeLimit * 60)}
+                    </span>
+                  </li>
                   {findRank() !== "N/A" && (
                     <li className="flex justify-between">
                       <span className="text-muted-foreground">Rank:</span>
@@ -296,12 +311,15 @@ const TestResults: React.FC<TestResultsProps> = ({
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">Time Efficiency</span>
+                      <span className="text-muted-foreground">Time Usage</span>
                       <Badge variant={timeEfficiency <= 80 ? "default" : "secondary"}>
                         {timeEfficiency}%
                       </Badge>
                     </div>
                     <Progress value={timeEfficiency} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {timeEfficiency}% of available time used
+                    </p>
                   </div>
                   
                   <div className="pt-2">
@@ -460,16 +478,18 @@ const TestResults: React.FC<TestResultsProps> = ({
             <div className="bg-secondary/30 p-4 rounded-lg text-center">
               <h3 className="font-medium mb-2">Review Your Answers</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                See all questions, your answers, and the correct answers
+                See all questions, your answers, and detailed explanations
               </p>
-              <Button 
-                onClick={onReviewAnswers}
-                variant="outline" 
-                className="text-veno-primary border-veno-primary/30"
-              >
-                <HelpCircle className="h-4 w-4 mr-2" /> 
-                View Detailed Review
-              </Button>
+              {onReviewAnswers && (
+                <Button 
+                  onClick={onReviewAnswers}
+                  variant="outline" 
+                  className="text-veno-primary border-veno-primary/30"
+                >
+                  <HelpCircle className="h-4 w-4 mr-2" /> 
+                  View Detailed Review
+                </Button>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
@@ -478,7 +498,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                 <Button variant="outline" className="flex-1" onClick={onFinish}>
                   Back to Tests
                 </Button>
-                {(testDetails?.allow_retakes || testId === 'subject') && (
+                {(testDetails?.allow_retakes || testId === 'subject') && onTryAgain && (
                   <Button 
                     className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
                     onClick={onTryAgain}

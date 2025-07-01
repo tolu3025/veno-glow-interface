@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
@@ -28,6 +29,8 @@ const AiCreateTest = () => {
   const [questionCount, setQuestionCount] = useState(10);
   const [timeLimit, setTimeLimit] = useState(30);
   const [instructions, setInstructions] = useState('');
+  const [allowRetakes, setAllowRetakes] = useState(true);
+  const [resultsVisibility, setResultsVisibility] = useState('after_completion');
   
   const subjects = [
     "Mathematics", 
@@ -97,8 +100,8 @@ const AiCreateTest = () => {
           difficulty: difficulty as TestDifficulty,
           question_count: data.questions.length,
           time_limit: timeLimit,
-          results_visibility: 'after_completion',
-          allow_retakes: true,
+          results_visibility: resultsVisibility,
+          allow_retakes: allowRetakes,
           creator_id: user.id
         })
         .select()
@@ -123,7 +126,6 @@ const AiCreateTest = () => {
       if (questionError) throw questionError;
       
       toast.success('Test created successfully!');
-      // Fix: Update route to match the correct path pattern defined in App.tsx
       navigate(`/cbt/manage/${testData.id}`);
       
     } catch (error) {
@@ -226,6 +228,38 @@ const AiCreateTest = () => {
               onValueChange={(value) => setTimeLimit(value[0])}
               className="mt-2"
             />
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Allow Retakes</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow participants to take the test multiple times
+                </p>
+              </div>
+              <Switch
+                checked={allowRetakes}
+                onCheckedChange={setAllowRetakes}
+              />
+            </div>
+
+            <div>
+              <Label>Results Visibility</Label>
+              <Select value={resultsVisibility} onValueChange={setResultsVisibility}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="after_completion">Show after completion</SelectItem>
+                  <SelectItem value="creator_only">Creator only</SelectItem>
+                  <SelectItem value="public">Public leaderboard</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Control who can see test results
+              </p>
+            </div>
           </div>
           
           <div>
