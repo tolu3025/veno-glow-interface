@@ -89,6 +89,9 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
         userTest.setShareCodeError("Invalid share code for this test");
         return;
       }
+      
+      // Clear any previous share code errors
+      userTest.setShareCodeError(null);
     }
     
     setTestTakerInfo(data);

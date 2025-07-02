@@ -31,7 +31,7 @@ const AiCreateTest = () => {
   const [timeLimit, setTimeLimit] = useState(30);
   const [instructions, setInstructions] = useState('');
   const [allowRetakes, setAllowRetakes] = useState(true);
-  const [resultsVisibility, setResultsVisibility] = useState('after_completion');
+  const [resultsVisibility, setResultsVisibility] = useState('test_takers');
   
   const subjects = [
     "Mathematics", 
@@ -260,8 +260,8 @@ const AiCreateTest = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="after_completion">Show after completion</SelectItem>
-                  <SelectItem value="creator_only">Creator only</SelectItem>
+                  <SelectItem value="creator_only">Creators Only</SelectItem>
+                  <SelectItem value="test_takers">Users can see their results</SelectItem>
                   <SelectItem value="public">Public leaderboard</SelectItem>
                 </SelectContent>
               </Select>

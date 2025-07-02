@@ -64,7 +64,7 @@ export const useUserTest = (testId: string) => {
         console.log("Test details loaded:", testData);
         setTestDetails(testData as TestDetails);
         
-        setShareCodeRequired(!!testData.share_code && !user);
+        setShareCodeRequired(!!testData.share_code);
         
         if (user && testData.allow_retakes === false) {
           const { data: attempts, error: attemptsError } = await supabase

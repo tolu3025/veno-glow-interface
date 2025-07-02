@@ -29,7 +29,7 @@ const CreateTest = () => {
   const [difficulty, setDifficulty] = useState<TestDifficulty>('intermediate');
   const [timeLimit, setTimeLimit] = useState(30);
   const [allowRetakes, setAllowRetakes] = useState(true);
-  const [resultsVisibility, setResultsVisibility] = useState('after_completion');
+  const [resultsVisibility, setResultsVisibility] = useState('test_takers');
 
   const handleCreateTest = async () => {
     if (!user) {
@@ -225,8 +225,8 @@ const CreateTest = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="after_completion">Show after completion</SelectItem>
-                      <SelectItem value="creator_only">Creator only</SelectItem>
+                      <SelectItem value="creator_only">Creators Only</SelectItem>
+                      <SelectItem value="test_takers">Users can see their results</SelectItem>
                       <SelectItem value="public">Public leaderboard</SelectItem>
                     </SelectContent>
                   </Select>
