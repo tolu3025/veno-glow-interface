@@ -205,7 +205,8 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
       );
     }
     
-    // Show results for public visibility, test_takers visibility, and subject quizzes
+    // Show results for all other cases: public visibility, test_takers visibility, and subject quizzes
+    // This includes when visibility is 'public' (public leaderboard) or 'test_takers' (users can see results)
     return (
       <TestResults
         score={score}
