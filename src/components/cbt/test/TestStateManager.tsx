@@ -177,6 +177,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   if (showResults) {
     const isCreator = user?.id === testDetails?.creator_id;
     
+    // Only show submission complete page for creator_only visibility when user is NOT the creator
     if (!isSubjectQuiz && testDetails?.results_visibility === 'creator_only' && !isCreator) {
       return (
         <SubmissionComplete 
@@ -204,6 +205,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
       );
     }
     
+    // Show results for public visibility, test_takers visibility, and subject quizzes
     return (
       <TestResults
         score={score}
