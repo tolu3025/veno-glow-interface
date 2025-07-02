@@ -132,16 +132,6 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
     return <NoQuestionsState />;
   }
 
-  // Render submission complete for user tests
-  if (!isSubjectQuiz && testManagement.submissionComplete) {
-    return (
-      <SubmissionComplete 
-        testDetails={testDetails} 
-        testTakerInfo={testTakerInfo} 
-      />
-    );
-  }
-
   // Render pre-test states
   if (!testStarted) {
     if (!isSubjectQuiz && user && userTest.previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
@@ -177,14 +167,31 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   if (showResults) {
     const isCreator = user?.id === testDetails?.creator_id;
     
-    // Only show submission complete page for creator_only visibility when user is NOT the creator
-    if (!isSubjectQuiz && testDetails?.results_visibility === 'creator_only' && !isCreator) {
-      return (
-        <SubmissionComplete 
-          testDetails={testDetails} 
-          testTakerInfo={testTakerInfo} 
-        />
-      );
+    // Handle different visibility options
+    if (!isSubjectQuiz && testDetails?.results_visibility) {
+      switch (testDetails.results_visibility) {
+        case 'creator_only':
+          // Only show results to creator, others see submission complete
+          if (!isCreator) {
+            return (
+              <SubmissionComplete 
+                testDetails={testDetails} 
+                testTakerInfo={testTakerInfo} 
+              />
+            );
+          }
+          break;
+        
+        case 'test_takers':
+          // Show results to test takers and creator
+          // This will fall through to the TestResults component
+          break;
+        
+        case 'public':
+          // Show results with public leaderboard
+          // This will fall through to the TestResults component
+          break;
+      }
     }
 
     if (!isSubjectQuiz && testManagement.reviewMode) {
@@ -205,8 +212,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
       );
     }
     
-    // Show results for all other cases: public visibility, test_takers visibility, and subject quizzes
-    // This includes when visibility is 'public' (public leaderboard) or 'test_takers' (users can see results)
+    // Show results for test_takers visibility, public visibility, and subject quizzes
     return (
       <TestResults
         score={score}

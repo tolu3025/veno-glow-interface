@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -46,11 +47,11 @@ interface TestResultsProps {
   publicResults: any[];
   testTakerInfo: any;
   user: any;
-  onReviewAnswers: () => void;
+  onReviewAnswers?: () => void;
   onFinish: () => void;
-  onTryAgain: () => void;
+  onTryAgain?: () => void;
   formatTime: (seconds: number) => string;
-  savingError?: string | null; // Add the savingError prop (optional)
+  savingError?: string | null;
 }
 
 const formSchema = z.object({
@@ -141,19 +142,17 @@ const TestResults: React.FC<TestResultsProps> = ({
     },
   });
 
+  // Load results based on visibility settings
   useEffect(() => {
     const loadResults = async () => {
-      if (
-        (testDetails?.results_visibility === 'public' || user?.id === testDetails?.creator_id) && 
-        testId && 
-        publicResults?.length === 0
-      ) {
+      if (testDetails?.results_visibility === 'public' && testId && publicResults?.length === 0) {
         try {
           const { data, error } = await supabase
-            .from('test_attempts')
+            .from('test_completions')
             .select('*')
             .eq('test_id', testId)
-            .order('score', { ascending: false });
+            .order('score', { ascending: false })
+            .order('completed_at', { ascending: true });
             
           if (error) throw error;
           console.log("Public results loaded from TestResults component:", data?.length || 0);
@@ -164,7 +163,7 @@ const TestResults: React.FC<TestResultsProps> = ({
     };
     
     loadResults();
-  }, [testDetails, testId, user, publicResults]);
+  }, [testDetails, testId, publicResults]);
 
   const findRank = (): string => {
     if (!publicResults || publicResults.length === 0 || 
@@ -213,6 +212,9 @@ const TestResults: React.FC<TestResultsProps> = ({
     });
   };
 
+  // Check if this is a public test to show leaderboard
+  const shouldShowLeaderboard = testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0;
+
   return (
     <div>
       <div ref={resultRef}>
@@ -227,6 +229,7 @@ const TestResults: React.FC<TestResultsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-6">
+            {/* Result display section */}
             <div className="bg-card border rounded-lg p-6 mb-8">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-secondary/20 rounded-full mb-4">
@@ -245,6 +248,7 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
+            {/* Statistics and Performance section */}
             <div className="grid gap-6 md:grid-cols-2 mb-8">
               <div className="bg-secondary/30 p-4 rounded-lg">
                 <h3 className="font-medium mb-3 flex items-center">
@@ -287,7 +291,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                       {formatTime(timeLimit * 60)}
                     </span>
                   </li>
-                  {findRank() !== "N/A" && (
+                  {shouldShowLeaderboard && findRank() !== "N/A" && (
                     <li className="flex justify-between">
                       <span className="text-muted-foreground">Rank:</span>
                       <span className="font-medium">{findRank()}</span>
@@ -368,15 +372,17 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             </div>
             
-            {testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0 && (
+            {/* Public Leaderboard - only show for public tests */}
+            {shouldShowLeaderboard && (
               <div className="bg-secondary/30 p-4 rounded-lg mb-8">
                 <h3 className="font-medium mb-3 flex items-center">
                   <Trophy className="h-4 w-4 mr-2 text-veno-primary" />
-                  Leaderboard
+                  Public Leaderboard
                 </h3>
                 
                 {publicResults.length >= 3 && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    {/* Top 3 display */}
                     <div className="bg-secondary/30 rounded-lg p-3 text-center order-2 md:order-1">
                       <div className="flex justify-center mb-1">
                         <div className="bg-secondary/50 rounded-full p-2">
@@ -477,6 +483,7 @@ const TestResults: React.FC<TestResultsProps> = ({
               </div>
             )}
             
+            {/* Review section */}
             <div className="bg-secondary/30 p-4 rounded-lg text-center">
               <h3 className="font-medium mb-2">Review Your Answers</h3>
               <p className="text-sm text-muted-foreground mb-2">
@@ -495,14 +502,13 @@ const TestResults: React.FC<TestResultsProps> = ({
                 )}
                 <Button 
                   onClick={() => {
-                    // Navigate to quiz explanations page with data
                     navigate('/cbt/quiz/explanations', {
                       state: {
                         questions,
                         userAnswers: Array.from({ length: questions.length }, (_, index) => ({
                           questionIndex: index,
-                          selectedOption: null, // This would need to be populated from actual user answers
-                          isCorrect: false // This would need to be calculated
+                          selectedOption: null,
+                          isCorrect: false
                         })),
                         score,
                         subject: testDetails?.subject || location?.state?.subject || 'Quiz'
@@ -538,6 +544,7 @@ const TestResults: React.FC<TestResultsProps> = ({
         </Card>
       </div>
       
+      {/* Share and reporting section */}
       <div className="bg-secondary/30 p-4 rounded-lg mb-4">
         <h3 className="font-medium mb-3 flex items-center">
           <Share className="h-4 w-4 mr-2 text-veno-primary" />

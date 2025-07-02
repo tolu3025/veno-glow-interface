@@ -11,7 +11,7 @@ interface TestData {
   title: string;
   description?: string;
   subject: string;
-  difficulty: TestDifficulty; // Use the union type here
+  difficulty: TestDifficulty;
   question_count: number;
   time_limit?: number;
   results_visibility: string;
@@ -130,8 +130,9 @@ export const useTestManagement = (testId: string) => {
     
     setLoadingParticipants(true);
     try {
+      // Use the new test_completions table
       const { data, error } = await supabase
-        .from('test_attempts')
+        .from('test_completions')
         .select('*')
         .eq('test_id', testId)
         .order('completed_at', { ascending: false });
@@ -197,23 +198,40 @@ export const useTestManagement = (testId: string) => {
       const finalScore = correctAnswers;
       setScore(finalScore);
       setShowResults(true);
-      setSubmissionComplete(true);
       
-      // Save test attempt if user is authenticated
-      if (user && testId !== 'subject') {
-        await supabase
-          .from('test_attempts')
-          .insert({
-            test_id: testId,
-            user_id: user.id,
-            score: finalScore,
-            total_questions: questions.length,
-            participant_email: user.email,
-            completed_at: new Date().toISOString()
-          });
+      // Calculate time taken
+      const timeTaken = test?.time_limit ? (test.time_limit * 60) - timeRemaining : 0;
+      
+      // Save test completion to the new test_completions table
+      if (testId !== 'subject') {
+        const completionData = {
+          test_id: testId,
+          user_id: user?.id || null,
+          participant_name: user?.email ? null : 'Anonymous', // Will be updated if we have test taker info
+          participant_email: user?.email || 'anonymous@test.com',
+          score: finalScore,
+          total_questions: questions.length,
+          time_taken: timeTaken,
+          completed_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('test_completions')
+          .insert(completionData);
+
+        if (error) {
+          console.error('Error saving test completion:', error);
+          setSavingError('Failed to save test results');
+        }
       }
+      
+      // Load public results if needed
+      if (test?.results_visibility === 'public') {
+        await loadPublicResults();
+      }
+      
     } catch (error) {
-      console.error('Error saving test results:', error);
+      console.error('Error finishing test:', error);
       setSavingError('Failed to save test results');
     } finally {
       setSaving(false);
@@ -235,12 +253,16 @@ export const useTestManagement = (testId: string) => {
   };
 
   const loadPublicResults = async () => {
+    if (!testId) return;
+    
     try {
       const { data, error } = await supabase
-        .from('participant_results')
+        .from('test_completions')
         .select('*')
+        .eq('test_id', testId)
         .order('score', { ascending: false })
-        .limit(10);
+        .order('completed_at', { ascending: true })
+        .limit(50);
 
       if (error) throw error;
       setPublicResults(data || []);
