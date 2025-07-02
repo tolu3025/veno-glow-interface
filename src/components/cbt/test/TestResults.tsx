@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -148,7 +147,7 @@ const TestResults: React.FC<TestResultsProps> = ({
       if (testDetails?.results_visibility === 'public' && testId && publicResults?.length === 0) {
         try {
           const { data, error } = await supabase
-            .from('test_completions')
+            .from('test_attempts')
             .select('*')
             .eq('test_id', testId)
             .order('score', { ascending: false })

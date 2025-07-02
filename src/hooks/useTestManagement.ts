@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -130,15 +131,26 @@ export const useTestManagement = (testId: string) => {
     
     setLoadingParticipants(true);
     try {
-      // Use the new test_completions table
+      // Use the existing test_attempts table
       const { data, error } = await supabase
-        .from('test_completions')
+        .from('test_attempts')
         .select('*')
         .eq('test_id', testId)
         .order('completed_at', { ascending: false });
 
       if (error) throw error;
-      setParticipants(data || []);
+      
+      // Transform the data to match our Participant interface
+      const transformedParticipants: Participant[] = (data || []).map(attempt => ({
+        id: attempt.id,
+        participant_name: attempt.participant_name || undefined,
+        participant_email: attempt.participant_email || '',
+        score: attempt.score,
+        total_questions: attempt.total_questions,
+        completed_at: attempt.completed_at || new Date().toISOString()
+      }));
+      
+      setParticipants(transformedParticipants);
     } catch (error) {
       console.error('Error fetching participants:', error);
       toast({
@@ -202,12 +214,12 @@ export const useTestManagement = (testId: string) => {
       // Calculate time taken
       const timeTaken = test?.time_limit ? (test.time_limit * 60) - timeRemaining : 0;
       
-      // Save test completion to the new test_completions table
+      // Save test completion to the existing test_attempts table
       if (testId !== 'subject') {
         const completionData = {
           test_id: testId,
           user_id: user?.id || null,
-          participant_name: user?.email ? null : 'Anonymous', // Will be updated if we have test taker info
+          participant_name: user?.email ? null : 'Anonymous',
           participant_email: user?.email || 'anonymous@test.com',
           score: finalScore,
           total_questions: questions.length,
@@ -216,7 +228,7 @@ export const useTestManagement = (testId: string) => {
         };
 
         const { error } = await supabase
-          .from('test_completions')
+          .from('test_attempts')
           .insert(completionData);
 
         if (error) {
@@ -257,7 +269,7 @@ export const useTestManagement = (testId: string) => {
     
     try {
       const { data, error } = await supabase
-        .from('test_completions')
+        .from('test_attempts')
         .select('*')
         .eq('test_id', testId)
         .order('score', { ascending: false })
