@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import { Wand2 } from 'lucide-react';
-import { useBilling } from '@/hooks/useBilling';
 
 // Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
@@ -20,7 +20,6 @@ type TestDifficulty = "beginner" | "intermediate" | "advanced";
 const AiCreateTest = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { consumeFeatureAccess } = useBilling();
   
   const [loading, setLoading] = useState(false);
   const [subject, setSubject] = useState('');
@@ -68,14 +67,6 @@ const AiCreateTest = () => {
     setLoading(true);
     
     try {
-      // Check and consume feature access
-      const hasAccess = await consumeFeatureAccess('ai_test');
-      if (!hasAccess) {
-        toast.error('You need to subscribe to use AI Test Creation');
-        setLoading(false);
-        return;
-      }
-
       console.log('Generating AI test:', {
         subject: finalSubject,
         topic,
