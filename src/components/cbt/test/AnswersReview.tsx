@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
@@ -7,7 +8,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 
 interface AnswersReviewProps {
   questions: any[];
@@ -44,23 +44,6 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
     sampleQuestion: questions[0],
     sampleAnswer: userAnswers[0]
   });
-
-  const navigate = useNavigate();
-
-  const handleViewFullExplanations = () => {
-    navigate('/cbt/quiz-explanations', {
-      state: {
-        questions,
-        userAnswers: userAnswers.map((answer, index) => {
-          const question = questions[index];
-          const correctAnswer = question?.answer !== undefined ? question.answer : question?.correctOption || 0;
-          return answer.selectedOption;
-        }),
-        score,
-        testDetails
-      }
-    });
-  };
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -237,14 +220,6 @@ const AnswersReview: React.FC<AnswersReviewProps> = ({
       <CardFooter className="flex gap-4">
         <Button variant="outline" className="flex-1" onClick={onBackToSummary}>
           Back to Summary
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleViewFullExplanations}
-          className="flex items-center gap-2"
-        >
-          <BookOpen className="h-4 w-4" />
-          Full Explanations
         </Button>
         <Button className="flex-1 bg-veno-primary hover:bg-veno-primary/90" onClick={onFinish}>
           Finish Review

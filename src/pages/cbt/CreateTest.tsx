@@ -102,27 +102,29 @@ const CreateTest = () => {
   return (
     <div className="container mx-auto py-8 max-w-3xl">
       <div className="grid gap-6">
-        {/* AI Create Test Option - Now freely accessible */}
-        <Card className="border-2 border-dashed border-veno-primary/20 hover:border-veno-primary/40 transition-colors">
-          <CardHeader>
-            <CardTitle className="text-xl flex items-center">
-              <Wand2 className="mr-2 h-5 w-5 text-veno-primary" />
-              Create Test with AI
-            </CardTitle>
-            <CardDescription>
-              Generate a complete test automatically using AI based on your specifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={handleAICreateTest}
-              className="w-full bg-veno-primary hover:bg-veno-primary/90"
-            >
-              <Wand2 className="mr-2 h-4 w-4" />
-              Create Test with AI
-            </Button>
-          </CardContent>
-        </Card>
+        {/* AI Create Test Option */}
+        <FeatureAccessGuard featureType="ai_test">
+          <Card className="border-2 border-dashed border-veno-primary/20 hover:border-veno-primary/40 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center">
+                <Wand2 className="mr-2 h-5 w-5 text-veno-primary" />
+                Create Test with AI
+              </CardTitle>
+              <CardDescription>
+                Generate a complete test automatically using AI based on your specifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleAICreateTest}
+                className="w-full bg-veno-primary hover:bg-veno-primary/90"
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                Create Test with AI
+              </Button>
+            </CardContent>
+          </Card>
+        </FeatureAccessGuard>
 
         {/* Manual Test Creation */}
         <FeatureAccessGuard featureType="manual_test">
