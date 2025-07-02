@@ -18,6 +18,7 @@ import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
 import AiCreateTest from "./pages/cbt/AiCreateTest";
 import QuestionBank from "./pages/cbt/QuestionBank";
+import QuizExplanations from "./pages/cbt/QuizExplanations";
 import TakeTest from "./pages/cbt/TakeTest";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
@@ -219,6 +220,12 @@ const AppRoutes = () => {
           <Route path="/cbt/ai-create" element={
             <ProtectedRoute>
               <AiCreateTest />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/quiz/explanations" element={
+            <ProtectedRoute>
+              <QuizExplanations />
             </ProtectedRoute>
           } />
           

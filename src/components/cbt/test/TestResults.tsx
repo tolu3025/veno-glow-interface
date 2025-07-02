@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users, Share, Flag, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trophy, HelpCircle, FileText, Award, CheckCircle, XCircle, Clock, BarChart2, Medal, Users, Share, Flag, MessageCircle, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -130,6 +131,7 @@ const TestResults: React.FC<TestResultsProps> = ({
     timeLimitInSeconds: timeLimit * 60
   });
   
+  const navigate = useNavigate();
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -480,16 +482,40 @@ const TestResults: React.FC<TestResultsProps> = ({
               <p className="text-sm text-muted-foreground mb-2">
                 See all questions, your answers, and detailed explanations
               </p>
-              {onReviewAnswers && (
+              <div className="flex flex-col gap-2">
+                {onReviewAnswers && (
+                  <Button 
+                    onClick={onReviewAnswers}
+                    variant="outline" 
+                    className="text-veno-primary border-veno-primary/30"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-2" /> 
+                    View Detailed Review
+                  </Button>
+                )}
                 <Button 
-                  onClick={onReviewAnswers}
+                  onClick={() => {
+                    // Navigate to quiz explanations page with data
+                    navigate('/cbt/quiz/explanations', {
+                      state: {
+                        questions,
+                        userAnswers: Array.from({ length: questions.length }, (_, index) => ({
+                          questionIndex: index,
+                          selectedOption: null, // This would need to be populated from actual user answers
+                          isCorrect: false // This would need to be calculated
+                        })),
+                        score,
+                        subject: testDetails?.subject || location?.state?.subject || 'Quiz'
+                      }
+                    });
+                  }}
                   variant="outline" 
-                  className="text-veno-primary border-veno-primary/30"
+                  className="text-blue-600 border-blue-600/30"
                 >
-                  <HelpCircle className="h-4 w-4 mr-2" /> 
-                  View Detailed Review
+                  <BookOpen className="h-4 w-4 mr-2" /> 
+                  View Quiz Explanations
                 </Button>
-              )}
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
