@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { User, Mail, Building, GraduationCap, Loader2, Sparkles } from 'lucide-react';
+import { User, Mail, Building, GraduationCap, Loader2 } from 'lucide-react';
 
 export interface GuestTestTakerInfo {
   fullName: string;
@@ -110,23 +110,17 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-      <Card className="w-full max-w-2xl mx-auto shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-        <CardHeader className="text-center pb-6">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-30"></div>
-              <div className="relative bg-white p-3 rounded-full">
-                <VenoLogo className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-            <Sparkles className="h-6 w-6 text-purple-500 animate-pulse" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <VenoLogo className="h-8 w-8" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <CardTitle className="text-2xl font-heading">
             Welcome to {testTitle}
           </CardTitle>
-          <CardDescription className="text-lg text-gray-600 mt-2">
-            Please provide your information to begin your test journey
+          <CardDescription>
+            Please provide your information to begin the test
           </CardDescription>
         </CardHeader>
         
@@ -139,8 +133,8 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2 text-gray-700 font-medium">
-                        <User className="h-4 w-4 text-blue-500" />
+                      <FormLabel className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
                         Full Name
                       </FormLabel>
                       <FormControl>
@@ -148,10 +142,9 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
                           placeholder="Enter your full name" 
                           {...field} 
                           disabled={loading}
-                          className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-200"
                         />
                       </FormControl>
-                      <FormDescription className="text-sm text-gray-500">
+                      <FormDescription>
                         This name will appear on the leaderboard
                       </FormDescription>
                       <FormMessage />
@@ -164,8 +157,8 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2 text-gray-700 font-medium">
-                        <Mail className="h-4 w-4 text-green-500" />
+                      <FormLabel className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
                         Email Address
                       </FormLabel>
                       <FormControl>
@@ -174,10 +167,9 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
                           type="email" 
                           {...field} 
                           disabled={loading}
-                          className="h-12 border-2 border-gray-200 focus:border-green-500 focus:ring-green-500/20 transition-all duration-200"
                         />
                       </FormControl>
-                      <FormDescription className="text-sm text-gray-500">
+                      <FormDescription>
                         Your test results will be sent here
                       </FormDescription>
                       <FormMessage />
@@ -192,19 +184,19 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
                   name="department"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2 text-gray-700 font-medium">
-                        <Building className="h-4 w-4 text-orange-500" />
+                      <FormLabel className="flex items-center gap-2">
+                        <Building className="h-4 w-4" />
                         Department
                       </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 transition-all duration-200">
+                          <SelectTrigger>
                             <SelectValue placeholder="Select your department" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-white border-2 shadow-lg">
+                        <SelectContent className="bg-popover">
                           {departments.map((dept) => (
-                            <SelectItem key={dept} value={dept} className="hover:bg-orange-50">
+                            <SelectItem key={dept} value={dept}>
                               {dept}
                             </SelectItem>
                           ))}
@@ -220,19 +212,19 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
                   name="level"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2 text-gray-700 font-medium">
-                        <GraduationCap className="h-4 w-4 text-purple-500" />
+                      <FormLabel className="flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4" />
                         Academic Level
                       </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-purple-500 focus:ring-purple-500/20 transition-all duration-200">
+                          <SelectTrigger>
                             <SelectValue placeholder="Select your level" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-white border-2 shadow-lg">
+                        <SelectContent className="bg-popover">
                           {levels.map((level) => (
-                            <SelectItem key={level} value={level} className="hover:bg-purple-50">
+                            <SelectItem key={level} value={level}>
                               {level}
                             </SelectItem>
                           ))}
@@ -245,40 +237,36 @@ const GuestTestTakerForm: React.FC<GuestTestTakerFormProps> = ({
               </div>
 
               {initialShareCode && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 text-blue-700">
-                    <Sparkles className="h-4 w-4" />
+                <div className="bg-muted p-4 rounded-lg border">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="font-medium">Test Access Code</span>
                   </div>
-                  <p className="text-blue-600 text-sm mt-1">
+                  <p className="text-sm mt-1">
                     Access code automatically applied from your invitation link
                   </p>
                 </div>
               )}
 
               {shareCodeError && (
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                  <p className="text-red-600 text-sm font-medium">{shareCodeError}</p>
+                <div className="bg-destructive/10 p-4 rounded-lg border border-destructive/20">
+                  <p className="text-destructive text-sm font-medium">{shareCodeError}</p>
                 </div>
               )}
             </CardContent>
             
-            <CardFooter className="pt-6">
+            <CardFooter>
               <Button 
                 type="submit" 
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]" 
+                className="w-full" 
                 disabled={loading}
               >
                 {loading ? (
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Preparing Your Test...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="h-5 w-5" />
-                    <span>Start My Test Journey</span>
-                  </div>
+                  'Start Test'
                 )}
               </Button>
             </CardFooter>
