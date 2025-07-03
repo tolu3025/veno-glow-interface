@@ -73,7 +73,7 @@ export const useUserTest = (testId: string) => {
         
         setShareCodeRequired(!!testData.share_code);
         
-        // Check previous attempts only for authenticated users
+        // Check previous attempts only for authenticated users and if retakes are not allowed
         if (testData.allow_retakes === false && user) {
           const { data: attempts, error: attemptsError } = await supabase
             .from('test_attempts')
@@ -128,7 +128,6 @@ export const useUserTest = (testId: string) => {
     loadTest();
   }, [testId, user, navigate]);
 
-  // This function is no longer needed since unregistered users can access tests via share codes
   const checkPreviousAttemptsByEmail = async (email: string): Promise<number> => {
     if (!testDetails) return 0;
     

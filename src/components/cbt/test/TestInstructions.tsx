@@ -54,7 +54,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
             <div className="bg-orange-50 p-4 rounded-lg">
               <h3 className="font-medium mb-2">Taking Test as Guest</h3>
               <p className="text-sm text-muted-foreground">
-                You're taking this test as a guest. Your results will be saved with the information you provide during the test.
+                You're taking this test as a guest. Your results will be saved with the information you provide during the test submission.
               </p>
             </div>
           )}
@@ -121,6 +121,9 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
               )}
               {!user && (
                 <li>You'll be asked for your name and email during the test submission</li>
+              )}
+              {user && testDetails && !testDetails.allow_retakes && previousAttempts > 0 && (
+                <li className="text-orange-600 font-medium">Note: You have already taken this test. Multiple attempts are not allowed.</li>
               )}
             </ul>
           </div>

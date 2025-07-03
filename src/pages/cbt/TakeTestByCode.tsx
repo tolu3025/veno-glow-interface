@@ -16,7 +16,7 @@ const TakeTestByCode = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Don't wait for auth to load - proceed with share code validation immediately
+    // Proceed with share code validation immediately (no need to wait for auth)
     if (shareCode) {
       validateShareCode();
     } else {
@@ -30,9 +30,11 @@ const TakeTestByCode = () => {
 
     try {
       setLoading(true);
+      console.log("Validating share code:", shareCode);
+      
       const { data: testData, error: testError } = await supabase
         .from('user_tests')
-        .select('id, title')
+        .select('id, title, creator_id, allow_retakes, results_visibility')
         .eq('share_code', shareCode)
         .single();
 
