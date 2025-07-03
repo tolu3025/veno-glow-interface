@@ -120,8 +120,8 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
       </CardContent>
       <CardFooter>
         <Button className="w-full" onClick={() => {
-          // Show form for unregistered users taking formal tests with share codes OR if no testTakerInfo is provided
-          if ((!user && testId !== 'subject') || (!testTakerInfo && testId !== 'subject')) {
+          // For non-subject tests (formal tests), always require test taker info if not provided
+          if (testId !== 'subject' && !testTakerInfo) {
             onShowTakerForm();
           } else {
             onStartTest();

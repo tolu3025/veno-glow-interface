@@ -94,6 +94,15 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
       userTest.setShareCodeError(null);
     }
     
+    // Check for previous attempts by email if retakes are not allowed
+    if (!isSubjectQuiz && testDetails && !testDetails.allow_retakes && data.email) {
+      const emailAttempts = await userTest.checkPreviousAttemptsByEmail(data.email);
+      if (emailAttempts > 0) {
+        userTest.setPreviousAttempts(emailAttempts);
+        return; // This will trigger the AttemptBlockedState to show
+      }
+    }
+    
     setTestTakerInfo(data);
     setShowTakerForm(false);
     
@@ -134,7 +143,8 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
 
   // Render pre-test states
   if (!testStarted) {
-    if (!isSubjectQuiz && user && userTest.previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
+    // Check for attempt blocking - now works for both logged-in and unregistered users
+    if (!isSubjectQuiz && userTest.previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
       return <AttemptBlockedState testDetails={testDetails} />;
     }
 

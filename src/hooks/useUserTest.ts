@@ -36,6 +36,29 @@ export const useUserTest = (testId: string) => {
   const [shareCodeRequired, setShareCodeRequired] = useState(false);
   const [shareCodeError, setShareCodeError] = useState<string | null>(null);
 
+  // Function to check previous attempts by email for unregistered users
+  const checkPreviousAttemptsByEmail = async (email: string): Promise<number> => {
+    if (!testDetails || testDetails.allow_retakes) return 0;
+    
+    try {
+      const { data: attempts, error } = await supabase
+        .from('test_attempts')
+        .select('*', { count: 'exact' })
+        .eq('test_id', testId)
+        .eq('participant_email', email);
+        
+      if (error) {
+        console.error('Error checking previous attempts:', error);
+        return 0;
+      }
+      
+      return attempts?.length || 0;
+    } catch (error) {
+      console.error('Error checking previous attempts:', error);
+      return 0;
+    }
+  };
+
   useEffect(() => {
     const loadTest = async () => {
       if (!testId || testId === 'subject') return;
@@ -66,16 +89,21 @@ export const useUserTest = (testId: string) => {
         
         setShareCodeRequired(!!testData.share_code);
         
-        if (user && testData.allow_retakes === false) {
-          const { data: attempts, error: attemptsError } = await supabase
-            .from('test_attempts')
-            .select('*', { count: 'exact' })
-            .eq('test_id', testId)
-            .eq('user_id', user.id);
-            
-          if (!attemptsError && attempts && attempts.length > 0) {
-            setPreviousAttempts(attempts.length);
+        // Check previous attempts for both logged-in and unregistered users
+        if (testData.allow_retakes === false) {
+          if (user) {
+            // For logged-in users, check by user_id
+            const { data: attempts, error: attemptsError } = await supabase
+              .from('test_attempts')
+              .select('*', { count: 'exact' })
+              .eq('test_id', testId)
+              .eq('user_id', user.id);
+              
+            if (!attemptsError && attempts && attempts.length > 0) {
+              setPreviousAttempts(attempts.length);
+            }
           }
+          // For unregistered users, we'll check by email when they provide it in the form
         }
         
         const { data: questionsData, error: questionsError } = await supabase
@@ -125,6 +153,8 @@ export const useUserTest = (testId: string) => {
     previousAttempts,
     shareCodeRequired,
     shareCodeError,
-    setShareCodeError
+    setShareCodeError,
+    checkPreviousAttemptsByEmail,
+    setPreviousAttempts
   };
 };
