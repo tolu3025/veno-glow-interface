@@ -65,7 +65,7 @@ export const useUserTest = (testId: string) => {
       
       setLoading(true);
       try {
-        console.log(`Loading test with ID: ${testId}`);
+        console.log(`Loading test with ID: ${testId}`, 'User:', user?.email || 'No user');
         
         // Try to load test - this should work for both authenticated and unauthenticated users
         // due to the updated RLS policies

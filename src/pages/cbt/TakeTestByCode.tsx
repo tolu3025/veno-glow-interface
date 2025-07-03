@@ -4,7 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
-import TestStateManager from '@/components/cbt/test/TestStateManager';
+import ShareCodeTestStateManager from '@/components/cbt/test/ShareCodeTestStateManager';
+import LoadingState from '@/components/cbt/test/LoadingState';
 
 const TakeTestByCode = () => {
   const { shareCode } = useParams();
@@ -93,7 +94,7 @@ const TakeTestByCode = () => {
 
   // If we have test ID and user info, render the test
   if (testId && testTakerInfo) {
-    return <TestStateManager testId={testId} testTakerInfo={testTakerInfo} />;
+    return <ShareCodeTestStateManager testId={testId} testTakerInfo={testTakerInfo} />;
   }
 
   // If there's an error, show error message with retry option
