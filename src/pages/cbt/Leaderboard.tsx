@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +22,7 @@ interface TestAttempt {
   time_taken: number | null;
   completed_at: string;
   disqualified: boolean;
+  user_id?: string;
 }
 
 interface TestDetails {
@@ -84,21 +84,46 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data
-        const { data, error } = await supabase
+        // Fetch leaderboard data with proper user names
+        const { data: attempts, error: attemptsError } = await supabase
           .from('test_attempts')
           .select('*')
           .eq('test_id', testId)
           .order('score', { ascending: false });
           
-        if (error) {
-          console.error('Error fetching leaderboard data:', error);
+        if (attemptsError) {
+          console.error('Error fetching leaderboard data:', attemptsError);
           toast.error('Failed to load leaderboard data');
           return;
         }
+
+        // Get user profiles for participants who have user_id
+        const userIds = attempts?.filter(attempt => attempt.user_id).map(attempt => attempt.user_id) || [];
         
-        console.log('Leaderboard data loaded:', data);
-        setLeaderboard(data || []);
+        let profilesData: any[] = [];
+        if (userIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('user_profiles')
+            .select('user_id, email')
+            .in('user_id', userIds);
+            
+          if (!profilesError && profiles) {
+            profilesData = profiles;
+          }
+        }
+
+        // Transform attempts with proper names
+        const transformedAttempts = (attempts || []).map(attempt => {
+          const profile = profilesData.find(p => p.user_id === attempt.user_id);
+          
+          return {
+            ...attempt,
+            participant_name: profile?.email?.split('@')[0] || attempt.participant_name || 'Anonymous'
+          };
+        });
+        
+        console.log('Leaderboard data loaded:', transformedAttempts);
+        setLeaderboard(transformedAttempts);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
         toast.error('Failed to load leaderboard');

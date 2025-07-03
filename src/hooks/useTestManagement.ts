@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -10,7 +9,7 @@ type TestDifficulty = "beginner" | "intermediate" | "advanced";
 interface TestData {
   id: string;
   title: string;
-  description?: string;
+  description?: string;  
   subject: string;
   difficulty: TestDifficulty;
   question_count: number;
@@ -38,6 +37,7 @@ interface Participant {
   score: number;
   total_questions: number;
   completed_at: string;
+  user_id?: string;
 }
 
 export const useTestManagement = (testId: string) => {
@@ -131,24 +131,44 @@ export const useTestManagement = (testId: string) => {
     
     setLoadingParticipants(true);
     try {
-      // Use the existing test_attempts table
-      const { data, error } = await supabase
+      // First get the test attempts
+      const { data: attempts, error: attemptsError } = await supabase
         .from('test_attempts')
         .select('*')
         .eq('test_id', testId)
         .order('completed_at', { ascending: false });
 
-      if (error) throw error;
+      if (attemptsError) throw attemptsError;
+      
+      // Get user profiles for participants who have user_id
+      const userIds = attempts?.filter(attempt => attempt.user_id).map(attempt => attempt.user_id) || [];
+      
+      let profilesData: any[] = [];
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('user_id, email')
+          .in('user_id', userIds);
+          
+        if (!profilesError && profiles) {
+          profilesData = profiles;
+        }
+      }
       
       // Transform the data to match our Participant interface
-      const transformedParticipants: Participant[] = (data || []).map(attempt => ({
-        id: attempt.id,
-        participant_name: attempt.participant_name || undefined,
-        participant_email: attempt.participant_email || '',
-        score: attempt.score,
-        total_questions: attempt.total_questions,
-        completed_at: attempt.completed_at || new Date().toISOString()
-      }));
+      const transformedParticipants: Participant[] = (attempts || []).map(attempt => {
+        const profile = profilesData.find(p => p.user_id === attempt.user_id);
+        
+        return {
+          id: attempt.id,
+          participant_name: profile?.email?.split('@')[0] || attempt.participant_name || 'Anonymous',
+          participant_email: attempt.participant_email || '',
+          score: attempt.score,
+          total_questions: attempt.total_questions,
+          completed_at: attempt.completed_at || new Date().toISOString(),
+          user_id: attempt.user_id
+        };
+      });
       
       setParticipants(transformedParticipants);
     } catch (error) {
@@ -219,7 +239,7 @@ export const useTestManagement = (testId: string) => {
         const completionData = {
           test_id: testId,
           user_id: user?.id || null,
-          participant_name: user?.email ? null : 'Anonymous',
+          participant_name: user?.email ? user.email.split('@')[0] : 'Anonymous',
           participant_email: user?.email || 'anonymous@test.com',
           score: finalScore,
           total_questions: questions.length,

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Search, Laptop, Code, GraduationCap, Briefcase, PenTool, LineChart, Heart, Camera, Music, Palette } from "lucide-react";
+import { BookOpen, Search, Laptop, Code, GraduationCap, Briefcase, PenTool, LineChart, Heart, Camera, Music, Palette, Wrench } from "lucide-react";
 import AdPlacement from "@/components/ads/AdPlacement";
 
 interface Category {
@@ -19,6 +19,9 @@ interface Category {
 const TutorialCategoriesPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Maintenance mode flag - set to true to enable maintenance mode
+  const isMaintenanceMode = true;
   
   const categories: Category[] = [
     {
@@ -99,6 +102,55 @@ const TutorialCategoriesPage = () => {
         category.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : categories;
+
+  // Show maintenance mode if enabled
+  if (isMaintenanceMode) {
+    return (
+      <div className="container py-6">
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Tutorial Categories</h1>
+            <p className="text-muted-foreground">
+              Browse our comprehensive collection of educational content organized by subject area.
+            </p>
+          </div>
+          
+          <AdPlacement location="header" />
+          
+          <Card className="w-full max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="bg-orange-100 dark:bg-orange-900/20 rounded-full p-6">
+                  <Wrench className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl">Under Maintenance</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-muted-foreground">
+                We're currently updating our tutorial categories to bring you better content and improved organization. 
+                This section will be back online soon!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={() => navigate('/tutorial')}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Browse All Tutorials
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/')}>
+                  Return to Home
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Thank you for your patience while we improve your learning experience.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <AdPlacement location="footer" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-6">

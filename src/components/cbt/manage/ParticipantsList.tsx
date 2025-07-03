@@ -32,6 +32,7 @@ interface TestAttempt {
   total_questions: number;
   completed_at: string;
   disqualified?: boolean;
+  user_id?: string;
 }
 
 interface ParticipantsListProps {
@@ -63,10 +64,18 @@ export const ParticipantsList = ({
     }
   }, [testId]);
 
+  // Transform attempts to show proper names
+  const transformedAttempts = testAttempts.map(attempt => ({
+    ...attempt,
+    participant_name: attempt.participant_name === 'Anonymous' || !attempt.participant_name 
+      ? (attempt.participant_email ? attempt.participant_email.split('@')[0] : 'Anonymous')
+      : attempt.participant_name
+  }));
+
   return (
     <>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <h2 className="text-xl font-bold">Participants ({testAttempts.length})</h2>
+        <h2 className="text-xl font-bold">Participants ({transformedAttempts.length})</h2>
         <Button 
           variant="outline" 
           size="sm"
@@ -83,7 +92,7 @@ export const ParticipantsList = ({
         </Button>
       </div>
       
-      {testAttempts.length === 0 ? (
+      {transformedAttempts.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <p className="text-muted-foreground mb-4">
@@ -104,7 +113,7 @@ export const ParticipantsList = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {testAttempts.map((attempt) => (
+                {transformedAttempts.map((attempt) => (
                   <TableRow 
                     key={attempt.id} 
                     className={attempt.disqualified ? "bg-destructive/10" : ""}

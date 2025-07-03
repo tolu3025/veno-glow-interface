@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
 import MobileMenu from "@/components/ui/mobile-menu";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { StreakDisplay } from "@/components/streak/StreakDisplay";
 import { FloatingPaths } from "@/components/ui/background-paths";
 
@@ -73,7 +72,6 @@ const MainLayout = () => {
             {/* Streak display - hidden on mobile via the component's internal styling */}
             <StreakDisplay variant="compact" />
             
-            <NotificationBell />
             <Button 
               variant="ghost" 
               size="icon" 
