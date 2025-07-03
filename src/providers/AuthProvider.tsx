@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
@@ -66,7 +67,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (currentSession && event === "SIGNED_IN") {
         setSession(currentSession);
         setUser(currentSession.user);
-        toast.success("Signed in successfully!");
+        // Don't show toast here to avoid interfering with redirect flow
+        console.log("User signed in:", currentSession.user.email);
       }
       
       if (event === "SIGNED_OUT") {

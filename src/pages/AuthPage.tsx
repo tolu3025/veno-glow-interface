@@ -33,6 +33,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
 
   useEffect(() => {
     if (user) {
+      console.log('User authenticated, redirecting to:', returnTo);
       navigate(returnTo);
     }
   }, [user, navigate, returnTo]);
@@ -41,6 +42,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
     setLoading(true);
     try {
       const redirectUrl = `${window.location.origin}${returnTo}`;
+      console.log('Google sign in redirect URL:', redirectUrl);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -73,6 +76,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
         }
 
         const redirectUrl = `${window.location.origin}${returnTo}`;
+        console.log('Sign up redirect URL:', redirectUrl);
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -104,6 +109,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
           }
         } else {
           toast.success('Successfully signed in!');
+          console.log('Login successful, redirecting to:', returnTo);
           navigate(returnTo);
         }
       }
