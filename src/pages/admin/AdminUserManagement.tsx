@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,43 +52,14 @@ const AdminUserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Get user profiles with roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
+      // Use the new admin view for comprehensive user data
+      const { data: usersData, error } = await supabase
+        .from('admin_users_view')
         .select('*');
       
-      if (profilesError) throw profilesError;
+      if (error) throw error;
 
-      // Get roles for all users
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-        
-      if (rolesError) throw rolesError;
-
-      // Get active bans
-      const { data: bans, error: bansError } = await supabase
-        .from('user_bans')
-        .select('user_id, reason, expires_at, is_active')
-        .eq('is_active', true);
-        
-      if (bansError) throw bansError;
-
-      // Combine the data
-      const usersWithDetails = profiles.map(profile => {
-        const userRole = roles.find(role => role.user_id === profile.user_id);
-        const userBan = bans.find(ban => ban.user_id === profile.user_id);
-        
-        return {
-          ...profile,
-          role: userRole ? userRole.role : 'user',
-          is_banned: !!userBan,
-          ban_reason: userBan?.reason,
-          ban_expires_at: userBan?.expires_at
-        };
-      });
-      
-      setUsers(usersWithDetails);
+      setUsers(usersData || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');

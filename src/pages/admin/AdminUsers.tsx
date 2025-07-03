@@ -16,6 +16,9 @@ type UserProfile = {
   created_at: string;
   is_verified: boolean;
   role?: string;
+  is_banned?: boolean;
+  ban_reason?: string;
+  ban_expires_at?: string;
 }
 
 const AdminUsers = () => {
@@ -33,45 +36,25 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      console.log('Fetching users from user_profiles table...');
+      console.log('Fetching users from admin_users_view...');
       
-      // Get users from user_profiles table
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('user_profiles')
+      // Use the new admin view that handles role and ban information
+      const { data: usersData, error: usersError } = await supabase
+        .from('admin_users_view')
         .select('*');
       
-      if (profilesError) {
-        console.error('Error fetching from user_profiles:', profilesError);
-        throw profilesError;
+      if (usersError) {
+        console.error('Error fetching from admin_users_view:', usersError);
+        throw usersError;
       }
 
-      console.log('Profiles data:', profilesData);
-
-      // Get user roles separately
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) {
-        console.warn('Could not fetch user roles:', rolesError);
-      }
-
-      // Merge profile data with roles
-      const usersWithRoles = (profilesData || []).map(profile => {
-        const userRole = rolesData?.find(role => role.user_id === profile.user_id);
-        return {
-          ...profile,
-          role: userRole?.role || 'user'
-        };
-      });
-
-      console.log('Users with roles:', usersWithRoles);
-      setUsers(usersWithRoles);
+      console.log('Admin users data:', usersData);
+      setUsers(usersData || []);
       
-      if (usersWithRoles.length === 0) {
+      if ((usersData || []).length === 0) {
         toast.info('No users found in the database');
       } else {
-        toast.success(`Loaded ${usersWithRoles.length} users`);
+        toast.success(`Loaded ${(usersData || []).length} users`);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -162,7 +145,7 @@ const AdminUsers = () => {
             </div>
           ) : (
             <div className="rounded-md border">
-              <div className="grid grid-cols-6 bg-muted/50 p-3 text-sm font-medium">
+              <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
                 <div 
                   className="flex cursor-pointer items-center"
                   onClick={() => handleSort("email")}
@@ -191,7 +174,8 @@ const AdminUsers = () => {
                   <Calendar className="mr-2 h-4 w-4" /> Joined
                   <SortIcon field="created_at" />
                 </div>
-                <div>Status</div>
+                <div>Verification</div>
+                <div>Ban Status</div>
                 <div>Actions</div>
               </div>
               
@@ -202,7 +186,7 @@ const AdminUsers = () => {
               ) : (
                 <div>
                   {filteredUsers.map((user) => (
-                    <div key={user.id} className="grid grid-cols-6 border-t p-3 text-sm">
+                    <div key={user.id} className="grid grid-cols-7 border-t p-3 text-sm">
                       <div className="truncate">{user.email}</div>
                       <div>
                         {user.role === 'admin' || user.role === 'superadmin' ? (
@@ -227,6 +211,17 @@ const AdminUsers = () => {
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
                             Pending
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        {user.is_banned ? (
+                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+                            Banned
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                            Active
                           </span>
                         )}
                       </div>

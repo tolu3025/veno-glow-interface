@@ -15,7 +15,9 @@ type UserDetail = {
   created_at: string;
   is_verified: boolean;
   role?: string;
-  activities?: any;
+  is_banned?: boolean;
+  ban_reason?: string;
+  ban_expires_at?: string;
 }
 
 const AdminUserDetails = () => {
@@ -36,36 +38,20 @@ const AdminUserDetails = () => {
     try {
       console.log('Fetching user details for ID:', userId);
       
-      // Get user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
+      // Use the admin view to get comprehensive user data
+      const { data: userData, error: userError } = await supabase
+        .from('admin_users_view')
         .select('*')
         .eq('user_id', userId)
         .single();
       
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        throw profileError;
+      if (userError) {
+        console.error('Error fetching user details:', userError);
+        throw userError;
       }
 
-      // Get user role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-
-      if (roleError && roleError.code !== 'PGRST116') {
-        console.warn('Error fetching user role:', roleError);
-      }
-
-      const userDetails = {
-        ...profileData,
-        role: roleData?.role || 'user'
-      };
-
-      console.log('User details loaded:', userDetails);
-      setUser(userDetails);
+      console.log('User details loaded:', userData);
+      setUser(userData);
       toast.success('User details loaded successfully');
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -227,6 +213,33 @@ const AdminUserDetails = () => {
                 )}
               </div>
             </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Ban Status</label>
+              <div className="mt-1">
+                {user.is_banned ? (
+                  <div className="space-y-2">
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
+                      <Ban className="mr-1 h-3 w-3" /> Banned
+                    </span>
+                    {user.ban_reason && (
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Reason:</strong> {user.ban_reason}
+                      </p>
+                    )}
+                    {user.ban_expires_at && (
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Expires:</strong> {new Date(user.ban_expires_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
+                    <CheckCircle className="mr-1 h-3 w-3" /> Active
+                  </span>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -240,22 +253,25 @@ const AdminUserDetails = () => {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <Button 
-              variant="destructive" 
-              onClick={handleBanUser}
-              disabled={actionLoading}
-            >
-              <Ban className="mr-2 h-4 w-4" />
-              Ban User
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleUnbanUser}
-              disabled={actionLoading}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Unban User
-            </Button>
+            {user.is_banned ? (
+              <Button 
+                variant="outline" 
+                onClick={handleUnbanUser}
+                disabled={actionLoading}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Unban User
+              </Button>
+            ) : (
+              <Button 
+                variant="destructive" 
+                onClick={handleBanUser}
+                disabled={actionLoading}
+              >
+                <Ban className="mr-2 h-4 w-4" />
+                Ban User
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
