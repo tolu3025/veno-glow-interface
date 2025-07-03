@@ -1,47 +1,176 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Construction, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { BookOpen, Search, Laptop, Code, GraduationCap, Briefcase, PenTool, LineChart, Heart, Camera, Music, Palette } from "lucide-react";
+import AdPlacement from "@/components/ads/AdPlacement";
+
+interface Category {
+  name: string;
+  icon: React.ElementType;
+  description: string;
+  tutorialCount: number;
+  color: string;
+}
 
 const TutorialCategoriesPage = () => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const categories: Category[] = [
+    {
+      name: "Academic",
+      icon: GraduationCap,
+      description: "Mathematics, Science, History, Literature and other academic subjects",
+      tutorialCount: 45,
+      color: "bg-blue-500"
+    },
+    {
+      name: "Technology",
+      icon: Laptop,
+      description: "Programming, Web Development, Mobile Apps, and Technical Skills",
+      tutorialCount: 38,
+      color: "bg-indigo-500"
+    },
+    {
+      name: "Business",
+      icon: Briefcase,
+      description: "Marketing, Management, Finance, Entrepreneurship",
+      tutorialCount: 29,
+      color: "bg-green-500"
+    },
+    {
+      name: "Design",
+      icon: PenTool,
+      description: "UI/UX Design, Graphic Design, Typography, and Visual Arts",
+      tutorialCount: 24,
+      color: "bg-orange-500"
+    },
+    {
+      name: "Programming",
+      icon: Code,
+      description: "Languages, Frameworks, Best Practices, and Software Development",
+      tutorialCount: 31,
+      color: "bg-purple-500"
+    },
+    {
+      name: "Data Science",
+      icon: LineChart,
+      description: "Analytics, Visualization, Machine Learning, and AI",
+      tutorialCount: 18,
+      color: "bg-red-500"
+    },
+    {
+      name: "Health & Wellness",
+      icon: Heart,
+      description: "Fitness, Nutrition, Mental Health, and Medical Knowledge",
+      tutorialCount: 15,
+      color: "bg-pink-500"
+    },
+    {
+      name: "Photography",
+      icon: Camera,
+      description: "Digital Photography, Editing, Composition, and Visual Storytelling",
+      tutorialCount: 12,
+      color: "bg-cyan-500"
+    },
+    {
+      name: "Music",
+      icon: Music,
+      description: "Instruments, Music Theory, Production, and Audio Engineering",
+      tutorialCount: 14,
+      color: "bg-amber-500"
+    },
+    {
+      name: "Art & Creativity",
+      icon: Palette,
+      description: "Drawing, Painting, Crafts, and Creative Expression",
+      tutorialCount: 20,
+      color: "bg-teal-500"
+    }
+  ];
+  
+  const filteredCategories = searchQuery 
+    ? categories.filter(category => 
+        category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        category.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : categories;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-2xl mx-auto">
-          <Card className="text-center">
-            <CardHeader className="pb-8">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-orange-100">
-                <Construction className="h-10 w-10 text-orange-600" />
-              </div>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Tutorials Under Maintenance
-              </CardTitle>
-              <CardDescription className="text-lg text-gray-600 mt-4">
-                We're currently working on improving our tutorial content to provide you with the best learning experience possible.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-4">
-                <p className="text-gray-500">
-                  Our team is updating and enhancing the tutorial section. Please check back soon for new and improved content!
-                </p>
-                <div className="pt-6">
-                  <Button 
-                    onClick={() => navigate('/')}
-                    className="inline-flex items-center gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Home
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="container py-6">
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Tutorial Categories</h1>
+          <p className="text-muted-foreground">
+            Browse our comprehensive collection of educational content organized by subject area.
+          </p>
         </div>
+        
+        <AdPlacement location="header" />
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            className="pl-10 w-full rounded-md border border-input px-4 py-2 bg-background"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <Separator />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCategories.map((category) => (
+            <Card 
+              key={category.name} 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate(`/tutorial?category=${encodeURIComponent(category.name)}`)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div className={`rounded-lg w-10 h-10 flex items-center justify-center text-white ${category.color}`}>
+                    <category.icon size={20} />
+                  </div>
+                  <Badge variant="outline">{category.tutorialCount} Tutorials</Badge>
+                </div>
+                <CardTitle className="mt-4">{category.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">{category.description}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/tutorial?category=${encodeURIComponent(category.name)}`)
+                  }}
+                >
+                  <BookOpen size={16} className="mr-2" />
+                  Browse Tutorials
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+          
+          {filteredCategories.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center p-8">
+              <Search size={48} className="text-muted-foreground opacity-20 mb-4" />
+              <h3 className="text-xl font-medium mb-2">No categories found</h3>
+              <p className="text-muted-foreground text-center">
+                Try adjusting your search query or browse all our available tutorials.
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <AdPlacement location="footer" />
       </div>
     </div>
   );

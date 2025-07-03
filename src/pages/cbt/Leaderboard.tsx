@@ -84,13 +84,12 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data without profile information to avoid relation errors
+        // Fetch leaderboard data
         const { data, error } = await supabase
           .from('test_attempts')
           .select('*')
           .eq('test_id', testId)
-          .order('score', { ascending: false })
-          .order('completed_at', { ascending: true });
+          .order('score', { ascending: false });
           
         if (error) {
           console.error('Error fetching leaderboard data:', error);
@@ -98,20 +97,8 @@ const Leaderboard = () => {
           return;
         }
         
-        // Transform the data
-        const transformedLeaderboard: TestAttempt[] = (data || []).map(attempt => ({
-          id: attempt.id,
-          participant_name: attempt.participant_name || 'Anonymous',
-          participant_email: attempt.participant_email || '',
-          score: attempt.score,
-          total_questions: attempt.total_questions,
-          time_taken: attempt.time_taken,
-          completed_at: attempt.completed_at || new Date().toISOString(),
-          disqualified: attempt.disqualified || false
-        }));
-        
-        console.log('Leaderboard data loaded:', transformedLeaderboard);
-        setLeaderboard(transformedLeaderboard);
+        console.log('Leaderboard data loaded:', data);
+        setLeaderboard(data || []);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
         toast.error('Failed to load leaderboard');

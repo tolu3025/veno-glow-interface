@@ -32,10 +32,6 @@ interface TestAttempt {
   total_questions: number;
   completed_at: string;
   disqualified?: boolean;
-  profiles?: {
-    display_name?: string;
-    email?: string;
-  };
 }
 
 interface ParticipantsListProps {
@@ -114,7 +110,7 @@ export const ParticipantsList = ({
                     className={attempt.disqualified ? "bg-destructive/10" : ""}
                   >
                     <TableCell className="font-medium">
-                      {attempt.profiles?.display_name || attempt.participant_name || 'Anonymous'}
+                      {attempt.participant_name || 'Anonymous'}
                     </TableCell>
                     <TableCell>{attempt.participant_email || 'N/A'}</TableCell>
                     <TableCell className="text-center">
