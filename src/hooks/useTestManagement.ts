@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
@@ -130,24 +131,21 @@ export const useTestManagement = (testId: string) => {
     
     setLoadingParticipants(true);
     try {
-      // Use the existing test_attempts table with user profile data
+      // Use the existing test_attempts table without profile join to avoid relation errors
       const { data, error } = await supabase
         .from('test_attempts')
-        .select(`
-          *,
-          profiles!inner(display_name, email)
-        `)
+        .select('*')
         .eq('test_id', testId)
         .order('score', { ascending: false })
         .order('completed_at', { ascending: true });
 
       if (error) throw error;
       
-      // Transform the data to match our Participant interface with actual names
+      // Transform the data to match our Participant interface
       const transformedParticipants: Participant[] = (data || []).map(attempt => ({
         id: attempt.id,
-        participant_name: attempt.profiles?.display_name || attempt.participant_name || 'Anonymous',
-        participant_email: attempt.participant_email || attempt.profiles?.email || '',
+        participant_name: attempt.participant_name || 'Anonymous',
+        participant_email: attempt.participant_email || '',
         score: attempt.score,
         total_questions: attempt.total_questions,
         completed_at: attempt.completed_at || new Date().toISOString()
@@ -217,16 +215,10 @@ export const useTestManagement = (testId: string) => {
       // Calculate time taken
       const timeTaken = test?.time_limit ? (test.time_limit * 60) - timeRemaining : 0;
       
-      // Get user profile data for proper name display
+      // Get participant name from user or use anonymous
       let participantName = 'Anonymous';
       if (user?.id) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('id', user.id)
-          .single();
-        
-        participantName = profileData?.display_name || user?.email || 'Anonymous';
+        participantName = user?.email || 'Anonymous';
       }
       
       // Save test completion to the existing test_attempts table
@@ -285,10 +277,7 @@ export const useTestManagement = (testId: string) => {
     try {
       const { data, error } = await supabase
         .from('test_attempts')
-        .select(`
-          *,
-          profiles(display_name, email)
-        `)
+        .select('*')
         .eq('test_id', testId)
         .order('score', { ascending: false })
         .order('completed_at', { ascending: true })
@@ -299,7 +288,7 @@ export const useTestManagement = (testId: string) => {
       // Transform data to include proper names
       const transformedResults = (data || []).map(attempt => ({
         ...attempt,
-        participant_name: attempt.profiles?.display_name || attempt.participant_name || 'Anonymous'
+        participant_name: attempt.participant_name || 'Anonymous'
       }));
       
       setPublicResults(transformedResults);

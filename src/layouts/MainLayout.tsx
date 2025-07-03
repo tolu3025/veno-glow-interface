@@ -3,7 +3,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
-import { MobileMenu } from '@/components/ui/mobile-menu';
+import MobileMenu from '@/components/ui/mobile-menu';
 import { useAuth } from '@/providers/AuthProvider';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, Users, Settings, LogOut, User, Trophy, Bot, ShoppingBag, Briefcase } from 'lucide-react';
@@ -18,14 +18,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const MainLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
   };
+
+  // Define main navigation links for the mobile menu
+  const mainLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'CBT', path: '/cbt' },
+    { name: 'Tutorials', path: '/tutorials' },
+    { name: 'Blog', path: '/blog' },
+    { name: 'AI Bot', path: '/bot' },
+    { name: 'Marketplace', path: '/marketplace' },
+    { name: 'Services', path: '/services' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -157,7 +168,7 @@ export const MainLayout: React.FC = () => {
 
             {/* Mobile Menu */}
             <div className="md:hidden">
-              <MobileMenu />
+              <MobileMenu mainLinks={mainLinks} />
             </div>
           </div>
         </div>
@@ -170,3 +181,5 @@ export const MainLayout: React.FC = () => {
     </div>
   );
 };
+
+export default MainLayout;

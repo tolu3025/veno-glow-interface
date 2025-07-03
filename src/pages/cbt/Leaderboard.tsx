@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,13 +84,10 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data with profile information
+        // Fetch leaderboard data without profile information to avoid relation errors
         const { data, error } = await supabase
           .from('test_attempts')
-          .select(`
-            *,
-            profiles(display_name, email)
-          `)
+          .select('*')
           .eq('test_id', testId)
           .order('score', { ascending: false })
           .order('completed_at', { ascending: true });
@@ -100,11 +98,11 @@ const Leaderboard = () => {
           return;
         }
         
-        // Transform the data to include proper names
+        // Transform the data
         const transformedLeaderboard: TestAttempt[] = (data || []).map(attempt => ({
           id: attempt.id,
-          participant_name: attempt.profiles?.display_name || attempt.participant_name || 'Anonymous',
-          participant_email: attempt.participant_email || attempt.profiles?.email || '',
+          participant_name: attempt.participant_name || 'Anonymous',
+          participant_email: attempt.participant_email || '',
           score: attempt.score,
           total_questions: attempt.total_questions,
           time_taken: attempt.time_taken,
