@@ -92,7 +92,7 @@ const TakeTestByCode = () => {
   };
 
   // If we have test ID and user info, render the test
-  if (testId && testTakerInfo && !formVisible) {
+  if (testId && testTakerInfo) {
     return <TestStateManager testId={testId} testTakerInfo={testTakerInfo} />;
   }
 
