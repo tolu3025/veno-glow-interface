@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ const TakeTestByCode = () => {
   const [testId, setTestId] = useState<string | null>(null);
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleTestTakerSubmit = async (data: TestTakerInfo) => {
     if (!shareCode) {
@@ -19,6 +21,7 @@ const TakeTestByCode = () => {
     }
 
     setLoading(true);
+    setError(null);
     
     try {
       // Verify share code and get test
@@ -29,13 +32,16 @@ const TakeTestByCode = () => {
         .single();
 
       if (testError || !testData) {
+        console.error('Error fetching test:', testError);
         toast.error("Invalid or expired share code");
+        setError("Test not found with this share code");
         setLoading(false);
         return;
       }
 
       if (data.shareCode !== shareCode) {
         toast.error("Share code doesn't match the test");
+        setError("Share code mismatch");
         setLoading(false);
         return;
       }
@@ -47,6 +53,7 @@ const TakeTestByCode = () => {
     } catch (error) {
       console.error('Error verifying share code:', error);
       toast.error("Failed to verify share code");
+      setError("Failed to load test");
       setLoading(false);
     }
   };
@@ -54,6 +61,27 @@ const TakeTestByCode = () => {
   // If we have test ID and user info, render the test
   if (testId && testTakerInfo) {
     return <TestStateManager testId={testId} testTakerInfo={testTakerInfo} />;
+  }
+
+  // If there's an error, show error message with retry option
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Test Access Error</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button 
+            onClick={() => {
+              setError(null);
+              setLoading(false);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Otherwise show the form

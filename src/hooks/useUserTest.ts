@@ -67,6 +67,8 @@ export const useUserTest = (testId: string) => {
       try {
         console.log(`Loading test with ID: ${testId}`);
         
+        // Try to load test - this should work for both authenticated and unauthenticated users
+        // due to the updated RLS policies
         const { data: testData, error: testError } = await supabase
           .from('user_tests')
           .select('*')
@@ -75,12 +77,20 @@ export const useUserTest = (testId: string) => {
           
         if (testError) {
           console.error("Error fetching test data:", testError);
+          
+          // If it's a test accessed by share code and user is not authenticated,
+          // don't throw error, just show that test is not found
+          if (testError.code === 'PGRST116') {
+            toast.error("Test not found or access denied");
+            navigate('/');
+            return;
+          }
           throw testError;
         }
         
         if (!testData) {
           toast.error("Test not found");
-          navigate('/cbt');
+          navigate('/');
           return;
         }
         
@@ -138,6 +148,10 @@ export const useUserTest = (testId: string) => {
       } catch (error) {
         console.error("Error loading test:", error);
         toast.error("Failed to load test");
+        // Don't navigate away for unregistered users - let them try again
+        if (user) {
+          navigate('/cbt');
+        }
       } finally {
         setLoading(false);
       }

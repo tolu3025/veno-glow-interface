@@ -28,6 +28,9 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
   testId,
   testTakerInfo,
 }) => {
+  const isPublicTest = location.pathname.startsWith('/test/');
+  const needsTestTakerInfo = testId !== 'subject' && !testTakerInfo;
+
   return (
     <Card>
       <CardHeader>
@@ -114,14 +117,17 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
               {testDetails?.results_visibility === 'creator_only' && (
                 <li>Your results will be available to the test creator only</li>
               )}
+              {isPublicTest && (
+                <li>This is a shared test - your results may be visible based on the test settings</li>
+              )}
             </ul>
           </div>
         </div>
       </CardContent>
       <CardFooter>
         <Button className="w-full" onClick={() => {
-          // For non-subject tests (formal tests), always require test taker info if not provided
-          if (testId !== 'subject' && !testTakerInfo) {
+          // For formal tests (not subject quizzes), always require test taker info if not provided
+          if (needsTestTakerInfo) {
             onShowTakerForm();
           } else {
             onStartTest();

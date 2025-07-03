@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
@@ -46,6 +47,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
 
   // Determine which test type we're dealing with
   const isSubjectQuiz = testId === 'subject';
+  const isPublicTest = location.pathname.startsWith('/test/'); // Check if accessed via public route
 
   // Get the appropriate data based on test type
   const loading = isSubjectQuiz ? subjectQuiz.loading : (userTest.loading || testManagement.loading);
@@ -148,7 +150,10 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
       return <AttemptBlockedState testDetails={testDetails} />;
     }
 
-    if (showTakerForm) {
+    // For public tests or formal tests, always show the test taker form if info is not provided
+    const shouldShowTakerForm = showTakerForm || (testId !== 'subject' && !testTakerInfo);
+    
+    if (shouldShowTakerForm) {
       return (
         <TestTakerForm 
           onSubmit={handleTestTakerSubmit} 
@@ -216,7 +221,13 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
             testDetails={testDetails}
             location={location}
             onBackToSummary={() => testManagement.setReviewMode(false)}
-            onFinish={() => navigate('/cbt')}
+            onFinish={() => {
+              if (isPublicTest) {
+                window.close(); // Close tab for public tests
+              } else {
+                navigate('/cbt');
+              }
+            }}
             formatTime={formatTime}
           />
         </div>
@@ -236,7 +247,13 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
         testTakerInfo={testTakerInfo}
         user={user}
         onReviewAnswers={!isSubjectQuiz ? () => testManagement.setReviewMode(true) : undefined}
-        onFinish={() => navigate('/cbt')}
+        onFinish={() => {
+          if (isPublicTest) {
+            window.close(); // Close tab for public tests
+          } else {
+            navigate('/cbt');
+          }
+        }}
         onTryAgain={!isSubjectQuiz ? testManagement.resetTest : undefined}
         formatTime={formatTime}
         savingError={!isSubjectQuiz ? testManagement.savingError : null}

@@ -1,3 +1,4 @@
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
@@ -20,6 +21,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isPublicTestRoute = location.pathname.startsWith('/test/'); // New check for public test routes
 
   // Check user role when user is authenticated
   useEffect(() => {
@@ -151,6 +153,11 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       clearInterval(intervalId);
     };
   }, [offlineMode, dbConnectionStatus]);
+
+  // Allow public test routes to bypass authentication entirely
+  if (isPublicTestRoute) {
+    return <>{children}</>;
+  }
 
   if (isLoading || (user && (requiredRole || isAdminRoute) && roleLoading)) {
     return (
