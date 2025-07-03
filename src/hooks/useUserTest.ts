@@ -40,18 +40,11 @@ export const useUserTest = (testId: string) => {
     const loadTest = async () => {
       if (!testId || testId === 'subject') return;
       
-      // If no user is authenticated, redirect to login
-      if (!user) {
-        toast.error("Please log in to access tests");
-        navigate('/auth');
-        return;
-      }
-      
       setLoading(true);
       try {
-        console.log(`Loading test with ID: ${testId}`, 'User:', user?.email || 'No user');
+        console.log(`Loading test with ID: ${testId}`, 'User:', user?.email || 'No user (public access)');
         
-        // Load test details - now requires authentication
+        // Load test details - now works for both authenticated and unauthenticated users
         const { data: testData, error: testError } = await supabase
           .from('user_tests')
           .select('*')
@@ -80,7 +73,7 @@ export const useUserTest = (testId: string) => {
         
         setShareCodeRequired(!!testData.share_code);
         
-        // Check previous attempts for authenticated users
+        // Check previous attempts only for authenticated users
         if (testData.allow_retakes === false && user) {
           const { data: attempts, error: attemptsError } = await supabase
             .from('test_attempts')
@@ -93,7 +86,7 @@ export const useUserTest = (testId: string) => {
           }
         }
         
-        // Load questions - now requires authentication
+        // Load questions - now works for both authenticated and unauthenticated users
         const { data: questionsData, error: questionsError } = await supabase
           .from('user_test_questions')
           .select('*')
@@ -135,9 +128,27 @@ export const useUserTest = (testId: string) => {
     loadTest();
   }, [testId, user, navigate]);
 
-  // This function is no longer needed since unregistered users can't access tests
+  // This function is no longer needed since unregistered users can access tests via share codes
   const checkPreviousAttemptsByEmail = async (email: string): Promise<number> => {
-    return 0; // Always return 0 since we don't support unregistered users anymore
+    if (!testDetails) return 0;
+    
+    try {
+      const { data: attempts, error } = await supabase
+        .from('test_attempts')
+        .select('*', { count: 'exact' })
+        .eq('test_id', testId)
+        .eq('participant_email', email);
+        
+      if (error) {
+        console.error('Error checking previous attempts:', error);
+        return 0;
+      }
+      
+      return attempts?.length || 0;
+    } catch (error) {
+      console.error('Error checking previous attempts:', error);
+      return 0;
+    }
   };
 
   return {

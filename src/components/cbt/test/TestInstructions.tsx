@@ -40,7 +40,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
       </CardHeader>
       <CardContent className="py-6">
         <div className="space-y-4">
-          {user && (
+          {user ? (
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="font-medium mb-2">Test Taker Information</h3>
               <div className="space-y-1 text-sm">
@@ -49,6 +49,13 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                   <span className="font-medium">{user.email}</span>
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Taking Test as Guest</h3>
+              <p className="text-sm text-muted-foreground">
+                You're taking this test as a guest. Your results will be saved with the information you provide during the test.
+              </p>
             </div>
           )}
           
@@ -111,6 +118,9 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
               )}
               {isPublicTest && (
                 <li>This is a shared test - your results may be visible based on the test settings</li>
+              )}
+              {!user && (
+                <li>You'll be asked for your name and email during the test submission</li>
               )}
             </ul>
           </div>

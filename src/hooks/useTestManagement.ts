@@ -239,7 +239,7 @@ export const useTestManagement = (testId: string, testTakerInfo?: TestTakerInfo 
       if (testId !== 'subject') {
         const completionData = {
           test_id: testId,
-          user_id: user?.id || null,
+          user_id: user?.id || null, // Allow null for unregistered users
           participant_name: testTakerInfo?.name || user?.email?.split('@')[0] || 'Anonymous',
           participant_email: testTakerInfo?.email || user?.email || 'anonymous@test.com',
           score: finalScore,
@@ -462,7 +462,7 @@ export const useTestManagement = (testId: string, testTakerInfo?: TestTakerInfo 
   }, [testStarted, timeRemaining, showResults]);
 
   useEffect(() => {
-    if (testId && (user || testTakerInfo)) {
+    if (testId) {
       fetchTestData();
       fetchTestQuestions();
       fetchParticipants();

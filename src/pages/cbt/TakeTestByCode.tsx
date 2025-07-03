@@ -16,23 +16,14 @@ const TakeTestByCode = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Wait for auth to load
-    if (authLoading) return;
-
-    // If no user, redirect to login with the current path as return URL
-    if (!user) {
-      navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`);
-      return;
-    }
-
-    // If we have a user and share code, validate it
+    // Don't wait for auth to load - proceed with share code validation immediately
     if (shareCode) {
       validateShareCode();
     } else {
       setError("No share code provided in URL");
       setLoading(false);
     }
-  }, [user, authLoading, shareCode, navigate]);
+  }, [shareCode]);
 
   const validateShareCode = async () => {
     if (!shareCode) return;
@@ -51,6 +42,7 @@ const TakeTestByCode = () => {
         return;
       }
 
+      console.log("Test found via share code:", testData);
       setTestId(testData.id);
     } catch (error) {
       console.error('Error validating share code:', error);
@@ -60,8 +52,8 @@ const TakeTestByCode = () => {
     }
   };
 
-  // Show loading while auth is loading
-  if (authLoading || loading) {
+  // Show loading while validating share code
+  if (loading) {
     return <LoadingState />;
   }
 
