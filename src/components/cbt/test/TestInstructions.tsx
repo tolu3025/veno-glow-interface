@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import type { GuestTestTakerInfo } from '@/components/cbt/GuestTestTakerForm';
 
 interface TestInstructionsProps {
   testDetails: any;
@@ -13,7 +14,7 @@ interface TestInstructionsProps {
   onShowTakerForm: () => void;
   user: any;
   testId: string;
-  testTakerInfo?: any | null;
+  testTakerInfo?: GuestTestTakerInfo | null;
 }
 
 const TestInstructions: React.FC<TestInstructionsProps> = ({
@@ -24,6 +25,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
   onStartTest,
   user,
   testId,
+  testTakerInfo,
 }) => {
   const isPublicTest = location.pathname.startsWith('/test/');
 
@@ -47,6 +49,28 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Email:</span>
                   <span className="font-medium">{user.email}</span>
+                </div>
+              </div>
+            </div>
+          ) : testTakerInfo ? (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+              <h3 className="font-medium mb-3 text-blue-800">Test Taker Information</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-600">Name:</span>
+                  <span className="font-medium text-blue-800">{testTakerInfo.fullName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">Email:</span>
+                  <span className="font-medium text-blue-800">{testTakerInfo.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">Department:</span>
+                  <span className="font-medium text-blue-800">{testTakerInfo.department}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">Level:</span>
+                  <span className="font-medium text-blue-800">{testTakerInfo.level}</span>
                 </div>
               </div>
             </div>

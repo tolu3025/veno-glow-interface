@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
-import { TestTakerInfo } from '@/components/cbt/TestTakerForm';
+import type { GuestTestTakerInfo } from '@/components/cbt/GuestTestTakerForm';
 
 // Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
@@ -41,7 +41,7 @@ interface Participant {
   user_id?: string;
 }
 
-export const useTestManagement = (testId: string, testTakerInfo?: TestTakerInfo | null) => {
+export const useTestManagement = (testId: string, guestTestTakerInfo?: GuestTestTakerInfo | null) => {
   const [test, setTest] = useState<TestData | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -240,8 +240,8 @@ export const useTestManagement = (testId: string, testTakerInfo?: TestTakerInfo 
         const completionData = {
           test_id: testId,
           user_id: user?.id || null, // Allow null for unregistered users
-          participant_name: testTakerInfo?.name || user?.email?.split('@')[0] || 'Anonymous',
-          participant_email: testTakerInfo?.email || user?.email || 'anonymous@test.com',
+          participant_name: guestTestTakerInfo?.fullName || user?.email?.split('@')[0] || 'Anonymous',
+          participant_email: guestTestTakerInfo?.email || user?.email || 'anonymous@test.com',
           score: finalScore,
           total_questions: questions.length,
           time_taken: timeTaken,
@@ -467,7 +467,7 @@ export const useTestManagement = (testId: string, testTakerInfo?: TestTakerInfo 
       fetchTestQuestions();
       fetchParticipants();
     }
-  }, [testId, user, testTakerInfo]);
+  }, [testId, user, guestTestTakerInfo]);
 
   return {
     test,

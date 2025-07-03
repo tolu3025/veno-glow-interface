@@ -12,11 +12,13 @@ import TestInstructions from '@/components/cbt/test/TestInstructions';
 import QuestionDisplay from '@/components/cbt/test/QuestionDisplay';
 import TestResults from '@/components/cbt/test/TestResults';
 import AnswersReview from '@/components/cbt/test/AnswersReview';
+import GuestTestTakerForm from '@/components/cbt/GuestTestTakerForm';
 
 // Hooks
 import { useTestManagement } from '@/hooks/useTestManagement';
 import { useUserTest } from '@/hooks/useUserTest';
 import { useSubjectQuiz } from '@/hooks/useSubjectQuiz';
+import type { GuestTestTakerInfo } from '@/components/cbt/GuestTestTakerForm';
 
 interface TestStateManagerProps {
   testId: string;
@@ -27,6 +29,10 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // State for guest test taker info
+  const [guestTestTakerInfo, setGuestTestTakerInfo] = React.useState<GuestTestTakerInfo | null>(null);
+  const [showGuestForm, setShowGuestForm] = React.useState(false);
+
   // Quiz settings
   const [settings] = React.useState({
     difficulty: 'beginner',
@@ -35,13 +41,25 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   });
 
   // Hooks for different test types
-  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '', null);
+  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '', guestTestTakerInfo);
   const userTest = useUserTest(testId);
   const subjectQuiz = useSubjectQuiz(location, settings);
 
   // Determine which test type we're dealing with
   const isSubjectQuiz = testId === 'subject';
   const isPublicTest = location.pathname.startsWith('/test/'); // Check if accessed via public route
+
+  // Check if we need to show guest form
+  React.useEffect(() => {
+    if (!user && !isSubjectQuiz && !guestTestTakerInfo && !userTest.loading && userTest.testDetails) {
+      setShowGuestForm(true);
+    }
+  }, [user, isSubjectQuiz, guestTestTakerInfo, userTest.loading, userTest.testDetails]);
+
+  const handleGuestFormSubmit = (info: GuestTestTakerInfo) => {
+    setGuestTestTakerInfo(info);
+    setShowGuestForm(false);
+  };
 
   // Get the appropriate data based on test type
   const loading = isSubjectQuiz ? subjectQuiz.loading : (userTest.loading || testManagement.loading);
@@ -91,6 +109,18 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Show guest form for unregistered users
+  if (showGuestForm && !user && !isSubjectQuiz) {
+    return (
+      <GuestTestTakerForm
+        onSubmit={handleGuestFormSubmit}
+        testTitle={testDetails?.title}
+        loading={loading}
+        initialShareCode={location.pathname.includes('/test/') ? location.pathname.split('/test/')[1] : ''}
+      />
+    );
+  }
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -118,7 +148,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
         onShowTakerForm={() => {}} // No longer needed
         user={user}
         testId={testId}
-        testTakerInfo={null} // No longer needed since user is always authenticated
+        testTakerInfo={guestTestTakerInfo} // Pass guest info to instructions
       />
     );
   }
@@ -136,7 +166,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
             return (
               <SubmissionComplete 
                 testDetails={testDetails} 
-                testTakerInfo={null} // User info is now from authenticated user
+                testTakerInfo={guestTestTakerInfo} // Pass guest info to submission complete
               />
             );
           }
@@ -188,7 +218,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
         location={location}
         testId={testId}
         publicResults={!isSubjectQuiz ? testManagement.publicResults : []}
-        testTakerInfo={null} // User info is now from authenticated user
+        testTakerInfo={guestTestTakerInfo} // Pass guest info to results
         user={user}
         onReviewAnswers={!isSubjectQuiz ? () => testManagement.setReviewMode(true) : undefined}
         onFinish={() => {
