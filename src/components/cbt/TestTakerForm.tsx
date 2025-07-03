@@ -38,6 +38,7 @@ interface TestTakerFormProps {
   requireShareCode?: boolean;
   shareCodeError?: string | null;
   loading?: boolean;
+  initialShareCode?: string; // New prop for pre-filling share code
 }
 
 const TestTakerForm: React.FC<TestTakerFormProps> = ({ 
@@ -45,7 +46,8 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
   testTitle = 'Test',
   requireShareCode = false,
   shareCodeError = null,
-  loading = false
+  loading = false,
+  initialShareCode = ''
 }) => {
   // Create form schema based on whether share code is required
   const formSchema = z.object({
@@ -61,7 +63,7 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
     defaultValues: {
       name: '',
       email: '',
-      shareCode: '',
+      shareCode: initialShareCode, // Pre-fill with share code from URL
     },
   });
 
@@ -83,7 +85,7 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
           <CardTitle>Take {testTitle}</CardTitle>
         </div>
         <CardDescription>
-          Please enter your information to proceed
+          Please enter your information to proceed with the test
         </CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -94,9 +96,9 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your name" {...field} disabled={loading} />
+                    <Input placeholder="Enter your full name" {...field} disabled={loading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -108,12 +110,12 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your email address" type="email" {...field} disabled={loading} />
+                    <Input placeholder="Enter your email address" type="email" {...field} disabled={loading} />
                   </FormControl>
                   <FormDescription>
-                    This is where your test results will be sent
+                    Your test results will be sent to this email address
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -126,12 +128,20 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
                 name="shareCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Share Code</FormLabel>
+                    <FormLabel>Test Share Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter share code" {...field} disabled={loading} />
+                      <Input 
+                        placeholder="Enter the test share code" 
+                        {...field} 
+                        disabled={loading}
+                        className={initialShareCode ? "bg-gray-50" : ""}
+                      />
                     </FormControl>
                     <FormDescription>
-                      Enter the share code provided by the test creator
+                      {initialShareCode 
+                        ? "Share code has been automatically filled from the link"
+                        : "Enter the share code provided by the test creator"
+                      }
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -151,7 +161,7 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
+                  Verifying and Starting Test...
                 </>
               ) : (
                 'Start Test'

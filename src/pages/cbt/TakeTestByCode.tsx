@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,9 +10,41 @@ const TakeTestByCode = () => {
   const { shareCode } = useParams();
   const navigate = useNavigate();
   const [testId, setTestId] = useState<string | null>(null);
+  const [testTitle, setTestTitle] = useState<string>('Test');
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formVisible, setFormVisible] = useState(true); // Always show form initially
+
+  // Pre-populate share code from URL when component mounts
+  useEffect(() => {
+    if (shareCode && !testTakerInfo) {
+      // Pre-validate the share code exists
+      validateShareCode();
+    }
+  }, [shareCode]);
+
+  const validateShareCode = async () => {
+    if (!shareCode) return;
+
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from('user_tests')
+        .select('id, title')
+        .eq('share_code', shareCode)
+        .single();
+
+      if (testError || !testData) {
+        setError("Invalid or expired share code");
+        return;
+      }
+
+      setTestTitle(testData.title);
+    } catch (error) {
+      console.error('Error validating share code:', error);
+      setError("Failed to validate share code");
+    }
+  };
 
   const handleTestTakerSubmit = async (data: TestTakerInfo) => {
     if (!shareCode) {
@@ -49,6 +81,7 @@ const TakeTestByCode = () => {
       // Store test taker info and proceed to test
       setTestTakerInfo(data);
       setTestId(testData.id);
+      setFormVisible(false);
       
     } catch (error) {
       console.error('Error verifying share code:', error);
@@ -59,7 +92,7 @@ const TakeTestByCode = () => {
   };
 
   // If we have test ID and user info, render the test
-  if (testId && testTakerInfo) {
+  if (testId && testTakerInfo && !formVisible) {
     return <TestStateManager testId={testId} testTakerInfo={testTakerInfo} />;
   }
 
@@ -74,6 +107,7 @@ const TakeTestByCode = () => {
             onClick={() => {
               setError(null);
               setLoading(false);
+              setFormVisible(true);
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
@@ -84,15 +118,16 @@ const TakeTestByCode = () => {
     );
   }
 
-  // Otherwise show the form
+  // Always show the form immediately with pre-filled share code
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <TestTakerForm 
         onSubmit={handleTestTakerSubmit}
-        testTitle="Test"
+        testTitle={testTitle}
         requireShareCode={true}
-        shareCodeError={null}
+        shareCodeError={error}
         loading={loading}
+        initialShareCode={shareCode} // Pass the share code from URL
       />
     </div>
   );
