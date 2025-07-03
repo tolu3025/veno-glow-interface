@@ -10,7 +10,7 @@ import LoadingState from '@/components/cbt/test/LoadingState';
 const TakeTestByCode = () => {
   const { shareCode } = useParams();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [testId, setTestId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
