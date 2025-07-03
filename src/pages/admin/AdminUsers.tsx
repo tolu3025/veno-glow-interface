@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,27 +35,42 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      console.log('Fetching users from admin_users_view...');
+      console.log('Fetching users from admin_user_view...');
       
-      // Use the new admin view that handles role and ban information
+      // Use the correct view name and add proper type assertion
       const { data: usersData, error: usersError } = await supabase
-        .from('admin_users_view')
+        .from('admin_user_view')
         .select('*');
       
       if (usersError) {
-        console.error('Error fetching from admin_users_view:', usersError);
+        console.error('Error fetching from admin_user_view:', usersError);
         throw usersError;
       }
 
       console.log('Admin users data:', usersData);
-      setUsers(usersData || []);
       
-      if ((usersData || []).length === 0) {
+      // Type assertion to ensure proper typing
+      const typedUsers = (usersData || []).map(user => ({
+        id: user.id || '',
+        user_id: user.user_id || '',
+        email: user.email || '',
+        points: user.points || 0,
+        created_at: user.created_at || new Date().toISOString(),
+        is_verified: user.is_verified || false,
+        role: user.role || 'user',
+        is_banned: user.is_banned || false,
+        ban_reason: user.ban_reason || undefined,
+        ban_expires_at: user.ban_expires_at || undefined
+      })) as UserProfile[];
+      
+      setUsers(typedUsers);
+      
+      if (typedUsers.length === 0) {
         toast.info('No users found in the database');
       } else {
-        toast.success(`Loaded ${(usersData || []).length} users`);
+        toast.success(`Loaded ${typedUsers.length} users`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error(`Failed to fetch users: ${error.message}`);
       setUsers([]);

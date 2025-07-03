@@ -38,9 +38,9 @@ const AdminUserDetails = () => {
     try {
       console.log('Fetching user details for ID:', userId);
       
-      // Use the admin view to get comprehensive user data
+      // Use the correct view name and add proper type assertion
       const { data: userData, error: userError } = await supabase
-        .from('admin_users_view')
+        .from('admin_user_view')
         .select('*')
         .eq('user_id', userId)
         .single();
@@ -51,9 +51,24 @@ const AdminUserDetails = () => {
       }
 
       console.log('User details loaded:', userData);
-      setUser(userData);
+      
+      // Type assertion to ensure proper typing
+      const typedUser: UserDetail = {
+        id: userData.id || '',
+        user_id: userData.user_id || '',
+        email: userData.email || '',
+        points: userData.points || 0,
+        created_at: userData.created_at || new Date().toISOString(),
+        is_verified: userData.is_verified || false,
+        role: userData.role || 'user',
+        is_banned: userData.is_banned || false,
+        ban_reason: userData.ban_reason || undefined,
+        ban_expires_at: userData.ban_expires_at || undefined
+      };
+      
+      setUser(typedUser);
       toast.success('User details loaded successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching user details:', error);
       toast.error(`Failed to load user details: ${error.message}`);
     } finally {
@@ -75,7 +90,7 @@ const AdminUserDetails = () => {
 
       toast.success('User has been banned successfully');
       fetchUserDetails(); // Refresh user data
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error banning user:', error);
       toast.error(`Failed to ban user: ${error.message}`);
     } finally {
@@ -96,7 +111,7 @@ const AdminUserDetails = () => {
 
       toast.success('User has been unbanned successfully');
       fetchUserDetails(); // Refresh user data
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error unbanning user:', error);
       toast.error(`Failed to unban user: ${error.message}`);
     } finally {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,15 +53,29 @@ const AdminUserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Use the new admin view for comprehensive user data
+      // Use the correct view name and add proper type assertion
       const { data: usersData, error } = await supabase
-        .from('admin_users_view')
+        .from('admin_user_view')
         .select('*');
       
       if (error) throw error;
 
-      setUsers(usersData || []);
-    } catch (error) {
+      // Type assertion to ensure proper typing
+      const typedUsers = (usersData || []).map(user => ({
+        id: user.id || '',
+        user_id: user.user_id || '',
+        email: user.email || '',
+        points: user.points || 0,
+        created_at: user.created_at || new Date().toISOString(),
+        is_verified: user.is_verified || false,
+        role: user.role || 'user',
+        is_banned: user.is_banned || false,
+        ban_reason: user.ban_reason || undefined,
+        ban_expires_at: user.ban_expires_at || undefined
+      })) as UserProfile[];
+
+      setUsers(typedUsers);
+    } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');
     } finally {
@@ -90,7 +105,7 @@ const AdminUserManagement = () => {
       setBanForm({ reason: '', expires_at: '' });
       setSelectedUser(null);
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error banning user:', error);
       toast.error('Failed to ban user');
     }
@@ -108,7 +123,7 @@ const AdminUserManagement = () => {
 
       toast.success('User unbanned successfully');
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error unbanning user:', error);
       toast.error('Failed to unban user');
     }
@@ -134,7 +149,7 @@ const AdminUserManagement = () => {
       setIsNotificationDialogOpen(false);
       setNotificationForm({ title: '', message: '', type: 'admin_message' });
       setSelectedUser(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending notification:', error);
       toast.error('Failed to send notification');
     }
