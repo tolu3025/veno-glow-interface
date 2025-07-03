@@ -14,12 +14,12 @@ const TakeTestByCode = () => {
   const [testTakerInfo, setTestTakerInfo] = useState<TestTakerInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formVisible, setFormVisible] = useState(true); // Always show form initially
+  const [formVisible, setFormVisible] = useState(true);
 
   // Pre-populate share code from URL when component mounts
   useEffect(() => {
     if (shareCode && !testTakerInfo) {
-      // Pre-validate the share code exists
+      // Pre-validate the share code exists but don't block the form from showing
       validateShareCode();
     }
   }, [shareCode]);
