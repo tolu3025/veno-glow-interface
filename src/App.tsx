@@ -148,8 +148,10 @@ const AppRoutes = () => {
         <Route path="/maintenance" element={<UnderMaintenancePage />} />
         <Route path="/services" element={<ServicesPage />} />
         
-        {/* Public test route - no auth required */}
+        {/* Public test routes - no auth required */}
         <Route path="/test/:shareCode" element={<TakeTestByCode />} />
+        <Route path="/cbt/take/:testId" element={<TakeTest />} />
+        <Route path="/cbt/leaderboard/:testId" element={<Leaderboard />} />
         
         {/* Admin Routes - IMPORTANT: These must be outside the MainLayout */}
         <Route path="/admin" element={
@@ -200,18 +202,6 @@ const AppRoutes = () => {
           <Route path="/cbt/question-bank" element={
             <ProtectedRoute>
               <QuestionBank />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/cbt/take/:testId" element={
-            <ProtectedRoute>
-              <TakeTest />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/cbt/leaderboard/:testId" element={
-            <ProtectedRoute>
-              <Leaderboard />
             </ProtectedRoute>
           } />
           
