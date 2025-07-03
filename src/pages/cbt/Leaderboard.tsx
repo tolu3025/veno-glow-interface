@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,12 +83,16 @@ const Leaderboard = () => {
           return;
         }
         
-        // Fetch leaderboard data
+        // Fetch leaderboard data with profile information
         const { data, error } = await supabase
           .from('test_attempts')
-          .select('*')
+          .select(`
+            *,
+            profiles(display_name, email)
+          `)
           .eq('test_id', testId)
-          .order('score', { ascending: false });
+          .order('score', { ascending: false })
+          .order('completed_at', { ascending: true });
           
         if (error) {
           console.error('Error fetching leaderboard data:', error);
@@ -97,8 +100,20 @@ const Leaderboard = () => {
           return;
         }
         
-        console.log('Leaderboard data loaded:', data);
-        setLeaderboard(data || []);
+        // Transform the data to include proper names
+        const transformedLeaderboard: TestAttempt[] = (data || []).map(attempt => ({
+          id: attempt.id,
+          participant_name: attempt.profiles?.display_name || attempt.participant_name || 'Anonymous',
+          participant_email: attempt.participant_email || attempt.profiles?.email || '',
+          score: attempt.score,
+          total_questions: attempt.total_questions,
+          time_taken: attempt.time_taken,
+          completed_at: attempt.completed_at || new Date().toISOString(),
+          disqualified: attempt.disqualified || false
+        }));
+        
+        console.log('Leaderboard data loaded:', transformedLeaderboard);
+        setLeaderboard(transformedLeaderboard);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
         toast.error('Failed to load leaderboard');

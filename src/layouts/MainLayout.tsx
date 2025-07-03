@@ -1,214 +1,172 @@
 
-import { useNavigate, useLocation } from "react-router-dom";
-import { Outlet, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/providers/AuthProvider";
-import { UserCircle, LogOut, LogIn, Moon, Sun, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
-import { toast } from "sonner";
-import { VenoLogo } from "@/components/ui/logo";
-import { useTheme } from "@/providers/ThemeProvider";
-import MobileMenu from "@/components/ui/mobile-menu";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { StreakDisplay } from "@/components/streak/StreakDisplay";
-import { FloatingPaths } from "@/components/ui/background-paths";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { VenoLogo } from '@/components/ui/logo';
+import { MobileMenu } from '@/components/ui/mobile-menu';
+import { useAuth } from '@/providers/AuthProvider';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, BookOpen, Users, Settings, LogOut, User, Trophy, Bot, ShoppingBag, Briefcase } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
-const MainLayout = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+export const MainLayout: React.FC = () => {
+  const { user, logout } = useAuth();
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
-  const isHomePage = location.pathname === "/";
 
-  const mainLinks = [
-    { name: "Home", path: "/" },
-    { name: "CBT", path: "/cbt" },
-    { name: "Tutorial", path: "/tutorial" },
-    { name: "Blog", path: "/blog" }
-  ];
+  const isActive = (path: string) => location.pathname === path;
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success("Signed out successfully");
-      navigate("/");
-    } catch (error) {
-      toast.error("Error signing out");
-    }
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative">
-      {/* Background paths */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <FloatingPaths position={1} />
-        <FloatingPaths position={-1} />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            <VenoLogo className="h-8 w-8" />
+            <span className="text-xl font-bold text-gray-900">Veno</span>
+          </Link>
 
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4 md:px-6">
-          <div className="flex items-center space-x-2">
-            <Link to="/" className="flex items-center space-x-2">
-              {isHomePage && <VenoLogo className="h-8 w-8" />}
-              <span className="font-bold text-xl">Veno</span>
-            </Link>
-          </div>
-          
-          <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 mx-6">
-            {mainLinks.map((link) => (
-              <Link 
-                key={link.name} 
-                to={link.path} 
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
-          
-          <div className="ml-auto flex items-center space-x-4">
-            {/* Streak display - hidden on mobile via the component's internal styling */}
-            <StreakDisplay variant="compact" />
-            
-            <NotificationBell />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleTheme}
-              className="rounded-full"
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              to="/" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </Button>
-            
-            <div className="hidden md:flex items-center space-x-2">
-              {user ? (
-                <>
-                  <div className="text-sm text-muted-foreground hidden md:block">
-                    {user.email}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full"
-                    onClick={() => navigate('/profile')}
-                  >
-                    <UserCircle className="h-5 w-5" />
-                    <span className="sr-only">Profile</span>
+              <Home className="h-4 w-4" />
+              <span>Home</span>
+            </Link>
+            <Link 
+              to="/cbt" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/cbt') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Trophy className="h-4 w-4" />
+              <span>CBT</span>
+            </Link>
+            <Link 
+              to="/tutorials" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/tutorials') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Tutorials</span>
+            </Link>
+            <Link 
+              to="/blog" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/blog') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Blog</span>
+            </Link>
+            <Link 
+              to="/bot" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/bot') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Bot className="h-4 w-4" />
+              <span>AI Bot</span>
+            </Link>
+            <Link 
+              to="/marketplace" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/marketplace') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span>Marketplace</span>
+            </Link>
+            <Link 
+              to="/services" 
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/services') ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Briefcase className="h-4 w-4" />
+              <span>Services</span>
+            </Link>
+          </nav>
+
+          {/* User Menu */}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email} />
+                      <AvatarFallback>
+                        {user.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Sign Out</span>
-                  </Button>
-                </>
-              ) : (
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => navigate("/auth")}
-                  className="gap-2"
-                >
-                  <LogIn className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">Account</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm">
                   Sign In
                 </Button>
-              )}
+              </Link>
+            )}
+
+            {/* Mobile Menu */}
+            <div className="md:hidden">
+              <MobileMenu />
             </div>
-            
-            <MobileMenu mainLinks={mainLinks} />
           </div>
         </div>
       </header>
-      
-      <main className="flex-1 relative z-10">
-        <div className="container mx-auto px-4 md:px-6 py-4 max-w-7xl">
-          <Outlet />
-        </div>
-      </main>
-      
-      <footer className="border-t mt-8 relative z-10 bg-background/95">
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-4 md:h-14 text-muted-foreground">
-          <p className="text-sm">
-            © {new Date().getFullYear()} Veno. All rights reserved.
-          </p>
-          
-          <div className="flex items-center gap-6 mb-4 md:mb-0">
-            <a 
-              href="https://www.facebook.com/share/1DvXpB5pM3/?mibextid=wwXIfr" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-              aria-label="Facebook"
-            >
-              <Facebook size={20} />
-            </a>
-            <a 
-              href="https://www.instagram.com/veno_official_4?igsh=MXM4c3FjNWI1bGlwcw%3D%3D&utm_source=qr" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram size={20} />
-            </a>
-            <a 
-              href="https://youtube.com/@veno_official-f9t?si=fzBQcfESIP4eDSW5" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-              aria-label="YouTube"
-            >
-              <Youtube size={20} />
-            </a>
-            <a 
-              href="https://www.tiktok.com/@veno_official3?_t=ZM-8v1Yo7Wdsf9&_r=1" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-              aria-label="TikTok"
-            >
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-                className="current-fill"
-              >
-                <path 
-                  d="M17 4.5c1.7 1.3 3 2 5 2v3c-1.3.1-3-.1-5-1v6.5C17 20.4 13.4 24 8 24S-1 20.4-1 15 2.6 6 8 6c.5 0 1 0 1.5.1V10c-.5-.1-1-.2-1.5-.2-2.7 0-5 2.3-5 5s2.3 5 5 5c2.8 0 5-2.2 5-5V0h4v4.5z" 
-                  fill="currentColor"
-                />
-              </svg>
-            </a>
-          </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="flex items-center gap-4 mb-2 md:mb-0">
-              <Link to="/terms-of-service" className="text-xs underline-offset-4 hover:underline">
-                Terms of Service
-              </Link>
-              <Link to="/privacy-policy" className="text-xs underline-offset-4 hover:underline">
-                Privacy
-              </Link>
-              <Link to="/ads-policy" className="text-xs underline-offset-4 hover:underline">
-                Ads Policy
-              </Link>
-              <Link to="/contact" className="text-xs underline-offset-4 hover:underline">
-                Contact Us
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Main Content */}
+      <main className="flex-1">
+        <Outlet />
+      </main>
     </div>
   );
 };
-
-export default MainLayout;
