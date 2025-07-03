@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { TestTakerInfo } from '@/components/cbt/TestTakerForm';
 
 interface TestInstructionsProps {
   testDetails: any;
@@ -14,7 +13,7 @@ interface TestInstructionsProps {
   onShowTakerForm: () => void;
   user: any;
   testId: string;
-  testTakerInfo?: TestTakerInfo | null;
+  testTakerInfo?: any | null;
 }
 
 const TestInstructions: React.FC<TestInstructionsProps> = ({
@@ -23,13 +22,10 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
   location,
   previousAttempts,
   onStartTest,
-  onShowTakerForm,
   user,
   testId,
-  testTakerInfo,
 }) => {
   const isPublicTest = location.pathname.startsWith('/test/');
-  const needsTestTakerInfo = testId !== 'subject' && !testTakerInfo;
 
   return (
     <Card>
@@ -44,17 +40,13 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
       </CardHeader>
       <CardContent className="py-6">
         <div className="space-y-4">
-          {testTakerInfo && (
+          {user && (
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="font-medium mb-2">Test Taker Information</h3>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Name:</span>
-                  <span className="font-medium">{testTakerInfo.name}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-muted-foreground">Email:</span>
-                  <span className="font-medium">{testTakerInfo.email}</span>
+                  <span className="font-medium">{user.email}</span>
                 </div>
               </div>
             </div>
@@ -125,14 +117,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={() => {
-          // For formal tests (not subject quizzes), always require test taker info if not provided
-          if (needsTestTakerInfo) {
-            onShowTakerForm();
-          } else {
-            onStartTest();
-          }
-        }}>
+        <Button className="w-full" onClick={onStartTest}>
           Start Quiz
         </Button>
       </CardFooter>

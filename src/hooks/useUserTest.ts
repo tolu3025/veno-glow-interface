@@ -36,39 +36,22 @@ export const useUserTest = (testId: string) => {
   const [shareCodeRequired, setShareCodeRequired] = useState(false);
   const [shareCodeError, setShareCodeError] = useState<string | null>(null);
 
-  // Function to check previous attempts by email for unregistered users
-  const checkPreviousAttemptsByEmail = async (email: string): Promise<number> => {
-    if (!testDetails || testDetails.allow_retakes) return 0;
-    
-    try {
-      const { data: attempts, error } = await supabase
-        .from('test_attempts')
-        .select('*', { count: 'exact' })
-        .eq('test_id', testId)
-        .eq('participant_email', email);
-        
-      if (error) {
-        console.error('Error checking previous attempts:', error);
-        return 0;
-      }
-      
-      return attempts?.length || 0;
-    } catch (error) {
-      console.error('Error checking previous attempts:', error);
-      return 0;
-    }
-  };
-
   useEffect(() => {
     const loadTest = async () => {
       if (!testId || testId === 'subject') return;
+      
+      // If no user is authenticated, redirect to login
+      if (!user) {
+        toast.error("Please log in to access tests");
+        navigate('/auth');
+        return;
+      }
       
       setLoading(true);
       try {
         console.log(`Loading test with ID: ${testId}`, 'User:', user?.email || 'No user');
         
-        // Try to load test - this should work for both authenticated and unauthenticated users
-        // due to the updated RLS policies
+        // Load test details - now requires authentication
         const { data: testData, error: testError } = await supabase
           .from('user_tests')
           .select('*')
@@ -78,11 +61,9 @@ export const useUserTest = (testId: string) => {
         if (testError) {
           console.error("Error fetching test data:", testError);
           
-          // If it's a test accessed by share code and user is not authenticated,
-          // don't throw error, just show that test is not found
           if (testError.code === 'PGRST116') {
             toast.error("Test not found or access denied");
-            navigate('/');
+            navigate('/cbt');
             return;
           }
           throw testError;
@@ -90,7 +71,7 @@ export const useUserTest = (testId: string) => {
         
         if (!testData) {
           toast.error("Test not found");
-          navigate('/');
+          navigate('/cbt');
           return;
         }
         
@@ -99,23 +80,20 @@ export const useUserTest = (testId: string) => {
         
         setShareCodeRequired(!!testData.share_code);
         
-        // Check previous attempts for both logged-in and unregistered users
-        if (testData.allow_retakes === false) {
-          if (user) {
-            // For logged-in users, check by user_id
-            const { data: attempts, error: attemptsError } = await supabase
-              .from('test_attempts')
-              .select('*', { count: 'exact' })
-              .eq('test_id', testId)
-              .eq('user_id', user.id);
-              
-            if (!attemptsError && attempts && attempts.length > 0) {
-              setPreviousAttempts(attempts.length);
-            }
+        // Check previous attempts for authenticated users
+        if (testData.allow_retakes === false && user) {
+          const { data: attempts, error: attemptsError } = await supabase
+            .from('test_attempts')
+            .select('*', { count: 'exact' })
+            .eq('test_id', testId)
+            .eq('user_id', user.id);
+            
+          if (!attemptsError && attempts && attempts.length > 0) {
+            setPreviousAttempts(attempts.length);
           }
-          // For unregistered users, we'll check by email when they provide it in the form
         }
         
+        // Load questions - now requires authentication
         const { data: questionsData, error: questionsError } = await supabase
           .from('user_test_questions')
           .select('*')
@@ -148,10 +126,7 @@ export const useUserTest = (testId: string) => {
       } catch (error) {
         console.error("Error loading test:", error);
         toast.error("Failed to load test");
-        // Don't navigate away for unregistered users - let them try again
-        if (user) {
-          navigate('/cbt');
-        }
+        navigate('/cbt');
       } finally {
         setLoading(false);
       }
@@ -159,6 +134,11 @@ export const useUserTest = (testId: string) => {
 
     loadTest();
   }, [testId, user, navigate]);
+
+  // This function is no longer needed since unregistered users can't access tests
+  const checkPreviousAttemptsByEmail = async (email: string): Promise<number> => {
+    return 0; // Always return 0 since we don't support unregistered users anymore
+  };
 
   return {
     questions,

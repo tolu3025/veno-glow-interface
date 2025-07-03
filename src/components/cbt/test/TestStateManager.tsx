@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 
 // Components
-import TestTakerForm, { TestTakerInfo } from '@/components/cbt/TestTakerForm';
 import LoadingState from '@/components/cbt/test/LoadingState';
 import NoQuestionsState from '@/components/cbt/test/NoQuestionsState';
 import AttemptBlockedState from '@/components/cbt/test/AttemptBlockedState';
@@ -21,17 +20,12 @@ import { useSubjectQuiz } from '@/hooks/useSubjectQuiz';
 
 interface TestStateManagerProps {
   testId: string;
-  testTakerInfo?: TestTakerInfo;
 }
 
-const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerInfo: providedTestTakerInfo }) => {
+const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  // State for test taker form and info
-  const [showTakerForm, setShowTakerForm] = React.useState(false);
-  const [testTakerInfo, setTestTakerInfo] = React.useState<TestTakerInfo | null>(providedTestTakerInfo || null);
 
   // Quiz settings
   const [settings] = React.useState({
@@ -41,7 +35,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
   });
 
   // Hooks for different test types
-  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '', testTakerInfo);
+  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '', null);
   const userTest = useUserTest(testId);
   const subjectQuiz = useSubjectQuiz(location, settings);
 
@@ -80,42 +74,6 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
     }
   }, [isSubjectQuiz, subjectQuiz.testStarted, subjectQuiz.timeRemaining, subjectQuiz.showResults]);
 
-  const handleTestTakerSubmit = async (data: TestTakerInfo) => {
-    if (!isSubjectQuiz && userTest.shareCodeRequired && testDetails?.share_code) {
-      if (!data.shareCode) {
-        userTest.setShareCodeError("Share code is required");
-        return;
-      }
-      
-      if (data.shareCode !== testDetails.share_code) {
-        userTest.setShareCodeError("Invalid share code for this test");
-        return;
-      }
-      
-      // Clear any previous share code errors
-      userTest.setShareCodeError(null);
-    }
-    
-    // Check for previous attempts by email if retakes are not allowed
-    if (!isSubjectQuiz && testDetails && !testDetails.allow_retakes && data.email) {
-      const emailAttempts = await userTest.checkPreviousAttemptsByEmail(data.email);
-      if (emailAttempts > 0) {
-        userTest.setPreviousAttempts(emailAttempts);
-        return; // This will trigger the AttemptBlockedState to show
-      }
-    }
-    
-    setTestTakerInfo(data);
-    setShowTakerForm(false);
-    
-    // Start the appropriate test
-    if (isSubjectQuiz) {
-      subjectQuiz.startTest();
-    } else {
-      testManagement.startTest();
-    }
-  };
-
   const formatUserAnswersForReview = () => {
     return userAnswers.map((selectedOption, index) => {
       const question = questions[index];
@@ -145,23 +103,9 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
 
   // Render pre-test states
   if (!testStarted) {
-    // Check for attempt blocking - now works for both logged-in and unregistered users
+    // Check for attempt blocking - now works only for logged-in users
     if (!isSubjectQuiz && userTest.previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
       return <AttemptBlockedState testDetails={testDetails} />;
-    }
-
-    // For public tests or formal tests, always show the test taker form if info is not provided
-    const shouldShowTakerForm = showTakerForm || (testId !== 'subject' && !testTakerInfo);
-    
-    if (shouldShowTakerForm) {
-      return (
-        <TestTakerForm 
-          onSubmit={handleTestTakerSubmit} 
-          testTitle={testDetails?.title || undefined}
-          requireShareCode={!isSubjectQuiz && userTest.shareCodeRequired}
-          shareCodeError={!isSubjectQuiz ? userTest.shareCodeError : null}
-        />
-      );
     }
 
     return (
@@ -171,10 +115,10 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
         location={location}
         previousAttempts={!isSubjectQuiz ? userTest.previousAttempts : 0}
         onStartTest={isSubjectQuiz ? subjectQuiz.startTest : testManagement.startTest}
-        onShowTakerForm={() => setShowTakerForm(true)}
+        onShowTakerForm={() => {}} // No longer needed
         user={user}
         testId={testId}
-        testTakerInfo={testTakerInfo}
+        testTakerInfo={null} // No longer needed since user is always authenticated
       />
     );
   }
@@ -192,7 +136,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
             return (
               <SubmissionComplete 
                 testDetails={testDetails} 
-                testTakerInfo={testTakerInfo} 
+                testTakerInfo={null} // User info is now from authenticated user
               />
             );
           }
@@ -244,7 +188,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerIn
         location={location}
         testId={testId}
         publicResults={!isSubjectQuiz ? testManagement.publicResults : []}
-        testTakerInfo={testTakerInfo}
+        testTakerInfo={null} // User info is now from authenticated user
         user={user}
         onReviewAnswers={!isSubjectQuiz ? () => testManagement.setReviewMode(true) : undefined}
         onFinish={() => {
