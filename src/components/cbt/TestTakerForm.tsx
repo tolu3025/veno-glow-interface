@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 export interface TestTakerInfo {
   name: string;
@@ -37,13 +37,15 @@ interface TestTakerFormProps {
   testTitle?: string;
   requireShareCode?: boolean;
   shareCodeError?: string | null;
+  loading?: boolean;
 }
 
 const TestTakerForm: React.FC<TestTakerFormProps> = ({ 
   onSubmit, 
   testTitle = 'Test',
   requireShareCode = false,
-  shareCodeError = null
+  shareCodeError = null,
+  loading = false
 }) => {
   // Create form schema based on whether share code is required
   const formSchema = z.object({
@@ -94,7 +96,7 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your name" {...field} />
+                    <Input placeholder="Your name" {...field} disabled={loading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -108,7 +110,7 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your email address" type="email" {...field} />
+                    <Input placeholder="Your email address" type="email" {...field} disabled={loading} />
                   </FormControl>
                   <FormDescription>
                     This is where your test results will be sent
@@ -126,7 +128,7 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
                   <FormItem>
                     <FormLabel>Share Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter share code" {...field} />
+                      <Input placeholder="Enter share code" {...field} disabled={loading} />
                     </FormControl>
                     <FormDescription>
                       Enter the share code provided by the test creator
@@ -145,8 +147,15 @@ const TestTakerForm: React.FC<TestTakerFormProps> = ({
             )}
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
-              Start Test
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Start Test'
+              )}
             </Button>
           </CardFooter>
         </form>

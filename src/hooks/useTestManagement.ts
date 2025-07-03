@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { TestTakerInfo } from '@/components/cbt/TestTakerForm';
 
 // Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
@@ -40,7 +41,7 @@ interface Participant {
   user_id?: string;
 }
 
-export const useTestManagement = (testId: string) => {
+export const useTestManagement = (testId: string, testTakerInfo?: TestTakerInfo | null) => {
   const [test, setTest] = useState<TestData | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -161,7 +162,7 @@ export const useTestManagement = (testId: string) => {
         
         return {
           id: attempt.id,
-          participant_name: profile?.email?.split('@')[0] || attempt.participant_name || 'Anonymous',
+          participant_name: attempt.participant_name || profile?.email?.split('@')[0] || 'Anonymous',
           participant_email: attempt.participant_email || '',
           score: attempt.score,
           total_questions: attempt.total_questions,
@@ -239,8 +240,8 @@ export const useTestManagement = (testId: string) => {
         const completionData = {
           test_id: testId,
           user_id: user?.id || null,
-          participant_name: user?.email ? user.email.split('@')[0] : 'Anonymous',
-          participant_email: user?.email || 'anonymous@test.com',
+          participant_name: testTakerInfo?.name || user?.email?.split('@')[0] || 'Anonymous',
+          participant_email: testTakerInfo?.email || user?.email || 'anonymous@test.com',
           score: finalScore,
           total_questions: questions.length,
           time_taken: timeTaken,
@@ -388,7 +389,7 @@ export const useTestManagement = (testId: string) => {
       
       // Create the full URL for sharing
       const baseUrl = window.location.origin;
-      const shareUrl = `${baseUrl}/cbt/take-test/${shareCode}`;
+      const shareUrl = `${baseUrl}/test/${shareCode}`;
       
       await navigator.clipboard.writeText(shareUrl);
       
@@ -461,12 +462,12 @@ export const useTestManagement = (testId: string) => {
   }, [testStarted, timeRemaining, showResults]);
 
   useEffect(() => {
-    if (testId && user) {
+    if (testId && (user || testTakerInfo)) {
       fetchTestData();
       fetchTestQuestions();
       fetchParticipants();
     }
-  }, [testId, user]);
+  }, [testId, user, testTakerInfo]);
 
   return {
     test,

@@ -20,6 +20,7 @@ import AiCreateTest from "./pages/cbt/AiCreateTest";
 import QuestionBank from "./pages/cbt/QuestionBank";
 import QuizExplanations from "./pages/cbt/QuizExplanations";
 import TakeTest from "./pages/cbt/TakeTest";
+import TakeTestByCode from "./pages/cbt/TakeTestByCode";
 import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
@@ -146,6 +147,9 @@ const AppRoutes = () => {
         <Route path="/ads-policy" element={<AdsPolicy />} />
         <Route path="/maintenance" element={<UnderMaintenancePage />} />
         <Route path="/services" element={<ServicesPage />} />
+        
+        {/* Public test route - no auth required */}
+        <Route path="/test/:shareCode" element={<TakeTestByCode />} />
         
         {/* Admin Routes - IMPORTANT: These must be outside the MainLayout */}
         <Route path="/admin" element={

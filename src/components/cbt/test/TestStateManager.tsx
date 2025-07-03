@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
@@ -21,16 +20,17 @@ import { useSubjectQuiz } from '@/hooks/useSubjectQuiz';
 
 interface TestStateManagerProps {
   testId: string;
+  testTakerInfo?: TestTakerInfo;
 }
 
-const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
+const TestStateManager: React.FC<TestStateManagerProps> = ({ testId, testTakerInfo: providedTestTakerInfo }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
   // State for test taker form and info
   const [showTakerForm, setShowTakerForm] = React.useState(false);
-  const [testTakerInfo, setTestTakerInfo] = React.useState<TestTakerInfo | null>(null);
+  const [testTakerInfo, setTestTakerInfo] = React.useState<TestTakerInfo | null>(providedTestTakerInfo || null);
 
   // Quiz settings
   const [settings] = React.useState({
@@ -40,7 +40,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   });
 
   // Hooks for different test types
-  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '');
+  const testManagement = useTestManagement(testId && testId !== 'subject' ? testId : '', testTakerInfo);
   const userTest = useUserTest(testId);
   const subjectQuiz = useSubjectQuiz(location, settings);
 
@@ -159,6 +159,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
         onShowTakerForm={() => setShowTakerForm(true)}
         user={user}
         testId={testId}
+        testTakerInfo={testTakerInfo}
       />
     );
   }

@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { TestTakerInfo } from '@/components/cbt/TestTakerForm';
 
 interface TestInstructionsProps {
   testDetails: any;
@@ -13,6 +14,7 @@ interface TestInstructionsProps {
   onShowTakerForm: () => void;
   user: any;
   testId: string;
+  testTakerInfo?: TestTakerInfo | null;
 }
 
 const TestInstructions: React.FC<TestInstructionsProps> = ({
@@ -24,6 +26,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
   onShowTakerForm,
   user,
   testId,
+  testTakerInfo,
 }) => {
   return (
     <Card>
@@ -38,6 +41,22 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
       </CardHeader>
       <CardContent className="py-6">
         <div className="space-y-4">
+          {testTakerInfo && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Test Taker Information</h3>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Name:</span>
+                  <span className="font-medium">{testTakerInfo.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email:</span>
+                  <span className="font-medium">{testTakerInfo.email}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="bg-secondary/30 p-4 rounded-lg">
             <h3 className="font-medium mb-2">Quiz Information</h3>
             <ul className="space-y-2 text-sm">
@@ -101,8 +120,8 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
       </CardContent>
       <CardFooter>
         <Button className="w-full" onClick={() => {
-          // Always show form for unregistered users taking formal tests with share codes
-          if (!user && testId !== 'subject') {
+          // Show form for unregistered users taking formal tests with share codes OR if no testTakerInfo is provided
+          if ((!user && testId !== 'subject') || (!testTakerInfo && testId !== 'subject')) {
             onShowTakerForm();
           } else {
             onStartTest();
