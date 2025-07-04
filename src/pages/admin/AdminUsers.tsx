@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,9 +59,9 @@ const AdminUsers = () => {
         created_at: user.created_at || new Date().toISOString(),
         is_verified: user.is_verified || false,
         role: user.role || 'user',
-        is_banned: user.is_banned || false,
-        ban_reason: user.ban_reason || undefined,
-        ban_expires_at: user.ban_expires_at || undefined,
+        is_banned: (user as any).is_banned || false,
+        ban_reason: (user as any).ban_reason || undefined,
+        ban_expires_at: (user as any).ban_expires_at || undefined,
         activities: user.activities || null,
         updated_at: user.updated_at || new Date().toISOString()
       })) as UserProfile[];

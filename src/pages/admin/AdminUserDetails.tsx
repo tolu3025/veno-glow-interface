@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +52,7 @@ const AdminUserDetails = () => {
 
       console.log('User details loaded:', userData);
       
+      // Properly cast the data to include ban fields
       const typedUser: UserDetail = {
         id: userData.id || '',
         user_id: userData.user_id || '',
@@ -61,9 +61,9 @@ const AdminUserDetails = () => {
         created_at: userData.created_at || new Date().toISOString(),
         is_verified: userData.is_verified || false,
         role: userData.role || 'user',
-        is_banned: userData.is_banned || false,
-        ban_reason: userData.ban_reason || undefined,
-        ban_expires_at: userData.ban_expires_at || undefined,
+        is_banned: (userData as any).is_banned || false,
+        ban_reason: (userData as any).ban_reason || undefined,
+        ban_expires_at: (userData as any).ban_expires_at || undefined,
         activities: userData.activities || null,
         updated_at: userData.updated_at || new Date().toISOString()
       };
