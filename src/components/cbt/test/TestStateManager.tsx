@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
@@ -231,6 +230,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
         onTryAgain={!isSubjectQuiz ? testManagement.resetTest : undefined}
         formatTime={formatTime}
         savingError={!isSubjectQuiz ? testManagement.savingError : null}
+        userAnswers={userAnswers} // Pass the actual user answers
       />
     );
   }

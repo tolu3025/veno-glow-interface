@@ -51,6 +51,7 @@ interface TestResultsProps {
   onTryAgain?: () => void;
   formatTime: (seconds: number) => string;
   savingError?: string | null;
+  userAnswers?: (number | null)[];
 }
 
 const formSchema = z.object({
@@ -81,6 +82,7 @@ const TestResults: React.FC<TestResultsProps> = ({
   onTryAgain,
   formatTime,
   savingError,
+  userAnswers = [],
 }) => {
   const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   
@@ -140,6 +142,18 @@ const TestResults: React.FC<TestResultsProps> = ({
       description: "",
     },
   });
+
+  // Format user answers for explanations page
+  const formatUserAnswersForExplanations = () => {
+    return userAnswers.map((selectedOption, index) => {
+      const question = questions[index];
+      const correctAnswer = question?.answer !== undefined ? question.answer : question?.correctOption || 0;
+      return {
+        selectedOption,
+        isCorrect: selectedOption === correctAnswer
+      };
+    });
+  };
 
   // Load results based on visibility settings
   useEffect(() => {
@@ -504,13 +518,10 @@ const TestResults: React.FC<TestResultsProps> = ({
                     navigate('/cbt/quiz/explanations', {
                       state: {
                         questions,
-                        userAnswers: Array.from({ length: questions.length }, (_, index) => ({
-                          questionIndex: index,
-                          selectedOption: null,
-                          isCorrect: false
-                        })),
+                        userAnswers: formatUserAnswersForExplanations(),
                         score,
-                        subject: testDetails?.subject || location?.state?.subject || 'Quiz'
+                        subject: testDetails?.subject || location?.state?.subject || 'Quiz',
+                        returnTo: 'results'
                       }
                     });
                   }}

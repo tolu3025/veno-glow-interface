@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ const QuizExplanations: React.FC = () => {
   const navigate = useNavigate();
   
   // Get data from navigation state
-  const { questions, userAnswers, score, subject } = location.state || {};
+  const { questions, userAnswers, score, subject, returnTo } = location.state || {};
 
   if (!questions || !userAnswers) {
     return (
@@ -32,7 +33,22 @@ const QuizExplanations: React.FC = () => {
   }
 
   const handleBackToResults = () => {
-    navigate(-1); // Go back to previous page
+    if (returnTo === 'results') {
+      // Navigate back to results with the same data
+      navigate('/cbt/take/subject', {
+        state: {
+          showResults: true,
+          questions,
+          userAnswers,
+          score,
+          subject,
+          // Pass any other necessary state for results page
+        },
+        replace: true
+      });
+    } else {
+      navigate(-1); // Fallback to previous page
+    }
   };
 
   return (
