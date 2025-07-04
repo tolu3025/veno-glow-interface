@@ -18,7 +18,6 @@ type UserDetail = {
   is_banned?: boolean;
   ban_reason?: string;
   ban_expires_at?: string;
-  // Add these fields to match the updated view
   activities?: any;
   updated_at?: string;
 }
