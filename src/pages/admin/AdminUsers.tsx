@@ -18,6 +18,8 @@ type UserProfile = {
   is_banned?: boolean;
   ban_reason?: string;
   ban_expires_at?: string;
+  activities?: any;
+  updated_at?: string;
 }
 
 const AdminUsers = () => {
@@ -37,7 +39,6 @@ const AdminUsers = () => {
     try {
       console.log('Fetching users from admin_user_view...');
       
-      // Use the correct view name and add proper type assertion
       const { data: usersData, error: usersError } = await supabase
         .from('admin_user_view')
         .select('*');
@@ -49,7 +50,6 @@ const AdminUsers = () => {
 
       console.log('Admin users data:', usersData);
       
-      // Type assertion to ensure proper typing
       const typedUsers = (usersData || []).map(user => ({
         id: user.id || '',
         user_id: user.user_id || '',
@@ -60,7 +60,9 @@ const AdminUsers = () => {
         role: user.role || 'user',
         is_banned: user.is_banned || false,
         ban_reason: user.ban_reason || undefined,
-        ban_expires_at: user.ban_expires_at || undefined
+        ban_expires_at: user.ban_expires_at || undefined,
+        activities: user.activities || null,
+        updated_at: user.updated_at || new Date().toISOString()
       })) as UserProfile[];
       
       setUsers(typedUsers);

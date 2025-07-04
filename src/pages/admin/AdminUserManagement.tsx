@@ -23,6 +23,9 @@ type UserProfile = {
   is_banned?: boolean;
   ban_reason?: string;
   ban_expires_at?: string;
+  // Add these fields to match the updated view
+  activities?: any;
+  updated_at?: string;
 };
 
 const AdminUserManagement = () => {
@@ -53,14 +56,12 @@ const AdminUserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Use the correct view name and add proper type assertion
       const { data: usersData, error } = await supabase
         .from('admin_user_view')
         .select('*');
       
       if (error) throw error;
 
-      // Type assertion to ensure proper typing
       const typedUsers = (usersData || []).map(user => ({
         id: user.id || '',
         user_id: user.user_id || '',
@@ -71,7 +72,9 @@ const AdminUserManagement = () => {
         role: user.role || 'user',
         is_banned: user.is_banned || false,
         ban_reason: user.ban_reason || undefined,
-        ban_expires_at: user.ban_expires_at || undefined
+        ban_expires_at: user.ban_expires_at || undefined,
+        activities: user.activities || null,
+        updated_at: user.updated_at || new Date().toISOString()
       })) as UserProfile[];
 
       setUsers(typedUsers);

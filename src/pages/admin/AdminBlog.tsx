@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -55,16 +56,29 @@ const AdminBlog = () => {
   const fetchArticles = async () => {
     setLoading(true);
     try {
+      console.log('Fetching blog articles...');
+      
       const { data, error } = await supabase
         .from('blog_articles')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching articles:', error);
+        throw error;
+      }
+      
+      console.log('Blog articles fetched:', data);
       setArticles(data || []);
-    } catch (error) {
+      
+      if ((data || []).length === 0) {
+        toast.info('No blog articles found');
+      } else {
+        toast.success(`Loaded ${(data || []).length} articles`);
+      }
+    } catch (error: any) {
       console.error('Error fetching articles:', error);
-      toast.error('Failed to fetch articles');
+      toast.error(`Failed to fetch articles: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -90,6 +104,8 @@ const AdminBlog = () => {
     }
 
     try {
+      console.log('Saving article...', { editingArticle, formData });
+      
       const articleData = {
         title: formData.title,
         content: formData.content,
@@ -102,25 +118,31 @@ const AdminBlog = () => {
 
       let result;
       if (editingArticle) {
+        console.log('Updating existing article:', editingArticle.id);
         result = await supabase
           .from('blog_articles')
           .update(articleData)
           .eq('id', editingArticle.id);
       } else {
+        console.log('Creating new article');
         result = await supabase
           .from('blog_articles')
           .insert([articleData]);
       }
 
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
 
+      console.log('Article saved successfully:', result);
       toast.success(editingArticle ? 'Article updated successfully' : 'Article created successfully');
       setIsDialogOpen(false);
       resetForm();
       fetchArticles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving article:', error);
-      toast.error('Failed to save article');
+      toast.error(`Failed to save article: ${error.message}`);
     }
   };
 
@@ -151,7 +173,7 @@ const AdminBlog = () => {
 
       toast.success('Article deleted successfully');
       fetchArticles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting article:', error);
       toast.error('Failed to delete article');
     }
@@ -168,7 +190,7 @@ const AdminBlog = () => {
 
       toast.success(`Article ${!currentStatus ? 'published' : 'unpublished'} successfully`);
       fetchArticles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating article status:', error);
       toast.error('Failed to update article status');
     }

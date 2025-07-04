@@ -18,6 +18,9 @@ type UserDetail = {
   is_banned?: boolean;
   ban_reason?: string;
   ban_expires_at?: string;
+  // Add these fields to match the updated view
+  activities?: any;
+  updated_at?: string;
 }
 
 const AdminUserDetails = () => {
@@ -38,7 +41,6 @@ const AdminUserDetails = () => {
     try {
       console.log('Fetching user details for ID:', userId);
       
-      // Use the correct view name and add proper type assertion
       const { data: userData, error: userError } = await supabase
         .from('admin_user_view')
         .select('*')
@@ -52,7 +54,6 @@ const AdminUserDetails = () => {
 
       console.log('User details loaded:', userData);
       
-      // Type assertion to ensure proper typing
       const typedUser: UserDetail = {
         id: userData.id || '',
         user_id: userData.user_id || '',
@@ -63,7 +64,9 @@ const AdminUserDetails = () => {
         role: userData.role || 'user',
         is_banned: userData.is_banned || false,
         ban_reason: userData.ban_reason || undefined,
-        ban_expires_at: userData.ban_expires_at || undefined
+        ban_expires_at: userData.ban_expires_at || undefined,
+        activities: userData.activities || null,
+        updated_at: userData.updated_at || new Date().toISOString()
       };
       
       setUser(typedUser);
@@ -89,7 +92,7 @@ const AdminUserDetails = () => {
       if (error) throw error;
 
       toast.success('User has been banned successfully');
-      fetchUserDetails(); // Refresh user data
+      fetchUserDetails();
     } catch (error: any) {
       console.error('Error banning user:', error);
       toast.error(`Failed to ban user: ${error.message}`);
@@ -110,7 +113,7 @@ const AdminUserDetails = () => {
       if (error) throw error;
 
       toast.success('User has been unbanned successfully');
-      fetchUserDetails(); // Refresh user data
+      fetchUserDetails();
     } catch (error: any) {
       console.error('Error unbanning user:', error);
       toast.error(`Failed to unban user: ${error.message}`);
