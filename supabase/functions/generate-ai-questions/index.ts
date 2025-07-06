@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, difficulty, count, topic } = await req.json();
+    const { subject, difficulty, count, topic, fileUrls } = await req.json();
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -28,6 +29,57 @@ serve(async (req) => {
       });
     }
 
+    // Initialize Supabase client for file processing
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let fileContent = '';
+    
+    // Process uploaded files if any
+    if (fileUrls && Array.isArray(fileUrls) && fileUrls.length > 0) {
+      console.log('Processing uploaded files:', fileUrls);
+      
+      for (const fileUrl of fileUrls) {
+        try {
+          // Download file from storage
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('chat-files')
+            .download(fileUrl);
+
+          if (downloadError) {
+            console.error('Error downloading file:', downloadError);
+            continue;
+          }
+
+          // Extract text content based on file type
+          const fileName = fileUrl.split('/').pop()?.toLowerCase() || '';
+          const fileExtension = fileName.split('.').pop();
+          
+          if (fileExtension === 'pdf') {
+            // For PDF files, we'll use a simple text extraction approach
+            // In a production environment, you might want to use a more sophisticated PDF parser
+            const arrayBuffer = await fileData.arrayBuffer();
+            const text = await extractTextFromPDF(arrayBuffer);
+            fileContent += `\n\n=== Content from ${fileName} ===\n${text}`;
+          } else if (fileExtension === 'docx') {
+            // For DOCX files, extract text content
+            const arrayBuffer = await fileData.arrayBuffer();
+            const text = await extractTextFromDOCX(arrayBuffer);
+            fileContent += `\n\n=== Content from ${fileName} ===\n${text}`;
+          } else if (fileExtension === 'ppt' || fileExtension === 'pptx') {
+            // For PowerPoint files, extract text content
+            const arrayBuffer = await fileData.arrayBuffer();
+            const text = await extractTextFromPPT(arrayBuffer);
+            fileContent += `\n\n=== Content from ${fileName} ===\n${text}`;
+          }
+        } catch (fileError) {
+          console.error('Error processing file:', fileError);
+          // Continue with other files if one fails
+        }
+      }
+    }
+
     const topicInstruction = topic ? ` specifically about "${topic}"` : '';
     const difficultyDescriptions = {
       beginner: 'basic level with fundamental concepts',
@@ -35,7 +87,18 @@ serve(async (req) => {
       advanced: 'complex problems requiring deep understanding and critical thinking'
     };
 
-    const prompt = `Generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).
+    let basePrompt = `Generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).`;
+
+    // If we have file content, modify the prompt to use it
+    if (fileContent.trim()) {
+      basePrompt = `Based on the following document content, generate ${count} multiple-choice questions at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
+
+${fileContent}
+
+Please generate questions that test understanding of the key concepts, facts, and ideas presented in the documents.`;
+    }
+
+    const prompt = `${basePrompt}
 
 Requirements:
 - Each question should have exactly 4 options (A, B, C, D)
@@ -43,7 +106,7 @@ Requirements:
 - Include a brief explanation for the correct answer
 - Questions should be educational and test real understanding
 - Vary the question types and difficulty appropriately
-- Make questions relevant to the specified subject and level
+- Make questions relevant to the content provided${fileContent.trim() ? '' : ` and the specified subject ${subject}`}
 
 Return the response as a valid JSON object with this exact structure:
 {
@@ -59,7 +122,7 @@ Return the response as a valid JSON object with this exact structure:
 
 The answer should be the index (0-3) of the correct option in the options array.`;
 
-    console.log('Generating questions with prompt:', prompt);
+    console.log('Generating questions with prompt length:', prompt.length);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -72,12 +135,12 @@ The answer should be the index (0-3) of the correct option in the options array.
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert educator and test creator. Generate high-quality, educational multiple-choice questions. Always respond with valid JSON only, no additional text.' 
+            content: 'You are an expert educator and test creator. Generate high-quality, educational multiple-choice questions based on the provided content or subject. Always respond with valid JSON only, no additional text.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: count > 50 ? 8000 : 4000, // Increase token limit for larger question sets
       }),
     });
 
@@ -95,7 +158,7 @@ The answer should be the index (0-3) of the correct option in the options array.
     }
 
     const generatedContent = data.choices[0].message.content;
-    console.log('Generated content:', generatedContent);
+    console.log('Generated content length:', generatedContent.length);
 
     // Parse the JSON response
     let questionsData;
@@ -147,3 +210,83 @@ The answer should be the index (0-3) of the correct option in the options array.
     });
   }
 });
+
+// Helper functions for text extraction
+async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // Basic PDF text extraction - this is a simplified approach
+    // In production, you might want to use a more sophisticated PDF parser
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const text = new TextDecoder().decode(uint8Array);
+    
+    // Extract readable text between common PDF markers
+    const textMatches = text.match(/BT[\s\S]*?ET/g) || [];
+    let extractedText = '';
+    
+    for (const match of textMatches) {
+      // Simple extraction of text objects
+      const textObjects = match.match(/\((.*?)\)/g) || [];
+      for (const obj of textObjects) {
+        const cleanText = obj.replace(/[()]/g, '').trim();
+        if (cleanText.length > 1) {
+          extractedText += cleanText + ' ';
+        }
+      }
+    }
+    
+    return extractedText.trim() || 'Unable to extract text from PDF. Please ensure the PDF contains readable text.';
+  } catch (error) {
+    console.error('Error extracting PDF text:', error);
+    return 'Error processing PDF file.';
+  }
+}
+
+async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // This is a simplified approach for DOCX files
+    // In production, you might want to use a library like 'mammoth' or similar
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const text = new TextDecoder().decode(uint8Array);
+    
+    // Basic text extraction by looking for XML content
+    const xmlMatches = text.match(/<w:t[^>]*>(.*?)<\/w:t>/g) || [];
+    let extractedText = '';
+    
+    for (const match of xmlMatches) {
+      const textContent = match.replace(/<[^>]*>/g, '').trim();
+      if (textContent.length > 0) {
+        extractedText += textContent + ' ';
+      }
+    }
+    
+    return extractedText.trim() || 'Unable to extract text from DOCX. Please ensure the document contains readable text.';
+  } catch (error) {
+    console.error('Error extracting DOCX text:', error);
+    return 'Error processing DOCX file.';
+  }
+}
+
+async function extractTextFromPPT(arrayBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // This is a simplified approach for PowerPoint files
+    // In production, you might want to use a more sophisticated parser
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const text = new TextDecoder().decode(uint8Array);
+    
+    // Basic text extraction by looking for text content markers
+    const textMatches = text.match(/[\w\s.,!?;:'"()-]{10,}/g) || [];
+    let extractedText = '';
+    
+    for (const match of textMatches) {
+      const cleanText = match.trim();
+      if (cleanText.length > 10 && /^[a-zA-Z0-9\s.,!?;:'"()-]+$/.test(cleanText)) {
+        extractedText += cleanText + ' ';
+      }
+    }
+    
+    return extractedText.trim() || 'Unable to extract text from PowerPoint. Please ensure the presentation contains readable text.';
+  } catch (error) {
+    console.error('Error extracting PPT text:', error);
+    return 'Error processing PowerPoint file.';
+  }
+}

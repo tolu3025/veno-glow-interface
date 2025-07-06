@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Plus, Wand2 } from 'lucide-react';
+import { Trash2, Edit, Plus, Wand2, Upload, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -30,6 +30,8 @@ const AdminQuestions = () => {
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   // Form state
   const [newQuestion, setNewQuestion] = useState({
@@ -52,6 +54,8 @@ const AdminQuestions = () => {
   // Filters
   const [filterSubject, setFilterSubject] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
+
+  const acceptedFileTypes = '.pdf,.docx,.ppt,.pptx';
 
   useEffect(() => {
     fetchQuestions();
@@ -88,6 +92,43 @@ const AdminQuestions = () => {
     } catch (error) {
       console.error('Error fetching subjects:', error);
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const validFiles = Array.from(files).filter(file => {
+      const extension = file.name.toLowerCase().split('.').pop();
+      return ['pdf', 'docx', 'ppt', 'pptx'].includes(extension || '');
+    });
+
+    if (validFiles.length !== files.length) {
+      toast.error('Only PDF, DOCX, PPT, and PPTX files are supported');
+    }
+
+    if (validFiles.length > 0) {
+      setUploadedFiles(prev => [...prev, ...validFiles]);
+      toast.success(`${validFiles.length} file(s) uploaded successfully`);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFilesToStorage = async (files: File[]): Promise<string[]> => {
+    const uploadPromises = files.map(async (file) => {
+      const fileName = `admin/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('chat-files')
+        .upload(fileName, file);
+      
+      if (error) throw error;
+      return fileName;
+    });
+
+    return Promise.all(uploadPromises);
   };
 
   const handleAddQuestion = async () => {
@@ -176,19 +217,30 @@ const AdminQuestions = () => {
   const generateAIQuestions = async () => {
     setGeneratingQuestions(true);
     try {
+      let fileUrls: string[] = [];
+      
+      // Upload files to storage if any
+      if (uploadedFiles.length > 0) {
+        setUploading(true);
+        fileUrls = await uploadFilesToStorage(uploadedFiles);
+        setUploading(false);
+      }
+
       console.log('Generating AI questions with:', {
-        subject: aiSubject,
+        subject: aiSubject || 'General',
         topic: aiTopic,
         difficulty: aiDifficulty,
-        count: aiCount
+        count: aiCount,
+        fileUrls
       });
 
       const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
         body: {
-          subject: aiSubject,
+          subject: aiSubject || 'General',
           topic: aiTopic,
           difficulty: aiDifficulty,
-          count: aiCount
+          count: aiCount,
+          fileUrls
         }
       });
 
@@ -204,7 +256,7 @@ const AdminQuestions = () => {
 
       // Insert the generated questions
       const questionsToInsert = data.questions.map((q: any) => ({
-        subject: aiSubject,
+        subject: aiSubject || 'General',
         question: q.question,
         options: q.options,
         answer: q.answer,
@@ -229,11 +281,13 @@ const AdminQuestions = () => {
       setAiTopic('');
       setAiDifficulty('intermediate');
       setAiCount(5);
+      setUploadedFiles([]);
     } catch (error) {
       console.error('Error generating AI questions:', error);
       toast.error('Failed to generate questions. Please try again.');
     } finally {
       setGeneratingQuestions(false);
+      setUploading(false);
     }
   };
 
@@ -259,11 +313,64 @@ const AdminQuestions = () => {
                 Generate AI Questions
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Generate AI Questions</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                {/* File Upload Section */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Upload Documents (Optional)</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div className="text-center">
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <div className="mt-2">
+                        <label htmlFor="admin-file-upload" className="cursor-pointer">
+                          <span className="text-sm font-medium text-gray-900">
+                            Drop files here or click to upload
+                          </span>
+                          <span className="block text-xs text-gray-500 mt-1">
+                            PDF, DOCX, PPT, PPTX up to 10MB each
+                          </span>
+                        </label>
+                        <input
+                          id="admin-file-upload"
+                          name="admin-file-upload"
+                          type="file"
+                          className="sr-only"
+                          multiple
+                          accept={acceptedFileTypes}
+                          onChange={handleFileUpload}
+                          disabled={uploading}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Display uploaded files */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Uploaded Files:</label>
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <div className="flex items-center space-x-2">
+                            <FileText className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm">{file.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(index)}
+                            disabled={uploading}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="text-sm font-medium">Subject</label>
                   <Input
@@ -298,17 +405,17 @@ const AdminQuestions = () => {
                   <Input
                     type="number"
                     min="1"
-                    max="20"
+                    max="30"
                     value={aiCount}
                     onChange={(e) => setAiCount(parseInt(e.target.value) || 5)}
                   />
                 </div>
                 <Button 
                   onClick={generateAIQuestions} 
-                  disabled={!aiSubject || generatingQuestions}
+                  disabled={uploading || generatingQuestions || (uploadedFiles.length === 0 && !aiSubject)}
                   className="w-full"
                 >
-                  {generatingQuestions ? 'Generating...' : 'Generate Questions'}
+                  {generatingQuestions ? 'Generating...' : uploading ? 'Uploading...' : 'Generate Questions'}
                 </Button>
               </div>
             </DialogContent>
