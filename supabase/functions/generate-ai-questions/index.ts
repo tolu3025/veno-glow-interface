@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, difficulty, count, topic, fileUrls } = await req.json();
+    const { subject, difficulty, count, topic, fileUrls, autoMode, extractSubjectAndTopic } = await req.json();
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -57,45 +57,57 @@ serve(async (req) => {
           const fileExtension = fileName.split('.').pop();
           
           if (fileExtension === 'pdf') {
-            // For PDF files, we'll use a simple text extraction approach
-            // In a production environment, you might want to use a more sophisticated PDF parser
             const arrayBuffer = await fileData.arrayBuffer();
             const text = await extractTextFromPDF(arrayBuffer);
             fileContent += `\n\n=== Content from ${fileName} ===\n${text}`;
           } else if (fileExtension === 'docx') {
-            // For DOCX files, extract text content
             const arrayBuffer = await fileData.arrayBuffer();
             const text = await extractTextFromDOCX(arrayBuffer);
             fileContent += `\n\n=== Content from ${fileName} ===\n${text}`;
           } else if (fileExtension === 'ppt' || fileExtension === 'pptx') {
-            // For PowerPoint files, extract text content
             const arrayBuffer = await fileData.arrayBuffer();
             const text = await extractTextFromPPT(arrayBuffer);
             fileContent += `\n\n=== Content from ${fileName} ===\n${text}`;
           }
         } catch (fileError) {
           console.error('Error processing file:', fileError);
-          // Continue with other files if one fails
+          continue;
         }
       }
     }
 
-    const topicInstruction = topic ? ` specifically about "${topic}"` : '';
     const difficultyDescriptions = {
       beginner: 'basic level with fundamental concepts',
       intermediate: 'moderate complexity with some analysis required',
       advanced: 'complex problems requiring deep understanding and critical thinking'
     };
 
-    let basePrompt = `Generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).`;
+    let basePrompt;
+    let extractedSubject = '';
+    let extractedTopic = '';
 
-    // If we have file content, modify the prompt to use it
-    if (fileContent.trim()) {
-      basePrompt = `Based on the following document content, generate ${count} multiple-choice questions at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
+    if (autoMode && fileContent.trim()) {
+      // Auto mode: extract subject and topic from document content
+      basePrompt = `Analyze the following document content and automatically determine the most appropriate subject and topic, then generate ${count} multiple-choice questions at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
 
 ${fileContent}
 
-Please generate questions that test understanding of the key concepts, facts, and ideas presented in the documents.`;
+Please:
+1. First identify the main subject area from the content
+2. Identify the specific topic or theme
+3. Generate questions that test understanding of the key concepts, facts, and ideas presented`;
+    } else if (fileContent.trim()) {
+      // Manual mode with files: use specified subject but base on document content
+      const topicInstruction = topic ? ` specifically about "${topic}"` : '';
+      basePrompt = `Based on the following document content, generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
+
+${fileContent}
+
+Generate questions that test understanding of the key concepts, facts, and ideas presented in the documents.`;
+    } else {
+      // Manual mode without files: traditional subject-based generation
+      const topicInstruction = topic ? ` specifically about "${topic}"` : '';
+      basePrompt = `Generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).`;
     }
 
     const prompt = `${basePrompt}
@@ -106,8 +118,22 @@ Requirements:
 - Include a brief explanation for the correct answer
 - Questions should be educational and test real understanding
 - Vary the question types and difficulty appropriately
-- Make questions relevant to the content provided${fileContent.trim() ? '' : ` and the specified subject ${subject}`}
+- Make questions relevant and meaningful
 
+${autoMode && extractSubjectAndTopic ? `
+Return the response as a valid JSON object with this exact structure:
+{
+  "extractedSubject": "The main subject area identified from content",
+  "extractedTopic": "The specific topic or theme identified",
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "answer": 0,
+      "explanation": "Brief explanation of why this answer is correct"
+    }
+  ]
+}` : `
 Return the response as a valid JSON object with this exact structure:
 {
   "questions": [
@@ -118,11 +144,12 @@ Return the response as a valid JSON object with this exact structure:
       "explanation": "Brief explanation of why this answer is correct"
     }
   ]
-}
+}`}
 
 The answer should be the index (0-3) of the correct option in the options array.`;
 
-    console.log('Generating questions with prompt length:', prompt.length);
+    console.log('Generating questions with mode:', autoMode ? 'auto' : 'manual');
+    console.log('Content length:', fileContent.length);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -135,12 +162,14 @@ The answer should be the index (0-3) of the correct option in the options array.
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert educator and test creator. Generate high-quality, educational multiple-choice questions based on the provided content or subject. Always respond with valid JSON only, no additional text.' 
+            content: autoMode && extractSubjectAndTopic 
+              ? 'You are an expert educator and content analyzer. First analyze the provided content to identify the subject and topic, then generate high-quality, educational multiple-choice questions. Always respond with valid JSON only, no additional text.'
+              : 'You are an expert educator and test creator. Generate high-quality, educational multiple-choice questions based on the provided content or subject. Always respond with valid JSON only, no additional text.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: count > 50 ? 8000 : 4000, // Increase token limit for larger question sets
+        max_tokens: count > 50 ? 8000 : 4000,
       }),
     });
 
@@ -191,10 +220,20 @@ The answer should be the index (0-3) of the correct option in the options array.
 
     console.log(`Successfully generated ${validatedQuestions.length} questions`);
 
-    return new Response(JSON.stringify({
+    const responseData: any = {
       success: true,
       questions: validatedQuestions
-    }), {
+    };
+
+    // Include extracted subject and topic if in auto mode
+    if (autoMode && questionsData.extractedSubject) {
+      responseData.extractedSubject = questionsData.extractedSubject;
+      responseData.extractedTopic = questionsData.extractedTopic;
+      console.log('Extracted subject:', questionsData.extractedSubject);
+      console.log('Extracted topic:', questionsData.extractedTopic);
+    }
+
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -214,8 +253,6 @@ The answer should be the index (0-3) of the correct option in the options array.
 // Helper functions for text extraction
 async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
-    // Basic PDF text extraction - this is a simplified approach
-    // In production, you might want to use a more sophisticated PDF parser
     const uint8Array = new Uint8Array(arrayBuffer);
     const text = new TextDecoder().decode(uint8Array);
     
@@ -224,7 +261,6 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
     let extractedText = '';
     
     for (const match of textMatches) {
-      // Simple extraction of text objects
       const textObjects = match.match(/\((.*?)\)/g) || [];
       for (const obj of textObjects) {
         const cleanText = obj.replace(/[()]/g, '').trim();
@@ -234,7 +270,7 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
       }
     }
     
-    return extractedText.trim() || 'Unable to extract text from PDF. Please ensure the PDF contains readable text.';
+    return extractedText.trim() || 'PDF content could not be extracted automatically.';
   } catch (error) {
     console.error('Error extracting PDF text:', error);
     return 'Error processing PDF file.';
@@ -243,8 +279,6 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
 
 async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
-    // This is a simplified approach for DOCX files
-    // In production, you might want to use a library like 'mammoth' or similar
     const uint8Array = new Uint8Array(arrayBuffer);
     const text = new TextDecoder().decode(uint8Array);
     
@@ -259,7 +293,7 @@ async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
       }
     }
     
-    return extractedText.trim() || 'Unable to extract text from DOCX. Please ensure the document contains readable text.';
+    return extractedText.trim() || 'DOCX content could not be extracted automatically.';
   } catch (error) {
     console.error('Error extracting DOCX text:', error);
     return 'Error processing DOCX file.';
@@ -268,8 +302,6 @@ async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
 
 async function extractTextFromPPT(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
-    // This is a simplified approach for PowerPoint files
-    // In production, you might want to use a more sophisticated parser
     const uint8Array = new Uint8Array(arrayBuffer);
     const text = new TextDecoder().decode(uint8Array);
     
@@ -284,7 +316,7 @@ async function extractTextFromPPT(arrayBuffer: ArrayBuffer): Promise<string> {
       }
     }
     
-    return extractedText.trim() || 'Unable to extract text from PowerPoint. Please ensure the presentation contains readable text.';
+    return extractedText.trim() || 'PowerPoint content could not be extracted automatically.';
   } catch (error) {
     console.error('Error extracting PPT text:', error);
     return 'Error processing PowerPoint file.';
