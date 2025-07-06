@@ -33,15 +33,11 @@ const AssignAdmin = () => {
         return;
       }
       
-      // Check if role already exists
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', profileData.user_id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      // Check if role already exists using the new security definer function
+      const { data: existingRole, error: roleCheckError } = await supabase
+        .rpc('get_user_role', { _user_id: profileData.user_id });
         
-      if (existingRole) {
+      if (!roleCheckError && (existingRole === 'admin' || existingRole === 'superadmin')) {
         toast.info(`User ${email} is already an admin`);
         setLoading(false);
         return;

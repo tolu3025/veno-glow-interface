@@ -1,4 +1,3 @@
-
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
@@ -21,7 +20,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   
   const isTestRoute = location.pathname.startsWith('/cbt/take/');
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const isPublicTestRoute = location.pathname.startsWith('/test/'); // New check for public test routes
+  const isPublicTestRoute = location.pathname.startsWith('/test/');
 
   // Check user role when user is authenticated
   useEffect(() => {
@@ -61,13 +60,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
             setPermissionError("Could not verify permissions. Please contact an administrator.");
             setUserRole('user'); // Default fallback
           }
-        } else if (data) {
+        } else {
           console.log('User role found:', data);
           setUserRole(data || 'user');
-        } else {
-          // No role found, default to user
-          console.log('No user role found, defaulting to user');
-          setUserRole('user');
         }
       } catch (error) {
         console.error('Unexpected error checking role:', error);

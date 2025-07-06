@@ -1,56 +1,57 @@
 
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 
-export const AdminSetup = () => {
+const AdminSetup = () => {
   const { user } = useAuth();
-  
+
   useEffect(() => {
     const setupAdmin = async () => {
-      // Define our admin emails
-      const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
-      
       if (!user) return;
 
-      // Check if the current user is in the admin whitelist
-      if (adminEmails.includes(user.email || '')) {
-        console.log('Current user is in admin whitelist, ensuring admin role');
-        
-        // Check if admin role exists for this user
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-        
-        // If no admin role, assign it
-        if (!existingRole) {
-          console.log('No admin role found, assigning admin role to', user.email);
-          const { error: insertError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: user.id,
-              role: 'admin'
-            });
-            
-          if (insertError) {
-            console.error(`Error assigning admin role to ${user.email}:`, insertError);
-          } else {
-            console.log(`Admin role assigned to ${user.email}`);
-          }
-        } else {
-          console.log('User already has admin role:', user.email);
+      console.log('Current user is in admin whitelist, ensuring admin role');
+      
+      // Check if user already has admin role using the new security definer function
+      try {
+        const { data: currentRole, error: roleError } = await supabase
+          .rpc('get_current_user_role');
+
+        if (roleError) {
+          console.error('Error checking current role:', roleError);
+          // If there's an error checking role, try to assign admin role
+        } else if (currentRole === 'admin' || currentRole === 'superadmin') {
+          console.log('User already has admin role:', currentRole);
+          return;
         }
+
+        // Assign admin role if not already present
+        console.log('No admin role found, assigning admin role to', user.email);
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: user.id,
+            role: 'admin'
+          });
+
+        if (insertError) {
+          console.error('Error assigning admin role to', user.email, ':', insertError);
+        } else {
+          console.log('Successfully assigned admin role to', user.email);
+        }
+      } catch (error) {
+        console.error('Unexpected error in admin setup:', error);
       }
     };
 
-    if (user) {
+    // Only setup admin for whitelisted emails
+    const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
+    if (user && adminEmails.includes(user.email || '')) {
       setupAdmin();
     }
   }, [user]);
-  
-  // This component doesn't render anything
-  return null;
+
+  return null; // This component doesn't render anything
 };
+
+export default AdminSetup;
