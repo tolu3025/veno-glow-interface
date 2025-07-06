@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,7 +11,7 @@ import { StreakMissedDialog } from "@/components/streak/StreakMissedDialog";
 import { StreakMilestoneDialog } from "@/components/streak/StreakMilestoneDialog";
 import { RouteTracker } from "@/components/RouteTracker";
 import { InstructionPopup } from "@/components/popups/InstructionPopup";
-import { AdminSetup } from "@/components/AdminSetup";
+import AdminSetup from "@/components/AdminSetup";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
