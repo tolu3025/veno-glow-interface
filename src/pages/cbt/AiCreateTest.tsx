@@ -1,208 +1,225 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
-import { Wand2, Upload, X, FileText, AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ManualAiTestCreation from '@/components/cbt/ai/ManualAiTestCreation';
+import DocumentBasedAiTestCreation from '@/components/cbt/ai/DocumentBasedAiTestCreation';
 
-// Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
+
 const AiCreateTest = () => {
   const navigate = useNavigate();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [subject, setSubject] = useState('');
-  const [customSubject, setCustomSubject] = useState('');
-  const [topic, setTopic] = useState('');
-  const [difficulty, setDifficulty] = useState<TestDifficulty>('intermediate');
-  const [questionCount, setQuestionCount] = useState(10);
-  const [timeLimit, setTimeLimit] = useState(30);
-  const [instructions, setInstructions] = useState('');
-  const [allowRetakes, setAllowRetakes] = useState(true);
-  const [resultsVisibility, setResultsVisibility] = useState('test_takers');
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [autoMode, setAutoMode] = useState(false);
-  const subjects = ["Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "History", "Geography", "Literature", "custom"];
-  const acceptedFileTypes = '.pdf,.docx,.ppt,.pptx';
-  const handleSubjectChange = (value: string) => {
-    setSubject(value);
-    if (value !== 'custom') {
-      setCustomSubject('');
-    }
-  };
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-    const validFiles = Array.from(files).filter(file => {
-      const extension = file.name.toLowerCase().split('.').pop();
-      return ['pdf', 'docx', 'ppt', 'pptx'].includes(extension || '');
-    });
-    if (validFiles.length !== files.length) {
-      toast.error('Only PDF, DOCX, PPT, and PPTX files are supported');
-    }
-    if (validFiles.length > 0) {
-      setUploadedFiles(prev => [...prev, ...validFiles]);
-      setAutoMode(true); // Enable auto mode when files are uploaded
-      toast.success(`${validFiles.length} file(s) uploaded successfully`);
-    }
-  };
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => {
-      const newFiles = prev.filter((_, i) => i !== index);
-      if (newFiles.length === 0) {
-        setAutoMode(false); // Disable auto mode if no files
-      }
-      return newFiles;
-    });
-  };
+
   const uploadFilesToStorage = async (files: File[]): Promise<string[]> => {
     const uploadPromises = files.map(async file => {
       const fileName = `${user?.id}/${Date.now()}_${file.name}`;
-      const {
-        data,
-        error
-      } = await supabase.storage.from('chat-files').upload(fileName, file);
+      const { data, error } = await supabase.storage
+        .from('chat-files')
+        .upload(fileName, file);
+      
       if (error) throw error;
       return fileName;
     });
+
     return Promise.all(uploadPromises);
   };
-  const handleGenerateTest = async () => {
+
+  const handleManualTestGeneration = async (params: {
+    subject: string;
+    topic?: string;
+    difficulty: TestDifficulty;
+    questionCount: number;
+    timeLimit: number;
+    instructions: string;
+    allowRetakes: boolean;
+    resultsVisibility: string;
+  }) => {
     if (!user) {
       toast.error('Please log in to create tests');
       return;
     }
 
-    // Validation logic
-    if (autoMode && uploadedFiles.length === 0) {
-      toast.error('Please upload at least one document for auto-generation');
-      return;
-    }
-    if (!autoMode) {
-      const finalSubject = subject === 'custom' ? customSubject : subject;
-      if (!finalSubject) {
-        toast.error('Please select a subject or upload documents for auto-generation');
-        return;
-      }
-    }
     setLoading(true);
     try {
-      let fileUrls: string[] = [];
+      const requestBody = {
+        subject: params.subject,
+        topic: params.topic,
+        difficulty: params.difficulty,
+        count: params.questionCount
+      };
 
-      // Upload files to storage if any
-      if (uploadedFiles.length > 0) {
-        setUploading(true);
-        fileUrls = await uploadFilesToStorage(uploadedFiles);
-        setUploading(false);
-      }
+      console.log('Generating AI test in manual mode:', requestBody);
 
-      // Prepare request based on mode
-      let requestBody;
-      if (autoMode && fileUrls.length > 0) {
-        // Auto mode: Let AI determine subject and topic from documents
-        requestBody = {
-          autoMode: true,
-          difficulty,
-          count: questionCount,
-          fileUrls,
-          extractSubjectAndTopic: true
-        };
-        console.log('Generating AI test in auto mode:', requestBody);
-      } else {
-        // Manual mode: Use user-specified subject and topic
-        const finalSubject = subject === 'custom' ? customSubject : subject;
-        requestBody = {
-          subject: finalSubject,
-          topic: topic || undefined,
-          difficulty,
-          count: questionCount,
-          fileUrls
-        };
-        console.log('Generating AI test in manual mode:', requestBody);
-      }
-
-      // Call the generate-ai-questions function
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('generate-ai-questions', {
+      const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
         body: requestBody
       });
+
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
       }
+
       if (!data?.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
         console.error('Invalid response data:', data);
         throw new Error('No questions were generated. Please try again with different content.');
       }
 
-      // Create test title based on mode
-      let testTitle;
-      let testDescription;
-      if (autoMode && data.extractedSubject) {
-        testTitle = `${data.extractedSubject}${data.extractedTopic ? ' - ' + data.extractedTopic : ''} Test`;
-        testDescription = `AI-generated test from uploaded documents: ${uploadedFiles.map(f => f.name).join(', ')}`;
-      } else if (uploadedFiles.length > 0) {
-        testTitle = `Test from ${uploadedFiles.map(f => f.name).join(', ')}`;
-        testDescription = `AI-generated test from uploaded documents`;
-      } else {
-        const finalSubject = subject === 'custom' ? customSubject : subject;
-        testTitle = `${finalSubject} ${topic ? '- ' + topic : ''} Test`;
-        testDescription = `AI-generated test on ${finalSubject}${topic ? ' about ' + topic : ''}`;
-      }
+      const testTitle = `${params.subject} ${params.topic ? '- ' + params.topic : ''} Test`;
+      const testDescription = `AI-generated test on ${params.subject}${params.topic ? ' about ' + params.topic : ''}`;
 
-      // Create a new test
-      const {
-        data: testData,
-        error: testError
-      } = await supabase.from('user_tests').insert({
-        title: testTitle,
-        description: testDescription,
-        subject: data.extractedSubject || subject === 'custom' ? customSubject : subject || 'General',
-        difficulty: difficulty as TestDifficulty,
-        question_count: data.questions.length,
-        time_limit: timeLimit,
-        results_visibility: resultsVisibility,
-        allow_retakes: allowRetakes,
-        creator_id: user.id
-      }).select().single();
+      const { data: testData, error: testError } = await supabase
+        .from('user_tests')
+        .insert({
+          title: testTitle,
+          description: testDescription,
+          subject: params.subject,
+          difficulty: params.difficulty as TestDifficulty,
+          question_count: data.questions.length,
+          time_limit: params.timeLimit,
+          results_visibility: params.resultsVisibility,
+          allow_retakes: params.allowRetakes,
+          creator_id: user.id
+        })
+        .select()
+        .single();
+
       if (testError) {
         console.error('Test creation error:', testError);
         throw testError;
       }
 
-      // Add questions to the test
       const questionsToInsert = data.questions.map((q: any) => ({
         test_id: testData.id,
         question_text: q.question,
         options: q.options,
         answer: q.answer,
         explanation: q.explanation,
-        subject: data.extractedSubject || subject === 'custom' ? customSubject : subject || 'General'
+        subject: params.subject
       }));
-      const {
-        error: questionError
-      } = await supabase.from('user_test_questions').insert(questionsToInsert);
+
+      const { error: questionError } = await supabase
+        .from('user_test_questions')
+        .insert(questionsToInsert);
+
       if (questionError) {
         console.error('Question insertion error:', questionError);
         throw questionError;
       }
 
-      // Clean up uploaded files from state
-      setUploadedFiles([]);
-      setAutoMode(false);
+      toast.success(`Test created successfully with ${data.questions.length} questions!`);
+      navigate(`/cbt/manage/${testData.id}`);
+    } catch (error) {
+      console.error('Error creating test:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create test. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDocumentBasedTestGeneration = async (params: {
+    difficulty: TestDifficulty;
+    questionCount: number;
+    timeLimit: number;
+    instructions: string;
+    allowRetakes: boolean;
+    resultsVisibility: string;
+    uploadedFiles: File[];
+  }) => {
+    if (!user) {
+      toast.error('Please log in to create tests');
+      return;
+    }
+
+    if (params.uploadedFiles.length === 0) {
+      toast.error('Please upload at least one document for auto-generation');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let fileUrls: string[] = [];
+
+      if (params.uploadedFiles.length > 0) {
+        setUploading(true);
+        fileUrls = await uploadFilesToStorage(params.uploadedFiles);
+        setUploading(false);
+      }
+
+      const requestBody = {
+        autoMode: true,
+        difficulty: params.difficulty,
+        count: params.questionCount,
+        fileUrls,
+        extractSubjectAndTopic: true
+      };
+
+      console.log('Generating AI test in auto mode:', requestBody);
+
+      const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
+        body: requestBody
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data?.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+        console.error('Invalid response data:', data);
+        throw new Error('No questions were generated. Please try again with different content.');
+      }
+
+      const testTitle = data.extractedSubject 
+        ? `${data.extractedSubject}${data.extractedTopic ? ' - ' + data.extractedTopic : ''} Test`
+        : `Test from ${params.uploadedFiles.map(f => f.name).join(', ')}`;
+      
+      const testDescription = `AI-generated test from uploaded documents: ${params.uploadedFiles.map(f => f.name).join(', ')}`;
+
+      const { data: testData, error: testError } = await supabase
+        .from('user_tests')
+        .insert({
+          title: testTitle,
+          description: testDescription,
+          subject: data.extractedSubject || 'General',
+          difficulty: params.difficulty as TestDifficulty,
+          question_count: data.questions.length,
+          time_limit: params.timeLimit,
+          results_visibility: params.resultsVisibility,
+          allow_retakes: params.allowRetakes,
+          creator_id: user.id
+        })
+        .select()
+        .single();
+
+      if (testError) {
+        console.error('Test creation error:', testError);
+        throw testError;
+      }
+
+      const questionsToInsert = data.questions.map((q: any) => ({
+        test_id: testData.id,
+        question_text: q.question,
+        options: q.options,
+        answer: q.answer,
+        explanation: q.explanation,
+        subject: data.extractedSubject || 'General'
+      }));
+
+      const { error: questionError } = await supabase
+        .from('user_test_questions')
+        .insert(questionsToInsert);
+
+      if (questionError) {
+        console.error('Question insertion error:', questionError);
+        throw questionError;
+      }
+
       toast.success(`Test created successfully with ${data.questions.length} questions!`);
       navigate(`/cbt/manage/${testData.id}`);
     } catch (error) {
@@ -214,158 +231,39 @@ const AiCreateTest = () => {
       setUploading(false);
     }
   };
-  return <div className="container mx-auto py-8 max-w-3xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center">
-            <Wand2 className="mr-2" /> Create Test with AI
-          </CardTitle>
-          <CardDescription>
-            Generate a complete test using AI. Upload documents for automatic subject detection or configure manually.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* File Upload Section */}
-          <div className="space-y-3">
-            <Label>Upload Documents (Optional)</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-              <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="mt-4">
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <span className="mt-2 block text-sm font-medium text-gray-900">
-                      Drop files here or click to upload
-                    </span>
-                    <span className="mt-1 block text-xs text-gray-500">
-                      PDF, DOCX, PPT, PPTX up to 10MB each
-                    </span>
-                  </label>
-                  <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept={acceptedFileTypes} onChange={handleFileUpload} disabled={uploading} />
-                </div>
-              </div>
-            </div>
-            
-            {/* Display uploaded files */}
-            {uploadedFiles.length > 0 && <div className="space-y-2">
-                <Label>Uploaded Files:</Label>
-                {uploadedFiles.map((file, index) => <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-cyan-800">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-medium">{file.name}</span>
-                      <span className="text-xs text-zinc-950">
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => removeFile(index)} disabled={uploading}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>)}
-                
-                {/* Auto mode indicator */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start space-x-2">
-                  <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-medium text-blue-800">Auto-generation enabled</p>
-                    <p className="text-blue-600">AI will automatically extract subject and topics from your uploaded documents.</p>
-                  </div>
-                </div>
-              </div>}
-          </div>
 
-          {/* Manual Configuration - Only show when no files uploaded */}
-          {!autoMode && <>
-              <div className="space-y-3">
-                <Label>Subject</Label>
-                <Select value={subject} onValueChange={handleSubjectChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map(subj => <SelectItem key={subj} value={subj}>
-                        {subj === 'custom' ? 'Custom subject...' : subj}
-                      </SelectItem>)}
-                  </SelectContent>
-                </Select>
-                
-                {subject === 'custom' && <div className="pt-2">
-                    <Label>Custom Subject</Label>
-                    <Input value={customSubject} onChange={e => setCustomSubject(e.target.value)} placeholder="Enter custom subject" className="mt-1" />
-                  </div>}
-              </div>
-              
-              <div>
-                <Label>Topic (Optional)</Label>
-                <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="E.g., Quadratic Equations, Cell Biology" />
-              </div>
-            </>}
-          
-          <div>
-            <Label>Difficulty</Label>
-            <Select value={difficulty} onValueChange={(value: TestDifficulty) => setDifficulty(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="beginner">Beginner</SelectItem>
-                <SelectItem value="intermediate">Intermediate</SelectItem>
-                <SelectItem value="advanced">Advanced</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <div className="flex justify-between">
-              <Label>Number of Questions: {questionCount}</Label>
-            </div>
-            <Slider value={[questionCount]} min={5} max={70} step={1} onValueChange={value => setQuestionCount(value[0])} className="mt-2" />
-          </div>
-          
-          <div>
-            <div className="flex justify-between">
-              <Label>Time Limit: {timeLimit} minutes</Label>
-            </div>
-            <Slider value={[timeLimit]} min={10} max={180} step={5} onValueChange={value => setTimeLimit(value[0])} className="mt-2" />
-          </div>
+  return (
+    <div className="container mx-auto py-8 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Create Test with AI</h1>
+        <p className="text-muted-foreground">
+          Choose between manual test creation or document-based automatic generation.
+        </p>
+      </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Allow Retakes</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow participants to take the test multiple times
-                </p>
-              </div>
-              <Switch checked={allowRetakes} onCheckedChange={setAllowRetakes} />
-            </div>
-
-            <div>
-              <Label>Results Visibility</Label>
-              <Select value={resultsVisibility} onValueChange={setResultsVisibility}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="creator_only">Creators Only</SelectItem>
-                  <SelectItem value="test_takers">Users can see their results</SelectItem>
-                  <SelectItem value="public">Public leaderboard</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Control who can see test results
-              </p>
-            </div>
-          </div>
-          
-          <div>
-            <Label>Test Instructions (Optional)</Label>
-            <Textarea value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="Enter any specific instructions for test takers" rows={3} />
-          </div>
-          
-          <Button onClick={handleGenerateTest} disabled={loading || uploading || !autoMode && !subject && !customSubject && uploadedFiles.length === 0} className="w-full">
-            {loading ? 'Generating Test...' : uploading ? 'Uploading Files...' : 'Generate Test'}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>;
+      <Tabs defaultValue="manual" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="manual">Manual Creation</TabsTrigger>
+          <TabsTrigger value="document">Document-Based</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="manual">
+          <ManualAiTestCreation 
+            onGenerateTest={handleManualTestGeneration}
+            loading={loading}
+          />
+        </TabsContent>
+        
+        <TabsContent value="document">
+          <DocumentBasedAiTestCreation 
+            onGenerateTest={handleDocumentBasedTestGeneration}
+            loading={loading}
+            uploading={uploading}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 };
+
 export default AiCreateTest;
