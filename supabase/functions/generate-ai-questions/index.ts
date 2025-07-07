@@ -82,8 +82,8 @@ serve(async (req) => {
       advanced: 'complex problems requiring deep understanding and critical thinking'
     };
 
-    // Handle large requests by breaking them into batches
-    const maxQuestionsPerBatch = 25;
+    // For large requests, break into smaller batches
+    const maxQuestionsPerBatch = count > 50 ? 15 : count > 30 ? 20 : 25;
     const totalBatches = Math.ceil(count / maxQuestionsPerBatch);
     let allQuestions: any[] = [];
     let extractedSubject = '';
@@ -174,6 +174,8 @@ The answer should be the index (0-3) of the correct option in the options array.
 REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.`;
 
       try {
+        console.log(`Making OpenAI request for batch ${batchIndex + 1}`);
+        
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -181,7 +183,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'gpt-4o-mini', // Using more reliable model
             messages: [
               { 
                 role: 'system', 
@@ -192,81 +194,160 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
               { role: 'user', content: prompt }
             ],
             temperature: 0.7,
-            max_tokens: 4000,
+            max_tokens: 3500, // Reduced for more reliable responses
           }),
         });
+
+        console.log(`OpenAI response status for batch ${batchIndex + 1}:`, response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`OpenAI API error for batch ${batchIndex + 1}:`, response.status, errorText);
-          throw new Error(`OpenAI API error for batch ${batchIndex + 1}: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0]) {
-          console.error(`Invalid response structure from OpenAI for batch ${batchIndex + 1}:`, data);
-          throw new Error(`Invalid response from OpenAI for batch ${batchIndex + 1}`);
-        }
-
-        const generatedContent = data.choices[0].message.content;
-        console.log(`Generated content for batch ${batchIndex + 1}`);
-
-        // Parse the JSON response
-        let questionsData;
-        try {
-          questionsData = JSON.parse(generatedContent);
-        } catch (parseError) {
-          console.error(`Failed to parse OpenAI response as JSON for batch ${batchIndex + 1}:`, parseError);
-          console.error('Raw content:', generatedContent);
-          throw new Error(`Failed to parse AI response as JSON for batch ${batchIndex + 1}`);
-        }
-
-        if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
-          console.error(`Invalid questions format for batch ${batchIndex + 1}:`, questionsData);
-          throw new Error(`Invalid questions format from AI for batch ${batchIndex + 1}`);
-        }
-
-        // Store extracted subject/topic from first batch
-        if (isFirstBatch && autoMode && questionsData.extractedSubject) {
-          extractedSubject = questionsData.extractedSubject;
-          extractedTopic = questionsData.extractedTopic;
-        }
-
-        // Validate and clean the questions
-        const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
-          if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
-            throw new Error(`Invalid question format at index ${index} in batch ${batchIndex + 1}`);
-          }
           
-          return {
-            question: q.question,
-            options: q.options,
-            answer: typeof q.answer === 'number' ? q.answer : 0,
-            explanation: q.explanation || 'No explanation provided'
-          };
-        });
+          // If it's a rate limit error, wait and retry once
+          if (response.status === 429) {
+            console.log(`Rate limit hit for batch ${batchIndex + 1}, waiting 5 seconds and retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openAIApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                  { 
+                    role: 'system', 
+                    content: 'You are an expert educator and test creator. Generate high-quality educational questions with detailed explanations. Always respond with valid JSON only. Generate exactly the number of questions requested.' 
+                  },
+                  { role: 'user', content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 3500,
+              }),
+            });
+            
+            if (!retryResponse.ok) {
+              throw new Error(`OpenAI API error after retry for batch ${batchIndex + 1}: ${retryResponse.status}`);
+            }
+            
+            const data = await retryResponse.json();
+            const generatedContent = data.choices[0].message.content;
+            console.log(`Successfully generated content for batch ${batchIndex + 1} after retry`);
+            
+            // Parse and validate the response
+            let questionsData;
+            try {
+              questionsData = JSON.parse(generatedContent);
+            } catch (parseError) {
+              console.error(`Failed to parse OpenAI response as JSON for batch ${batchIndex + 1}:`, parseError);
+              throw new Error(`Failed to parse AI response as JSON for batch ${batchIndex + 1}`);
+            }
 
-        console.log(`Successfully generated ${validatedQuestions.length} questions for batch ${batchIndex + 1}`);
-        allQuestions.push(...validatedQuestions);
+            if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+              throw new Error(`Invalid questions format from AI for batch ${batchIndex + 1}`);
+            }
 
-        // Add a small delay between batches to avoid rate limiting
+            // Store extracted subject/topic from first batch
+            if (isFirstBatch && autoMode && questionsData.extractedSubject) {
+              extractedSubject = questionsData.extractedSubject;
+              extractedTopic = questionsData.extractedTopic;
+            }
+
+            // Validate and clean the questions
+            const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
+              if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+                throw new Error(`Invalid question format at index ${index} in batch ${batchIndex + 1}`);
+              }
+              
+              return {
+                question: q.question,
+                options: q.options,
+                answer: typeof q.answer === 'number' ? q.answer : 0,
+                explanation: q.explanation || 'No explanation provided'
+              };
+            });
+
+            console.log(`Successfully generated ${validatedQuestions.length} questions for batch ${batchIndex + 1} after retry`);
+            allQuestions.push(...validatedQuestions);
+            
+          } else {
+            throw new Error(`OpenAI API error for batch ${batchIndex + 1}: ${response.status} - ${errorText}`);
+          }
+        } else {
+          const data = await response.json();
+          
+          if (!data.choices || !data.choices[0]) {
+            console.error(`Invalid response structure from OpenAI for batch ${batchIndex + 1}:`, data);
+            throw new Error(`Invalid response from OpenAI for batch ${batchIndex + 1}`);
+          }
+
+          const generatedContent = data.choices[0].message.content;
+          console.log(`Generated content for batch ${batchIndex + 1}`);
+
+          // Parse the JSON response
+          let questionsData;
+          try {
+            questionsData = JSON.parse(generatedContent);
+          } catch (parseError) {
+            console.error(`Failed to parse OpenAI response as JSON for batch ${batchIndex + 1}:`, parseError);
+            console.error('Raw content:', generatedContent);
+            throw new Error(`Failed to parse AI response as JSON for batch ${batchIndex + 1}`);
+          }
+
+          if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+            console.error(`Invalid questions format for batch ${batchIndex + 1}:`, questionsData);
+            throw new Error(`Invalid questions format from AI for batch ${batchIndex + 1}`);
+          }
+
+          // Store extracted subject/topic from first batch
+          if (isFirstBatch && autoMode && questionsData.extractedSubject) {
+            extractedSubject = questionsData.extractedSubject;
+            extractedTopic = questionsData.extractedTopic;
+          }
+
+          // Validate and clean the questions
+          const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
+            if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+              throw new Error(`Invalid question format at index ${index} in batch ${batchIndex + 1}`);
+            }
+            
+            return {
+              question: q.question,
+              options: q.options,
+              answer: typeof q.answer === 'number' ? q.answer : 0,
+              explanation: q.explanation || 'No explanation provided'
+            };
+          });
+
+          console.log(`Successfully generated ${validatedQuestions.length} questions for batch ${batchIndex + 1}`);
+          allQuestions.push(...validatedQuestions);
+        }
+
+        // Add a delay between batches to avoid rate limiting
         if (batchIndex < totalBatches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
       } catch (batchError) {
         console.error(`Error processing batch ${batchIndex + 1}:`, batchError);
-        // Continue with other batches even if one fails
-        continue;
+        // For critical errors, stop processing and return what we have
+        if (allQuestions.length === 0) {
+          throw batchError;
+        }
+        // If we have some questions, continue but log the error
+        console.log(`Continuing with ${allQuestions.length} questions despite batch ${batchIndex + 1} failure`);
+        break;
       }
     }
 
     if (allQuestions.length === 0) {
-      throw new Error('Failed to generate any questions. Please try again with a smaller number of questions.');
+      throw new Error('Failed to generate any questions. Please try again with a smaller number of questions or check your OpenAI API key.');
     }
 
-    console.log(`Successfully generated ${allQuestions.length} total questions across ${totalBatches} batches`);
+    console.log(`Successfully generated ${allQuestions.length} total questions across batches`);
 
     const responseData: any = {
       success: true,
@@ -287,9 +368,11 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
 
   } catch (error) {
     console.error('Error in generate-ai-questions function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message || 'An unexpected error occurred',
+      error: errorMessage,
       questions: []
     }), {
       status: 500,
