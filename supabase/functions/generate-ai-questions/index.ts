@@ -16,6 +16,8 @@ serve(async (req) => {
   try {
     const { subject, difficulty, count, topic, fileUrls, autoMode, extractSubjectAndTopic } = await req.json();
     
+    console.log(`Generating ${count} questions for ${subject}${topic ? ' - ' + topic : ''} at ${difficulty} level`);
+    
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       console.error('OpenAI API key not found in environment variables');
@@ -42,7 +44,6 @@ serve(async (req) => {
       
       for (const fileUrl of fileUrls) {
         try {
-          // Download file from storage
           const { data: fileData, error: downloadError } = await supabase.storage
             .from('chat-files')
             .download(fileUrl);
@@ -52,7 +53,6 @@ serve(async (req) => {
             continue;
           }
 
-          // Extract text content based on file type
           const fileName = fileUrl.split('/').pop()?.toLowerCase() || '';
           const fileExtension = fileName.split('.').pop();
           
@@ -82,11 +82,25 @@ serve(async (req) => {
       advanced: 'complex problems requiring deep understanding and critical thinking'
     };
 
-    let basePrompt;
+    // Handle large requests by breaking them into batches
+    const maxQuestionsPerBatch = 25;
+    const totalBatches = Math.ceil(count / maxQuestionsPerBatch);
+    let allQuestions: any[] = [];
+    let extractedSubject = '';
+    let extractedTopic = '';
 
-    if (autoMode && fileContent.trim()) {
-      // Auto mode: extract subject and topic from document content
-      basePrompt = `Analyze the following document content and automatically determine the most appropriate subject and topic, then generate ${count} multiple-choice questions at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
+    console.log(`Breaking request into ${totalBatches} batches of max ${maxQuestionsPerBatch} questions each`);
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const isFirstBatch = batchIndex === 0;
+      const questionsInThisBatch = Math.min(maxQuestionsPerBatch, count - (batchIndex * maxQuestionsPerBatch));
+      
+      console.log(`Processing batch ${batchIndex + 1}/${totalBatches} with ${questionsInThisBatch} questions`);
+
+      let basePrompt;
+
+      if (autoMode && fileContent.trim()) {
+        basePrompt = `Analyze the following document content and automatically determine the most appropriate subject and topic, then generate ${questionsInThisBatch} multiple-choice questions at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
 
 ${fileContent}
 
@@ -94,21 +108,21 @@ Please:
 1. First identify the main subject area from the content
 2. Identify the specific topic or theme
 3. Generate questions that test understanding of the key concepts, facts, and ideas presented`;
-    } else if (fileContent.trim()) {
-      // Manual mode with files: use specified subject but base on document content
-      const topicInstruction = topic ? ` specifically about "${topic}"` : '';
-      basePrompt = `Based on the following document content, generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
+      } else if (fileContent.trim()) {
+        const topicInstruction = topic ? ` specifically about "${topic}"` : '';
+        basePrompt = `Based on the following document content, generate ${questionsInThisBatch} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}):
 
 ${fileContent}
 
 Generate questions that test understanding of the key concepts, facts, and ideas presented in the documents.`;
-    } else {
-      // Manual mode without files: traditional subject-based generation
-      const topicInstruction = topic ? ` specifically about "${topic}"` : '';
-      basePrompt = `Generate ${count} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).`;
-    }
+      } else {
+        const topicInstruction = topic ? ` specifically about "${topic}"` : '';
+        basePrompt = `Generate ${questionsInThisBatch} multiple-choice questions for ${subject}${topicInstruction} at ${difficulty} level (${difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || 'moderate complexity'}).`;
+      }
 
-    const prompt = `${basePrompt}
+      const prompt = `${basePrompt}
+
+IMPORTANT: Generate EXACTLY ${questionsInThisBatch} questions. Do not generate more or fewer.
 
 Requirements:
 - Each question should have exactly 4 options (A, B, C, D)
@@ -130,7 +144,7 @@ EXPLANATION REQUIREMENTS:
 - Use clear, educational language that helps students learn
 - Provide context and real-world applications when applicable
 
-${autoMode && extractSubjectAndTopic ? `
+${autoMode && extractSubjectAndTopic && isFirstBatch ? `
 Return the response as a valid JSON object with this exact structure:
 {
   "extractedSubject": "The main subject area identified from content",
@@ -156,90 +170,115 @@ Return the response as a valid JSON object with this exact structure:
   ]
 }`}
 
-The answer should be the index (0-3) of the correct option in the options array.`;
+The answer should be the index (0-3) of the correct option in the options array.
+REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.`;
 
-    console.log('Generating questions with enhanced explanations');
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: autoMode && extractSubjectAndTopic 
-              ? 'You are an expert educator and content analyzer. Create comprehensive, step-by-step explanations that help students learn. For mathematical problems, show every calculation step. For conceptual questions, explain the underlying principles thoroughly. Always respond with valid JSON only.'
-              : 'You are an expert educator and test creator. Generate high-quality educational questions with detailed, step-by-step explanations that help students understand not just the correct answer, but the reasoning behind it. Always respond with valid JSON only.' 
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
           },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: count > 50 ? 8000 : 6000,
-      }),
-    });
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [
+              { 
+                role: 'system', 
+                content: autoMode && extractSubjectAndTopic && isFirstBatch
+                  ? 'You are an expert educator and content analyzer. Create comprehensive, step-by-step explanations that help students learn. For mathematical problems, show every calculation step. For conceptual questions, explain the underlying principles thoroughly. Always respond with valid JSON only. Generate exactly the number of questions requested.'
+                  : 'You are an expert educator and test creator. Generate high-quality educational questions with detailed, step-by-step explanations that help students understand not just the correct answer, but the reasoning behind it. Always respond with valid JSON only. Generate exactly the number of questions requested.' 
+              },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 4000,
+          }),
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-    }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`OpenAI API error for batch ${batchIndex + 1}:`, response.status, errorText);
+          throw new Error(`OpenAI API error for batch ${batchIndex + 1}: ${response.status} - ${errorText}`);
+        }
 
-    const data = await response.json();
-    
-    if (!data.choices || !data.choices[0]) {
-      console.error('Invalid response structure from OpenAI:', data);
-      throw new Error('Invalid response from OpenAI');
-    }
+        const data = await response.json();
+        
+        if (!data.choices || !data.choices[0]) {
+          console.error(`Invalid response structure from OpenAI for batch ${batchIndex + 1}:`, data);
+          throw new Error(`Invalid response from OpenAI for batch ${batchIndex + 1}`);
+        }
 
-    const generatedContent = data.choices[0].message.content;
-    console.log('Generated content with detailed explanations');
+        const generatedContent = data.choices[0].message.content;
+        console.log(`Generated content for batch ${batchIndex + 1}`);
 
-    // Parse the JSON response
-    let questionsData;
-    try {
-      questionsData = JSON.parse(generatedContent);
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response as JSON:', parseError);
-      console.error('Raw content:', generatedContent);
-      throw new Error('Failed to parse AI response as JSON');
-    }
+        // Parse the JSON response
+        let questionsData;
+        try {
+          questionsData = JSON.parse(generatedContent);
+        } catch (parseError) {
+          console.error(`Failed to parse OpenAI response as JSON for batch ${batchIndex + 1}:`, parseError);
+          console.error('Raw content:', generatedContent);
+          throw new Error(`Failed to parse AI response as JSON for batch ${batchIndex + 1}`);
+        }
 
-    if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
-      console.error('Invalid questions format:', questionsData);
-      throw new Error('Invalid questions format from AI');
-    }
+        if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+          console.error(`Invalid questions format for batch ${batchIndex + 1}:`, questionsData);
+          throw new Error(`Invalid questions format from AI for batch ${batchIndex + 1}`);
+        }
 
-    // Validate and clean the questions
-    const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
-      if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
-        throw new Error(`Invalid question format at index ${index}`);
+        // Store extracted subject/topic from first batch
+        if (isFirstBatch && autoMode && questionsData.extractedSubject) {
+          extractedSubject = questionsData.extractedSubject;
+          extractedTopic = questionsData.extractedTopic;
+        }
+
+        // Validate and clean the questions
+        const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
+          if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+            throw new Error(`Invalid question format at index ${index} in batch ${batchIndex + 1}`);
+          }
+          
+          return {
+            question: q.question,
+            options: q.options,
+            answer: typeof q.answer === 'number' ? q.answer : 0,
+            explanation: q.explanation || 'No explanation provided'
+          };
+        });
+
+        console.log(`Successfully generated ${validatedQuestions.length} questions for batch ${batchIndex + 1}`);
+        allQuestions.push(...validatedQuestions);
+
+        // Add a small delay between batches to avoid rate limiting
+        if (batchIndex < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+      } catch (batchError) {
+        console.error(`Error processing batch ${batchIndex + 1}:`, batchError);
+        // Continue with other batches even if one fails
+        continue;
       }
-      
-      return {
-        question: q.question,
-        options: q.options,
-        answer: typeof q.answer === 'number' ? q.answer : 0,
-        explanation: q.explanation || 'No explanation provided'
-      };
-    });
+    }
 
-    console.log(`Successfully generated ${validatedQuestions.length} questions with detailed explanations`);
+    if (allQuestions.length === 0) {
+      throw new Error('Failed to generate any questions. Please try again with a smaller number of questions.');
+    }
+
+    console.log(`Successfully generated ${allQuestions.length} total questions across ${totalBatches} batches`);
 
     const responseData: any = {
       success: true,
-      questions: validatedQuestions
+      questions: allQuestions
     };
 
     // Include extracted subject and topic if in auto mode
-    if (autoMode && questionsData.extractedSubject) {
-      responseData.extractedSubject = questionsData.extractedSubject;
-      responseData.extractedTopic = questionsData.extractedTopic;
-      console.log('Extracted subject:', questionsData.extractedSubject);
-      console.log('Extracted topic:', questionsData.extractedTopic);
+    if (autoMode && extractedSubject) {
+      responseData.extractedSubject = extractedSubject;
+      responseData.extractedTopic = extractedTopic;
+      console.log('Extracted subject:', extractedSubject);
+      console.log('Extracted topic:', extractedTopic);
     }
 
     return new Response(JSON.stringify(responseData), {
