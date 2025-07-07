@@ -82,8 +82,8 @@ serve(async (req) => {
       advanced: 'complex problems requiring deep understanding and critical thinking'
     };
 
-    // For large requests, break into smaller batches
-    const maxQuestionsPerBatch = count > 50 ? 15 : count > 30 ? 20 : 25;
+    // For large requests (70 questions), use fewer but larger batches
+    const maxQuestionsPerBatch = count >= 70 ? 35 : count > 50 ? 25 : count > 30 ? 20 : count;
     const totalBatches = Math.ceil(count / maxQuestionsPerBatch);
     let allQuestions: any[] = [];
     let extractedSubject = '';
@@ -174,7 +174,7 @@ The answer should be the index (0-3) of the correct option in the options array.
 REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.`;
 
       try {
-        console.log(`Making OpenAI request for batch ${batchIndex + 1}`);
+        console.log(`Making OpenAI request for batch ${batchIndex + 1} using GPT-4.1`);
         
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -183,7 +183,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini', // Using more reliable model
+            model: 'gpt-4.1-2025-04-14', // Using GPT-4.1 model
             messages: [
               { 
                 role: 'system', 
@@ -194,7 +194,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
               { role: 'user', content: prompt }
             ],
             temperature: 0.7,
-            max_tokens: 3500, // Reduced for more reliable responses
+            max_tokens: 8000, // Increased for GPT-4.1 to handle larger batches
           }),
         });
 
@@ -206,8 +206,8 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
           
           // If it's a rate limit error, wait and retry once
           if (response.status === 429) {
-            console.log(`Rate limit hit for batch ${batchIndex + 1}, waiting 5 seconds and retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            console.log(`Rate limit hit for batch ${batchIndex + 1}, waiting 10 seconds and retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 10000));
             
             const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
@@ -216,7 +216,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'gpt-4o-mini',
+                model: 'gpt-4.1-2025-04-14',
                 messages: [
                   { 
                     role: 'system', 
@@ -225,7 +225,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
                   { role: 'user', content: prompt }
                 ],
                 temperature: 0.7,
-                max_tokens: 3500,
+                max_tokens: 8000,
               }),
             });
             
@@ -328,7 +328,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
 
         // Add a delay between batches to avoid rate limiting
         if (batchIndex < totalBatches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
 
       } catch (batchError) {
