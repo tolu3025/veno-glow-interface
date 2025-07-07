@@ -83,8 +83,6 @@ serve(async (req) => {
     };
 
     let basePrompt;
-    let extractedSubject = '';
-    let extractedTopic = '';
 
     if (autoMode && fileContent.trim()) {
       // Auto mode: extract subject and topic from document content
@@ -115,10 +113,22 @@ Generate questions that test understanding of the key concepts, facts, and ideas
 Requirements:
 - Each question should have exactly 4 options (A, B, C, D)
 - Only one correct answer per question
-- Include a brief explanation for the correct answer
+- Include DETAILED, comprehensive explanations for the correct answer
+- For mathematical questions: provide step-by-step calculations with clear reasoning at each step
+- For conceptual questions: explain the underlying principles, definitions, and reasoning
+- For problem-solving questions: break down the solution process into clear, logical steps
 - Questions should be educational and test real understanding
 - Vary the question types and difficulty appropriately
 - Make questions relevant and meaningful
+
+EXPLANATION REQUIREMENTS:
+- Start with a clear statement of why the answer is correct
+- For calculations: Show every step of the mathematical process
+- For word problems: Break down the problem-solving approach
+- Include relevant formulas, definitions, or principles
+- Explain why other options are incorrect when helpful
+- Use clear, educational language that helps students learn
+- Provide context and real-world applications when applicable
 
 ${autoMode && extractSubjectAndTopic ? `
 Return the response as a valid JSON object with this exact structure:
@@ -130,7 +140,7 @@ Return the response as a valid JSON object with this exact structure:
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Brief explanation of why this answer is correct"
+      "explanation": "Comprehensive step-by-step explanation with detailed reasoning, calculations if applicable, and educational context"
     }
   ]
 }` : `
@@ -141,15 +151,14 @@ Return the response as a valid JSON object with this exact structure:
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Brief explanation of why this answer is correct"
+      "explanation": "Comprehensive step-by-step explanation with detailed reasoning, calculations if applicable, and educational context"
     }
   ]
 }`}
 
 The answer should be the index (0-3) of the correct option in the options array.`;
 
-    console.log('Generating questions with mode:', autoMode ? 'auto' : 'manual');
-    console.log('Content length:', fileContent.length);
+    console.log('Generating questions with enhanced explanations');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -163,13 +172,13 @@ The answer should be the index (0-3) of the correct option in the options array.
           { 
             role: 'system', 
             content: autoMode && extractSubjectAndTopic 
-              ? 'You are an expert educator and content analyzer. First analyze the provided content to identify the subject and topic, then generate high-quality, educational multiple-choice questions. Always respond with valid JSON only, no additional text.'
-              : 'You are an expert educator and test creator. Generate high-quality, educational multiple-choice questions based on the provided content or subject. Always respond with valid JSON only, no additional text.' 
+              ? 'You are an expert educator and content analyzer. Create comprehensive, step-by-step explanations that help students learn. For mathematical problems, show every calculation step. For conceptual questions, explain the underlying principles thoroughly. Always respond with valid JSON only.'
+              : 'You are an expert educator and test creator. Generate high-quality educational questions with detailed, step-by-step explanations that help students understand not just the correct answer, but the reasoning behind it. Always respond with valid JSON only.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: count > 50 ? 8000 : 4000,
+        max_tokens: count > 50 ? 8000 : 6000,
       }),
     });
 
@@ -187,7 +196,7 @@ The answer should be the index (0-3) of the correct option in the options array.
     }
 
     const generatedContent = data.choices[0].message.content;
-    console.log('Generated content length:', generatedContent.length);
+    console.log('Generated content with detailed explanations');
 
     // Parse the JSON response
     let questionsData;
@@ -218,7 +227,7 @@ The answer should be the index (0-3) of the correct option in the options array.
       };
     });
 
-    console.log(`Successfully generated ${validatedQuestions.length} questions`);
+    console.log(`Successfully generated ${validatedQuestions.length} questions with detailed explanations`);
 
     const responseData: any = {
       success: true,
