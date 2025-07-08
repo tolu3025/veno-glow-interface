@@ -31,12 +31,55 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       return katex.renderToString(expression, {
         displayMode: false,
         throwOnError: false,
-        strict: false
+        strict: false,
+        trust: true
       });
     } catch (error) {
       console.error('KaTeX render error:', error);
       return expression;
     }
+  };
+
+  const renderDisplayLatex = (expression: string) => {
+    try {
+      return katex.renderToString(expression, {
+        displayMode: true,
+        throwOnError: false,
+        strict: false,
+        trust: true
+      });
+    } catch (error) {
+      console.error('KaTeX display render error:', error);
+      return expression;
+    }
+  };
+
+  const processLatexContent = (text: string) => {
+    if (!text) return text;
+
+    // Process display math first ($$...$$, \[...\])
+    let processedText = text
+      .replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+        const rendered = renderDisplayLatex(math.trim());
+        return `<div class="math-display my-4 text-center">${rendered}</div>`;
+      })
+      .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+        const rendered = renderDisplayLatex(math.trim());
+        return `<div class="math-display my-4 text-center">${rendered}</div>`;
+      });
+
+    // Process inline math (\(...\), $...$)
+    processedText = processedText
+      .replace(/\\\((.*?)\\\)/g, (_, math) => {
+        const rendered = renderLatex(math.trim());
+        return `<span class="math-inline">${rendered}</span>`;
+      })
+      .replace(/\$([^$\n]+?)\$/g, (_, math) => {
+        const rendered = renderLatex(math.trim());
+        return `<span class="math-inline">${rendered}</span>`;
+      });
+
+    return processedText;
   };
 
   const detectAndFormatCalculations = (text: string) => {
@@ -45,75 +88,29 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       // Step indicators (Step 1:, 1., etc.)
       step: /^(Step\s+\d+[:.]?|^\d+\.)/i,
       
-      // Mathematical equations and expressions
+      // Check if text contains LaTeX patterns
+      hasLatex: /\\\(|\\\[|\$\$?|\\frac|\\sqrt|\\sum|\\int|\\alpha|\\beta|\\pi|\\theta|\\sin|\\cos|\\tan|\\log|\\ln/,
+      
+      // Mathematical equations and expressions (fallback for non-LaTeX)
       equation: /([a-zA-Z]?\s*=\s*[^=\n]+)/g,
-      
-      // Formulas with variables
-      formula: /([A-Za-z]+\s*=\s*[A-Za-z0-9\s+\-*/()√πeΠ∑∫^.]+)/g,
-      
-      // Calculations with numbers and operators
-      calculation: /([\d.]+\s*[+\-×*/÷]\s*[\d.]+(?:\s*[+\-×*/÷]\s*[\d.]+)*\s*=\s*[\d.]+)/g,
-      
-      // Scientific notation
-      scientific: /(\d+\.?\d*\s*[×*]\s*10\^?[\-+]?\d+)/g,
-      
-      // Fractions
-      fraction: /(\d+\/\d+)/g,
-      
-      // Square roots, powers, etc.
-      advanced: /(√\d+|[a-zA-Z0-9]+\^[\d+\-]|sin|cos|tan|log|ln)\s*\([^)]*\)/g
     };
 
     // Check if this is a step
     const isStep = patterns.step.test(text.trim());
     
     // Check for mathematical content
-    const hasEquation = patterns.equation.test(text);
-    const hasCalculation = patterns.calculation.test(text);
-    const hasFormula = patterns.formula.test(text);
-    const hasAdvancedMath = patterns.advanced.test(text);
+    const hasLatex = patterns.hasLatex.test(text);
+    const hasEquation = patterns.equation.test(text) && !hasLatex; // Only use fallback if no LaTeX
     
-    const isMathematical = hasEquation || hasCalculation || hasFormula || hasAdvancedMath;
+    const isMathematical = hasLatex || hasEquation;
 
     if (isStep) {
-      return { type: 'step', content: text, isMath: isMathematical };
+      return { type: 'step', content: text, isMath: isMathematical, hasLatex };
     } else if (isMathematical) {
-      return { type: 'calculation', content: text, isMath: true };
+      return { type: 'calculation', content: text, isMath: true, hasLatex };
     } else {
-      return { type: 'text', content: text, isMath: false };
+      return { type: 'text', content: text, isMath: false, hasLatex };
     }
-  };
-
-  const formatMathExpression = (text: string) => {
-    // Convert common mathematical symbols to LaTeX
-    let latexText = text
-      // Basic operators
-      .replace(/×/g, '\\times')
-      .replace(/÷/g, '\\div')
-      .replace(/±/g, '\\pm')
-      .replace(/≤/g, '\\leq')
-      .replace(/≥/g, '\\geq')
-      .replace(/≠/g, '\\neq')
-      .replace(/≈/g, '\\approx')
-      
-      // Greek letters
-      .replace(/π/g, '\\pi')
-      .replace(/Π/g, '\\Pi')
-      .replace(/∑/g, '\\sum')
-      .replace(/∫/g, '\\int')
-      
-      // Functions
-      .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
-      .replace(/√(\d+)/g, '\\sqrt{$1}')
-      
-      // Fractions (simple cases)
-      .replace(/(\d+)\/(\d+)/g, '\\frac{$1}{$2}')
-      
-      // Powers
-      .replace(/\^([\d\-+]+)/g, '^{$1}')
-      .replace(/\^([a-zA-Z])/g, '^{$1}');
-
-    return latexText;
   };
 
   const formatExplanation = (explanation: string) => {
@@ -126,29 +123,29 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       const formatted = detectAndFormatCalculations(paragraph);
       
       if (formatted.type === 'step') {
+        const processedContent = formatted.hasLatex ? 
+          processLatexContent(paragraph) : 
+          paragraph;
+          
         return (
           <div key={index} className="flex items-start gap-3 mb-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
               <ChevronRight className="h-3 w-3 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1">
-              <p className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
-                {formatted.isMath ? (
-                  <span dangerouslySetInnerHTML={{ 
-                    __html: paragraph.replace(/([A-Za-z]?\s*=\s*[^=\n]+)/g, (match) => 
-                      renderLatex(formatMathExpression(match))
-                    )
-                  }} />
-                ) : (
-                  paragraph.replace(/^(Step\s+\d+[:.]?|^\d+\.)\s*/, '')
-                )}
-              </p>
+              <div className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
+                <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+              </div>
             </div>
           </div>
         );
       }
       
       if (formatted.type === 'calculation') {
+        const processedContent = formatted.hasLatex ? 
+          processLatexContent(paragraph) : 
+          paragraph;
+          
         return (
           <div key={index} className="mb-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center gap-2 mb-2">
@@ -156,30 +153,26 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
               <span className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">Calculation</span>
             </div>
             <div className="text-green-700 dark:text-green-300 text-sm bg-white dark:bg-gray-800 p-3 rounded border">
-              <div dangerouslySetInnerHTML={{ 
-                __html: paragraph.replace(/([A-Za-z]?\s*=\s*[^=\n]+)/g, (match) => 
-                  renderLatex(formatMathExpression(match))
-                )
-              }} />
+              <div dangerouslySetInnerHTML={{ __html: processedContent }} />
             </div>
           </div>
         );
       }
       
-      // Regular text with potential inline math
-      const textWithMath = paragraph.replace(/([A-Za-z]?\s*=\s*[^=\n]+)/g, (match) => {
-        if (match.includes('=') && (match.includes('+') || match.includes('-') || match.includes('×') || match.includes('*') || match.includes('/') || match.includes('÷'))) {
-          return `<span class="inline-math bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded font-mono text-sm">${renderLatex(formatMathExpression(match))}</span>`;
-        }
-        return match;
-      });
+      // Regular text with potential LaTeX content
+      const processedContent = processLatexContent(paragraph);
       
       return (
-        <p key={index} className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
-          <span dangerouslySetInnerHTML={{ __html: textWithMath }} />
-        </p>
+        <div key={index} className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
+          <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+        </div>
       );
     });
+  };
+
+  const formatTextWithLatex = (text: string) => {
+    if (!text) return text;
+    return processLatexContent(text);
   };
 
   return (
@@ -253,7 +246,9 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-base leading-relaxed mb-3">
-                        {index + 1}. {questionText}
+                        <div dangerouslySetInnerHTML={{ 
+                          __html: `${index + 1}. ${formatTextWithLatex(questionText)}`
+                        }} />
                       </CardTitle>
                       
                       {/* Answer options - mobile optimized */}
@@ -280,7 +275,9 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
                             )}>
                               {String.fromCharCode(65 + optionIndex)}
                             </div>
-                            <span className="flex-1 leading-relaxed">{option}</span>
+                            <div className="flex-1 leading-relaxed">
+                              <div dangerouslySetInnerHTML={{ __html: formatTextWithLatex(option) }} />
+                            </div>
                             {optionIndex === correctAnswer && 
                               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                             }
@@ -361,6 +358,30 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         {/* Bottom padding for mobile */}
         <div className="h-6" />
       </div>
+
+      <style jsx global>{`
+        .math-inline {
+          display: inline-block;
+          margin: 0 2px;
+        }
+        
+        .math-display {
+          overflow-x: auto;
+          padding: 8px 0;
+        }
+        
+        .math-display .katex-display {
+          margin: 0;
+        }
+        
+        .katex {
+          font-size: 1em;
+        }
+        
+        .katex-display > .katex {
+          white-space: nowrap;
+        }
+      `}</style>
     </div>
   );
 };

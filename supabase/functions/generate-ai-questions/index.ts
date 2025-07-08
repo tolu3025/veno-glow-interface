@@ -135,14 +135,32 @@ Requirements:
 - Vary the question types and difficulty appropriately
 - Make questions relevant and meaningful
 
+MATHEMATICAL FORMATTING REQUIREMENTS:
+- Use proper LaTeX syntax for ALL mathematical expressions, equations, and formulas
+- Wrap mathematical expressions in appropriate LaTeX delimiters
+- For inline math: use \\( and \\) or single $ delimiters
+- For display math: use \\[ and \\] or double $$ delimiters
+- Use proper LaTeX commands for:
+  * Fractions: \\frac{numerator}{denominator}
+  * Powers/Exponents: x^{power} or x^2
+  * Square roots: \\sqrt{expression} or \\sqrt[n]{expression}
+  * Greek letters: \\alpha, \\beta, \\pi, \\theta, etc.
+  * Mathematical operators: \\times, \\div, \\pm, \\leq, \\geq
+  * Functions: \\sin, \\cos, \\tan, \\log, \\ln
+  * Summation: \\sum_{i=1}^{n}
+  * Integration: \\int_{a}^{b}
+- Format step-by-step calculations clearly with proper LaTeX
+- Example: "Step 1: Calculate the area using \\(A = \\pi r^2 = \\pi \\times 5^2 = 25\\pi\\)"
+
 EXPLANATION REQUIREMENTS:
 - Start with a clear statement of why the answer is correct
-- For calculations: Show every step of the mathematical process
-- For word problems: Break down the problem-solving approach
-- Include relevant formulas, definitions, or principles
+- For calculations: Show every step of the mathematical process using proper LaTeX formatting
+- For word problems: Break down the problem-solving approach with formatted equations
+- Include relevant formulas, definitions, or principles with proper mathematical notation
 - Explain why other options are incorrect when helpful
 - Use clear, educational language that helps students learn
 - Provide context and real-world applications when applicable
+- Format ALL mathematical content with LaTeX syntax
 
 ${autoMode && extractSubjectAndTopic && isFirstBatch ? `
 Return the response as a valid JSON object with this exact structure:
@@ -151,10 +169,10 @@ Return the response as a valid JSON object with this exact structure:
   "extractedTopic": "The specific topic or theme identified",
   "questions": [
     {
-      "question": "Question text here?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "question": "Question text here with properly formatted math like \\(x^2 + y^2 = z^2\\)?",
+      "options": ["Option A with \\(\\frac{1}{2}\\)", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Comprehensive step-by-step explanation with detailed reasoning, calculations if applicable, and educational context"
+      "explanation": "Step 1: Start with the equation \\(x^2 + y^2 = z^2\\)\\n\\nStep 2: Substitute the values \\(x = 3\\) and \\(y = 4\\):\\n\\(3^2 + 4^2 = 9 + 16 = 25\\)\\n\\nStep 3: Therefore \\(z = \\sqrt{25} = 5\\)\\n\\nThis demonstrates the Pythagorean theorem with properly formatted mathematical expressions."
     }
   ]
 }` : `
@@ -162,16 +180,17 @@ Return the response as a valid JSON object with this exact structure:
 {
   "questions": [
     {
-      "question": "Question text here?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "question": "Question text here with properly formatted math like \\(x^2 + y^2 = z^2\\)?",
+      "options": ["Option A with \\(\\frac{1}{2}\\)", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Comprehensive step-by-step explanation with detailed reasoning, calculations if applicable, and educational context"
+      "explanation": "Step 1: Start with the equation \\(x^2 + y^2 = z^2\\)\\n\\nStep 2: Substitute the values \\(x = 3\\) and \\(y = 4\\):\\n\\(3^2 + 4^2 = 9 + 16 = 25\\)\\n\\nStep 3: Therefore \\(z = \\sqrt{25} = 5\\)\\n\\nThis demonstrates the Pythagorean theorem with properly formatted mathematical expressions."
     }
   ]
 }`}
 
 The answer should be the index (0-3) of the correct option in the options array.
-REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.`;
+REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
+CRITICAL: Format ALL mathematical expressions with proper LaTeX syntax using \\( \\) for inline math and \\[ \\] for display math.`;
 
       try {
         console.log(`Making OpenAI request for batch ${batchIndex + 1} using GPT-4.1`);
@@ -188,8 +207,8 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
               { 
                 role: 'system', 
                 content: autoMode && extractSubjectAndTopic && isFirstBatch
-                  ? 'You are an expert educator and content analyzer. Create comprehensive, step-by-step explanations that help students learn. For mathematical problems, show every calculation step. For conceptual questions, explain the underlying principles thoroughly. Always respond with valid JSON only. Generate exactly the number of questions requested.'
-                  : 'You are an expert educator and test creator. Generate high-quality educational questions with detailed, step-by-step explanations that help students understand not just the correct answer, but the reasoning behind it. Always respond with valid JSON only. Generate exactly the number of questions requested.' 
+                  ? 'You are an expert educator and content analyzer. Create comprehensive, step-by-step explanations that help students learn. For mathematical problems, show every calculation step using proper LaTeX formatting. For conceptual questions, explain the underlying principles thoroughly. Always format mathematical expressions with LaTeX syntax using \\( \\) for inline math and \\[ \\] for display equations. Always respond with valid JSON only. Generate exactly the number of questions requested.'
+                  : 'You are an expert educator and test creator. Generate high-quality educational questions with detailed, step-by-step explanations that help students understand not just the correct answer, but the reasoning behind it. Format ALL mathematical expressions using proper LaTeX syntax with \\( \\) for inline math and \\[ \\] for display equations. Always respond with valid JSON only. Generate exactly the number of questions requested.' 
               },
               { role: 'user', content: prompt }
             ],
@@ -220,7 +239,7 @@ REMEMBER: Generate EXACTLY ${questionsInThisBatch} questions - no more, no less.
                 messages: [
                   { 
                     role: 'system', 
-                    content: 'You are an expert educator and test creator. Generate high-quality educational questions with detailed explanations. Always respond with valid JSON only. Generate exactly the number of questions requested.' 
+                    content: 'You are an expert educator and test creator. Generate high-quality educational questions with detailed explanations. Format ALL mathematical expressions using proper LaTeX syntax with \\( \\) for inline math and \\[ \\] for display equations. Always respond with valid JSON only. Generate exactly the number of questions requested.' 
                   },
                   { role: 'user', content: prompt }
                 ],
