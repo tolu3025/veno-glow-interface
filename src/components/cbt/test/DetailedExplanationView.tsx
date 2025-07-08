@@ -169,7 +169,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       // Regular text with potential inline math
       const textWithMath = paragraph.replace(/([A-Za-z]?\s*=\s*[^=\n]+)/g, (match) => {
         if (match.includes('=') && (match.includes('+') || match.includes('-') || match.includes('×') || match.includes('*') || match.includes('/') || match.includes('÷'))) {
-          return `<span class="inline-math">${renderLatex(formatMathExpression(match))}</span>`;
+          return `<span class="inline-math bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded font-mono text-sm">${renderLatex(formatMathExpression(match))}</span>`;
         }
         return match;
       });
@@ -361,18 +361,6 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         {/* Bottom padding for mobile */}
         <div className="h-6" />
       </div>
-
-      <style jsx>{`
-        .inline-math {
-          background-color: rgba(239, 246, 255, 0.8);
-          padding: 2px 4px;
-          border-radius: 4px;
-          font-family: 'KaTeX_Main', serif;
-        }
-        .dark .inline-math {
-          background-color: rgba(30, 58, 138, 0.2);
-        }
-      `}</style>
     </div>
   );
 };
