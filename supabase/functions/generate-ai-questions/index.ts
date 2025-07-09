@@ -111,7 +111,23 @@ Generate EXACTLY ${count} questions - no more, no less.`;
       });
     }
 
-    const data = await response.json();
+    // Get response text first, then parse as JSON
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error('Failed to parse OpenAI response as JSON:', jsonError);
+      console.error('Response text:', responseText);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'OpenAI returned invalid JSON response',
+        questions: []
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!data.choices || !data.choices[0]) {
       console.error('Invalid response structure from OpenAI:', data);
