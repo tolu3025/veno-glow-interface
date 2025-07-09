@@ -177,6 +177,32 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <style>
+        {`
+          .math-inline {
+            display: inline-block;
+            margin: 0 2px;
+          }
+          
+          .math-display {
+            overflow-x: auto;
+            padding: 8px 0;
+          }
+          
+          .math-display .katex-display {
+            margin: 0;
+          }
+          
+          .katex {
+            font-size: 1em;
+          }
+          
+          .katex-display > .katex {
+            white-space: nowrap;
+          }
+        `}
+      </style>
+      
       {/* Mobile-optimized header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="px-4 py-3">
@@ -358,30 +384,6 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         {/* Bottom padding for mobile */}
         <div className="h-6" />
       </div>
-
-      <style jsx global>{`
-        .math-inline {
-          display: inline-block;
-          margin: 0 2px;
-        }
-        
-        .math-display {
-          overflow-x: auto;
-          padding: 8px 0;
-        }
-        
-        .math-display .katex-display {
-          margin: 0;
-        }
-        
-        .katex {
-          font-size: 1em;
-        }
-        
-        .katex-display > .katex {
-          white-space: nowrap;
-        }
-      `}</style>
     </div>
   );
 };
