@@ -23,7 +23,7 @@ serve(async (req) => {
     
     console.log(`Generating ${count} questions for ${subject}${topic ? ' - ' + topic : ''} at ${difficulty} level`);
     
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY1');
     if (!openAIApiKey) {
       console.error('OpenAI API key not found in environment variables');
       return new Response(JSON.stringify({ 
