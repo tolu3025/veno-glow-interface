@@ -14,7 +14,12 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, difficulty, count, topic, fileUrls, autoMode, extractSubjectAndTopic } = await req.json();
+    console.log('Starting generate-ai-questions function');
+    
+    const body = await req.json();
+    console.log('Request body:', body);
+    
+    const { subject, difficulty, count, topic, fileUrls, autoMode, extractSubjectAndTopic } = body;
     
     console.log(`Generating ${count} questions for ${subject}${topic ? ' - ' + topic : ''} at ${difficulty} level`);
     
@@ -146,7 +151,7 @@ MATHEMATICAL FORMATTING REQUIREMENTS:
   * Square roots: \\sqrt{expression} or \\sqrt[n]{expression}
   * Greek letters: \\alpha, \\beta, \\pi, \\theta, etc.
   * Mathematical operators: \\times, \\div, \\pm, \\leq, \\geq
-  * Functions: \\sin, \\cos, \\tan, \\log, \\ln
+  * Functions: \\sin, \\cos, \\tan, \\log, \\ln, \\arcsin, \\arccos, \\arctan
   * Summation: \\sum_{i=1}^{n}
   * Integration: \\int_{a}^{b}
 - Format step-by-step calculations clearly with proper LaTeX
@@ -160,7 +165,7 @@ EXPLANATION REQUIREMENTS:
 - Explain why other options are incorrect when helpful
 - Use clear, educational language that helps students learn
 - Provide context and real-world applications when applicable
-- Format ALL mathematical content with LaTeX syntax
+- Format ALL mathematical content with LaTeX syntax using \\( \\) for inline math and \\[ \\] for display math
 
 ${autoMode && extractSubjectAndTopic && isFirstBatch ? `
 Return the response as a valid JSON object with this exact structure:
@@ -202,7 +207,7 @@ CRITICAL: Format ALL mathematical expressions with proper LaTeX syntax using \\(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14', // Using GPT-4.1 model
+            model: 'gpt-4.1-2025-04-14',
             messages: [
               { 
                 role: 'system', 
@@ -213,7 +218,7 @@ CRITICAL: Format ALL mathematical expressions with proper LaTeX syntax using \\(
               { role: 'user', content: prompt }
             ],
             temperature: 0.7,
-            max_tokens: 8000, // Increased for GPT-4.1 to handle larger batches
+            max_tokens: 8000,
           }),
         });
 

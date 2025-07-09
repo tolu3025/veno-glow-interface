@@ -32,7 +32,14 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         displayMode: false,
         throwOnError: false,
         strict: false,
-        trust: true
+        trust: true,
+        macros: {
+          "\\arcsin": "\\operatorname{arcsin}",
+          "\\arccos": "\\operatorname{arccos}",
+          "\\arctan": "\\operatorname{arctan}",
+          "\\int": "\\int",
+          "\\frac": "\\frac"
+        }
       });
     } catch (error) {
       console.error('KaTeX render error:', error);
@@ -46,7 +53,14 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         displayMode: true,
         throwOnError: false,
         strict: false,
-        trust: true
+        trust: true,
+        macros: {
+          "\\arcsin": "\\operatorname{arcsin}",
+          "\\arccos": "\\operatorname{arccos}",
+          "\\arctan": "\\operatorname{arctan}",
+          "\\int": "\\int",
+          "\\frac": "\\frac"
+        }
       });
     } catch (error) {
       console.error('KaTeX display render error:', error);
@@ -59,11 +73,11 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
 
     // Process display math first ($$...$$, \[...\])
     let processedText = text
-      .replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+      .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
         const rendered = renderDisplayLatex(math.trim());
         return `<div class="math-display my-4 text-center">${rendered}</div>`;
       })
-      .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+      .replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
         const rendered = renderDisplayLatex(math.trim());
         return `<div class="math-display my-4 text-center">${rendered}</div>`;
       });
@@ -88,15 +102,21 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       // Step indicators (Step 1:, 1., etc.)
       step: /^(Step\s+\d+[:.]?|^\d+\.)/i,
       
-      // Check if text contains LaTeX patterns
-      hasLatex: /\\\(|\\\[|\$\$?|\\frac|\\sqrt|\\sum|\\int|\\alpha|\\beta|\\pi|\\theta|\\sin|\\cos|\\tan|\\log|\\ln/,
+      // Check if text contains LaTeX patterns or mathematical content
+      hasLatex: /\\\(|\\\[|\$\$?|\\frac|\\sqrt|\\sum|\\int|\\arcsin|\\arccos|\\arctan|\\alpha|\\beta|\\pi|\\theta|\\sin|\\cos|\\tan|\\log|\\ln|\\operatorname/,
       
       // Mathematical equations and expressions (fallback for non-LaTeX)
       equation: /([a-zA-Z]?\s*=\s*[^=\n]+)/g,
+      
+      // Check for calculation blocks
+      isCalculationBlock: /^Calculation\s*$/i
     };
 
     // Check if this is a step
     const isStep = patterns.step.test(text.trim());
+    
+    // Check if this is a calculation block header
+    const isCalculationBlock = patterns.isCalculationBlock.test(text.trim());
     
     // Check for mathematical content
     const hasLatex = patterns.hasLatex.test(text);
@@ -104,7 +124,9 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
     
     const isMathematical = hasLatex || hasEquation;
 
-    if (isStep) {
+    if (isCalculationBlock) {
+      return { type: 'calculation-header', content: text, isMath: false, hasLatex: false };
+    } else if (isStep) {
       return { type: 'step', content: text, isMath: isMathematical, hasLatex };
     } else if (isMathematical) {
       return { type: 'calculation', content: text, isMath: true, hasLatex };
@@ -121,6 +143,15 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
     
     return paragraphs.map((paragraph, index) => {
       const formatted = detectAndFormatCalculations(paragraph);
+      
+      if (formatted.type === 'calculation-header') {
+        return (
+          <div key={index} className="flex items-center gap-2 mb-2 mt-4">
+            <Calculator className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">Calculation</span>
+          </div>
+        );
+      }
       
       if (formatted.type === 'step') {
         const processedContent = formatted.hasLatex ? 
@@ -148,10 +179,6 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
           
         return (
           <div key={index} className="mb-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">Calculation</span>
-            </div>
             <div className="text-green-700 dark:text-green-300 text-sm bg-white dark:bg-gray-800 p-3 rounded border">
               <div dangerouslySetInnerHTML={{ __html: processedContent }} />
             </div>

@@ -32,7 +32,7 @@ const AiCreateTest = () => {
     try {
       const requestBody = {
         subject: params.subject,
-        topic: params.topic,
+        topic: params.topic || undefined,
         difficulty: params.difficulty,
         count: params.questionCount
       };
