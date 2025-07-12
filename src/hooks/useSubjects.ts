@@ -8,6 +8,7 @@ import { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-j
 export type Subject = {
   name: string;
   question_count: number;
+  source: 'admin' | 'ai-generated' | 'combined';
 };
 
 // Define a type-safe version of querySafe with proper TypeScript definitions
@@ -93,10 +94,10 @@ export const useSubjects = () => {
     return () => window.removeEventListener('online', handleOnline);
   }, [checkConnection]);
 
-  // Set up real-time subscription for subjects
+  // Set up real-time subscription for both questions and user_tests tables
   useEffect(() => {
-    const channel = supabase
-      .channel('subjects-realtime')
+    const questionsChannel = supabase
+      .channel('subjects-realtime-questions')
       .on(
         'postgres_changes',
         {
@@ -112,8 +113,42 @@ export const useSubjects = () => {
       )
       .subscribe();
 
+    const userTestsChannel = supabase
+      .channel('subjects-realtime-user-tests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_tests'
+        },
+        (payload) => {
+          console.log('Real-time update received for user_tests:', payload);
+          window.dispatchEvent(new CustomEvent('subjects-updated'));
+        }
+      )
+      .subscribe();
+
+    const userTestQuestionsChannel = supabase
+      .channel('subjects-realtime-user-test-questions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_test_questions'
+        },
+        (payload) => {
+          console.log('Real-time update received for user_test_questions:', payload);
+          window.dispatchEvent(new CustomEvent('subjects-updated'));
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(questionsChannel);
+      supabase.removeChannel(userTestsChannel);
+      supabase.removeChannel(userTestQuestionsChannel);
     };
   }, []);
 
@@ -145,57 +180,75 @@ export const useSubjects = () => {
       });
       
       try {
-        console.log('Fetching subjects from admin questions table...');
+        console.log('Fetching subjects from both admin questions and AI-generated tests...');
         
-        // Query the questions table (admin questions) directly to get subjects
-        const result = await Promise.race([
-          querySafe<{ subject: string }[]>(async () => {
-            return await supabase
-              .from('questions')
-              .select('subject');
-          }),
+        // Query both the questions table (admin questions) and user_tests (AI-generated tests)
+        const [adminQuestionsResult, aiTestsResult] = await Promise.race([
+          Promise.all([
+            querySafe<{ subject: string }[]>(async () => {
+              return await supabase
+                .from('questions')
+                .select('subject');
+            }),
+            querySafe<{ subject: string; question_count: number }[]>(async () => {
+              return await supabase
+                .from('user_tests')
+                .select('subject, question_count')
+                .not('creator_id', 'is', null); // Only get tests created by users (admins)
+            })
+          ]),
           timeoutPromise
         ]);
         
-        if (result.error) {
-          console.error('Error fetching subjects from questions table:', result.error);
-          throw result.error;
+        // Process admin questions
+        const adminSubjectCounts: Record<string, number> = {};
+        if (adminQuestionsResult.data) {
+          adminQuestionsResult.data.forEach((q: { subject: string }) => {
+            if (q.subject) {
+              adminSubjectCounts[q.subject] = (adminSubjectCounts[q.subject] || 0) + 1;
+            }
+          });
         }
         
-        if (!result.data || result.data.length === 0) {
-          console.log('No questions found in the admin questions table');
-          
-          // Try to use cached data before giving up
-          const cachedSubjects = localStorage.getItem('cached_subjects');
-          if (cachedSubjects) {
-            console.log('Using cached subjects as fallback');
-            return JSON.parse(cachedSubjects) as Subject[];
-          }
-          
-          throw new Error('No questions available in admin database');
+        // Process AI-generated tests
+        const aiSubjectCounts: Record<string, number> = {};
+        if (aiTestsResult.data) {
+          aiTestsResult.data.forEach((test: { subject: string; question_count: number }) => {
+            if (test.subject) {
+              aiSubjectCounts[test.subject] = (aiSubjectCounts[test.subject] || 0) + test.question_count;
+            }
+          });
         }
         
-        console.log('Questions fetched successfully from admin table:', result.data.length);
+        // Combine both sources
+        const allSubjects = new Set([
+          ...Object.keys(adminSubjectCounts),
+          ...Object.keys(aiSubjectCounts)
+        ]);
         
-        // Count questions by subject
-        const subjectCounts: Record<string, number> = {};
-        
-        result.data.forEach((q: { subject: string }) => {
-          if (q.subject) {
-            subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1;
-          }
-        });
-        
-        // Format the data
-        const formattedSubjects: Subject[] = Object.keys(subjectCounts)
+        const formattedSubjects: Subject[] = Array.from(allSubjects)
           .filter(name => name) // Filter out any undefined/null/empty subjects
-          .map(name => ({
-            name,
-            question_count: subjectCounts[name]
-          }))
+          .map(name => {
+            const adminCount = adminSubjectCounts[name] || 0;
+            const aiCount = aiSubjectCounts[name] || 0;
+            const totalCount = adminCount + aiCount;
+            
+            let source: 'admin' | 'ai-generated' | 'combined' = 'admin';
+            if (adminCount > 0 && aiCount > 0) {
+              source = 'combined';
+            } else if (aiCount > 0) {
+              source = 'ai-generated';
+            }
+            
+            return {
+              name,
+              question_count: totalCount,
+              source
+            };
+          })
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        console.log('Formatted subjects from admin questions:', formattedSubjects);
+        console.log('Formatted subjects from both admin and AI sources:', formattedSubjects);
         
         // Cache the results locally for offline use
         localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));

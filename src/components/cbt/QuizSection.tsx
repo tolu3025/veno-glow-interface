@@ -118,7 +118,7 @@ const QuizSection = () => {
     if (!subject) {
       toast({
         title: "No subject selected",
-        description: "Please select a subject from the admin questions before starting the quiz",
+        description: "Please select a subject from the available questions before starting the quiz",
         variant: "warning",
       });
       return;
@@ -150,10 +150,10 @@ const QuizSection = () => {
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />
-          <CardTitle>Quiz Setup - Admin Questions</CardTitle>
+          <CardTitle>Quiz Setup - All Questions</CardTitle>
         </div>
         <CardDescription>
-          Configure your quiz using questions from the admin question bank
+          Configure your quiz using questions from admin questions and AI-generated tests
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -176,9 +176,14 @@ const QuizSection = () => {
         {subject && selectedSubjectData && (
           <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-sm text-green-700">
+            <div className="text-sm text-green-700">
               <strong>{selectedSubjectData.name}</strong> selected with {selectedSubjectData.question_count} available questions
-            </span>
+              <div className="text-xs text-green-600 mt-1">
+                Source: {selectedSubjectData.source === 'admin' ? 'Admin Questions' : 
+                        selectedSubjectData.source === 'ai-generated' ? 'AI Generated Tests' : 
+                        'Mixed Sources (Admin + AI)'}
+              </div>
+            </div>
           </div>
         )}
 
@@ -234,7 +239,7 @@ const QuizSection = () => {
           {isLoading || isRetrying ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading Admin Questions...
+              Loading Questions from All Sources...
             </>
           ) : (
             <>
