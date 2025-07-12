@@ -37,6 +37,7 @@ export const useSubjects = () => {
   const [hasConnection, setHasConnection] = useState<boolean | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [lastSuccessfulFetch, setLastSuccessfulFetch] = useState<Date | null>(null);
+  const [realtimeData, setRealtimeData] = useState<Subject[] | null>(null);
   const MAX_RETRIES = 3;
 
   // Update online status using the isOnline function from the client
@@ -92,7 +93,44 @@ export const useSubjects = () => {
     return () => window.removeEventListener('online', handleOnline);
   }, [checkConnection]);
 
-  return useQuery({
+  // Set up real-time subscription for subjects
+  useEffect(() => {
+    const channel = supabase
+      .channel('subjects-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'questions'
+        },
+        (payload) => {
+          console.log('Real-time update received for questions:', payload);
+          // Trigger a refetch when questions change
+          window.dispatchEvent(new CustomEvent('subjects-updated'));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_tests'
+        },
+        (payload) => {
+          console.log('Real-time update received for user_tests:', payload);
+          // Trigger a refetch when user tests change
+          window.dispatchEvent(new CustomEvent('subjects-updated'));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const query = useQuery({
     queryKey: ['subjects', online, hasConnection, retryCount],
     queryFn: async () => {
       // Track when we successfully fetch data
@@ -247,4 +285,17 @@ export const useSubjects = () => {
       connectionStatus: hasConnection === null ? 'unknown' : hasConnection ? 'connected' : 'disconnected',
     }
   });
+
+  // Listen for real-time updates and refetch
+  useEffect(() => {
+    const handleSubjectsUpdate = () => {
+      console.log('Subjects updated, refetching...');
+      query.refetch();
+    };
+
+    window.addEventListener('subjects-updated', handleSubjectsUpdate);
+    return () => window.removeEventListener('subjects-updated', handleSubjectsUpdate);
+  }, [query.refetch]);
+
+  return query;
 };
