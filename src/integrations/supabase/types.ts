@@ -385,6 +385,42 @@ export type Database = {
         }
         Relationships: []
       }
+      documents: {
+        Row: {
+          created_at: string | null
+          file_size: number
+          file_type: string
+          filename: string
+          id: string
+          original_filename: string
+          storage_path: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_size: number
+          file_type: string
+          filename: string
+          id?: string
+          original_filename: string
+          storage_path: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_size?: number
+          file_type?: string
+          filename?: string
+          id?: string
+          original_filename?: string
+          storage_path?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       investors: {
         Row: {
           current_value: number
