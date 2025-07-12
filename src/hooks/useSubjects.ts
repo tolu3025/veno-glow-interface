@@ -110,19 +110,6 @@ export const useSubjects = () => {
           window.dispatchEvent(new CustomEvent('subjects-updated'));
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_tests'
-        },
-        (payload) => {
-          console.log('Real-time update received for user_tests:', payload);
-          // Trigger a refetch when user tests change
-          window.dispatchEvent(new CustomEvent('subjects-updated'));
-        }
-      )
       .subscribe();
 
     return () => {
@@ -158,42 +145,14 @@ export const useSubjects = () => {
       });
       
       try {
-        console.log('Fetching subjects from Supabase...');
+        console.log('Fetching subjects from admin questions table...');
         
-        // First try to get subjects via database function with timeout
-        try {
-          const result = await Promise.race([
-            querySafe<Subject[]>(async () => {
-              return await supabase.rpc('get_subjects_from_questions');
-            }),
-            timeoutPromise
-          ]);
-          
-          if (!result.error && result.data && result.data.length > 0) {
-            console.log('Subjects fetched successfully via RPC:', result.data);
-            
-            // Cache the results locally for offline use
-            localStorage.setItem('cached_subjects', JSON.stringify(result.data));
-            trackSuccess();
-            return result.data;
-          }
-          
-          if (result.offline) {
-            throw new Error('Device is offline');
-          }
-        } catch (error) {
-          console.log('RPC method failed:', error);
-          // Continue to next method
-        }
-        
-        console.log('RPC method failed or returned no data, querying questions table directly');
-        
-        // Try direct database query with timeout
-        type QuestionWithSubject = { subject: string };
-        
+        // Query the questions table (admin questions) directly to get subjects
         const result = await Promise.race([
-          querySafe<QuestionWithSubject[]>(async () => {
-            return await supabase.from('questions').select('subject');
+          querySafe<{ subject: string }[]>(async () => {
+            return await supabase
+              .from('questions')
+              .select('subject');
           }),
           timeoutPromise
         ]);
@@ -204,7 +163,7 @@ export const useSubjects = () => {
         }
         
         if (!result.data || result.data.length === 0) {
-          console.log('No questions found in the questions table');
+          console.log('No questions found in the admin questions table');
           
           // Try to use cached data before giving up
           const cachedSubjects = localStorage.getItem('cached_subjects');
@@ -213,15 +172,15 @@ export const useSubjects = () => {
             return JSON.parse(cachedSubjects) as Subject[];
           }
           
-          throw new Error('No questions available');
+          throw new Error('No questions available in admin database');
         }
         
-        console.log('Questions fetched successfully:', result.data.length);
+        console.log('Questions fetched successfully from admin table:', result.data.length);
         
         // Count questions by subject
         const subjectCounts: Record<string, number> = {};
         
-        result.data.forEach((q: QuestionWithSubject) => {
+        result.data.forEach((q: { subject: string }) => {
           if (q.subject) {
             subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1;
           }
@@ -236,7 +195,7 @@ export const useSubjects = () => {
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        console.log('Formatted subjects:', formattedSubjects);
+        console.log('Formatted subjects from admin questions:', formattedSubjects);
         
         // Cache the results locally for offline use
         localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));

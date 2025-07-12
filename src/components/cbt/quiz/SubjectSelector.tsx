@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Select,
   SelectContent,
@@ -7,9 +7,13 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Loader2 } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Subject } from '@/hooks/useSubjects';
+import { cn } from '@/lib/utils';
 
 interface SubjectSelectorProps {
   subjects: Subject[] | undefined;
@@ -28,33 +32,89 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
   isRetrying,
   connectionStatus
 }) => {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  // Filter subjects based on search value
+  const filteredSubjects = useMemo(() => {
+    if (!subjects) return [];
+    if (!searchValue) return subjects;
+    
+    return subjects.filter(subj =>
+      subj.name.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }, [subjects, searchValue]);
+
+  const selectedSubject = subjects?.find(subj => subj.name === subject);
+
   return (
     <div className="space-y-3">
       <Label htmlFor="subject">Pick Subject</Label>
       
-      <Select value={subject} onValueChange={onSubjectChange}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a subject" />
-        </SelectTrigger>
-        <SelectContent>
-          {isLoading || isRetrying ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="h-5 w-5 animate-spin text-veno-primary mr-2" />
-              <span>Loading subjects...</span>
-            </div>
-          ) : subjects && subjects.length > 0 ? (
-            subjects.map((subj) => (
-              <SelectItem key={subj.name} value={subj.name}>
-                {subj.name} ({subj.question_count} questions)
-              </SelectItem>
-            ))
-          ) : (
-            <div className="p-4 text-center text-muted-foreground">
-              No subjects available
-            </div>
-          )}
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            disabled={isLoading || isRetrying}
+          >
+            {selectedSubject ? (
+              `${selectedSubject.name} (${selectedSubject.question_count} questions)`
+            ) : (
+              "Select a subject..."
+            )}
+            {isLoading || isRetrying ? (
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <Command>
+            <CommandInput 
+              placeholder="Search subjects..." 
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList>
+              <CommandEmpty>
+                {isLoading || isRetrying ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-veno-primary mr-2" />
+                    <span>Loading subjects...</span>
+                  </div>
+                ) : (
+                  "No subjects found."
+                )}
+              </CommandEmpty>
+              <CommandGroup>
+                {filteredSubjects.map((subj) => (
+                  <CommandItem
+                    key={subj.name}
+                    value={subj.name}
+                    onSelect={(currentValue) => {
+                      onSubjectChange(currentValue === subject ? "" : currentValue);
+                      setOpen(false);
+                      setSearchValue("");
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        subject === subj.name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {subj.name} ({subj.question_count} questions)
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
       
       {subjects && subjects.length > 0 && connectionStatus !== 'connected' && (
         <p className="text-xs text-muted-foreground">
