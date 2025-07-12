@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Plus, Wand2, Upload, X, FileText } from 'lucide-react';
+import { Trash2, Edit, Plus, Wand2, Upload, X, FileText, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -32,6 +32,8 @@ const AdminQuestions = () => {
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<string | null>(null);
+  const [newSubjectName, setNewSubjectName] = useState('');
 
   // Form state
   const [newQuestion, setNewQuestion] = useState({
@@ -211,6 +213,28 @@ const AdminQuestions = () => {
     } catch (error) {
       console.error('Error deleting question:', error);
       toast.error('Failed to delete question');
+    }
+  };
+
+  const handleRenameSubject = async () => {
+    if (!editingSubject || !newSubjectName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .update({ subject: newSubjectName.trim() })
+        .eq('subject', editingSubject);
+
+      if (error) throw error;
+
+      toast.success(`Subject "${editingSubject}" renamed to "${newSubjectName.trim()}" successfully`);
+      setEditingSubject(null);
+      setNewSubjectName('');
+      fetchQuestions();
+      fetchSubjects();
+    } catch (error) {
+      console.error('Error renaming subject:', error);
+      toast.error('Failed to rename subject');
     }
   };
 
@@ -428,8 +452,8 @@ const AdminQuestions = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4">
+      {/* Filters and Subject Management */}
+      <div className="flex gap-4 items-center">
         <Select value={filterSubject} onValueChange={setFilterSubject}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Filter by subject" />
@@ -441,6 +465,20 @@ const AdminQuestions = () => {
             ))}
           </SelectContent>
         </Select>
+
+        {filterSubject !== 'all' && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setEditingSubject(filterSubject);
+              setNewSubjectName(filterSubject);
+            }}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Rename Subject
+          </Button>
+        )}
 
         <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
           <SelectTrigger className="w-48">
@@ -613,6 +651,46 @@ const AdminQuestions = () => {
               </Button>
               <Button onClick={handleAddQuestion}>
                 Add Question
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Subject Dialog */}
+      <Dialog open={!!editingSubject} onOpenChange={() => {
+        setEditingSubject(null);
+        setNewSubjectName('');
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Subject</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Current Subject Name</label>
+              <Input value={editingSubject || ''} disabled />
+            </div>
+            <div>
+              <label className="text-sm font-medium">New Subject Name</label>
+              <Input 
+                value={newSubjectName}
+                onChange={(e) => setNewSubjectName(e.target.value)}
+                placeholder="Enter new subject name"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setEditingSubject(null);
+                setNewSubjectName('');
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRenameSubject}
+                disabled={!newSubjectName.trim() || newSubjectName.trim() === editingSubject}
+              >
+                Rename Subject
               </Button>
             </div>
           </div>
