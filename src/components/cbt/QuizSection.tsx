@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { BookOpen, Clock, Loader2 } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
 import { useSubjects } from '@/hooks/useSubjects';
-import { testSupabaseConnection, supabase } from '@/integrations/supabase/client';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
 import AdPlacement from '@/components/ads/AdPlacement';
 
 // Import our components
@@ -110,7 +111,7 @@ const QuizSection = () => {
     }
   };
 
-  const handleStartQuiz = async () => {
+  const handleStartQuiz = () => {
     if (!subject) {
       toast({
         title: "No subject selected",
@@ -120,54 +121,16 @@ const QuizSection = () => {
       return;
     }
 
-    try {
-      // Check if there are AI-generated tests for this subject
-      const { data: userTests, error: userTestsError } = await supabase
-        .from('user_tests')
-        .select('id, title, question_count')
-        .eq('subject', subject)
-        .gt('question_count', 0)
-        .limit(1);
-
-      if (userTestsError) {
-        console.error('Error checking user tests:', userTestsError);
-      }
-
-      // If there are AI-generated tests available, give user option to choose
-      if (userTests && userTests.length > 0) {
-        const useAITest = confirm(`Found AI-generated tests for ${subject}. Would you like to take an AI-generated test instead of the regular quiz?`);
-        
-        if (useAITest) {
-          navigate(`/cbt/take/${userTests[0].id}`);
-          return;
+    navigate(`/cbt/take/subject`, { 
+      state: { 
+        subject: subject,
+        settings: {
+          difficulty,
+          timeLimit,
+          questionsCount
         }
       }
-
-      // Navigate to regular quiz
-      navigate(`/cbt/take/subject`, { 
-        state: { 
-          subject: subject,
-          settings: {
-            difficulty,
-            timeLimit,
-            questionsCount
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Error starting quiz:', error);
-      // Fallback to regular quiz
-      navigate(`/cbt/take/subject`, { 
-        state: { 
-          subject: subject,
-          settings: {
-            difficulty,
-            timeLimit,
-            questionsCount
-          }
-        }
-      });
-    }
+    });
   };
 
   return (
