@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { BookOpen, Clock, Loader2 } from 'lucide-react';
+import { BookOpen, Clock, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { VenoLogo } from '@/components/ui/logo';
 import { toast } from '@/hooks/use-toast';
 import { useSubjects } from '@/hooks/useSubjects';
@@ -71,7 +71,7 @@ const QuizSection = () => {
     if (isError && error) {
       toast({
         title: "Connection issue",
-        description: "Using locally stored data. Some features may be limited.",
+        description: "Using locally stored admin questions. Some features may be limited.",
         variant: "warning",
       });
     }
@@ -89,13 +89,13 @@ const QuizSection = () => {
         setConnectionStatus('connected');
         toast({
           title: "Connection restored",
-          description: "Successfully reconnected to the database.",
+          description: "Successfully reconnected to admin questions database.",
         });
       } else {
         setConnectionStatus('disconnected');
         toast({
           title: "Still disconnected",
-          description: "Could not establish connection to the database.",
+          description: "Could not establish connection to the admin questions database.",
           variant: "destructive",
         });
       }
@@ -103,7 +103,7 @@ const QuizSection = () => {
       setConnectionStatus('disconnected');
       toast({
         title: "Connection failed",
-        description: "Could not connect to the database.",
+        description: "Could not connect to the admin questions database.",
         variant: "destructive",
       });
     } finally {
@@ -111,11 +111,23 @@ const QuizSection = () => {
     }
   };
 
+  const selectedSubjectData = subjects?.find(s => s.name === subject);
+  const availableQuestions = selectedSubjectData?.question_count || 0;
+
   const handleStartQuiz = () => {
     if (!subject) {
       toast({
         title: "No subject selected",
-        description: "Please select a subject before starting the quiz",
+        description: "Please select a subject from the admin questions before starting the quiz",
+        variant: "warning",
+      });
+      return;
+    }
+
+    if (availableQuestions < questionsCount) {
+      toast({
+        title: "Not enough questions",
+        description: `Only ${availableQuestions} questions available for ${subject}. Please reduce the question count or select a different subject.`,
         variant: "warning",
       });
       return;
@@ -138,9 +150,11 @@ const QuizSection = () => {
       <CardHeader>
         <div className="flex items-center gap-2">
           <VenoLogo className="h-6 w-6" />
-          <CardTitle>Quiz Setup</CardTitle>
+          <CardTitle>Quiz Setup - Admin Questions</CardTitle>
         </div>
-        <CardDescription>Configure your quiz settings</CardDescription>
+        <CardDescription>
+          Configure your quiz using questions from the admin question bank
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <ConnectionStatus 
@@ -157,6 +171,16 @@ const QuizSection = () => {
           isRetrying={isRetrying}
           connectionStatus={connectionStatus}
         />
+
+        {/* Subject validation feedback */}
+        {subject && selectedSubjectData && (
+          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <span className="text-sm text-green-700">
+              <strong>{selectedSubjectData.name}</strong> selected with {selectedSubjectData.question_count} available questions
+            </span>
+          </div>
+        )}
 
         <DifficultySelector 
           difficulty={difficulty}
@@ -184,26 +208,38 @@ const QuizSection = () => {
           value={questionsCount}
           onValueChange={setQuestionsCount}
           min={5}
-          max={40}
+          max={Math.min(40, availableQuestions || 40)}
           step={5}
           unit="questions"
+          disabled={!selectedSubjectData}
         />
+
+        {/* Question availability warning */}
+        {subject && selectedSubjectData && questionsCount > availableQuestions && (
+          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <span className="text-sm text-amber-700">
+              Only {availableQuestions} questions available for {subject}. 
+              Reduce question count to {availableQuestions} or less.
+            </span>
+          </div>
+        )}
       </CardContent>
       <CardFooter>
         <Button 
           className="w-full bg-veno-primary hover:bg-veno-primary/90"
           onClick={handleStartQuiz}
-          disabled={!subject || isLoading || isRetrying}
+          disabled={!subject || isLoading || isRetrying || (selectedSubjectData && questionsCount > availableQuestions)}
         >
           {isLoading || isRetrying ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading...
+              Loading Admin Questions...
             </>
           ) : (
             <>
               <BookOpen className="mr-2 h-4 w-4" />
-              Start Quiz
+              Start Quiz {subject && selectedSubjectData ? `(${Math.min(questionsCount, availableQuestions)} questions)` : ''}
             </>
           )}
         </Button>

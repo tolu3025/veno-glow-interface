@@ -10,7 +10,7 @@ import {
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, BookOpen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Subject } from '@/hooks/useSubjects';
 import { cn } from '@/lib/utils';
@@ -49,7 +49,10 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
 
   return (
     <div className="space-y-3">
-      <Label htmlFor="subject">Pick Subject</Label>
+      <Label htmlFor="subject" className="flex items-center gap-2">
+        <BookOpen className="h-4 w-4 text-veno-primary" />
+        Pick Subject from Admin Questions
+      </Label>
       
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -61,9 +64,14 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
             disabled={isLoading || isRetrying}
           >
             {selectedSubject ? (
-              `${selectedSubject.name} (${selectedSubject.question_count} questions)`
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{selectedSubject.name}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({selectedSubject.question_count} questions available)
+                </span>
+              </div>
             ) : (
-              "Select a subject..."
+              <span className="text-muted-foreground">Select a subject from admin questions...</span>
             )}
             {isLoading || isRetrying ? (
               <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -75,7 +83,7 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
         <PopoverContent className="w-full p-0" align="start">
           <Command>
             <CommandInput 
-              placeholder="Search subjects..." 
+              placeholder="Search admin subjects..." 
               value={searchValue}
               onValueChange={setSearchValue}
             />
@@ -84,10 +92,14 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
                 {isLoading || isRetrying ? (
                   <div className="flex items-center justify-center p-4">
                     <Loader2 className="h-5 w-5 animate-spin text-veno-primary mr-2" />
-                    <span>Loading subjects...</span>
+                    <span>Loading subjects from admin questions...</span>
                   </div>
                 ) : (
-                  "No subjects found."
+                  <div className="p-4 text-center text-muted-foreground">
+                    <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No subjects found in admin questions.</p>
+                    <p className="text-xs mt-1">Ask an admin to create questions first.</p>
+                  </div>
                 )}
               </CommandEmpty>
               <CommandGroup>
@@ -100,14 +112,21 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
                       setOpen(false);
                       setSearchValue("");
                     }}
+                    className="flex items-center justify-between"
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        subject === subj.name ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {subj.name} ({subj.question_count} questions)
+                    <div className="flex items-center">
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          subject === subj.name ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="font-medium">{subj.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <BookOpen className="h-3 w-3" />
+                      {subj.question_count}
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -116,13 +135,23 @@ const SubjectSelector: React.FC<SubjectSelectorProps> = ({
         </PopoverContent>
       </Popover>
       
-      {subjects && subjects.length > 0 && connectionStatus !== 'connected' && (
-        <p className="text-xs text-muted-foreground">
-          {connectionStatus === 'disconnected' ? 
-            'Showing cached subjects. Some may be unavailable offline.' : 
-            'Showing available subjects.'}
-        </p>
-      )}
+      {/* Status information */}
+      <div className="text-xs text-muted-foreground space-y-1">
+        {subjects && subjects.length > 0 ? (
+          <div className="flex items-center gap-1">
+            <BookOpen className="h-3 w-3" />
+            <span>Showing {subjects.length} subject{subjects.length !== 1 ? 's' : ''} from admin questions</span>
+          </div>
+        ) : null}
+        
+        {connectionStatus !== 'connected' && (
+          <p className="text-amber-600">
+            {connectionStatus === 'disconnected' ? 
+              'Showing cached subjects. Some may be unavailable offline.' : 
+              'Loading subjects from admin questions...'}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
