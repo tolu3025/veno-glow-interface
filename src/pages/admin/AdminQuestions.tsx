@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Plus, Wand2, Upload, X, FileText, Settings } from 'lucide-react';
+import { Trash2, Edit, Plus, Wand2, Upload, X, FileText, Settings, FolderEdit, Save, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -34,6 +34,9 @@ const AdminQuestions = () => {
   const [uploading, setUploading] = useState(false);
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [newSubjectName, setNewSubjectName] = useState('');
+  const [managingSubjects, setManagingSubjects] = useState(false);
+  const [subjectEdits, setSubjectEdits] = useState<Record<string, string>>({});
+  const [subjectsWithCounts, setSubjectsWithCounts] = useState<Array<{subject: string, count: number}>>([]);
 
   // Form state
   const [newQuestion, setNewQuestion] = useState({
@@ -62,6 +65,7 @@ const AdminQuestions = () => {
   useEffect(() => {
     fetchQuestions();
     fetchSubjects();
+    fetchSubjectsWithCounts();
   }, []);
 
   const fetchQuestions = async () => {
@@ -93,6 +97,31 @@ const AdminQuestions = () => {
       setSubjects(uniqueSubjects);
     } catch (error) {
       console.error('Error fetching subjects:', error);
+    }
+  };
+
+  const fetchSubjectsWithCounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('subject')
+        .order('subject');
+
+      if (error) throw error;
+      
+      const subjectCounts = (data || []).reduce((acc: Record<string, number>, item) => {
+        acc[item.subject] = (acc[item.subject] || 0) + 1;
+        return acc;
+      }, {});
+
+      const subjectsArray = Object.entries(subjectCounts).map(([subject, count]) => ({
+        subject,
+        count
+      }));
+
+      setSubjectsWithCounts(subjectsArray);
+    } catch (error) {
+      console.error('Error fetching subjects with counts:', error);
     }
   };
 
@@ -216,6 +245,58 @@ const AdminQuestions = () => {
     }
   };
 
+  const handleBulkSubjectUpdate = async () => {
+    try {
+      const updates = Object.entries(subjectEdits).filter(([oldName, newName]) => 
+        oldName !== newName && newName.trim() !== ''
+      );
+
+      if (updates.length === 0) {
+        toast.info('No changes to save');
+        return;
+      }
+
+      for (const [oldName, newName] of updates) {
+        const { error } = await supabase
+          .from('questions')
+          .update({ subject: newName.trim() })
+          .eq('subject', oldName);
+
+        if (error) throw error;
+      }
+
+      toast.success(`Updated ${updates.length} subject(s) successfully`);
+      setSubjectEdits({});
+      setManagingSubjects(false);
+      fetchQuestions();
+      fetchSubjects();
+      fetchSubjectsWithCounts();
+    } catch (error) {
+      console.error('Error updating subjects:', error);
+      toast.error('Failed to update subjects');
+    }
+  };
+
+  const handleDeleteSubject = async (subject: string) => {
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('subject', subject);
+
+      if (error) throw error;
+
+      const deletedCount = subjectsWithCounts.find(s => s.subject === subject)?.count || 0;
+      toast.success(`Deleted subject "${subject}" and ${deletedCount} question(s)`);
+      fetchQuestions();
+      fetchSubjects();
+      fetchSubjectsWithCounts();
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+      toast.error('Failed to delete subject');
+    }
+  };
+
   const handleRenameSubject = async () => {
     if (!editingSubject || !newSubjectName.trim()) return;
 
@@ -330,6 +411,21 @@ const AdminQuestions = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Question Management</h1>
         <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setManagingSubjects(true);
+              fetchSubjectsWithCounts();
+              setSubjectEdits(subjectsWithCounts.reduce((acc, {subject}) => {
+                acc[subject] = subject;
+                return acc;
+              }, {} as Record<string, string>));
+            }}
+          >
+            <FolderEdit className="h-4 w-4 mr-2" />
+            Manage Subjects
+          </Button>
+          
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -651,6 +747,88 @@ const AdminQuestions = () => {
               </Button>
               <Button onClick={handleAddQuestion}>
                 Add Question
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Subjects Dialog */}
+      <Dialog open={managingSubjects} onOpenChange={(open) => {
+        setManagingSubjects(open);
+        if (!open) {
+          setSubjectEdits({});
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Subjects</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Edit subject names or delete entire subjects with all their questions.
+            </div>
+            
+            {subjectsWithCounts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No subjects found
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {subjectsWithCounts.map(({subject, count}) => (
+                  <div key={subject} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <Input
+                        value={subjectEdits[subject] || subject}
+                        onChange={(e) => setSubjectEdits(prev => ({
+                          ...prev,
+                          [subject]: e.target.value
+                        }))}
+                        placeholder="Subject name"
+                      />
+                    </div>
+                    <Badge variant="secondary" className="min-w-fit">
+                      {count} question{count !== 1 ? 's' : ''}
+                    </Badge>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Subject</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete the subject "{subject}" and all {count} question{count !== 1 ? 's' : ''} under it? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteSubject(subject)}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Delete Subject & Questions
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setManagingSubjects(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleBulkSubjectUpdate}
+                disabled={Object.keys(subjectEdits).length === 0}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
               </Button>
             </div>
           </div>
