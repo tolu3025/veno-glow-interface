@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -14,7 +15,7 @@ serve(async (req) => {
   try {
     console.log('Starting AI question generation');
     
-    const { subject, difficulty, count, topic } = await req.json();
+    const { subject, difficulty, count, topic, description } = await req.json();
     console.log(`Generating ${count} questions for ${subject}${topic ? ' - ' + topic : ''} at ${difficulty} level`);
     
     // Use OPENAI_API_KEY1 as that's what's configured in secrets
@@ -30,8 +31,50 @@ serve(async (req) => {
       });
     }
 
+    // Check if this is a mathematical subject that needs LaTeX formatting
+    const isMathematicalSubject = (subjectName: string) => {
+      const mathSubjects = ['mathematics', 'physics', 'chemistry', 'engineering', 'calculus', 'algebra', 'geometry', 'statistics'];
+      return mathSubjects.some(mathSub => subjectName.toLowerCase().includes(mathSub));
+    };
+
+    const isMatematical = isMathematicalSubject(subject);
+    const hasCalculationRequest = description && (
+      description.toLowerCase().includes('calculation') ||
+      description.toLowerCase().includes('formula') ||
+      description.toLowerCase().includes('equation') ||
+      description.toLowerCase().includes('step') ||
+      description.toLowerCase().includes('solve') ||
+      description.toLowerCase().includes('derivation')
+    );
+
+    const shouldFormatMath = isMatematical || hasCalculationRequest;
+
     const topicText = topic ? ` about ${topic}` : '';
-    const prompt = `Generate ${count} multiple-choice questions for ${subject}${topicText} at ${difficulty} level.
+    const descriptionText = description ? `\n\nSpecific requirements: ${description}` : '';
+    
+    let formatInstructions = '';
+    if (shouldFormatMath) {
+      formatInstructions = `
+
+IMPORTANT - Mathematical Formatting Requirements:
+- Use LaTeX notation for all mathematical expressions in questions, options, and explanations
+- Inline math: Use $...$ for inline formulas (e.g., $x^2 + 1$)
+- Display math: Use $$...$$ for centered equations (e.g., $$\\frac{d}{dx}[x^2] = 2x$$)
+- Include step-by-step calculations in explanations using proper LaTeX
+- Format fractions as $\\frac{numerator}{denominator}$
+- Use proper notation for functions, derivatives, integrals, etc.
+- For physics: Include units and proper scientific notation
+- Show detailed working steps in explanations with clear mathematical reasoning
+
+Example explanation format:
+"Step 1: Apply the formula $F = ma$
+$$F = (5 \\text{ kg})(2 \\text{ m/s}^2) = 10 \\text{ N}$$
+
+Step 2: Calculate the work done
+$$W = F \\cdot d = 10 \\text{ N} \\times 3 \\text{ m} = 30 \\text{ J}$$"`;
+    }
+
+    const prompt = `Generate ${count} multiple-choice questions for ${subject}${topicText} at ${difficulty} level.${descriptionText}${formatInstructions}
 
 Requirements:
 - Each question has exactly 4 options (A, B, C, D)
@@ -39,15 +82,17 @@ Requirements:
 - Include clear explanations for correct answers
 - Questions should test real understanding
 - Make questions educational and meaningful
+${shouldFormatMath ? '- Use proper LaTeX formatting for all mathematical content' : ''}
+${shouldFormatMath ? '- Include step-by-step solutions with calculations where appropriate' : ''}
 
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
     {
-      "question": "Question text here?",
+      "question": "Question text here${shouldFormatMath ? ' with $LaTeX$ formatting if needed' : ''}?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Clear explanation of why this answer is correct."
+      "explanation": "Clear explanation${shouldFormatMath ? ' with step-by-step calculations using LaTeX formatting' : ''} of why this answer is correct."
     }
   ]
 }
@@ -66,7 +111,7 @@ Generate exactly ${count} questions.`;
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert educator. Generate high-quality educational questions with clear explanations. Always respond with valid JSON only.' 
+            content: `You are an expert educator specialized in creating high-quality educational questions${shouldFormatMath ? ' with proper mathematical formatting using LaTeX' : ''}. Always respond with valid JSON only.${shouldFormatMath ? ' When dealing with mathematical content, use LaTeX notation extensively for formulas, equations, and calculations.' : ''}` 
           },
           { role: 'user', content: prompt }
         ],
@@ -146,11 +191,12 @@ Generate exactly ${count} questions.`;
       };
     });
 
-    console.log(`Successfully generated ${validatedQuestions.length} questions`);
+    console.log(`Successfully generated ${validatedQuestions.length} questions${shouldFormatMath ? ' with mathematical formatting' : ''}`);
 
     return new Response(JSON.stringify({ 
       success: true,
-      questions: validatedQuestions 
+      questions: validatedQuestions,
+      formatted: shouldFormatMath
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

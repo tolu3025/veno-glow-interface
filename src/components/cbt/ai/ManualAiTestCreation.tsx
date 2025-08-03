@@ -8,7 +8,8 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Calculator, BookOpen } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
 
@@ -20,6 +21,7 @@ interface ManualAiTestCreationProps {
     questionCount: number;
     timeLimit: number;
     instructions: string;
+    description: string;
     allowRetakes: boolean;
     resultsVisibility: string;
   }) => void;
@@ -37,6 +39,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   const [questionCount, setQuestionCount] = useState(10);
   const [timeLimit, setTimeLimit] = useState(30);
   const [instructions, setInstructions] = useState('');
+  const [description, setDescription] = useState('');
   const [allowRetakes, setAllowRetakes] = useState(true);
   const [resultsVisibility, setResultsVisibility] = useState('test_takers');
 
@@ -49,6 +52,14 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
     }
   };
 
+  const isMathematicalSubject = (subjectName: string) => {
+    const mathSubjects = ['mathematics', 'physics', 'chemistry', 'engineering', 'calculus', 'algebra', 'geometry', 'statistics'];
+    return mathSubjects.some(mathSub => subjectName.toLowerCase().includes(mathSub));
+  };
+
+  const currentSubject = subject === 'custom' ? customSubject : subject;
+  const showMathAlert = isMathematicalSubject(currentSubject);
+
   const handleGenerate = () => {
     const finalSubject = subject === 'custom' ? customSubject : subject;
     onGenerateTest({
@@ -58,6 +69,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
       questionCount,
       timeLimit,
       instructions,
+      description,
       allowRetakes,
       resultsVisibility
     });
@@ -103,6 +115,15 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
             </div>
           )}
         </div>
+
+        {showMathAlert && (
+          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+            <Calculator className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
+              <strong>Mathematical Subject Detected:</strong> Questions will be automatically formatted with proper LaTeX for equations, formulas, and calculations. Use the description field below to provide specific formatting instructions.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div>
           <Label>Topic (Optional)</Label>
@@ -111,6 +132,25 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
             onChange={e => setTopic(e.target.value)} 
             placeholder="E.g., Quadratic Equations, Cell Biology" 
           />
+        </div>
+
+        <div>
+          <Label>Test Description</Label>
+          <Textarea 
+            value={description} 
+            onChange={e => setDescription(e.target.value)} 
+            placeholder={showMathAlert ? 
+              "Describe your test requirements. For mathematical subjects, mention specific calculation types (e.g., 'Include step-by-step algebraic solutions', 'Focus on physics problem-solving with formulas', 'Generate calculus problems with detailed derivations')" :
+              "Describe what this test should cover and any specific requirements"
+            }
+            rows={4}
+          />
+          {showMathAlert && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
+              <BookOpen className="h-3 w-3" />
+              Tip: Mention calculation steps, formula usage, or specific mathematical concepts for better formatting
+            </p>
+          )}
         </div>
 
         <div>

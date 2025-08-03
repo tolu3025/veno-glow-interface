@@ -20,6 +20,7 @@ const AiCreateTest = () => {
     questionCount: number;
     timeLimit: number;
     instructions: string;
+    description: string;
     allowRetakes: boolean;
     resultsVisibility: string;
   }) => {
@@ -34,7 +35,8 @@ const AiCreateTest = () => {
         subject: params.subject,
         topic: params.topic || undefined,
         difficulty: params.difficulty,
-        count: params.questionCount
+        count: params.questionCount,
+        description: params.description
       };
 
       console.log('Generating AI test in manual mode:', requestBody);
@@ -54,7 +56,7 @@ const AiCreateTest = () => {
       }
 
       const testTitle = `${params.subject} ${params.topic ? '- ' + params.topic : ''} Test`;
-      const testDescription = `AI-generated test on ${params.subject}${params.topic ? ' about ' + params.topic : ''}`;
+      const testDescription = params.description || `AI-generated test on ${params.subject}${params.topic ? ' about ' + params.topic : ''}`;
 
       const { data: testData, error: testError } = await supabase
         .from('user_tests')
