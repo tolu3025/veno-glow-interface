@@ -85,6 +85,14 @@ Requirements:
 ${shouldFormatMath ? '- Use proper LaTeX formatting for all mathematical content' : ''}
 ${shouldFormatMath ? '- Include step-by-step solutions with calculations where appropriate' : ''}
 
+CRITICAL JSON FORMATTING RULES:
+- Return ONLY valid JSON - no additional text before or after
+- For LaTeX expressions: Use single backslashes (\\) not double (\\\\)
+- Escape all special characters properly in JSON strings
+- Use proper JSON string escaping for quotes and backslashes
+- Ensure all strings are properly terminated
+- Do not include line breaks within JSON string values
+
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
@@ -107,11 +115,11 @@ Generate exactly ${count} questions.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { 
             role: 'system', 
-            content: `You are an expert educator specialized in creating high-quality educational questions${shouldFormatMath ? ' with proper mathematical formatting using LaTeX' : ''}. Always respond with valid JSON only.${shouldFormatMath ? ' When dealing with mathematical content, use LaTeX notation extensively for formulas, equations, and calculations.' : ''}` 
+            content: `You are an expert educator specialized in creating high-quality educational questions${shouldFormatMath ? ' with proper mathematical formatting using LaTeX' : ''}. You MUST respond with valid JSON only - no additional text. Ensure proper JSON escaping for all special characters including backslashes in LaTeX expressions.${shouldFormatMath ? ' When dealing with mathematical content, use LaTeX notation extensively for formulas, equations, and calculations.' : ''}` 
           },
           { role: 'user', content: prompt }
         ],
@@ -150,15 +158,40 @@ Generate exactly ${count} questions.`;
     const generatedContent = data.choices[0].message.content;
     console.log('Generated content received');
 
-    // Parse the JSON response
+    // Sanitize and parse the JSON response
     let questionsData;
     try {
-      questionsData = JSON.parse(generatedContent);
+      // Clean the content to handle common JSON issues
+      let cleanedContent = generatedContent.trim();
+      
+      // Remove any text before the first { and after the last }
+      const firstBrace = cleanedContent.indexOf('{');
+      const lastBrace = cleanedContent.lastIndexOf('}');
+      
+      if (firstBrace === -1 || lastBrace === -1) {
+        throw new Error('No valid JSON structure found');
+      }
+      
+      cleanedContent = cleanedContent.substring(firstBrace, lastBrace + 1);
+      
+      // Fix common LaTeX escaping issues
+      cleanedContent = cleanedContent
+        // Fix double-escaped backslashes in LaTeX
+        .replace(/\\\\\\\\([a-zA-Z]+)/g, '\\\\$1')
+        // Fix unterminated strings by ensuring proper quote escaping
+        .replace(/([^\\])"/g, '$1\\"')
+        // Fix newlines within JSON strings
+        .replace(/\n(?=\s*[^}])/g, '\\n');
+      
+      questionsData = JSON.parse(cleanedContent);
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', parseError);
-      console.error('Raw content:', generatedContent);
+      console.error('Raw content length:', generatedContent.length);
+      console.error('First 500 chars:', generatedContent.substring(0, 500));
+      console.error('Last 500 chars:', generatedContent.substring(Math.max(0, generatedContent.length - 500)));
+      
       return new Response(JSON.stringify({ 
-        error: 'Failed to parse AI response',
+        error: 'Failed to parse AI response. The AI may have generated malformed JSON.',
         questions: []
       }), {
         status: 500,
