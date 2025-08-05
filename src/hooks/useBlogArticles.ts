@@ -22,8 +22,6 @@ export const useBlogArticles = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchArticles = useCallback(async () => {
-    if (loading) return; // Prevent multiple simultaneous requests
-    
     setLoading(true);
     setError(null);
     
@@ -57,7 +55,7 @@ export const useBlogArticles = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, []);
 
   const createArticle = useCallback(async (articleData: Omit<BlogArticle, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -91,7 +89,7 @@ export const useBlogArticles = () => {
       toast.error(`Failed to create article: ${err.message}`);
       throw err;
     }
-  }, [fetchArticles]);
+  }, []);
 
   const updateArticle = useCallback(async (id: string, articleData: Partial<BlogArticle>) => {
     try {
@@ -126,7 +124,7 @@ export const useBlogArticles = () => {
       toast.error(`Failed to update article: ${err.message}`);
       throw err;
     }
-  }, [fetchArticles]);
+  }, []);
 
   const deleteArticle = useCallback(async (id: string) => {
     try {
@@ -150,7 +148,7 @@ export const useBlogArticles = () => {
       toast.error(`Failed to delete article: ${err.message}`);
       throw err;
     }
-  }, [fetchArticles]);
+  }, []);
 
   const togglePublished = useCallback(async (id: string, currentStatus: boolean) => {
     try {
@@ -174,7 +172,7 @@ export const useBlogArticles = () => {
       toast.error(`Failed to update article status: ${err.message}`);
       throw err;
     }
-  }, [fetchArticles]);
+  }, []);
 
   useEffect(() => {
     fetchArticles();
