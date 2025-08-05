@@ -1,34 +1,25 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Loader, Eye } from 'lucide-react';
-
-type BlogArticle = {
-  id: string;
-  title: string;
-  content: string;
-  excerpt?: string;
-  category: string;
-  author_name?: string;
-  published: boolean;
-  image_url?: string;
-  created_at: string;
-  updated_at: string;
-};
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Search } from 'lucide-react';
+import { useBlogArticles, BlogArticle } from '@/hooks/useBlogArticles';
+import BlogForm from '@/components/admin/blog/BlogForm';
+import BlogTable from '@/components/admin/blog/BlogTable';
 
 const AdminBlog = () => {
-  const [articles, setArticles] = useState<BlogArticle[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { 
+    articles, 
+    loading, 
+    error, 
+    createArticle, 
+    updateArticle, 
+    deleteArticle, 
+    togglePublished 
+  } = useBlogArticles();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<BlogArticle | null>(null);
@@ -46,43 +37,8 @@ const AdminBlog = () => {
 
   const categories = [
     'Education', 'Technology', 'Science', 'Health', 'Business', 
-    'Lifestyle', 'News', 'Tutorial', 'Review', 'Opinion'
+    'Lifestyle', 'News', 'Tutorial', 'Review', 'Opinion', 'test'
   ];
-
-  useEffect(() => {
-    fetchArticles();
-  }, []);
-
-  const fetchArticles = async () => {
-    setLoading(true);
-    try {
-      console.log('Fetching blog articles...');
-      
-      const { data, error } = await supabase
-        .from('blog_articles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching articles:', error);
-        throw error;
-      }
-      
-      console.log('Blog articles fetched:', data);
-      setArticles(data || []);
-      
-      if ((data || []).length === 0) {
-        toast.info('No blog articles found');
-      } else {
-        toast.success(`Loaded ${(data || []).length} articles`);
-      }
-    } catch (error: any) {
-      console.error('Error fetching articles:', error);
-      toast.error(`Failed to fetch articles: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -99,62 +55,35 @@ const AdminBlog = () => {
 
   const handleSaveArticle = async () => {
     if (!formData.title || !formData.content || !formData.category) {
-      toast.error('Please fill in all required fields');
+      console.error('Validation failed: Missing required fields', formData);
       return;
     }
 
     try {
-      console.log('Saving article...', { editingArticle, formData });
-      
-      const articleData = {
-        title: formData.title,
-        content: formData.content,
-        excerpt: formData.excerpt || null,
-        category: formData.category,
-        author_name: formData.author_name || null,
-        published: formData.published,
-        image_url: formData.image_url || null
-      };
-
-      let result;
       if (editingArticle) {
-        console.log('Updating existing article:', editingArticle.id);
-        result = await supabase
-          .from('blog_articles')
-          .update(articleData)
-          .eq('id', editingArticle.id);
+        await updateArticle(editingArticle.id, formData);
       } else {
-        console.log('Creating new article');
-        result = await supabase
-          .from('blog_articles')
-          .insert([articleData]);
+        await createArticle(formData);
       }
-
-      if (result.error) {
-        console.error('Supabase error:', result.error);
-        throw result.error;
-      }
-
-      console.log('Article saved successfully:', result);
-      toast.success(editingArticle ? 'Article updated successfully' : 'Article created successfully');
+      
       setIsDialogOpen(false);
       resetForm();
-      fetchArticles();
-    } catch (error: any) {
-      console.error('Error saving article:', error);
-      toast.error(`Failed to save article: ${error.message}`);
+    } catch (error) {
+      console.error('Failed to save article:', error);
+      // Error handling is done in the hook
     }
   };
 
   const handleEditArticle = (article: BlogArticle) => {
+    console.log('Editing article:', article.id);
     setEditingArticle(article);
     setFormData({
-      title: article.title,
-      content: article.content,
+      title: article.title || '',
+      content: article.content || '',
       excerpt: article.excerpt || '',
-      category: article.category,
+      category: article.category || '',
       author_name: article.author_name || '',
-      published: article.published,
+      published: article.published || false,
       image_url: article.image_url || ''
     });
     setIsDialogOpen(true);
@@ -162,45 +91,18 @@ const AdminBlog = () => {
 
   const handleDeleteArticle = async (articleId: string) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('blog_articles')
-        .delete()
-        .eq('id', articleId);
-
-      if (error) throw error;
-
-      toast.success('Article deleted successfully');
-      fetchArticles();
-    } catch (error: any) {
-      console.error('Error deleting article:', error);
-      toast.error('Failed to delete article');
-    }
-  };
-
-  const togglePublished = async (articleId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('blog_articles')
-        .update({ published: !currentStatus })
-        .eq('id', articleId);
-
-      if (error) throw error;
-
-      toast.success(`Article ${!currentStatus ? 'published' : 'unpublished'} successfully`);
-      fetchArticles();
-    } catch (error: any) {
-      console.error('Error updating article status:', error);
-      toast.error('Failed to update article status');
-    }
+    await deleteArticle(articleId);
   };
 
   const filteredArticles = articles.filter(article =>
-    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (article.author_name && article.author_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    (article.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (article.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (article.author_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (error) {
+    console.error('AdminBlog component error:', error);
+  }
 
   return (
     <div className="space-y-6">
@@ -209,6 +111,7 @@ const AdminBlog = () => {
           <h1 className="text-3xl font-bold tracking-tight">Blog Management</h1>
           <p className="text-muted-foreground">Create and manage blog articles</p>
         </div>
+        
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
@@ -216,103 +119,6 @@ const AdminBlog = () => {
               New Article
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingArticle ? 'Edit Article' : 'Create New Article'}</DialogTitle>
-              <DialogDescription>
-                {editingArticle ? 'Update the article details' : 'Create a new blog article'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({...prev, title: e.target.value}))}
-                    placeholder="Article title"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({...prev, category: e.target.value}))}
-                    className="w-full px-3 py-2 border border-input rounded-md"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="author">Author Name</Label>
-                  <Input
-                    id="author"
-                    value={formData.author_name}
-                    onChange={(e) => setFormData(prev => ({...prev, author_name: e.target.value}))}
-                    placeholder="Author name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="image_url">Image URL</Label>
-                  <Input
-                    id="image_url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData(prev => ({...prev, image_url: e.target.value}))}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="excerpt">Excerpt</Label>
-                <Textarea
-                  id="excerpt"
-                  value={formData.excerpt}
-                  onChange={(e) => setFormData(prev => ({...prev, excerpt: e.target.value}))}
-                  placeholder="Brief summary of the article"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({...prev, content: e.target.value}))}
-                  placeholder="Article content (Markdown supported)"
-                  rows={10}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="published"
-                  checked={formData.published}
-                  onCheckedChange={(checked) => setFormData(prev => ({...prev, published: checked}))}
-                />
-                <Label htmlFor="published">Publish immediately</Label>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveArticle}>
-                {editingArticle ? 'Update Article' : 'Create Article'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
         </Dialog>
       </div>
 
@@ -333,83 +139,25 @@ const AdminBlog = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader className="h-8 w-8 animate-spin" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredArticles.map((article) => (
-                  <TableRow key={article.id}>
-                    <TableCell className="max-w-md">
-                      <div className="truncate font-medium">{article.title}</div>
-                      {article.excerpt && (
-                        <div className="text-sm text-muted-foreground truncate">
-                          {article.excerpt}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{article.category}</Badge>
-                    </TableCell>
-                    <TableCell>{article.author_name || 'Unknown'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={article.published ? "default" : "secondary"}>
-                          {article.published ? 'Published' : 'Draft'}
-                        </Badge>
-                        <Switch
-                          checked={article.published}
-                          onCheckedChange={() => togglePublished(article.id, article.published)}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(article.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(`/blog/${article.id}`, '_blank')}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditArticle(article)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteArticle(article.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <BlogTable
+            articles={filteredArticles}
+            loading={loading}
+            onEdit={handleEditArticle}
+            onDelete={handleDeleteArticle}
+            onTogglePublished={togglePublished}
+          />
         </CardContent>
       </Card>
+
+      <BlogForm
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        formData={formData}
+        onFormDataChange={setFormData}
+        onSave={handleSaveArticle}
+        isEditing={!!editingArticle}
+        categories={categories}
+      />
     </div>
   );
 };

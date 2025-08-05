@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
@@ -23,32 +24,42 @@ export const useTestBlogs = (subject?: string) => {
   const query = useQuery({
     queryKey: ['test-blogs', subject],
     queryFn: async () => {
-      let queryBuilder = supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('published', true)
-        .eq('category', 'test')
-        .order('created_at', { ascending: false });
+      try {
+        console.log('Fetching test blogs with subject:', subject);
+        
+        let queryBuilder = supabase
+          .from('blog_posts')
+          .select('*')
+          .eq('published', true)
+          .eq('category', 'test')
+          .order('created_at', { ascending: false });
 
-      // Filter by subject if provided
-      if (subject) {
-        queryBuilder = queryBuilder.ilike('content', `%${subject}%`);
+        // Filter by subject if provided
+        if (subject) {
+          queryBuilder = queryBuilder.ilike('content', `%${subject}%`);
+        }
+
+        const { data, error } = await queryBuilder;
+
+        if (error) {
+          console.error('Error fetching test blogs:', error);
+          throw error;
+        }
+
+        console.log(`Successfully fetched ${(data || []).length} test blogs`);
+        return (data || []) as TestBlogPost[];
+      } catch (err) {
+        console.error('Unexpected error in useTestBlogs:', err);
+        throw err;
       }
-
-      const { data, error } = await queryBuilder;
-
-      if (error) {
-        console.error('Error fetching test blogs:', error);
-        throw error;
-      }
-
-      return (data || []) as TestBlogPost[];
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Set up real-time subscription for blog posts
   useEffect(() => {
+    console.log('Setting up real-time subscription for test blogs');
+    
     const channel = supabase
       .channel('test-blogs-realtime')
       .on(
@@ -64,9 +75,12 @@ export const useTestBlogs = (subject?: string) => {
           query.refetch();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up real-time subscription for test blogs');
       supabase.removeChannel(channel);
     };
   }, [query.refetch]);
