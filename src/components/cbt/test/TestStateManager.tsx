@@ -31,6 +31,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
   // State for guest test taker info
   const [guestTestTakerInfo, setGuestTestTakerInfo] = React.useState<GuestTestTakerInfo | null>(null);
   const [showGuestForm, setShowGuestForm] = React.useState(false);
+  const [guestPreviousAttempts, setGuestPreviousAttempts] = React.useState<number>(0);
 
   // Quiz settings
   const [settings] = React.useState({
@@ -54,6 +55,22 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
       setShowGuestForm(true);
     }
   }, [user, isSubjectQuiz, guestTestTakerInfo, userTest.loading, userTest.testDetails]);
+
+  // For guests: check previous attempts by email when info is provided and retakes are disallowed
+  React.useEffect(() => {
+    const checkGuestAttempts = async () => {
+      if (
+        !user &&
+        guestTestTakerInfo?.email &&
+        userTest.testDetails &&
+        userTest.testDetails.allow_retakes === false
+      ) {
+        const count = await userTest.checkPreviousAttemptsByEmail(guestTestTakerInfo.email);
+        setGuestPreviousAttempts(count);
+      }
+    };
+    checkGuestAttempts();
+  }, [user, guestTestTakerInfo?.email, userTest.testDetails]);
 
   const handleGuestFormSubmit = (info: GuestTestTakerInfo) => {
     setGuestTestTakerInfo(info);
@@ -132,8 +149,13 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
 
   // Render pre-test states
   if (!testStarted) {
-    // Check for attempt blocking - now works only for logged-in users
-    if (!isSubjectQuiz && userTest.previousAttempts > 0 && testDetails && !testDetails.allow_retakes) {
+    // Enforce single-attempt policy for both logged-in users and guests
+    if (
+      !isSubjectQuiz &&
+      testDetails &&
+      testDetails.allow_retakes === false &&
+      ((user && userTest.previousAttempts > 0) || (!user && guestPreviousAttempts > 0))
+    ) {
       return <AttemptBlockedState testDetails={testDetails} />;
     }
 
@@ -142,7 +164,7 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
         testDetails={testDetails}
         questions={questions}
         location={location}
-        previousAttempts={!isSubjectQuiz ? userTest.previousAttempts : 0}
+        previousAttempts={!isSubjectQuiz ? (user ? userTest.previousAttempts : guestPreviousAttempts) : 0}
         onStartTest={isSubjectQuiz ? subjectQuiz.startTest : testManagement.startTest}
         onShowTakerForm={() => {}} // No longer needed
         user={user}
