@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,7 +21,11 @@ export const useBlogArticles = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isFetchingRef = useRef(false);
+
   const fetchArticles = useCallback(async () => {
+    if (isFetchingRef.current) { console.log('Fetch skipped: already in progress'); return; }
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     
@@ -53,6 +57,7 @@ export const useBlogArticles = () => {
       setError(errorMessage);
       toast.error(`Failed to fetch articles: ${errorMessage}`);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
