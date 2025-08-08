@@ -159,41 +159,18 @@ Generate exactly ${count} questions.`;
     const generatedContent = data.choices[0].message.content;
     console.log('Generated content received');
 
-    // Sanitize and parse the JSON response
+    // Parse the JSON response directly (response_format=json_object ensures valid JSON)
     let questionsData;
     try {
-      // Clean the content to handle common JSON issues
-      let cleanedContent = generatedContent.trim();
-      
-      // Remove any text before the first { and after the last }
-      const firstBrace = cleanedContent.indexOf('{');
-      const lastBrace = cleanedContent.lastIndexOf('}');
-      
-      if (firstBrace === -1 || lastBrace === -1) {
-        throw new Error('No valid JSON structure found');
-      }
-      
-      cleanedContent = cleanedContent.substring(firstBrace, lastBrace + 1);
-      
-      // Fix common LaTeX escaping issues
-      cleanedContent = cleanedContent
-        // Fix double-escaped backslashes in LaTeX
-        .replace(/\\\\\\\\([a-zA-Z]+)/g, '\\\\$1')
-        // Fix unterminated strings by ensuring proper quote escaping
-        .replace(/([^\\])"/g, '$1\\"')
-        // Fix newlines within JSON strings
-        .replace(/\n(?=\s*[^}])/g, '\\n');
-      
-      questionsData = JSON.parse(cleanedContent);
+      const trimmed = (generatedContent ?? '').trim();
+      questionsData = JSON.parse(trimmed);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response as JSON:', parseError);
-      console.error('Raw content length:', generatedContent.length);
-      console.error('First 500 chars:', generatedContent.substring(0, 500));
-      console.error('Last 500 chars:', generatedContent.substring(Math.max(0, generatedContent.length - 500)));
-      
+      console.error('JSON parse error from OpenAI content:', parseError);
+      console.error('Content preview:', (generatedContent ?? '').slice(0, 500));
       return new Response(JSON.stringify({ 
-        error: 'Failed to parse AI response. The AI may have generated malformed JSON.',
-        questions: []
+        error: 'Failed to parse AI response JSON',
+        details: String(parseError),
+        rawPreview: (generatedContent ?? '').slice(0, 500)
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
