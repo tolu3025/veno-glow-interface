@@ -170,6 +170,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
         <div>
           <div className="flex justify-between">
             <Label>Number of Questions: {questionCount}</Label>
+            <span className="text-sm text-muted-foreground">Range: 5-70</span>
           </div>
           <Slider 
             value={[questionCount]} 
@@ -184,6 +185,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
         <div>
           <div className="flex justify-between">
             <Label>Time Limit: {timeLimit} minutes</Label>
+            <span className="text-sm text-muted-foreground">Range: 10-180 min</span>
           </div>
           <Slider 
             value={[timeLimit]} 
