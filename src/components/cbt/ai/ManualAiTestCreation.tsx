@@ -40,8 +40,8 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   const [timeLimit, setTimeLimit] = useState(30);
   const [instructions, setInstructions] = useState('');
   const [description, setDescription] = useState('');
-  const [allowRetakes, setAllowRetakes] = useState(true);
-  const [resultsVisibility, setResultsVisibility] = useState('test_takers');
+  const [allowRetakes, setAllowRetakes] = useState(false);
+  const [resultsVisibility, setResultsVisibility] = useState('public');
 
   const subjects = ["Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "History", "Geography", "Literature", "custom"];
 

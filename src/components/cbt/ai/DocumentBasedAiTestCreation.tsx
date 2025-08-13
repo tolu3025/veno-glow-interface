@@ -35,8 +35,8 @@ const DocumentBasedAiTestCreation: React.FC<DocumentBasedAiTestCreationProps> = 
   const [questionCount, setQuestionCount] = useState(10);
   const [timeLimit, setTimeLimit] = useState(30);
   const [instructions, setInstructions] = useState('');
-  const [allowRetakes, setAllowRetakes] = useState(true);
-  const [resultsVisibility, setResultsVisibility] = useState('test_takers');
+  const [allowRetakes, setAllowRetakes] = useState(false);
+  const [resultsVisibility, setResultsVisibility] = useState('public');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const acceptedFileTypes = '.pdf,.docx,.ppt,.pptx';
