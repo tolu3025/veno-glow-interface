@@ -1,5 +1,9 @@
 
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Button } from '@/components/ui/button';
 import { VenoLogo } from '@/components/ui/logo';
 import { Progress } from '@/components/ui/progress';
@@ -166,7 +170,17 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         <CardContent>
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium mb-2">{questionText}</h3>
+              <div className="text-lg font-medium mb-2">
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={{
+                    p: ({ children }) => <span>{children}</span>,
+                  }}
+                >
+                  {questionText}
+                </ReactMarkdown>
+              </div>
               {currentQuestionData?.explanation && (
                 <p className="text-sm text-muted-foreground italic mb-4">
                   (This question includes an explanation that will be available after completion)
@@ -193,7 +207,17 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                       }`}>
                         {String.fromCharCode(65 + index)}
                       </div>
-                      <div>{option}</div>
+                      <div>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            p: ({ children }) => <span>{children}</span>,
+                          }}
+                        >
+                          {option}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 ))

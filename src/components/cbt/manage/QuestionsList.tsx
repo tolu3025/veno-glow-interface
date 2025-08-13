@@ -1,5 +1,9 @@
 
 import React, { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { motion } from 'framer-motion';
 import { 
   PencilIcon, 
@@ -236,7 +240,17 @@ export const QuestionsList = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="mb-4">{question.question}</p>
+                  <div className="mb-4">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                      components={{
+                        p: ({ children }) => <p>{children}</p>,
+                      }}
+                    >
+                      {question.question}
+                    </ReactMarkdown>
+                  </div>
                   <div className="space-y-2">
                     {question.options.map((option, optionIndex) => (
                       <div 
@@ -251,7 +265,17 @@ export const QuestionsList = ({
                           }`}>
                             {String.fromCharCode(65 + optionIndex)}
                           </div>
-                          <span>{option}</span>
+                          <div>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                              components={{
+                                p: ({ children }) => <span>{children}</span>,
+                              }}
+                            >
+                              {option}
+                            </ReactMarkdown>
+                          </div>
                           {optionIndex === question.answer && (
                             <Check size={16} className="ml-2 text-green-500" />
                           )}
@@ -265,7 +289,17 @@ export const QuestionsList = ({
                         <BookOpen size={20} className="mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Explanation:</p>
-                          <p className="text-blue-700 dark:text-blue-300/90">{question.explanation}</p>
+                          <div>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                              components={{
+                                p: ({ children }) => <p className="text-blue-700 dark:text-blue-300/90">{children}</p>,
+                              }}
+                            >
+                              {question.explanation}
+                            </ReactMarkdown>
+                          </div>
                         </div>
                       </div>
                     </div>
