@@ -146,14 +146,43 @@ Generate exactly ${batchSize} questions.`;
 
       const generatedContent = data.choices[0].message.content;
       
-      // Parse the JSON response
+      // Parse the JSON response with robust error handling
       let questionsData;
       try {
         const trimmed = (generatedContent ?? '').trim();
-        questionsData = JSON.parse(trimmed);
+        
+        // Check if JSON is complete by counting braces
+        const openBraces = (trimmed.match(/{/g) || []).length;
+        const closeBraces = (trimmed.match(/}/g) || []).length;
+        
+        if (openBraces !== closeBraces) {
+          console.error('Incomplete JSON detected - mismatched braces:', { openBraces, closeBraces });
+          console.error('Content preview:', trimmed.slice(0, 1000));
+          throw new Error('Incomplete JSON response from OpenAI - possibly truncated');
+        }
+        
+        // Try to find valid JSON within the response
+        let jsonStartIndex = trimmed.indexOf('{');
+        let jsonEndIndex = trimmed.lastIndexOf('}');
+        
+        if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+          throw new Error('No valid JSON found in response');
+        }
+        
+        const jsonString = trimmed.substring(jsonStartIndex, jsonEndIndex + 1);
+        questionsData = JSON.parse(jsonString);
+        
       } catch (parseError) {
         console.error('JSON parse error from OpenAI content:', parseError);
-        console.error('Content preview:', (generatedContent ?? '').slice(0, 500));
+        console.error('Content preview:', (generatedContent ?? '').slice(0, 1000));
+        console.error('Content length:', (generatedContent ?? '').length);
+        
+        // If JSON parsing fails, try to regenerate with smaller batch
+        if (batchSize > 5) {
+          console.log('Retrying with smaller batch size due to JSON parse error');
+          return await generateQuestionsInBatch(Math.floor(batchSize / 2));
+        }
+        
         throw new Error(`Failed to parse AI response JSON: ${String(parseError)}`);
       }
 
