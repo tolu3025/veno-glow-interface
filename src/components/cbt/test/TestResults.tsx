@@ -540,7 +540,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                 <Button variant="outline" className="flex-1" onClick={onFinish}>
                   Back to Tests
                 </Button>
-                {(testDetails?.allow_retakes || testId === 'subject') && onTryAgain && (
+                {(testDetails?.allow_retakes !== false || testId === 'subject') && onTryAgain && (
                   <Button 
                     className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
                     onClick={onTryAgain}

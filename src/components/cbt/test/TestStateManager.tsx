@@ -149,15 +149,15 @@ const TestStateManager: React.FC<TestStateManagerProps> = ({ testId }) => {
 
   // Render pre-test states
   if (!testStarted) {
-    // Enforce single-attempt policy for both logged-in users and guests
-    if (
-      !isSubjectQuiz &&
-      testDetails &&
-      testDetails.allow_retakes === false &&
-      ((user && userTest.previousAttempts > 0) || (!user && guestPreviousAttempts > 0))
-    ) {
-      return <AttemptBlockedState testDetails={testDetails} />;
-    }
+  // Enforce single-attempt policy for both logged-in users and guests
+  if (
+    !isSubjectQuiz &&
+    testDetails &&
+    testDetails.allow_retakes === false &&
+    ((user && userTest.previousAttempts > 0) || (!user && guestPreviousAttempts > 0))
+  ) {
+    return <AttemptBlockedState testDetails={testDetails} />;
+  }
 
     return (
       <TestInstructions
