@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1680,7 +1680,7 @@ export type Database = {
     }
     Functions: {
       ban_user: {
-        Args: { target_user_id: string; reason: string; expires_at?: string }
+        Args: { expires_at?: string; reason: string; target_user_id: string }
         Returns: string
       }
       check_if_table_exists: {
@@ -1689,10 +1689,10 @@ export type Database = {
       }
       create_notification: {
         Args: {
-          p_user_email: string
-          p_title: string
           p_message: string
+          p_title: string
           p_type: string
+          p_user_email: string
         }
         Returns: string
       }
@@ -1733,7 +1733,7 @@ export type Database = {
         Returns: string
       }
       dblink_fdw_validator: {
-        Args: { options: string[]; catalog: unknown }
+        Args: { catalog: unknown; options: string[] }
         Returns: undefined
       }
       dblink_get_connections: {
@@ -1765,33 +1765,33 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_new_questions: {
-        Args: { p_user_id: string; p_subject: string }
+        Args: { p_subject: string; p_user_id: string }
         Returns: {
-          id: string
-          subject: string
-          question: string
-          options: Json
           answer: number
           difficulty: Database["public"]["Enums"]["question_difficulty"]
+          id: string
+          options: Json
+          question: string
+          subject: string
         }[]
       }
       get_new_static_questions: {
-        Args: { p_user_id: string; p_subject: string }
+        Args: { p_subject: string; p_user_id: string }
         Returns: {
-          id: string
-          subject: string
-          question: string
-          options: Json
           answer: number
           difficulty: Database["public"]["Enums"]["question_difficulty"]
+          id: string
+          options: Json
+          question: string
+          subject: string
         }[]
       }
       get_public_results: {
         Args: Record<PropertyKey, never>
         Returns: {
+          created_at: string
           participant_email: string
           score: number
-          created_at: string
         }[]
       }
       get_realtime_status: {
@@ -1808,28 +1808,28 @@ export type Database = {
       get_test_leaderboard: {
         Args: { test_id: string }
         Returns: {
-          participant_name: string
+          completed_at: string
           participant_email: string
+          participant_name: string
+          percentage: number
           score: number
           total_questions: number
-          percentage: number
-          completed_at: string
         }[]
       }
       get_top_tests: {
         Args: { limit_count?: number }
         Returns: {
-          test_id: string
           count: number
+          test_id: string
         }[]
       }
       get_user_activity_summary: {
         Args: Record<PropertyKey, never>
         Returns: {
+          recent_signups: number
+          total_points: number
           total_users: number
           verified_users: number
-          total_points: number
-          recent_signups: number
         }[]
       }
       get_user_role: {
@@ -1837,7 +1837,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       has_role: {
-        Args: { user_id: string; role: Database["public"]["Enums"]["app_role"] }
+        Args: { role: Database["public"]["Enums"]["app_role"]; user_id: string }
         Returns: boolean
       }
       is_admin: {
@@ -1854,21 +1854,21 @@ export type Database = {
       }
       register_investor: {
         Args: {
-          p_email: string
-          p_password: string
-          p_name: string
-          p_initial_investment: number
           p_current_value: number
+          p_email: string
+          p_initial_investment: number
+          p_name: string
+          p_password: string
           p_roi: number
         }
         Returns: undefined
       }
       send_admin_notification: {
         Args: {
-          target_user_email: string
-          notification_title: string
           notification_message: string
+          notification_title: string
           notification_type?: string
+          target_user_email: string
         }
         Returns: string
       }
