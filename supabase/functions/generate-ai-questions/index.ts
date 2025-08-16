@@ -194,26 +194,34 @@ Generate exactly ${batchSize} questions.`;
       return questionsData.questions;
     };
 
-    // Determine batching strategy
+    // Determine batching strategy - Always ensure we generate the exact count requested
     let allQuestions = [];
     
     if (count > 30) {
       // For large requests, use batching
       console.log(`Large request detected (${count} questions). Using batching strategy.`);
-      const batchSize = 25; // Smaller batches for reliability
+      const batchSize = 20; // Smaller batches for better reliability
       const numBatches = Math.ceil(count / batchSize);
       
       for (let i = 0; i < numBatches; i++) {
-        const remainingQuestions = count - (i * batchSize);
+        const remainingQuestions = count - allQuestions.length;
         const currentBatchSize = Math.min(batchSize, remainingQuestions);
+        
+        if (currentBatchSize <= 0) break;
         
         console.log(`Generating batch ${i + 1}/${numBatches} with ${currentBatchSize} questions`);
         const batchQuestions = await generateQuestionsInBatch(currentBatchSize);
         allQuestions.push(...batchQuestions);
         
+        // Check if we have enough questions
+        if (allQuestions.length >= count) {
+          allQuestions = allQuestions.slice(0, count); // Trim to exact count
+          break;
+        }
+        
         // Short delay between batches to avoid rate limiting
         if (i < numBatches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
     } else {

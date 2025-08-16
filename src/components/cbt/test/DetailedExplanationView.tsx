@@ -71,8 +71,13 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
   const processLatexContent = (text: string) => {
     if (!text) return text;
 
-    // Process display math first ($$...$$, \[...\])
+    // First handle escaped characters and newlines
     let processedText = text
+      .replace(/\\n/g, '\n')
+      .replace(/\\\\/g, '\\');
+
+    // Process display math first ($$...$$, \[...\])
+    processedText = processedText
       .replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
         const rendered = renderDisplayLatex(math.trim());
         return `<div class="math-display my-4 text-center">${rendered}</div>`;
@@ -82,7 +87,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         return `<div class="math-display my-4 text-center">${rendered}</div>`;
       });
 
-    // Process inline math (\(...\), $...$)
+    // Process inline math (\(...\), $...$) - enhanced patterns
     processedText = processedText
       .replace(/\\\((.*?)\\\)/g, (_, math) => {
         const rendered = renderLatex(math.trim());
@@ -90,6 +95,21 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       })
       .replace(/\$([^$\n]+?)\$/g, (_, math) => {
         const rendered = renderLatex(math.trim());
+        return `<span class="math-inline">${rendered}</span>`;
+      });
+
+    // Handle common LaTeX patterns that might not be wrapped
+    processedText = processedText
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, (match) => {
+        const rendered = renderLatex(match);
+        return `<span class="math-inline">${rendered}</span>`;
+      })
+      .replace(/\\int(_[^\\s]+)?(\^[^\\s]+)?/g, (match) => {
+        const rendered = renderLatex(match);
+        return `<span class="math-inline">${rendered}</span>`;
+      })
+      .replace(/\\(arcsin|arccos|arctan|sin|cos|tan|log|ln)\b/g, (match) => {
+        const rendered = renderLatex(match);
         return `<span class="math-inline">${rendered}</span>`;
       });
 
