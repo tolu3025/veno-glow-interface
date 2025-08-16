@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import DetailedExplanationView from '@/components/cbt/test/DetailedExplanationView';
+import 'katex/dist/katex.min.css';
 
 const QuizExplanations: React.FC = () => {
   const location = useLocation();
