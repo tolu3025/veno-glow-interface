@@ -117,9 +117,37 @@ const QuizExplanations: React.FC = () => {
     }
   };
 
+  // Simplify explanations for layman understanding
+  const simplifyExplanation = (text: string): string => {
+    // Replace technical terms with simpler ones
+    const simplifications: { [key: string]: string } = {
+      'coefficient': 'number in front of',
+      'polynomial': 'expression with multiple terms',
+      'derivative': 'rate of change',
+      'integral': 'area under curve',
+      'function': 'mathematical rule',
+      'variable': 'unknown value',
+      'theorem': 'mathematical rule',
+      'proof': 'step-by-step verification',
+      'substitution': 'replacing with',
+      'factorization': 'breaking down into parts',
+      'equation': 'mathematical statement',
+      'expression': 'mathematical phrase'
+    };
+
+    let simplified = text;
+    Object.entries(simplifications).forEach(([technical, simple]) => {
+      const regex = new RegExp(`\\b${technical}\\b`, 'gi');
+      simplified = simplified.replace(regex, `${technical} (${simple})`);
+    });
+
+    return simplified;
+  };
+
   // Format step-by-step explanations for mathematical content
   const formatMathematicalExplanation = (explanation: string): JSX.Element[] => {
-    const paragraphs = explanation.split('\n').filter(p => p.trim());
+    const simplifiedExplanation = simplifyExplanation(explanation);
+    const paragraphs = simplifiedExplanation.split('\n').filter(p => p.trim());
     
     return paragraphs.map((paragraph, index) => {
       const trimmed = paragraph.trim();
@@ -128,7 +156,7 @@ const QuizExplanations: React.FC = () => {
       if (/^Step\s+\d+:/i.test(trimmed)) {
         return (
           <div key={index} className="mb-4">
-            <h4 className="font-semibold text-primary mb-2 border-l-4 border-primary pl-3">
+            <h4 className="font-semibold text-primary mb-2 border-l-4 border-primary pl-3 bg-primary/5 dark:bg-primary/10 py-2 rounded-r">
               <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
             </h4>
           </div>
@@ -139,7 +167,7 @@ const QuizExplanations: React.FC = () => {
       if (/^(calculation|solution|working):/i.test(trimmed)) {
         return (
           <div key={index} className="mb-4">
-            <div className="bg-muted/50 rounded-lg p-4 border-l-4 border-accent">
+            <div className="bg-muted/50 dark:bg-muted/20 rounded-lg p-4 border-l-4 border-accent">
               <div className="font-medium text-accent-foreground mb-2">
                 <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
               </div>
@@ -152,7 +180,7 @@ const QuizExplanations: React.FC = () => {
       if (/^(therefore|thus|hence|so|the answer is)/i.test(trimmed)) {
         return (
           <div key={index} className="mb-4">
-            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
+            <div className="bg-primary/10 dark:bg-primary/20 rounded-lg p-4 border border-primary/20 dark:border-primary/30">
               <div className="font-medium text-primary">
                 <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
               </div>
@@ -161,10 +189,10 @@ const QuizExplanations: React.FC = () => {
         );
       }
 
-      // Regular explanation text
+      // Regular explanation text with better readability
       return (
         <div key={index} className="mb-3">
-          <p className="text-foreground leading-relaxed">
+          <p className="text-foreground leading-relaxed text-sm">
             <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
           </p>
         </div>
@@ -174,11 +202,12 @@ const QuizExplanations: React.FC = () => {
 
   // Format regular explanations (non-mathematical)
   const formatRegularExplanation = (explanation: string): JSX.Element[] => {
-    const paragraphs = explanation.split('\n').filter(p => p.trim());
+    const simplifiedExplanation = simplifyExplanation(explanation);
+    const paragraphs = simplifiedExplanation.split('\n').filter(p => p.trim());
     
     return paragraphs.map((paragraph, index) => (
       <div key={index} className="mb-3">
-        <p className="text-foreground leading-relaxed">
+        <p className="text-foreground leading-relaxed text-sm">
           <span dangerouslySetInnerHTML={{ __html: renderLatexContent(paragraph.trim()) }} />
         </p>
       </div>
@@ -222,13 +251,13 @@ const QuizExplanations: React.FC = () => {
 
       {/* Questions and Explanations */}
       <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-        {questions.map((question: Question, index: number) => {
-          const userAnswer = userAnswers.find((ua: UserAnswer) => ua.questionId === question.id);
-          const isCorrect = userAnswer?.selectedOption === question.correctOption;
-          const isMathematical = isMathematicalContent(question.explanation);
+      {questions.map((question: Question, index: number) => {
+        const userAnswer = userAnswers.find((ua: UserAnswer) => ua.questionId === question.id);
+        const isCorrect = userAnswer?.selectedOption === question.correctOption;
+        const isMathematical = isMathematicalContent(question.explanation);
 
-          return (
-            <Card key={question.id} className={`${isCorrect ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+        return (
+          <Card key={question.id} className={`${isCorrect ? 'border-green-500/30 bg-green-50/30 dark:border-green-400/30 dark:bg-green-900/20' : 'border-red-500/30 bg-red-50/30 dark:border-red-400/30 dark:bg-red-900/20'}`}>
               <CardHeader className="pb-4">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
@@ -264,13 +293,13 @@ const QuizExplanations: React.FC = () => {
                     return (
                       <div
                         key={optionIndex}
-                        className={`p-3 rounded-lg border ${
-                          isCorrectOption
-                            ? 'border-green-300 bg-green-50'
-                            : isSelected
-                            ? 'border-red-300 bg-red-50'
-                            : 'border-gray-200 bg-gray-50'
-                        }`}
+                      className={`p-3 rounded-lg border ${
+                        isCorrectOption
+                          ? 'border-green-500/30 bg-green-50/50 dark:border-green-400/30 dark:bg-green-900/20'
+                          : isSelected
+                          ? 'border-red-500/30 bg-red-50/50 dark:border-red-400/30 dark:bg-red-900/20'
+                          : 'border-border bg-muted/30'
+                      }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm">

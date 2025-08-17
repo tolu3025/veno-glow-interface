@@ -443,7 +443,9 @@ const TestResults: React.FC<TestResultsProps> = ({
                 See all questions, your answers, and detailed explanations
               </p>
               <div className="flex flex-col gap-2">
-                {onReviewAnswers}
+                <Button onClick={onReviewAnswers} variant="outline" className="w-full">
+                  Review Answers
+                </Button>
                 <Button onClick={() => {
                 navigate('/cbt/quiz/explanations', {
                   state: {
