@@ -68,7 +68,7 @@ const AiCreateTest = () => {
           question_count: data.questions.length,
           time_limit: params.timeLimit,
           results_visibility: params.resultsVisibility,
-          allow_retakes: params.allowRetakes === true,
+          allow_retakes: params.allowRetakes,
           creator_id: user.id
         })
         .select()
