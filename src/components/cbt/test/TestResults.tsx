@@ -14,28 +14,12 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import html2canvas from 'html2canvas';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 interface TestResultsProps {
   score: number;
   questions: any[];
@@ -53,20 +37,17 @@ interface TestResultsProps {
   savingError?: string | null;
   userAnswers?: (number | null)[];
 }
-
 const formSchema = z.object({
   description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
+    message: "Description must be at least 10 characters."
+  })
 });
-
 const getProgressColorClass = (percentage: number): string => {
   if (percentage >= 80) return "bg-green-500";
   if (percentage >= 70) return "bg-blue-500";
   if (percentage >= 50) return "bg-amber-500";
   return "bg-rose-500";
 };
-
 const TestResults: React.FC<TestResultsProps> = ({
   score,
   questions,
@@ -82,14 +63,12 @@ const TestResults: React.FC<TestResultsProps> = ({
   onTryAgain,
   formatTime,
   savingError,
-  userAnswers = [],
+  userAnswers = []
 }) => {
-  const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
-  
+  const percentage = questions.length > 0 ? Math.round(score / questions.length * 100) : 0;
   let resultMessage = "Good effort!";
   let resultClass = "text-amber-500";
   let resultEmoji = "🎯";
-  
   if (percentage >= 90) {
     resultMessage = "Outstanding!";
     resultClass = "text-emerald-500";
@@ -122,9 +101,8 @@ const TestResults: React.FC<TestResultsProps> = ({
 
   // Fix time calculations
   const timeLimit = testDetails?.time_limit || location?.state?.settings?.timeLimit || 15;
-  const timeTaken = Math.max(0, (timeLimit * 60) - timeRemaining);
-  const timeEfficiency = timeLimit > 0 ? Math.min(100, Math.round((timeTaken / (timeLimit * 60)) * 100)) : 0;
-  
+  const timeTaken = Math.max(0, timeLimit * 60 - timeRemaining);
+  const timeEfficiency = timeLimit > 0 ? Math.min(100, Math.round(timeTaken / (timeLimit * 60) * 100)) : 0;
   console.log('Time calculations:', {
     timeLimit,
     timeRemaining,
@@ -132,15 +110,14 @@ const TestResults: React.FC<TestResultsProps> = ({
     timeEfficiency,
     timeLimitInSeconds: timeLimit * 60
   });
-  
   const navigate = useNavigate();
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: "",
-    },
+      description: ""
+    }
   });
 
   // Format user answers for explanations page
@@ -160,13 +137,14 @@ const TestResults: React.FC<TestResultsProps> = ({
     const loadResults = async () => {
       if (testDetails?.results_visibility === 'public' && testId && publicResults?.length === 0) {
         try {
-          const { data, error } = await supabase
-            .from('test_attempts')
-            .select('*')
-            .eq('test_id', testId)
-            .order('score', { ascending: false })
-            .order('completed_at', { ascending: true });
-            
+          const {
+            data,
+            error
+          } = await supabase.from('test_attempts').select('*').eq('test_id', testId).order('score', {
+            ascending: false
+          }).order('completed_at', {
+            ascending: true
+          });
           if (error) throw error;
           console.log("Public results loaded from TestResults component:", data?.length || 0);
         } catch (error) {
@@ -174,22 +152,16 @@ const TestResults: React.FC<TestResultsProps> = ({
         }
       }
     };
-    
     loadResults();
   }, [testDetails, testId, publicResults]);
-
   const findRank = (): string => {
-    if (!publicResults || publicResults.length === 0 || 
-        (!testTakerInfo?.email && !user?.email)) {
+    if (!publicResults || publicResults.length === 0 || !testTakerInfo?.email && !user?.email) {
       return "N/A";
     }
-    
     const userEmail = testTakerInfo?.email || user?.email;
     const position = publicResults.findIndex(entry => entry.participant_email === userEmail);
-    
     return position >= 0 ? `${position + 1} of ${publicResults.length}` : "N/A";
   };
-
   const shareAsImage = async () => {
     if (resultRef.current) {
       try {
@@ -201,35 +173,30 @@ const TestResults: React.FC<TestResultsProps> = ({
         link.click();
         toast({
           title: "Success!",
-          description: "Results saved as image",
+          description: "Results saved as image"
         });
       } catch (error) {
         console.error("Error generating image:", error);
         toast({
           title: "Error",
           description: "Failed to generate image",
-          variant: "destructive",
+          variant: "destructive"
         });
       }
     }
   };
-
   const onFlaggedSubmit = (values: z.infer<typeof formSchema>) => {
-    const whatsappText = encodeURIComponent(
-      `Flagged Questions Report\n\nTest: ${testDetails?.title || location?.state?.subject || testId}\n\nDescription: ${values.description}\n\nUser: ${testTakerInfo?.name || user?.email || 'Anonymous'}`
-    );
+    const whatsappText = encodeURIComponent(`Flagged Questions Report\n\nTest: ${testDetails?.title || location?.state?.subject || testId}\n\nDescription: ${values.description}\n\nUser: ${testTakerInfo?.name || user?.email || 'Anonymous'}`);
     window.open(`https://wa.me/+2347065684718?text=${whatsappText}`, '_blank');
     toast({
       title: "Report sent!",
-      description: "Your flagged questions report has been submitted",
+      description: "Your flagged questions report has been submitted"
     });
   };
 
   // Check if this is a public test to show leaderboard
   const shouldShowLeaderboard = testDetails?.results_visibility === 'public' && publicResults && publicResults.length > 0;
-
-  return (
-    <div>
+  return <div>
       <div ref={resultRef}>
         <Card className="mb-6">
           <CardHeader className="pb-4">
@@ -304,12 +271,10 @@ const TestResults: React.FC<TestResultsProps> = ({
                       {formatTime(timeLimit * 60)}
                     </span>
                   </li>
-                  {shouldShowLeaderboard && findRank() !== "N/A" && (
-                    <li className="flex justify-between">
+                  {shouldShowLeaderboard && findRank() !== "N/A" && <li className="flex justify-between">
                       <span className="text-muted-foreground">Rank:</span>
                       <span className="font-medium">{findRank()}</span>
-                    </li>
-                  )}
+                    </li>}
                 </ul>
               </div>
               
@@ -323,10 +288,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                         {percentage}%
                       </Badge>
                     </div>
-                    <Progress 
-                      value={percentage} 
-                      className={`h-2 ${getProgressColorClass(percentage)}`}
-                    />
+                    <Progress value={percentage} className={`h-2 ${getProgressColorClass(percentage)}`} />
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
@@ -344,41 +306,27 @@ const TestResults: React.FC<TestResultsProps> = ({
                   <div className="pt-2">
                     <Separator className="my-2" />
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {percentage >= 80 && (
-                        <Badge className="bg-green-500">
+                      {percentage >= 80 && <Badge className="bg-green-500">
                           Excellent
-                        </Badge>
-                      )}
-                      {percentage >= 70 && percentage < 80 && (
-                        <Badge className="bg-blue-500">
+                        </Badge>}
+                      {percentage >= 70 && percentage < 80 && <Badge className="bg-blue-500">
                           Good
-                        </Badge>
-                      )}
-                      {percentage >= 50 && percentage < 70 && (
-                        <Badge className="bg-amber-500">
+                        </Badge>}
+                      {percentage >= 50 && percentage < 70 && <Badge className="bg-amber-500">
                           Average
-                        </Badge>
-                      )}
-                      {percentage < 50 && (
-                        <Badge className="bg-red-500">
+                        </Badge>}
+                      {percentage < 50 && <Badge className="bg-red-500">
                           Needs Improvement
-                        </Badge>
-                      )}
-                      {timeEfficiency <= 60 && (
-                        <Badge className="bg-green-500">
+                        </Badge>}
+                      {timeEfficiency <= 60 && <Badge className="bg-green-500">
                           Time Efficient
-                        </Badge>
-                      )}
-                      {timeEfficiency > 60 && timeEfficiency <= 80 && (
-                        <Badge className="bg-amber-500">
+                        </Badge>}
+                      {timeEfficiency > 60 && timeEfficiency <= 80 && <Badge className="bg-amber-500">
                           Average Pace
-                        </Badge>
-                      )}
-                      {timeEfficiency > 80 && (
-                        <Badge className="bg-blue-500">
+                        </Badge>}
+                      {timeEfficiency > 80 && <Badge className="bg-blue-500">
                           Thorough
-                        </Badge>
-                      )}
+                        </Badge>}
                     </div>
                   </div>
                 </div>
@@ -386,15 +334,13 @@ const TestResults: React.FC<TestResultsProps> = ({
             </div>
             
             {/* Public Leaderboard - only show for public tests */}
-            {shouldShowLeaderboard && (
-              <div className="bg-secondary/30 p-4 rounded-lg mb-8">
+            {shouldShowLeaderboard && <div className="bg-secondary/30 p-4 rounded-lg mb-8">
                 <h3 className="font-medium mb-3 flex items-center">
                   <Trophy className="h-4 w-4 mr-2 text-veno-primary" />
                   Public Leaderboard
                 </h3>
                 
-                {publicResults.length >= 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                {publicResults.length >= 3 && <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     {/* Top 3 display */}
                     <div className="bg-secondary/30 rounded-lg p-3 text-center order-2 md:order-1">
                       <div className="flex justify-center mb-1">
@@ -407,7 +353,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                         {publicResults[1]?.participant_name || "Anonymous"}
                       </h3>
                       <p className="text-xl font-bold">
-                        {Math.round((publicResults[1]?.score / publicResults[1]?.total_questions) * 100)}%
+                        {Math.round(publicResults[1]?.score / publicResults[1]?.total_questions * 100)}%
                       </p>
                     </div>
 
@@ -422,7 +368,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                         {publicResults[0]?.participant_name || "Anonymous"}
                       </h3>
                       <p className="text-2xl font-bold">
-                        {Math.round((publicResults[0]?.score / publicResults[0]?.total_questions) * 100)}%
+                        {Math.round(publicResults[0]?.score / publicResults[0]?.total_questions * 100)}%
                       </p>
                     </div>
 
@@ -437,11 +383,10 @@ const TestResults: React.FC<TestResultsProps> = ({
                         {publicResults[2]?.participant_name || "Anonymous"}
                       </h3>
                       <p className="text-xl font-bold">
-                        {Math.round((publicResults[2]?.score / publicResults[2]?.total_questions) * 100)}%
+                        {Math.round(publicResults[2]?.score / publicResults[2]?.total_questions * 100)}%
                       </p>
                     </div>
-                  </div>
-                )}
+                  </div>}
                 
                 <div className="rounded-lg border overflow-hidden mt-2">
                   <Table>
@@ -454,8 +399,7 @@ const TestResults: React.FC<TestResultsProps> = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {publicResults.slice(0, 10).map((entry, index) => (
-                        <TableRow key={entry.id} className={entry.participant_email === (testTakerInfo?.email || user?.email) ? "bg-primary/10" : ""}>
+                      {publicResults.slice(0, 10).map((entry, index) => <TableRow key={entry.id} className={entry.participant_email === (testTakerInfo?.email || user?.email) ? "bg-primary/10" : ""}>
                           <TableCell className="font-medium">
                             {index + 1}
                             {index === 0 && " 🥇"}
@@ -473,28 +417,24 @@ const TestResults: React.FC<TestResultsProps> = ({
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            {Math.round((entry.score / entry.total_questions) * 100)}%
+                            {Math.round(entry.score / entry.total_questions * 100)}%
                           </TableCell>
                           <TableCell className="text-right hidden sm:table-cell">
                             {entry.time_taken ? formatTime(entry.time_taken) : "N/A"}
                           </TableCell>
-                        </TableRow>
-                      ))}
+                        </TableRow>)}
                     </TableBody>
                   </Table>
                 </div>
                 
-                {publicResults.length > 10 && (
-                  <div className="text-center mt-3">
+                {publicResults.length > 10 && <div className="text-center mt-3">
                     <Link to={`/cbt/leaderboard/${testId}`}>
                       <Button variant="link" size="sm" className="text-primary">
                         View Full Leaderboard
                       </Button>
                     </Link>
-                  </div>
-                )}
-              </div>
-            )}
+                  </div>}
+              </div>}
             
             {/* Review section */}
             <div className="bg-secondary/30 p-4 rounded-lg text-center">
@@ -503,31 +443,18 @@ const TestResults: React.FC<TestResultsProps> = ({
                 See all questions, your answers, and detailed explanations
               </p>
               <div className="flex flex-col gap-2">
-                {onReviewAnswers && (
-                  <Button 
-                    onClick={onReviewAnswers}
-                    variant="outline" 
-                    className="text-veno-primary border-veno-primary/30"
-                  >
-                    <HelpCircle className="h-4 w-4 mr-2" /> 
-                    View Detailed Review
-                  </Button>
-                )}
-                <Button 
-                  onClick={() => {
-                    navigate('/cbt/quiz/explanations', {
-                      state: {
-                        questions,
-                        userAnswers: formatUserAnswersForExplanations(),
-                        score,
-                        subject: testDetails?.subject || location?.state?.subject || 'Quiz',
-                        returnTo: 'results'
-                      }
-                    });
-                  }}
-                  variant="outline" 
-                  className="text-blue-600 border-blue-600/30"
-                >
+                {onReviewAnswers}
+                <Button onClick={() => {
+                navigate('/cbt/quiz/explanations', {
+                  state: {
+                    questions,
+                    userAnswers: formatUserAnswersForExplanations(),
+                    score,
+                    subject: testDetails?.subject || location?.state?.subject || 'Quiz',
+                    returnTo: 'results'
+                  }
+                });
+              }} variant="outline" className="text-blue-600 border-blue-600/30">
                   <BookOpen className="h-4 w-4 mr-2" /> 
                   View Quiz Explanations
                 </Button>
@@ -540,14 +467,9 @@ const TestResults: React.FC<TestResultsProps> = ({
                 <Button variant="outline" className="flex-1" onClick={onFinish}>
                   Back to Tests
                 </Button>
-                {(testDetails?.allow_retakes !== false || testId === 'subject') && onTryAgain && (
-                  <Button 
-                    className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
-                    onClick={onTryAgain}
-                  >
+                {(testDetails?.allow_retakes !== false || testId === 'subject') && onTryAgain && <Button className="flex-1 bg-veno-primary hover:bg-veno-primary/90" onClick={onTryAgain}>
                     Try Again
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
           </CardFooter>
@@ -582,22 +504,15 @@ const TestResults: React.FC<TestResultsProps> = ({
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onFlaggedSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="description" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Describe the issues with the questions..." 
-                        {...field}
-                      />
+                      <Textarea placeholder="Describe the issues with the questions..." {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               <div className="flex justify-end gap-2">
                 <Button type="submit">
                   <MessageCircle className="h-4 w-4 mr-2" />
@@ -608,8 +523,6 @@ const TestResults: React.FC<TestResultsProps> = ({
           </Form>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 export default TestResults;
