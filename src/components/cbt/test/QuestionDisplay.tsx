@@ -126,6 +126,17 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
   return (
     <div className="space-y-4">
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .katex-display {
+            margin: 1em 0;
+            text-align: center;
+          }
+          .katex {
+            font-size: 1.1em;
+          }
+        `
+      }} />
       <Card>
         <CardHeader>
           <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">

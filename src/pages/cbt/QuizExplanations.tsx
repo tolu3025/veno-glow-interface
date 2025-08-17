@@ -73,29 +73,46 @@ const QuizExplanations: React.FC = () => {
     ) || /\$.*\$/.test(text) || /\\[a-zA-Z]+/.test(text);
   };
 
-  // Enhanced LaTeX rendering
+  // Enhanced LaTeX rendering with better error handling
   const renderLatexContent = (text: string): string => {
+    if (!text) return '';
+    
     try {
-      // Handle display math ($$...$$)
-      text = text.replace(/\$\$(.*?)\$\$/g, (match, formula) => {
+      let processedText = text;
+      
+      // Handle display math ($$...$$) first
+      processedText = processedText.replace(/\$\$(.*?)\$\$/g, (match, formula) => {
         try {
-          return `<div class="katex-display">${renderToString(formula.trim(), { displayMode: true })}</div>`;
-        } catch {
+          const cleanFormula = formula.trim();
+          if (!cleanFormula) return match;
+          return `<div class="katex-display">${renderToString(cleanFormula, { 
+            displayMode: true,
+            throwOnError: false 
+          })}</div>`;
+        } catch (error) {
+          console.warn('LaTeX display math error:', error);
           return match;
         }
       });
 
       // Handle inline math ($...$)
-      text = text.replace(/\$([^$]+)\$/g, (match, formula) => {
+      processedText = processedText.replace(/\$([^$]+)\$/g, (match, formula) => {
         try {
-          return renderToString(formula.trim(), { displayMode: false });
-        } catch {
+          const cleanFormula = formula.trim();
+          if (!cleanFormula) return match;
+          return renderToString(cleanFormula, { 
+            displayMode: false,
+            throwOnError: false 
+          });
+        } catch (error) {
+          console.warn('LaTeX inline math error:', error);
           return match;
         }
       });
 
-      return text;
-    } catch {
+      return processedText;
+    } catch (error) {
+      console.warn('LaTeX processing error:', error);
       return text;
     }
   };
@@ -170,6 +187,20 @@ const QuizExplanations: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .katex-display {
+            margin: 1em 0;
+            text-align: center;
+          }
+          .katex {
+            font-size: 1.1em;
+          }
+          .katex .base {
+            line-height: 1.2;
+          }
+        `
+      }} />
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
