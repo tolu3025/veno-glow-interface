@@ -59,18 +59,21 @@ const QuizExplanations: React.FC = () => {
     }
   };
 
-  // Detect if text contains mathematical content
+  // Enhanced detection of mathematical content
   const isMathematicalContent = (text: string): boolean => {
     const mathKeywords = [
       'calculate', 'formula', 'equation', 'step', 'solve', 'derivation',
       'proof', 'theorem', 'integral', 'derivative', 'function', 'variable',
       'coefficient', 'polynomial', 'matrix', 'vector', 'graph', 'plot',
-      'minimum', 'maximum', 'limit', 'sum', 'product'
+      'minimum', 'maximum', 'limit', 'sum', 'product', 'substitut', 'factor',
+      'simplify', 'expand', 'multiply', 'divide', 'add', 'subtract', 'equals',
+      'expression', 'term', 'constant', 'unknown', 'solution', 'working'
     ];
     
     return mathKeywords.some(keyword => 
       text.toLowerCase().includes(keyword)
-    ) || /\$.*\$/.test(text) || /\\[a-zA-Z]+/.test(text);
+    ) || /\$.*\$/.test(text) || /\\[a-zA-Z]+/.test(text) || 
+       /[\d+\-*/=()^]/.test(text) || /step\s+\d+/i.test(text);
   };
 
   // Enhanced LaTeX rendering with better error handling
@@ -144,7 +147,7 @@ const QuizExplanations: React.FC = () => {
     return simplified;
   };
 
-  // Format step-by-step explanations for mathematical content
+  // Enhanced mathematical explanation formatting with calculation steps
   const formatMathematicalExplanation = (explanation: string): JSX.Element[] => {
     const simplifiedExplanation = simplifyExplanation(explanation);
     const paragraphs = simplifiedExplanation.split('\n').filter(p => p.trim());
@@ -152,23 +155,25 @@ const QuizExplanations: React.FC = () => {
     return paragraphs.map((paragraph, index) => {
       const trimmed = paragraph.trim();
       
-      // Detect step headers
+      // Detect step headers (Step 1:, Step 2:, etc.)
       if (/^Step\s+\d+:/i.test(trimmed)) {
         return (
           <div key={index} className="mb-4">
-            <h4 className="font-semibold text-primary mb-2 border-l-4 border-primary pl-3 bg-primary/5 dark:bg-primary/10 py-2 rounded-r">
-              <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
-            </h4>
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-l-4 border-primary rounded-r-lg p-3">
+              <h4 className="font-bold text-primary text-base mb-1">
+                <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
+              </h4>
+            </div>
           </div>
         );
       }
 
-      // Detect calculation sections
-      if (/^(calculation|solution|working):/i.test(trimmed)) {
+      // Detect calculation sections and formulas
+      if (/^(calculation|solution|working|formula|equation):/i.test(trimmed) || /\$.*\$/.test(trimmed)) {
         return (
           <div key={index} className="mb-4">
-            <div className="bg-muted/50 dark:bg-muted/20 rounded-lg p-4 border-l-4 border-accent">
-              <div className="font-medium text-accent-foreground mb-2">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+              <div className="font-mono text-sm bg-white dark:bg-slate-900 p-3 rounded border">
                 <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
               </div>
             </div>
@@ -177,13 +182,25 @@ const QuizExplanations: React.FC = () => {
       }
 
       // Detect conclusion/answer statements
-      if (/^(therefore|thus|hence|so|the answer is)/i.test(trimmed)) {
+      if (/^(therefore|thus|hence|so|the answer is|final answer|result)/i.test(trimmed)) {
         return (
           <div key={index} className="mb-4">
-            <div className="bg-primary/10 dark:bg-primary/20 rounded-lg p-4 border border-primary/20 dark:border-primary/30">
-              <div className="font-medium text-primary">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-l-4 border-green-500 dark:border-green-400">
+              <div className="font-semibold text-green-800 dark:text-green-200 flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-400 mt-1">✓</span>
                 <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
               </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Detect numerical calculations and expressions
+      if (/[\d+\-*/=()]/.test(trimmed) && trimmed.length < 100) {
+        return (
+          <div key={index} className="mb-3">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 font-mono text-center border border-blue-200 dark:border-blue-800">
+              <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
             </div>
           </div>
         );
@@ -192,7 +209,7 @@ const QuizExplanations: React.FC = () => {
       // Regular explanation text with better readability
       return (
         <div key={index} className="mb-3">
-          <p className="text-foreground leading-relaxed text-sm">
+          <p className="text-foreground leading-relaxed">
             <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
           </p>
         </div>
@@ -253,11 +270,12 @@ const QuizExplanations: React.FC = () => {
       <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
       {questions.map((question: Question, index: number) => {
         const userAnswer = userAnswers.find((ua: UserAnswer) => ua.questionId === question.id);
-        const isCorrect = userAnswer?.selectedOption === question.correctOption;
+        const correctAnswer = question.correctOption;
+        const isCorrect = userAnswer?.selectedOption === correctAnswer;
         const isMathematical = isMathematicalContent(question.explanation);
 
         return (
-          <Card key={question.id} className={`${isCorrect ? 'border-green-500/30 bg-green-50/30 dark:border-green-400/30 dark:bg-green-900/20' : 'border-red-500/30 bg-red-50/30 dark:border-red-400/30 dark:bg-red-900/20'}`}>
+          <Card key={question.id} className={`${isCorrect ? 'border-green-500/30 bg-green-50/50 dark:border-green-400/40 dark:bg-green-900/30' : 'border-red-500/30 bg-red-50/50 dark:border-red-400/40 dark:bg-red-900/30'}`}>
               <CardHeader className="pb-4">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">

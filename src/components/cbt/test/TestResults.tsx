@@ -124,8 +124,9 @@ const TestResults: React.FC<TestResultsProps> = ({
   const formatUserAnswersForExplanations = () => {
     return userAnswers.map((selectedOption, index) => {
       const question = questions[index];
-      const correctAnswer = question?.answer !== undefined ? question.answer : question?.correctOption || 0;
+      const correctAnswer = question?.correctOption || 0;
       return {
+        questionId: question?.id || `question-${index}`,
         selectedOption,
         isCorrect: selectedOption === correctAnswer
       };
@@ -440,13 +441,9 @@ const TestResults: React.FC<TestResultsProps> = ({
             <div className="bg-secondary/30 p-4 rounded-lg text-center">
               <h3 className="font-medium mb-2">Review Your Answers</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                See all questions, your answers, and detailed explanations
+                See all questions, your answers, and detailed explanations with step-by-step solutions
               </p>
-              <div className="flex flex-col gap-2">
-                <Button onClick={onReviewAnswers} variant="outline" className="w-full">
-                  Review Answers
-                </Button>
-                <Button onClick={() => {
+              <Button onClick={() => {
                 navigate('/cbt/quiz/explanations', {
                   state: {
                     questions,
@@ -456,11 +453,10 @@ const TestResults: React.FC<TestResultsProps> = ({
                     returnTo: 'results'
                   }
                 });
-              }} variant="outline" className="text-blue-600 border-blue-600/30">
-                  <BookOpen className="h-4 w-4 mr-2" /> 
-                  View Quiz Explanations
-                </Button>
-              </div>
+              }} className="w-full bg-primary hover:bg-primary/90">
+                <BookOpen className="h-4 w-4 mr-2" /> 
+                View Detailed Explanations
+              </Button>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
