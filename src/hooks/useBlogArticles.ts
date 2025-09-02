@@ -32,9 +32,9 @@ export const useBlogArticles = () => {
     try {
       console.log('Fetching blog articles...');
       
-      // Use blog_posts table for consistency with other hooks
+      // Use blog_articles table (consistent with public blog pages)
       const { data, error: fetchError } = await supabase
-        .from('blog_posts')
+        .from('blog_articles')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -67,7 +67,7 @@ export const useBlogArticles = () => {
       console.log('Creating new article:', articleData);
       
       const { data, error: createError } = await supabase
-        .from('blog_posts')
+        .from('blog_articles')
         .insert([{
           title: articleData.title || '',
           content: articleData.content || '',
@@ -101,7 +101,7 @@ export const useBlogArticles = () => {
       console.log('Updating article:', id, articleData);
       
       const { data, error: updateError } = await supabase
-        .from('blog_posts')
+        .from('blog_articles')
         .update({
           title: articleData.title,
           content: articleData.content,
@@ -136,7 +136,7 @@ export const useBlogArticles = () => {
       console.log('Deleting article:', id);
       
       const { error: deleteError } = await supabase
-        .from('blog_posts')
+        .from('blog_articles')
         .delete()
         .eq('id', id);
 
@@ -160,7 +160,7 @@ export const useBlogArticles = () => {
       console.log('Toggling published status for article:', id, 'from', currentStatus, 'to', !currentStatus);
       
       const { error: toggleError } = await supabase
-        .from('blog_posts')
+        .from('blog_articles')
         .update({ published: !currentStatus })
         .eq('id', id);
 
