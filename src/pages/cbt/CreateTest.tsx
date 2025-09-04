@@ -14,6 +14,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import { Plus, Wand2 } from 'lucide-react';
 import FeatureAccessGuard from '@/components/billing/FeatureAccessGuard';
+import { useSubjects } from '@/hooks/useSubjects';
 
 // Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
@@ -21,6 +22,7 @@ type TestDifficulty = "beginner" | "intermediate" | "advanced";
 const CreateTest = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: subjects, isLoading: subjectsLoading } = useSubjects();
   
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -164,13 +166,24 @@ const CreateTest = () => {
 
               <div>
                 <Label htmlFor="subject">Subject *</Label>
-                <Input
-                  id="subject"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Enter subject (e.g., Mathematics, Physics)"
-                  className="mt-1"
-                />
+                <Select value={subject} onValueChange={setSubject}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select subject from question banks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjectsLoading ? (
+                      <SelectItem value="" disabled>Loading subjects...</SelectItem>
+                    ) : subjects && subjects.length > 0 ? (
+                      subjects.map((subjectOption) => (
+                        <SelectItem key={subjectOption.name} value={subjectOption.name}>
+                          {subjectOption.name} ({subjectOption.question_count} questions)
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>No subjects available</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

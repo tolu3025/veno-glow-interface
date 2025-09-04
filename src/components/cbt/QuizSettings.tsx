@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Clock, BrainCircuit, Hourglass } from 'lucide-react';
+import { useSubjects } from '@/hooks/useSubjects';
 
 interface QuizSettingsProps {
   subject: string;
@@ -22,11 +23,16 @@ export interface QuizSettings {
 }
 
 const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBack }) => {
+  const { data: subjects } = useSubjects();
   const [settings, setSettings] = useState<QuizSettings>({
     difficulty: 'all',
     timeLimit: 15,
     questionsCount: 10,
   });
+
+  // Get question count for the current subject
+  const currentSubject = subjects?.find(s => s.name === subject);
+  const availableQuestions = currentSubject?.question_count || 0;
 
   const handleDifficultyChange = (value: string) => {
     setSettings({
@@ -114,11 +120,14 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
           <div className="flex items-center gap-2">
             <Hourglass className="h-5 w-5 text-veno-primary" />
             <h3 className="text-lg font-medium">Number of Questions</h3>
+            <span className="text-sm text-muted-foreground">
+              ({availableQuestions} available in {subject})
+            </span>
           </div>
           <div className="space-y-4">
             <Slider
               defaultValue={[settings.questionsCount]}
-              max={40}
+              max={Math.min(40, availableQuestions)}
               min={5}
               step={5}
               onValueChange={handleQuestionsCountChange}
@@ -127,7 +136,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">5</span>
               <span className="text-sm font-medium">{settings.questionsCount} questions</span>
-              <span className="text-sm text-muted-foreground">40</span>
+              <span className="text-sm text-muted-foreground">{Math.min(40, availableQuestions)}</span>
             </div>
           </div>
         </div>
