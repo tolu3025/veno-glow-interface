@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
-import { Plus, Wand2 } from 'lucide-react';
+import { Plus, Wand2, Loader2 } from 'lucide-react';
 import FeatureAccessGuard from '@/components/billing/FeatureAccessGuard';
 import { useSubjects } from '@/hooks/useSubjects';
 
@@ -165,25 +165,35 @@ const CreateTest = () => {
               </div>
 
               <div>
-                <Label htmlFor="subject">Subject *</Label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select subject from question banks" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjectsLoading ? (
-                      <SelectItem value="" disabled>Loading subjects...</SelectItem>
-                    ) : subjects && subjects.length > 0 ? (
-                      subjects.map((subjectOption) => (
-                        <SelectItem key={subjectOption.name} value={subjectOption.name}>
-                          {subjectOption.name} ({subjectOption.question_count} questions)
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>No subjects available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label>Subject *</Label>
+                {subjectsLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-veno-primary" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading subjects...</span>
+                  </div>
+                ) : (
+                  <Select value={subject} onValueChange={setSubject}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select subject from question banks" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects && subjects.length > 0 ? (
+                        subjects.map((subjectOption) => (
+                          <SelectItem key={subjectOption.name} value={subjectOption.name}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{subjectOption.name}</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                ({subjectOption.question_count} questions)
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>No subjects available</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div>
@@ -251,7 +261,7 @@ const CreateTest = () => {
 
               <Button 
                 onClick={handleCreateTest}
-                disabled={loading || !title.trim() || !subject.trim()}
+                disabled={loading || !title.trim() || !subject.trim() || subjectsLoading}
                 className="w-full"
               >
                 {loading ? 'Creating Test...' : 'Create Test'}

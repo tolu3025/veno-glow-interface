@@ -1,0 +1,44 @@
+-- Fix infinite recursion in user_roles policies
+-- Drop ALL existing policies on user_roles table
+DROP POLICY IF EXISTS "Users can view their own roles" ON user_roles;
+DROP POLICY IF EXISTS "Users can view their own role" ON user_roles;
+DROP POLICY IF EXISTS "Admins can manage user roles" ON user_roles;
+DROP POLICY IF EXISTS "Users can select their own role" ON user_roles;
+DROP POLICY IF EXISTS "Allow admin to manage user roles" ON user_roles;
+DROP POLICY IF EXISTS "Admins can manage all user roles" ON user_roles;
+DROP POLICY IF EXISTS "System can manage user roles" ON user_roles;
+
+-- Create security definer functions to avoid recursion
+CREATE OR REPLACE FUNCTION public.get_current_user_role()
+RETURNS app_role
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT role FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles 
+    WHERE user_id = auth.uid() 
+    AND role IN ('admin', 'superadmin')
+  );
+$$;
+
+-- Create new RLS policies using unique names and security definer functions
+CREATE POLICY "user_roles_select_own"
+ON public.user_roles
+FOR SELECT
+USING (user_id = auth.uid());
+
+CREATE POLICY "user_roles_admin_manage"
+ON public.user_roles
+FOR ALL
+USING (public.is_current_user_admin())
+WITH CHECK (public.is_current_user_admin());

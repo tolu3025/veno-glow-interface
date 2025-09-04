@@ -8,8 +8,9 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Wand2, Calculator, BookOpen } from 'lucide-react';
+import { Wand2, Calculator, BookOpen, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useSubjects } from '@/hooks/useSubjects';
 
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
 
@@ -32,6 +33,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   onGenerateTest,
   loading
 }) => {
+  const { data: subjects, isLoading: subjectsLoading } = useSubjects();
   const [subject, setSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [topic, setTopic] = useState('');
@@ -42,15 +44,6 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   const [description, setDescription] = useState('');
   const [allowRetakes, setAllowRetakes] = useState(false);
   const [resultsVisibility, setResultsVisibility] = useState('public');
-
-  const subjects = ["Mathematics", "Physics", "Chemistry", "Biology", "Computer Science", "History", "Geography", "Literature", "custom"];
-
-  const handleSubjectChange = (value: string) => {
-    setSubject(value);
-    if (value !== 'custom') {
-      setCustomSubject('');
-    }
-  };
 
   const isMathematicalSubject = (subjectName: string) => {
     const mathSubjects = ['mathematics', 'physics', 'chemistry', 'engineering', 'calculus', 'algebra', 'geometry', 'statistics'];
@@ -90,18 +83,35 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
       <CardContent className="space-y-4">
         <div className="space-y-3">
           <Label>Subject</Label>
-          <Select value={subject} onValueChange={handleSubjectChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map(subj => (
-                <SelectItem key={subj} value={subj}>
-                  {subj === 'custom' ? 'Custom subject...' : subj}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {subjectsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-veno-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading subjects...</span>
+            </div>
+          ) : (
+            <Select value={subject} onValueChange={setSubject}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select subject from question banks" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects && subjects.length > 0 ? (
+                  subjects.map((subjectOption) => (
+                    <SelectItem key={subjectOption.name} value={subjectOption.name}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{subjectOption.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({subjectOption.question_count} questions - {subjectOption.source})
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="" disabled>No subjects available in question banks</SelectItem>
+                )}
+                <SelectItem value="custom">Custom subject...</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           
           {subject === 'custom' && (
             <div className="pt-2">
@@ -238,7 +248,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
         
         <Button 
           onClick={handleGenerate} 
-          disabled={loading || !isValid} 
+          disabled={loading || !isValid || subjectsLoading} 
           className="w-full"
         >
           {loading ? 'Generating Test...' : 'Generate Test'}
