@@ -46,6 +46,7 @@ const AdminSetup = () => {
 
     // Only setup admin for whitelisted emails
     const adminEmails = ['williamsbenjaminacc@gmail.com', 'oyinaderokibat4@gmail.com'];
+    console.log('Current user email:', user?.email, 'Is in admin list:', adminEmails.includes(user?.email || ''));
     if (user && adminEmails.includes(user.email || '')) {
       setupAdmin();
     }

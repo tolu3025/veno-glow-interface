@@ -23,7 +23,15 @@ export interface QuizSettings {
 }
 
 const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBack }) => {
-  const { data: subjects } = useSubjects();
+  const { data: subjects, isLoading: subjectsLoading, error: subjectsError } = useSubjects();
+  
+  // Debug logging for subjects
+  React.useEffect(() => {
+    console.log('QuizSettings - Subjects data:', subjects);
+    console.log('QuizSettings - Subjects loading:', subjectsLoading);
+    console.log('QuizSettings - Subjects error:', subjectsError);
+  }, [subjects, subjectsLoading, subjectsError]);
+  
   const [settings, setSettings] = useState<QuizSettings>({
     difficulty: 'all',
     timeLimit: 15,

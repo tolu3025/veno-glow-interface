@@ -33,7 +33,14 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   onGenerateTest,
   loading
 }) => {
-  const { data: subjects, isLoading: subjectsLoading } = useSubjects();
+  const { data: subjects, isLoading: subjectsLoading, error: subjectsError } = useSubjects();
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('ManualAiTestCreation - Subjects data:', subjects);
+    console.log('ManualAiTestCreation - Subjects loading:', subjectsLoading);
+    console.log('ManualAiTestCreation - Subjects error:', subjectsError);
+  }, [subjects, subjectsLoading, subjectsError]);
   const [subject, setSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [topic, setTopic] = useState('');
