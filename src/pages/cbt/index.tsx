@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import AppNavigation from '@/components/cbt/AppNavigation';
 import QuizSection from '@/components/cbt/QuizSection';
 import MyTestsSection from '@/components/cbt/MyTestsSection';
-import TestBlogSection from '@/components/cbt/TestBlogSection';
 import { Trophy } from 'lucide-react';
 
 const CBTIndex = () => {
@@ -94,9 +93,6 @@ const CBTIndex = () => {
         
         {/* Quick Test Section */}
         <QuizSection />
-        
-        {/* Test Articles Section */}
-        <TestBlogSection />
         
         {/* My Tests Section */}
         <MyTestsSection tests={tests} loading={loading} onShare={handleShare} />

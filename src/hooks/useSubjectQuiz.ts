@@ -57,7 +57,9 @@ export const useSubjectQuiz = (location: any, settings: any) => {
         .from('questions')
         .select('*')
         .eq('subject', subject)
-        .in('difficulty', difficultyFilter)
+        .in('difficulty', settingsFromState.difficulty === 'all' ? 
+            ['beginner', 'intermediate', 'advanced'] : 
+            [settingsFromState.difficulty])
         .limit(settingsFromState.questionsCount);
         
       if (error) {

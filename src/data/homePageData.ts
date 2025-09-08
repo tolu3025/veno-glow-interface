@@ -24,11 +24,11 @@ export const bannerSlides = [
     secondaryButton: { text: "View Categories", link: "/tutorial" }
   },
   {
-    title: "Insightful Blog Content",
-    subtitle: "Stay updated with the latest educational trends and insights through our regularly updated blog.",
+    title: "Educational Resources",
+    subtitle: "Discover comprehensive tutorials and educational content designed to enhance your learning experience.",
     background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-    primaryButton: { text: "Read Articles", link: "/blog" },
-    secondaryButton: { text: "Latest Posts", link: "/blog" }
+    primaryButton: { text: "Browse Tutorials", link: "/tutorial" },
+    secondaryButton: { text: "View Categories", link: "/tutorial/categories" }
   },
   {
     title: "AI-Powered Learning",
@@ -59,10 +59,10 @@ export const tutorials = [
     href: "/bot",
   },
   {
-    title: "Educational Blog",
-    description: "Explore in-depth articles, study guides, and expert insights on various subjects.",
+    title: "Tutorial Library",
+    description: "Access comprehensive video tutorials and learning resources for various subjects.",
     icon: FileText,
-    href: "/blog",
+    href: "/tutorial",
   },
 ];
 

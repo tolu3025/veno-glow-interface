@@ -78,17 +78,6 @@ const AdminLayout = () => {
             Questions
           </NavLink>
 
-          <NavLink 
-            to="/admin/blog" 
-            className={({ isActive }) => 
-              `flex items-center p-2 rounded-lg ${
-                isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'
-              }`
-            }
-          >
-            <FileText size={18} className="mr-2" />
-            Blog Posts
-          </NavLink>
           
           <NavLink 
             to="/admin/assign-admin" 
