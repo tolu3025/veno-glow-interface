@@ -53,12 +53,17 @@ export const useSubjectQuiz = (location: any, settings: any) => {
       
       console.log(`Fetching questions for subject: ${subject} with difficulty: ${difficultyFilter.join(', ')}`);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('questions')
         .select('*')
-        .eq('subject', subject)
-        .in('difficulty', difficultyFilter)
-        .limit(settingsFromState.questionsCount);
+        .eq('subject', subject);
+        
+      // Apply difficulty filter if not "all"
+      if (settingsFromState.difficulty !== 'all') {
+        query = query.in('difficulty', difficultyFilter);
+      }
+      
+      const { data, error } = await query.limit(settingsFromState.questionsCount);
         
       if (error) {
         console.error("Error fetching questions:", error);

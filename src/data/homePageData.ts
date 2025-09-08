@@ -24,13 +24,6 @@ export const bannerSlides = [
     secondaryButton: { text: "View Categories", link: "/tutorial" }
   },
   {
-    title: "Insightful Blog Content",
-    subtitle: "Stay updated with the latest educational trends and insights through our regularly updated blog.",
-    background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-    primaryButton: { text: "Read Articles", link: "/blog" },
-    secondaryButton: { text: "Latest Posts", link: "/blog" }
-  },
-  {
     title: "AI-Powered Learning",
     subtitle: "Leverage our intelligent AI assistant to enhance your learning experience with personalized guidance.",
     background: "bg-gradient-to-r from-veno-secondary to-veno-primary",
@@ -57,12 +50,6 @@ export const tutorials = [
     description: "Get personalized learning support and instant answers to your academic questions.",
     icon: Bot,
     href: "/bot",
-  },
-  {
-    title: "Educational Blog",
-    description: "Explore in-depth articles, study guides, and expert insights on various subjects.",
-    icon: FileText,
-    href: "/blog",
   },
 ];
 

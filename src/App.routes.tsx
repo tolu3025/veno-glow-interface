@@ -4,8 +4,6 @@ import Services from "@/pages/Services";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import Pricing from "@/pages/Pricing";
-import Blog from "@/pages/Blog";
-import BlogArticle from "@/pages/BlogArticle";
 import Testimonials from "@/pages/Testimonials";
 import Portfolio from "@/pages/Portfolio";
 import PortfolioItem from "@/pages/PortfolioItem";
@@ -43,14 +41,6 @@ export const routes = [
   {
     path: "/pricing",
     element: <Pricing />,
-  },
-  {
-    path: "/blog",
-    element: <Blog />,
-  },
-  {
-    path: "/blog/:id",
-    element: <BlogArticle />,
   },
   {
     path: "/testimonials",
