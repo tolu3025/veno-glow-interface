@@ -30,6 +30,8 @@ import TutorialInfo from "./pages/TutorialInfo";
 import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BotPage from "./pages/BotPage";
+import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
@@ -53,7 +55,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminQuestions from "./pages/admin/AdminQuestions";
-
+import AdminBlog from "./pages/admin/AdminBlog";
 import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AssignAdmin from "./pages/admin/AssignAdmin";
 
@@ -160,13 +162,15 @@ const AppRoutes = () => {
           <Route path="users" element={<AdminUsers />} />
           <Route path="user-management" element={<AdminUserManagement />} />
           <Route path="questions" element={<AdminQuestions />} />
-          
+          <Route path="blog" element={<AdminBlog />} />
           <Route path="assign-admin" element={<AssignAdmin />} />
         </Route>
         
         <Route element={<MainLayout />}>
           {/* Public routes that don't require authentication */}
           <Route path="/" element={<Index />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:postId" element={<BlogPostPage />} />
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
