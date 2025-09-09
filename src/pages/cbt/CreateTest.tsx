@@ -14,7 +14,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import { Plus, Wand2, Loader2 } from 'lucide-react';
 import FeatureAccessGuard from '@/components/billing/FeatureAccessGuard';
-import { useSubjects } from '@/hooks/useSubjects';
 
 // Define the allowed difficulty values as a union type
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
@@ -22,7 +21,6 @@ type TestDifficulty = "beginner" | "intermediate" | "advanced";
 const CreateTest = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: subjects, isLoading: subjectsLoading } = useSubjects();
   
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -70,7 +68,7 @@ const CreateTest = () => {
         
       if (error) throw error;
       
-      toast.success('Test created successfully!');
+      toast.success('Test created successfully! Now add questions to your test.');
       navigate(`/cbt/manage/${data.id}`);
       
     } catch (error) {
@@ -137,7 +135,7 @@ const CreateTest = () => {
                 Create Test Manually
               </CardTitle>
               <CardDescription>
-                Create a test from scratch and add your own questions
+                Create a test from scratch. You can add questions manually or select from the question bank.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -165,35 +163,17 @@ const CreateTest = () => {
               </div>
 
               <div>
-                <Label>Subject *</Label>
-                {subjectsLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-veno-primary" />
-                    <span className="ml-2 text-sm text-muted-foreground">Loading subjects...</span>
-                  </div>
-                ) : (
-                  <Select value={subject} onValueChange={setSubject}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select subject from question banks" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects && subjects.length > 0 ? (
-                        subjects.map((subjectOption) => (
-                          <SelectItem key={subjectOption.name} value={subjectOption.name}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{subjectOption.name}</span>
-                              <span className="text-xs text-muted-foreground ml-2">
-                                ({subjectOption.question_count} questions)
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No subjects available</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Label htmlFor="subject">Subject *</Label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter subject (e.g., Mathematics, Physics, etc.)"
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  You can add questions from any subject in the question bank later
+                </p>
               </div>
 
               <div>
@@ -261,10 +241,10 @@ const CreateTest = () => {
 
               <Button 
                 onClick={handleCreateTest}
-                disabled={loading || !title.trim() || !subject.trim() || subjectsLoading}
+                disabled={loading || !title.trim() || !subject.trim()}
                 className="w-full"
               >
-                {loading ? 'Creating Test...' : 'Create Test'}
+                {loading ? 'Creating Test...' : 'Create Test & Add Questions'}
               </Button>
             </CardContent>
           </Card>

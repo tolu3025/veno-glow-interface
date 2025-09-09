@@ -29,6 +29,7 @@ import { TestHeader } from '@/components/cbt/manage/TestHeader';
 import { TestDetails } from '@/components/cbt/manage/TestDetails';
 import { ParticipantsList } from '@/components/cbt/manage/ParticipantsList';
 import { QuestionsList } from '@/components/cbt/manage/QuestionsList';
+import TestQuestionManager from '@/components/cbt/TestQuestionManager';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import Certificate from '@/components/certificate/Certificate';
@@ -88,6 +89,7 @@ const ManageTest = () => {
   const [activeTab, setActiveTab] = useState('participants');
   const [hasLoadedQuestions, setHasLoadedQuestions] = useState(false);
   const [togglingTestStatus, setTogglingTestStatus] = useState(false);
+  const [questionsUpdated, setQuestionsUpdated] = useState(0);
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const participantResultRef = useRef<HTMLDivElement>(null);
