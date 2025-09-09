@@ -26,47 +26,135 @@ const Index = () => {
   const { streak, getStreakMessage, isCourseUnlocked } = useStreak();
   const isMobile = useIsMobile();
   
-  // Simple test to see if the page renders at all
   return (
     <div className="pb-6 relative overflow-hidden">
-      <div className="container py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">Welcome to Veno</h1>
-        <p className="text-center text-lg text-muted-foreground mb-8">
-          Your premier educational platform for interactive learning and assessment.
-        </p>
-        
-        {/* Basic content without complex components */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="text-xl font-semibold mb-2">Interactive CBT</h3>
-            <p className="text-muted-foreground">Take comprehensive computer-based tests with real-time feedback.</p>
-          </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="text-xl font-semibold mb-2">Video Tutorials</h3>
-            <p className="text-muted-foreground">Access high-quality video lessons and explanations.</p>
-          </div>
-          <div className="bg-card p-6 rounded-lg border">
-            <h3 className="text-xl font-semibold mb-2">AI Assistant</h3>
-            <p className="text-muted-foreground">Get personalized learning support from our AI.</p>
-          </div>
+      <BackgroundBubbles />
+      
+      {/* Hero Section with Banner Carousel */}
+      <section className="relative pt-8 pb-16">
+        <div className="container">
+          <BannerCarousel bannerSlides={bannerSlides} />
         </div>
-        
-        {/* User streak display - only if user has streak */}
-        {streak.currentStreak > 0 && (
-          <div className="max-w-md mx-auto mb-8 p-4 rounded-lg border bg-card">
-            <div className="text-center">
-              <p className="text-lg font-medium">🔥 {streak.currentStreak} day streak!</p>
-              <p className="text-sm text-muted-foreground">{streak.points} points earned</p>
+      </section>
+
+      {/* User Streak Display */}
+      {streak.currentStreak > 0 && (
+        <section className="py-8">
+          <div className="container">
+            <div className="max-w-md mx-auto">
+              <StreakDisplay variant="full" />
             </div>
           </div>
-        )}
-        
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            Ready to start your learning journey? Choose from our comprehensive tools and resources.
-          </p>
+        </section>
+      )}
+
+      {/* Course Progress Table */}
+      {streak.currentStreak > 0 && (
+        <section className="py-8">
+          <div className="container">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold text-center mb-8">Course Progress</h2>
+              <div className="veno-card overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Course</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tutorialsWithIds.map((tutorial, index) => {
+                      const isUnlocked = isCourseUnlocked(tutorial.id);
+                      const progress = Math.min((streak.currentStreak * 10) + (index * 5), 100);
+                      
+                      return (
+                        <TableRow key={tutorial.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <tutorial.icon className="h-4 w-4 mr-2" />
+                              {tutorial.title}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={isUnlocked ? "default" : "secondary"}>
+                              {isUnlocked ? "Unlocked" : "Locked"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-veno-primary h-2 rounded-full" 
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-muted-foreground">{progress}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              size="sm" 
+                              variant={isUnlocked ? "default" : "secondary"}
+                              disabled={!isUnlocked}
+                              onClick={() => window.location.href = tutorial.href}
+                            >
+                              {isUnlocked ? "Continue" : "Locked"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Features Section */}
+      <section className="py-16">
+        <div className="container">
+          <FeaturesSection features={features} />
         </div>
-      </div>
+      </section>
+
+      {/* Tutorials Section */}
+      <section className="py-16">
+        <div className="container">
+          <TutorialsSection tutorials={tutorialsWithIds} />
+        </div>
+      </section>
+
+      {/* Ad Placement */}
+      <section className="py-8">
+        <div className="container">
+          <AdPlacement location="content" />
+        </div>
+      </section>
+
+      {/* Testimonial Section */}
+      <section className="py-16">
+        <div className="container">
+          <TestimonialCard quote={testimonial.quote} author={testimonial.author} />
+        </div>
+      </section>
+
+      {/* Call to Action Section */}
+      <section className="py-16">
+        <div className="container">
+          <CallToAction />
+        </div>
+      </section>
+
+      {/* Bottom Ad Placement */}
+      <section className="py-8">
+        <div className="container">
+          <AdPlacement location="footer" />
+        </div>
+      </section>
     </div>
   );
 };
