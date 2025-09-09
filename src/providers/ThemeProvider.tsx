@@ -25,9 +25,13 @@ export function ThemeProvider({
   storageKey = "veno-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      return (typeof window !== 'undefined' ? localStorage.getItem(storageKey) as Theme : null) || defaultTheme;
+    } catch {
+      return defaultTheme;
+    }
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -48,7 +52,13 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, theme);
+        }
+      } catch {
+        // Handle localStorage errors silently
+      }
       setTheme(theme);
     },
   };
