@@ -739,13 +739,22 @@ const ManageTest = () => {
         </TabsContent>
         
         <TabsContent value="questions">
-          <QuestionsList 
-            questions={testQuestions}
-            loadingQuestions={loadingQuestions}
-            handleEditQuestion={handleEditQuestion}
-            handleDeleteQuestion={handleDeleteQuestion}
-            fetchTestQuestions={fetchTestQuestions}
-          />
+          <div className="space-y-4">
+            <TestQuestionManager 
+              testId={testId || ''}
+              onQuestionsUpdated={() => {
+                fetchTestQuestions();
+                setQuestionsUpdated(prev => prev + 1);
+              }}
+            />
+            <QuestionsList 
+              questions={testQuestions}
+              loadingQuestions={loadingQuestions}
+              handleEditQuestion={handleEditQuestion}
+              handleDeleteQuestion={handleDeleteQuestion}
+              fetchTestQuestions={fetchTestQuestions}
+            />
+          </div>
         </TabsContent>
       </Tabs>
       

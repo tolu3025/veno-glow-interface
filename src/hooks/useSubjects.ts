@@ -182,61 +182,63 @@ export const useSubjects = () => {
       try {
         console.log('Fetching subjects from both admin questions and AI-generated tests...');
         
-        // Query both the questions table (admin questions) and user_tests (AI-generated tests)
-        const [adminQuestionsResult, aiTestsResult] = await Promise.race([
+        // Query the questions table (main question bank) and test_questions (user created questions)
+        const [questionsResult, testQuestionsResult] = await Promise.race([
           Promise.all([
             querySafe<{ subject: string }[]>(async () => {
               return await supabase
                 .from('questions')
                 .select('subject');
             }),
-            querySafe<{ subject: string; question_count: number }[]>(async () => {
+            querySafe<{ subject: string }[]>(async () => {
               return await supabase
-                .from('user_tests')
-                .select('subject, question_count')
-                .not('creator_id', 'is', null); // Only get tests created by users (admins)
+                .from('test_questions')
+                .select('subject')
+                .not('subject', 'is', null);
             })
           ]),
           timeoutPromise
         ]);
         
-        // Process admin questions
-        const adminSubjectCounts: Record<string, number> = {};
-        if (adminQuestionsResult.data) {
-          adminQuestionsResult.data.forEach((q: { subject: string }) => {
-            if (q.subject) {
-              adminSubjectCounts[q.subject] = (adminSubjectCounts[q.subject] || 0) + 1;
+        // Process main questions (question bank)
+        const questionBankCounts: Record<string, number> = {};
+        if (questionsResult.data) {
+          questionsResult.data.forEach((q: { subject: string }) => {
+            if (q.subject && q.subject.trim()) {
+              const subject = q.subject.trim();
+              questionBankCounts[subject] = (questionBankCounts[subject] || 0) + 1;
             }
           });
         }
         
-        // Process AI-generated tests
-        const aiSubjectCounts: Record<string, number> = {};
-        if (aiTestsResult.data) {
-          aiTestsResult.data.forEach((test: { subject: string; question_count: number }) => {
-            if (test.subject) {
-              aiSubjectCounts[test.subject] = (aiSubjectCounts[test.subject] || 0) + test.question_count;
+        // Process user created test questions
+        const testQuestionCounts: Record<string, number> = {};
+        if (testQuestionsResult.data) {
+          testQuestionsResult.data.forEach((q: { subject: string }) => {
+            if (q.subject && q.subject.trim()) {
+              const subject = q.subject.trim();
+              testQuestionCounts[subject] = (testQuestionCounts[subject] || 0) + 1;
             }
           });
         }
         
         // Combine both sources
         const allSubjects = new Set([
-          ...Object.keys(adminSubjectCounts),
-          ...Object.keys(aiSubjectCounts)
+          ...Object.keys(questionBankCounts),
+          ...Object.keys(testQuestionCounts)
         ]);
         
         const formattedSubjects: Subject[] = Array.from(allSubjects)
-          .filter(name => name) // Filter out any undefined/null/empty subjects
+          .filter(name => name && name.trim()) // Filter out any undefined/null/empty subjects
           .map(name => {
-            const adminCount = adminSubjectCounts[name] || 0;
-            const aiCount = aiSubjectCounts[name] || 0;
-            const totalCount = adminCount + aiCount;
+            const questionBankCount = questionBankCounts[name] || 0;
+            const testQuestionCount = testQuestionCounts[name] || 0;
+            const totalCount = questionBankCount + testQuestionCount;
             
             let source: 'admin' | 'ai-generated' | 'combined' = 'admin';
-            if (adminCount > 0 && aiCount > 0) {
+            if (questionBankCount > 0 && testQuestionCount > 0) {
               source = 'combined';
-            } else if (aiCount > 0) {
+            } else if (testQuestionCount > 0) {
               source = 'ai-generated';
             }
             
@@ -246,9 +248,10 @@ export const useSubjects = () => {
               source
             };
           })
+          .filter(subject => subject.question_count > 0) // Only include subjects with questions
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        console.log('Formatted subjects from both admin and AI sources:', formattedSubjects);
+        console.log('Formatted subjects from question bank and test questions:', formattedSubjects);
         
         // Cache the results locally for offline use
         localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));

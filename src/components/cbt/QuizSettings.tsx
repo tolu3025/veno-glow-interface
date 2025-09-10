@@ -46,18 +46,17 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
     fetchUserTestsCount();
   }, [subject]);
 
-  const fetchUserTestsCount = async () => {
+    const fetchUserTestsCount = async () => {
     try {
+      // Get questions from test_questions table for the specific subject
       const { data, error } = await supabase
         .from('test_questions')
-        .select('id, test_id')
+        .select('id')
         .eq('subject', subject);
 
       if (error) throw error;
       
-      // Get unique test questions
-      const uniqueQuestions = data?.length || 0;
-      setUserTestsCount(uniqueQuestions);
+      setUserTestsCount(data?.length || 0);
     } catch (error) {
       console.error('Error fetching user tests count:', error);
       setUserTestsCount(0);
