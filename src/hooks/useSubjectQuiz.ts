@@ -53,21 +53,47 @@ export const useSubjectQuiz = (location: any, settings: any) => {
       
       console.log(`Fetching questions for subject: ${subject} with difficulty: ${difficultyFilter.join(', ')}`);
       
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('subject', subject)
-        .in('difficulty', settingsFromState.difficulty === 'all' ? 
-            ['beginner', 'intermediate', 'advanced'] : 
-            [settingsFromState.difficulty])
-        .limit(settingsFromState.questionsCount);
-        
-      if (error) {
-        console.error("Error fetching questions:", error);
-        throw error;
+      let allQuestions: any[] = [];
+      
+      // Fetch from question bank if needed
+      if (settingsFromState.questionSource === 'question_bank' || settingsFromState.questionSource === 'mixed') {
+        const { data: bankQuestions, error: bankError } = await supabase
+          .from('questions')
+          .select('*')
+          .eq('subject', subject)
+          .in('difficulty', settingsFromState.difficulty === 'all' ? 
+              ['beginner', 'intermediate', 'advanced'] : 
+              [settingsFromState.difficulty]);
+              
+        if (bankError) {
+          console.error("Error fetching bank questions:", bankError);
+        } else if (bankQuestions) {
+          allQuestions = [...allQuestions, ...bankQuestions];
+        }
       }
       
-      if (!data || data.length === 0) {
+      // Fetch from user test questions if needed
+      if (settingsFromState.questionSource === 'user_tests' || settingsFromState.questionSource === 'mixed') {
+        const { data: testQuestions, error: testError } = await supabase
+          .from('test_questions')
+          .select('*')
+          .eq('subject', subject)
+          .in('difficulty', settingsFromState.difficulty === 'all' ? 
+              ['beginner', 'intermediate', 'advanced'] : 
+              [settingsFromState.difficulty]);
+              
+        if (testError) {
+          console.error("Error fetching test questions:", testError);
+        } else if (testQuestions) {
+          allQuestions = [...allQuestions, ...testQuestions];
+        }
+      }
+      
+      // Shuffle and limit questions
+      const shuffledQuestions = allQuestions.sort(() => Math.random() - 0.5);
+      const limitedQuestions = shuffledQuestions.slice(0, settingsFromState.questionsCount);
+      
+      if (limitedQuestions.length === 0) {
         console.log(`No questions found for subject: ${subject}`);
         toast.error(`No questions available for ${subject}`, {
           description: "Please try another subject or difficulty level"
@@ -76,10 +102,9 @@ export const useSubjectQuiz = (location: any, settings: any) => {
         return;
       }
       
-      console.log(`Found ${data.length} questions for ${subject}`);
-      console.log("Raw subject questions:", data);
+      console.log(`Found ${limitedQuestions.length} questions for ${subject}`);
       
-      const formattedQuestions: QuizQuestion[] = data.map(q => ({
+      const formattedQuestions: QuizQuestion[] = limitedQuestions.map(q => ({
         id: q.id,
         text: q.question,
         question: q.question,

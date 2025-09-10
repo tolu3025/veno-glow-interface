@@ -46,13 +46,13 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
     fetchUserTestsCount();
   }, [subject]);
 
-    const fetchUserTestsCount = async () => {
+  const fetchUserTestsCount = async () => {
     try {
       // Get questions from test_questions table for the specific subject
       const { data, error } = await supabase
         .from('test_questions')
         .select('id')
-        .eq('subject', subject);
+        .ilike('subject', subject); // Use ilike for case-insensitive matching
 
       if (error) throw error;
       
