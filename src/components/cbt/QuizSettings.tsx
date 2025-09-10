@@ -38,8 +38,11 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
     questionSource: 'mixed',
   });
 
-  // Get question counts
-  const currentSubject = subjects?.find(s => s.name === subject);
+  // Get question counts with flexible subject matching
+  const currentSubject = subjects?.find(s => 
+    s.name.toLowerCase().includes(subject.toLowerCase()) || 
+    subject.toLowerCase().includes(s.name.toLowerCase())
+  );
   const questionBankCount = currentSubject?.question_count || 0;
 
   useEffect(() => {
@@ -48,15 +51,23 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
 
   const fetchUserTestsCount = async () => {
     try {
-      // Get questions from test_questions table for the specific subject
+      // Get questions from test_questions table for the specific subject using flexible matching
       const { data, error } = await supabase
         .from('test_questions')
-        .select('id')
-        .ilike('subject', subject); // Use ilike for case-insensitive matching
+        .select('id, subject')
+        .not('subject', 'is', null);
 
       if (error) throw error;
       
-      setUserTestsCount(data?.length || 0);
+      // Count questions that match the subject (case-insensitive partial match)
+      const matchingQuestions = data?.filter(q => 
+        q.subject && (
+          q.subject.toLowerCase().includes(subject.toLowerCase()) ||
+          subject.toLowerCase().includes(q.subject.toLowerCase())
+        )
+      ) || [];
+      
+      setUserTestsCount(matchingQuestions.length);
     } catch (error) {
       console.error('Error fetching user tests count:', error);
       setUserTestsCount(0);

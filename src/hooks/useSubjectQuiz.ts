@@ -55,12 +55,12 @@ export const useSubjectQuiz = (location: any, settings: any) => {
       
       let allQuestions: any[] = [];
       
-      // Fetch from question bank if needed
+      // Fetch from question bank if needed - use case-insensitive matching
       if (settingsFromState.questionSource === 'question_bank' || settingsFromState.questionSource === 'mixed') {
         const { data: bankQuestions, error: bankError } = await supabase
           .from('questions')
           .select('*')
-          .eq('subject', subject)
+          .ilike('subject', `%${subject}%`) // Use case-insensitive partial matching
           .in('difficulty', settingsFromState.difficulty === 'all' ? 
               ['beginner', 'intermediate', 'advanced'] : 
               [settingsFromState.difficulty]);
@@ -68,16 +68,17 @@ export const useSubjectQuiz = (location: any, settings: any) => {
         if (bankError) {
           console.error("Error fetching bank questions:", bankError);
         } else if (bankQuestions) {
+          console.log(`Found ${bankQuestions.length} questions in question bank for subject pattern: ${subject}`);
           allQuestions = [...allQuestions, ...bankQuestions];
         }
       }
       
-      // Fetch from user test questions if needed
+      // Fetch from user test questions if needed - use case-insensitive matching
       if (settingsFromState.questionSource === 'user_tests' || settingsFromState.questionSource === 'mixed') {
         const { data: testQuestions, error: testError } = await supabase
           .from('test_questions')
           .select('*')
-          .eq('subject', subject)
+          .ilike('subject', `%${subject}%`) // Use case-insensitive partial matching
           .in('difficulty', settingsFromState.difficulty === 'all' ? 
               ['beginner', 'intermediate', 'advanced'] : 
               [settingsFromState.difficulty]);
@@ -85,7 +86,60 @@ export const useSubjectQuiz = (location: any, settings: any) => {
         if (testError) {
           console.error("Error fetching test questions:", testError);
         } else if (testQuestions) {
+          console.log(`Found ${testQuestions.length} questions in user tests for subject pattern: ${subject}`);
           allQuestions = [...allQuestions, ...testQuestions];
+        }
+      }
+      
+      // If no questions found with partial match, try exact subject name from subjects list
+      if (allQuestions.length === 0) {
+        console.log('No questions found with partial match, trying exact subject names from database...');
+        
+        // Get all subjects and find the best match
+        const { data: subjectsData } = await supabase
+          .from('questions')
+          .select('subject')
+          .not('subject', 'is', null);
+          
+        const availableSubjects = [...new Set(subjectsData?.map(s => s.subject) || [])];
+        console.log('Available subjects in database:', availableSubjects);
+        
+        // Find closest match
+        const exactMatch = availableSubjects.find(s => 
+          s?.toLowerCase().includes(subject.toLowerCase()) || 
+          subject.toLowerCase().includes(s?.toLowerCase() || '')
+        );
+        
+        if (exactMatch) {
+          console.log(`Found closest match: ${exactMatch} for search: ${subject}`);
+          
+          if (settingsFromState.questionSource === 'question_bank' || settingsFromState.questionSource === 'mixed') {
+            const { data: bankQuestions, error: bankError } = await supabase
+              .from('questions')
+              .select('*')
+              .eq('subject', exactMatch)
+              .in('difficulty', settingsFromState.difficulty === 'all' ? 
+                  ['beginner', 'intermediate', 'advanced'] : 
+                  [settingsFromState.difficulty]);
+                  
+            if (!bankError && bankQuestions) {
+              allQuestions = [...allQuestions, ...bankQuestions];
+            }
+          }
+          
+          if (settingsFromState.questionSource === 'user_tests' || settingsFromState.questionSource === 'mixed') {
+            const { data: testQuestions, error: testError } = await supabase
+              .from('test_questions')
+              .select('*')
+              .eq('subject', exactMatch)
+              .in('difficulty', settingsFromState.difficulty === 'all' ? 
+                  ['beginner', 'intermediate', 'advanced'] : 
+                  [settingsFromState.difficulty]);
+                  
+            if (!testError && testQuestions) {
+              allQuestions = [...allQuestions, ...testQuestions];
+            }
+          }
         }
       }
       
@@ -96,7 +150,7 @@ export const useSubjectQuiz = (location: any, settings: any) => {
       if (limitedQuestions.length === 0) {
         console.log(`No questions found for subject: ${subject}`);
         toast.error(`No questions available for ${subject}`, {
-          description: "Please try another subject or difficulty level"
+          description: "Please try another subject or check if the subject name matches available subjects"
         });
         navigate('/cbt');
         return;

@@ -86,14 +86,29 @@ const QuizSection = () => {
   }, [isError, error]);
 
   const fetchUserTestsCount = async () => {
+    if (!subject) {
+      setUserTestsCount(0);
+      return;
+    }
+    
     try {
+      // Get questions from test_questions table with flexible subject matching
       const { data, error } = await supabase
         .from('test_questions')
-        .select('id')
-        .eq('subject', subject);
+        .select('id, subject')
+        .not('subject', 'is', null);
 
       if (error) throw error;
-      setUserTestsCount(data?.length || 0);
+      
+      // Count questions that match the subject (case-insensitive partial match)
+      const matchingQuestions = data?.filter(q => 
+        q.subject && (
+          q.subject.toLowerCase().includes(subject.toLowerCase()) ||
+          subject.toLowerCase().includes(q.subject.toLowerCase())
+        )
+      ) || [];
+      
+      setUserTestsCount(matchingQuestions.length);
     } catch (error) {
       console.error('Error fetching user tests count:', error);
       setUserTestsCount(0);
@@ -134,7 +149,10 @@ const QuizSection = () => {
     }
   };
 
-  const selectedSubjectData = subjects?.find(s => s.name === subject);
+  const selectedSubjectData = subjects?.find(s => 
+    s.name.toLowerCase().includes(subject.toLowerCase()) || 
+    subject.toLowerCase().includes(s.name.toLowerCase())
+  );
   const questionBankCount = selectedSubjectData?.question_count || 0;
   
   const getTotalAvailableQuestions = () => {
