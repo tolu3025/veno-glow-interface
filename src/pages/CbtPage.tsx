@@ -1,6 +1,6 @@
-import { ArrowLeft, BookOpen, FileCheck, Monitor, Trophy, Crown, Lock } from "lucide-react";
+import { ArrowLeft, BookOpen, FileCheck, Monitor, Trophy, Crown, Lock, Smartphone, Users, BarChart3, Library } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,27 +37,6 @@ const CbtPage = () => {
     
     return () => clearTimeout(timer);
   }, []);
-  
-  const cbtModules = [
-    {
-      title: "Introduction to Programming",
-      description: "Learn the basics of programming concepts and logic. Our comprehensive module covers fundamental programming principles, problem-solving approaches, and introductory algorithm design.",
-      icon: Monitor,
-      progress: 75,
-    },
-    {
-      title: "Web Development Fundamentals",
-      description: "HTML, CSS and JavaScript basics for web development. This course provides hands-on experience building responsive web pages and interactive user interfaces.",
-      icon: BookOpen,
-      progress: 45,
-    },
-    {
-      title: "Data Structures",
-      description: "Understanding key data structures and algorithms. Master essential concepts like arrays, linked lists, trees, and graphs while learning how to analyze algorithmic efficiency.",
-      icon: FileCheck,
-      progress: 20,
-    },
-  ];
 
   const handleNavigation = (path: string) => {
     playSound('click', 0.3);
@@ -83,7 +62,6 @@ const CbtPage = () => {
   };
 
   const handlePaymentComplete = async () => {
-    // Refresh access status
     const [manual, ai] = await Promise.all([
       BillingService.hasFeatureAccess('manual_test'),
       BillingService.hasFeatureAccess('ai_test')
@@ -91,7 +69,6 @@ const CbtPage = () => {
     setHasManualAccess(manual);
     setHasAiAccess(ai);
 
-    // Navigate to appropriate page
     if (selectedFeature === 'manual_test') {
       handleNavigation('/cbt/create');
     } else if (selectedFeature === 'ai_test') {
@@ -104,183 +81,274 @@ const CbtPage = () => {
   
   if (isLoading) {
     return (
-      <div className="container px-4 py-6 max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 flex items-center justify-center">
         <LoadingState />
       </div>
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="container px-4 py-6 max-w-4xl mx-auto">
-      <div className="flex items-center mb-6">
-        <button 
-          onClick={() => handleNavigation('/')}
-          className="p-2 rounded-full bg-secondary/70 hover:bg-secondary mr-3"
-          aria-label="Go back"
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+      {/* Mobile Header */}
+      {isMobile && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b px-4 py-3"
         >
-          <ArrowLeft size={18} />
-        </button>
-        <h1 className="text-xl sm:text-2xl font-bold">Veno CBT</h1>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="md:col-span-2 border-l-4 border-l-veno-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Computer Based Testing</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm mb-5">
-              Create unlimited tests with our monthly subscription plans. Choose between manual test creation 
-              with full control or AI-powered generation for quick setup.
-            </p>
-            <div className="flex flex-col gap-3 items-center">
-              <Button 
-                onClick={handleCreateTest}
-                className={`w-full md:max-w-xs ${hasManualAccess ? 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600' : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'}`}
-                size={isMobile ? "sm" : "default"}
-              >
-                {hasManualAccess ? (
-                  <>
-                    <Crown className="mr-2 h-4 w-4" />
-                    Create Manual Test
-                  </>
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Starter Plan (₦{(starterPricing.amount / 100).toLocaleString()}/month)
-                  </>
-                )}
-              </Button>
-
-              <Button 
-                onClick={handleAiTest}
-                className={`w-full md:max-w-xs ${hasAiAccess ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600' : 'bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600'}`}
-                size={isMobile ? "sm" : "default"}
-              >
-                {hasAiAccess ? (
-                  <>
-                    <Crown className="mr-2 h-4 w-4" />
-                    AI Test Creation
-                  </>
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Pro Plan (₦{(proPricing.amount / 100).toLocaleString()}/month)
-                  </>
-                )}
-              </Button>
-
-              <Button
-                onClick={() => handleNavigation('/cbt/public-leaderboards')}
-                variant="secondary"
-                size={isMobile ? "sm" : "default"}
-                className="w-full md:max-w-xs flex items-center gap-2 justify-center"
-              >
-                <Trophy size={16} />
-                Leaderboards
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-veno-primary/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Monthly Plans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                <div className="font-medium text-sm">Starter Plan</div>
-                <div className="text-xs text-muted-foreground">₦{(starterPricing.amount / 100).toLocaleString()}/month • Unlimited manual tests</div>
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleNavigation('/')}
+              className="h-9 w-9"
+            >
+              <ArrowLeft size={18} />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-gradient-to-r from-veno-primary to-veno-secondary rounded-lg flex items-center justify-center">
+                <BookOpen size={16} className="text-white" />
               </div>
-              <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
-                <div className="font-medium text-sm">Pro Plan</div>
-                <div className="text-xs text-muted-foreground">₦{(proPricing.amount / 100).toLocaleString()}/month • Unlimited AI tests</div>
+              <span className="font-semibold text-lg">Veno CBT</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleNavigation('/pricing')}
+              className="h-9 w-9"
+            >
+              <Crown size={18} />
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
+      <div className={`container mx-auto px-4 ${isMobile ? 'pb-24' : 'py-8'} max-w-4xl`}>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-6"
+        >
+          {/* Desktop Header */}
+          {!isMobile && (
+            <motion.div variants={itemVariants} className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-veno-primary to-veno-secondary bg-clip-text text-transparent">
+                  Veno CBT Platform
+                </h1>
+                <p className="text-muted-foreground mt-1">Computer Based Testing System</p>
               </div>
               <Button
-                onClick={() => handleNavigation('/pricing')}
-                variant="outline"
-                size="sm"
-                className="w-full"
+                variant="ghost"
+                size="icon"
+                onClick={() => handleNavigation('/')}
+                className="h-10 w-10"
               >
-                View All Plans
+                <ArrowLeft size={20} />
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <h2 className="text-lg font-medium mb-4">Your Learning Path</h2>
-      <p className="text-muted-foreground text-sm mb-4">
-        Continue your personalized learning journey with these recommended modules.
-        Each module is designed to build on previous knowledge and enhance your understanding
-        of key concepts in computer science and programming.
-      </p>
-      
-      <div className="space-y-4 mb-8">
-        {cbtModules.map((module, index) => (
-          <motion.div 
-            key={module.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="veno-card p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => handleNavigation('/cbt/')}
-            role="button"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3 max-w-[70%]">
-                <div className="rounded-lg bg-veno-primary/10 p-2 text-veno-primary shrink-0">
-                  <module.icon size={18} />
+            </motion.div>
+          )}
+
+          {/* Hero Card */}
+          <motion.div variants={itemVariants}>
+            <Card className="overflow-hidden border-0 bg-gradient-to-br from-veno-primary/10 via-transparent to-veno-secondary/10">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
+                  <Smartphone size={24} />
+                  Computer Based Testing
+                </CardTitle>
+                <p className="text-muted-foreground text-sm md:text-base">
+                  Create unlimited tests with our subscription plans. Choose between manual creation or AI-powered generation.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Button 
+                    onClick={handleCreateTest}
+                    className={`justify-start h-auto p-4 bg-gradient-to-r ${
+                      hasManualAccess ? 'from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600' : 'from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
+                    } hover:scale-[1.02] transition-all duration-200`}
+                    size="lg"
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        {hasManualAccess ? <Crown size={20} /> : <Lock size={20} />}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-white">
+                          {hasManualAccess ? 'Create Manual Test' : `Starter Plan`}
+                        </p>
+                        <p className="text-xs text-white/80">
+                          {hasManualAccess ? 'Full control over test creation' : `₦${(starterPricing.amount / 100).toLocaleString()}/month`}
+                        </p>
+                      </div>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    onClick={handleAiTest}
+                    className={`justify-start h-auto p-4 bg-gradient-to-r ${
+                      hasAiAccess ? 'from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600' : 'from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600'
+                    } hover:scale-[1.02] transition-all duration-200`}
+                    size="lg"
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        {hasAiAccess ? <Crown size={20} /> : <Lock size={20} />}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-white">
+                          {hasAiAccess ? 'AI Test Creation' : 'Pro Plan'}
+                        </p>
+                        <p className="text-xs text-white/80">
+                          {hasAiAccess ? 'AI-powered test generation' : `₦${(proPricing.amount / 100).toLocaleString()}/month`}
+                        </p>
+                      </div>
+                    </div>
+                  </Button>
                 </div>
-                <h3 className="font-medium text-sm truncate">{module.title}</h3>
-              </div>
-              <span className="text-sm font-medium text-veno-primary shrink-0">{module.progress}%</span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{module.description}</p>
-            <div className="w-full bg-secondary rounded-full h-2">
-              <div 
-                className="bg-veno-primary h-2 rounded-full" 
-                style={{ width: `${module.progress}%` }}
-              />
-            </div>
+
+                <Button
+                  onClick={() => handleNavigation('/cbt/public-leaderboards')}
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4 border-2 hover:scale-[1.02] transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="p-2 bg-veno-primary/10 rounded-lg">
+                      <Trophy size={20} className="text-veno-primary" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold">Public Leaderboards</p>
+                      <p className="text-xs text-muted-foreground">View top performers and compete</p>
+                    </div>
+                  </div>
+                </Button>
+              </CardContent>
+            </Card>
           </motion.div>
-        ))}
+
+          {/* Quick Access */}
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Quick Access</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { icon: FileCheck, label: "My Tests", path: "/cbt" },
+                    { icon: Library, label: "Library", path: "/cbt/library" },
+                    { icon: BarChart3, label: "Analytics", path: "/cbt/analytics" },
+                    { icon: Users, label: "Teams", path: "/cbt/public-leaderboards" }
+                  ].map((item) => (
+                    <Button
+                      key={item.label}
+                      variant="ghost"
+                      onClick={() => handleNavigation(item.path)}
+                      className="h-auto py-4 flex-col gap-2 hover:scale-105 transition-all duration-200"
+                    >
+                      <div className="p-3 bg-veno-primary/10 rounded-lg">
+                        <item.icon size={20} className="text-veno-primary" />
+                      </div>
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Subscription Plans */}
+          <motion.div variants={itemVariants}>
+            <Card className="bg-gradient-to-r from-muted/30 to-muted/10">
+              <CardHeader>
+                <CardTitle className="text-lg">Subscription Plans</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown className="h-5 w-5 text-blue-600" />
+                      <span className="font-semibold text-blue-900 dark:text-blue-100">Starter Plan</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">Perfect for individual educators</p>
+                    <p className="text-lg font-bold text-blue-600">₦{(starterPricing.amount / 100).toLocaleString()}/month</p>
+                    <p className="text-xs text-muted-foreground">Unlimited manual tests</p>
+                  </div>
+                  
+                  <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown className="h-5 w-5 text-purple-600" />
+                      <span className="font-semibold text-purple-900 dark:text-purple-100">Pro Plan</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">Advanced AI-powered features</p>
+                    <p className="text-lg font-bold text-purple-600">₦{(proPricing.amount / 100).toLocaleString()}/month</p>
+                    <p className="text-xs text-muted-foreground">Unlimited AI tests + Manual tests</p>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => handleNavigation('/pricing')}
+                  variant="outline"
+                  className="w-full mt-4"
+                >
+                  View All Plans & Features
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Ad Placement */}
+          <motion.div variants={itemVariants}>
+            <AdPlacement location="content" contentCheck={false} />
+          </motion.div>
+        </motion.div>
       </div>
-      
-      <div className="bg-muted/30 p-5 rounded-lg mb-8">
-        <h3 className="text-lg font-medium mb-3">Learning Resources</h3>
-        <p className="text-sm mb-4">
-          Enhance your understanding with these additional learning materials and resources.
-        </p>
-        <ul className="list-disc list-inside space-y-2 text-sm">
-          <li>Interactive programming tutorials with step-by-step guidance</li>
-          <li>Comprehensive video lectures from industry professionals</li>
-          <li>Practice exercises to reinforce theoretical concepts</li>
-          <li>Community forums for peer learning and problem-solving</li>
-          <li>Expert feedback on programming assignments and projects</li>
-        </ul>
-      </div>
-      
-      <div className="my-6">
-        <AdPlacement location="content" contentCheck={false} />
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <Button 
-          className="w-full bg-veno-primary hover:bg-veno-primary/90"
-          onClick={() => handleNavigation('/cbt')}
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <motion.div 
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t"
         >
-          Explore Courses
-        </Button>
-        <Button 
-          variant="outline"
-          className="w-full"
-          onClick={() => handleNavigation('/services')}
-        >
-          View All Services
-        </Button>
-      </div>
+          <div className="flex items-center justify-around py-2 px-4">
+            {[
+              { icon: BookOpen, label: "Tests", path: "/cbt" },
+              { icon: Library, label: "Library", path: "/cbt/library" },
+              { icon: BarChart3, label: "Analytics", path: "/cbt/analytics" },
+              { icon: Trophy, label: "Boards", path: "/cbt/public-leaderboards" }
+            ].map((item) => (
+              <Button
+                key={item.label}
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation(item.path)}
+                className="flex-1 flex flex-col items-center gap-1 h-auto py-2 px-2"
+              >
+                <item.icon size={18} />
+                <span className="text-xs">{item.label}</span>
+              </Button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       <PaymentDialog
         isOpen={showPaymentDialog}
