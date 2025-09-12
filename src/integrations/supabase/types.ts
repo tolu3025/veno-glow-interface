@@ -940,7 +940,7 @@ export type Database = {
             foreignKeyName: "test_questions_test_id_fkey"
             columns: ["test_id"]
             isOneToOne: false
-            referencedRelation: "custom_tests"
+            referencedRelation: "user_tests"
             referencedColumns: ["id"]
           },
         ]
