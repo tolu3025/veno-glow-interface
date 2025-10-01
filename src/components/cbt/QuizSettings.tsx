@@ -106,6 +106,7 @@ const QuizSettings: React.FC<QuizSettingsProps> = ({ subject, onStartQuiz, onBac
   };
 
   const handleQuestionsCountChange = (value: number[]) => {
+    // Ensure we set the exact number requested, not +1
     setSettings({
       ...settings,
       questionsCount: value[0],
