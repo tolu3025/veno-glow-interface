@@ -20,6 +20,7 @@ import CreateTest from "@/pages/cbt/CreateTest";
 import PublicLeaderboards from "@/pages/cbt/PublicLeaderboards";
 import QuestionBank from "@/pages/cbt/QuestionBank";
 import AiCreateTest from "@/pages/cbt/AiCreateTest";
+import PastQuestions from "@/pages/cbt/PastQuestions";
 
 export const routes = [
   {
@@ -107,6 +108,10 @@ export const routes = [
   {
     path: "/cbt/question-bank",
     element: <QuestionBank />,
+  },
+  {
+    path: "/cbt/past-questions",
+    element: <PastQuestions />,
   },
   {
     path: "*",

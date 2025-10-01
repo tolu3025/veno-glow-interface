@@ -617,6 +617,48 @@ export type Database = {
           },
         ]
       }
+      past_questions: {
+        Row: {
+          created_at: string
+          exam_type: string
+          file_size: number
+          file_url: string
+          id: string
+          school: string
+          subject: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+          year: string
+        }
+        Insert: {
+          created_at?: string
+          exam_type: string
+          file_size?: number
+          file_url: string
+          id?: string
+          school: string
+          subject: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+          year: string
+        }
+        Update: {
+          created_at?: string
+          exam_type?: string
+          file_size?: number
+          file_url?: string
+          id?: string
+          school?: string
+          subject?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          year?: string
+        }
+        Relationships: []
+      }
       payment_transactions: {
         Row: {
           amount: number

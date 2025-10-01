@@ -13,6 +13,7 @@ import AdPlacement from "@/components/ads/AdPlacement";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AITutor from "@/components/tutorials/AITutor";
 
 interface Tutorial {
   id: string;
@@ -389,6 +390,21 @@ const TutorialPage = () => {
             </div>
           </div>
         </Card>
+
+        <Separator />
+
+        {/* AI Tutor Section */}
+        {filteredTutorials.length > 0 && (
+          <div className="my-6 md:my-8">
+            <h2 className="text-xl md:text-2xl font-bold mb-4">AI Study Assistant</h2>
+            <p className="text-sm md:text-base text-muted-foreground mb-4">
+              Get personalized help from our AI tutor. Ask questions, get explanations with diagrams, and learn at your own pace.
+            </p>
+            <AITutor 
+              subject={selectedCategory || filteredTutorials[0]?.subject || "General"} 
+            />
+          </div>
+        )}
 
         <Separator />
 

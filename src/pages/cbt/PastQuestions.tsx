@@ -49,7 +49,7 @@ const PastQuestions = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPastQuestions(data || []);
+      setPastQuestions((data as any) || []);
     } catch (error) {
       console.error('Error fetching past questions:', error);
       toast.error('Failed to load past questions');
