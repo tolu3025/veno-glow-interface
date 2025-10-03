@@ -132,9 +132,9 @@ const TutorialCategoriesPage = () => {
                 This section will be back online soon!
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={() => navigate('/tutorial')}>
+                <Button onClick={() => navigate('/ai-tutorial/resources')}>
                   <BookOpen className="h-4 w-4 mr-2" />
-                  Browse All Tutorials
+                  Browse AI Resources
                 </Button>
                 <Button variant="outline" onClick={() => navigate('/')}>
                   Return to Home

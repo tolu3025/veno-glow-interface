@@ -116,8 +116,8 @@ const TutorialLearnMore = () => {
             Join thousands of learners who have already enhanced their knowledge and skills through Veno Tutorials.
           </p>
           <div className="flex gap-4 flex-wrap">
-            <Button onClick={() => navigate('/tutorial')}>
-              <BookOpen className="mr-2 h-4 w-4" /> Browse Tutorials
+            <Button onClick={() => navigate('/ai-tutorial/chat')}>
+              <BookOpen className="mr-2 h-4 w-4" /> Chat with AI Tutor
             </Button>
             <Button variant="outline" onClick={() => navigate('/tutorial/categories')}>
               Explore Categories

@@ -75,7 +75,7 @@ const VideoPlayerPage = () => {
   }, [tutorialId, addVideoWatch]);
 
   const handleBack = () => {
-    navigate('/tutorial');
+    navigate('/ai-tutorial/resources');
   };
 
   if (isLoading) {

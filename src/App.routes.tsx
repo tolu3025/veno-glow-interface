@@ -18,9 +18,11 @@ import Maintenance from "@/pages/Maintenance";
 import CbtPage from "@/pages/CbtPage";
 import CreateTest from "@/pages/cbt/CreateTest";
 import PublicLeaderboards from "@/pages/cbt/PublicLeaderboards";
-import QuestionBank from "@/pages/cbt/QuestionBank";
+
 import AiCreateTest from "@/pages/cbt/AiCreateTest";
 import PastQuestions from "@/pages/cbt/PastQuestions";
+import AiChat from "@/pages/ai-tutorial/AiChat";
+import AiResources from "@/pages/ai-tutorial/AiResources";
 
 export const routes = [
   {
@@ -106,12 +108,16 @@ export const routes = [
     element: <PublicLeaderboards />,
   },
   {
-    path: "/cbt/question-bank",
-    element: <QuestionBank />,
-  },
-  {
     path: "/cbt/past-questions",
     element: <PastQuestions />,
+  },
+  {
+    path: "/ai-tutorial/chat",
+    element: <AiChat />,
+  },
+  {
+    path: "/ai-tutorial/resources",
+    element: <AiResources />,
   },
   {
     path: "*",

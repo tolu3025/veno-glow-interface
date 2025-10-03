@@ -21,7 +21,7 @@ const MainLayout = () => {
   const mainLinks = [
     { name: "Home", path: "/" },
     { name: "CBT", path: "/cbt" },
-    { name: "Tutorial", path: "/tutorial" },
+    { name: "AI Tutor", path: "/ai-tutorial/resources" },
     { name: "Blog", path: "/blog" }
   ];
 

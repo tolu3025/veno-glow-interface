@@ -17,17 +17,17 @@ export const bannerSlides = [
     secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
   },
   {
-    title: "Expert-Led Tutorials",
-    subtitle: "Access comprehensive tutorial materials created by subject matter experts across various fields of study.",
+    title: "Expert-Led AI Tutorials",
+    subtitle: "Access comprehensive AI-powered learning resources and chat with our intelligent tutor.",
     background: "bg-gradient-to-r from-veno-primary to-blue-600",
-    primaryButton: { text: "Browse Tutorials", link: "/tutorial" },
-    secondaryButton: { text: "View Categories", link: "/tutorial" }
+    primaryButton: { text: "Chat with AI", link: "/ai-tutorial/chat" },
+    secondaryButton: { text: "View Resources", link: "/ai-tutorial/resources" }
   },
   {
     title: "Educational Resources",
     subtitle: "Discover comprehensive tutorials and educational content designed to enhance your learning experience.",
     background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-    primaryButton: { text: "Browse Tutorials", link: "/tutorial" },
+    primaryButton: { text: "Browse Resources", link: "/ai-tutorial/resources" },
     secondaryButton: { text: "View Categories", link: "/tutorial/categories" }
   },
   {
@@ -47,22 +47,16 @@ export const tutorials = [
     href: "/cbt",
   },
   {
-    title: "Video Tutorials",
-    description: "Access high-quality video lessons with detailed explanations and practical examples.",
-    icon: BookOpen,
-    href: "/tutorial",
-  },
-  {
     title: "AI Learning Assistant",
     description: "Get personalized learning support and instant answers to your academic questions.",
     icon: Bot,
-    href: "/bot",
+    href: "/ai-tutorial/chat",
   },
   {
-    title: "Tutorial Library",
-    description: "Access comprehensive video tutorials and learning resources for various subjects.",
+    title: "AI Tutorial Library",
+    description: "Access comprehensive AI-powered resources and learning materials for various subjects.",
     icon: FileText,
-    href: "/tutorial",
+    href: "/ai-tutorial/resources",
   },
 ];
 

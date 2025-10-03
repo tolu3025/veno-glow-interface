@@ -16,8 +16,10 @@ import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
 import CreateTest from "./pages/cbt/CreateTest";
 import AiCreateTest from "./pages/cbt/AiCreateTest";
-import QuestionBank from "./pages/cbt/QuestionBank";
+import PastQuestions from "./pages/cbt/PastQuestions";
 import QuizExplanations from "./pages/cbt/QuizExplanations";
+import AiChat from "./pages/ai-tutorial/AiChat";
+import AiResources from "./pages/ai-tutorial/AiResources";
 import TakeTest from "./pages/cbt/TakeTest";
 import TakeTestByCode from "./pages/cbt/TakeTestByCode";
 import ManageTest from "./pages/cbt/ManageTest";
@@ -25,7 +27,6 @@ import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
 import PublicLeaderboards from "./pages/cbt/PublicLeaderboards";
-import TutorialPage from "./pages/TutorialPage";
 import TutorialInfo from "./pages/TutorialInfo";
 import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
@@ -170,7 +171,8 @@ const AppRoutes = () => {
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
-          <Route path="/tutorial" element={<TutorialPage />} />
+          <Route path="/ai-tutorial/chat" element={<AiChat />} />
+          <Route path="/ai-tutorial/resources" element={<AiResources />} />
           <Route path="/tutorial/info" element={<TutorialInfo />} />
           <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
           <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
@@ -194,9 +196,9 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
           
-          <Route path="/cbt/question-bank" element={
+          <Route path="/cbt/past-questions" element={
             <ProtectedRoute>
-              <QuestionBank />
+              <PastQuestions />
             </ProtectedRoute>
           } />
           

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
 import ManualAiTestCreation from '@/components/cbt/ai/ManualAiTestCreation';
+import FeatureAccessGuard from '@/components/billing/FeatureAccessGuard';
 
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
 
@@ -109,19 +110,21 @@ const AiCreateTest = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Create Test with AI</h1>
-        <p className="text-muted-foreground">
-          Specify your subject and topic to generate AI-powered test questions with detailed explanations.
-        </p>
-      </div>
+    <FeatureAccessGuard featureType="ai_test">
+      <div className="container mx-auto py-8 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">Create Test with AI</h1>
+          <p className="text-muted-foreground">
+            Specify your subject and topic to generate AI-powered test questions with detailed explanations.
+          </p>
+        </div>
 
-      <ManualAiTestCreation 
-        onGenerateTest={handleManualTestGeneration}
-        loading={loading}
-      />
-    </div>
+        <ManualAiTestCreation 
+          onGenerateTest={handleManualTestGeneration}
+          loading={loading}
+        />
+      </div>
+    </FeatureAccessGuard>
   );
 };
 

@@ -315,22 +315,6 @@ const CBTIndex = () => {
                 </Button>
 
                 <Button
-                  onClick={() => navigate('/cbt/question-bank')}
-                  variant="outline"
-                  className="w-full justify-start h-auto p-4 border-2 hover:scale-[1.02] transition-all duration-200"
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="p-2 bg-purple-500/10 rounded-lg">
-                      <Library size={20} className="text-purple-600" />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-semibold">Question Bank</p>
-                      <p className="text-xs text-muted-foreground">Browse all questions</p>
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
                   onClick={() => navigate('/cbt/past-questions')}
                   variant="outline"
                   className="w-full justify-start h-auto p-4 border-2 hover:scale-[1.02] transition-all duration-200 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20"
