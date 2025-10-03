@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Users, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, Search, MessageCircle, Play, Pause, Video, Eye, Briefcase, Code, Laptop, PenTool, LineChart, Languages, Heart, Camera, Music, Palette, Smartphone } from "lucide-react";
+import { Calendar, Users, Gift, AlertCircle, BookOpen, GraduationCap, School, Award, Search, MessageCircle, Play, Pause, Video, Eye, Briefcase, Code, Laptop, PenTool, LineChart, Languages, Heart, Camera, Music, Palette, Smartphone, Bot } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import AdPlacement from "@/components/ads/AdPlacement";
@@ -39,6 +39,8 @@ const TutorialPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredTutorials, setFilteredTutorials] = useState<Tutorial[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [showAITutor, setShowAITutor] = useState(false);
+  const [selectedSubjectForAI, setSelectedSubjectForAI] = useState<string>("");
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -218,6 +220,10 @@ const TutorialPage = () => {
                   <School className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                   Explore Categories
                 </Button>
+                <Button size={isMobile ? "sm" : "default"} variant="outline" onClick={() => { setShowAITutor(true); setSelectedSubjectForAI("General"); }}>
+                  <Bot className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
+                  AI Tutor
+                </Button>
               </div>
             </div>
             <div className="flex-1 flex justify-center mt-4 md:mt-0">
@@ -251,14 +257,24 @@ const TutorialPage = () => {
                       )}
                       
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="rounded-full bg-white/20 hover:bg-white/40" 
-                          onClick={() => navigate(`/tutorial/watch?id=${tutorial.id}`)}
-                        >
-                          <Play className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="rounded-full bg-white/20 hover:bg-white/40" 
+                            onClick={() => navigate(`/tutorial/watch?id=${tutorial.id}`)}
+                          >
+                            <Play className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="rounded-full bg-white/20 hover:bg-white/40" 
+                            onClick={() => { setShowAITutor(true); setSelectedSubjectForAI(tutorial.subject); }}
+                          >
+                            <Bot className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     <p className="text-xs md:text-sm text-muted-foreground">
@@ -412,6 +428,13 @@ const TutorialPage = () => {
           <AdPlacement location="footer" contentCheck={false} />
         </div>
       </div>
+      
+      {/* AI Tutor Dialog */}
+      <Dialog open={showAITutor} onOpenChange={setShowAITutor}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <AITutor subject={selectedSubjectForAI} />
+        </DialogContent>
+      </Dialog>
       
       <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
         <DialogContent className="max-w-[95vw] md:max-w-2xl">
