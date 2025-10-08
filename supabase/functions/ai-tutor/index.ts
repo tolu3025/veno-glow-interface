@@ -13,35 +13,37 @@ serve(async (req) => {
 
   try {
     const { messages, subject, topic, includeImages } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     // Build system prompt for tutoring
     const systemPrompt = `You are an expert AI tutor specializing in ${subject}${topic ? ` with focus on ${topic}` : ''}.
 
 Your role:
-- Explain concepts clearly and thoroughly
+- Explain concepts clearly and thoroughly with proper formatting
 - Use analogies and real-world examples
 - Break down complex topics into digestible parts
 - Encourage critical thinking
 - Be patient and supportive
 - Adapt explanations to the student's level
-
-${includeImages ? 'When explaining visual concepts in subjects like Anatomy, Biology, Chemistry, Physics, or MLS, describe what diagrams or images would be helpful to illustrate the concept.' : ''}
+- Format your responses with proper line breaks for readability
+- Use bullet points and numbered lists when appropriate
+- Bold important terms using **text**
 
 Keep responses concise but informative. Focus on understanding over memorization.`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Get text response first
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages.map((m: any) => ({
@@ -75,14 +77,47 @@ Keep responses concise but informative. Focus on understanding over memorization
     const assistantMessage = data.choices?.[0]?.message?.content || "I apologize, I couldn't generate a response.";
 
     // For subjects that benefit from images, check if we should generate one
-    const visualSubjects = ['anatomy', 'biology', 'chemistry', 'physics', 'mls'];
+    const visualSubjects = ['anatomy', 'biology', 'chemistry', 'physics', 'mls', 'math', 'science'];
     const shouldGenerateImage = includeImages && 
       visualSubjects.some(s => subject.toLowerCase().includes(s)) &&
-      assistantMessage.length > 100;
+      assistantMessage.length > 50;
 
     let imageUrl = null;
-    // Note: Image generation disabled for now as it requires GPT-Image-1 model
-    // Can be enabled if needed by uncommenting and updating the implementation
+    
+    // Generate educational diagram if appropriate
+    if (shouldGenerateImage) {
+      try {
+        console.log("Generating educational diagram...");
+        const imagePrompt = `Create a clear, simple educational diagram to illustrate: ${assistantMessage.substring(0, 300)}. Make it colorful and easy to understand for students.`;
+        
+        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [
+              {
+                role: "user",
+                content: imagePrompt,
+              },
+            ],
+            modalities: ["image", "text"],
+          }),
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          console.log("Image generated successfully");
+        }
+      } catch (imageError) {
+        console.error("Image generation error:", imageError);
+        // Continue without image if generation fails
+      }
+    }
 
     return new Response(
       JSON.stringify({
