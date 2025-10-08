@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -12,10 +13,10 @@ serve(async (req) => {
 
   try {
     const { messages, subject, topic, includeImages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     // Build system prompt for tutoring
@@ -33,14 +34,14 @@ ${includeImages ? 'When explaining visual concepts in subjects like Anatomy, Bio
 
 Keep responses concise but informative. Focus on understanding over memorization.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages.map((m: any) => ({
@@ -80,36 +81,8 @@ Keep responses concise but informative. Focus on understanding over memorization
       assistantMessage.length > 100;
 
     let imageUrl = null;
-    if (shouldGenerateImage) {
-      // Generate an image based on the explanation
-      try {
-        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [
-              {
-                role: "user",
-                content: `Create a simple, clear educational diagram for ${subject}: ${assistantMessage.substring(0, 200)}`,
-              },
-            ],
-            modalities: ["image", "text"],
-          }),
-        });
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        }
-      } catch (imageError) {
-        console.error("Image generation error:", imageError);
-        // Continue without image if generation fails
-      }
-    }
+    // Note: Image generation disabled for now as it requires GPT-Image-1 model
+    // Can be enabled if needed by uncommenting and updating the implementation
 
     return new Response(
       JSON.stringify({

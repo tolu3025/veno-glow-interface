@@ -202,8 +202,12 @@ const PastQuestions = () => {
                   onChange={handleFileUpload}
                   disabled={uploading}
                   className="max-w-md"
+                  id="pdf-upload"
                 />
-                <Button disabled={uploading}>
+                <Button 
+                  disabled={uploading}
+                  onClick={() => document.getElementById('pdf-upload')?.click()}
+                >
                   {uploading ? 'Uploading...' : 'Upload PDF'}
                 </Button>
               </div>
