@@ -80,6 +80,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_tutor_chats: {
+        Row: {
+          created_at: string | null
+          id: string
+          messages: Json
+          subject: string
+          topic: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          messages?: Json
+          subject: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          messages?: Json
+          subject?: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       anatomy_option_sets: {
         Row: {
           category: Database["public"]["Enums"]["anatomy_question_category"]
