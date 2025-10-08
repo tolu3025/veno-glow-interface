@@ -32,6 +32,27 @@ const PastQuestions = () => {
   const [selectedExamType, setSelectedExamType] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase.rpc('get_current_user_role');
+        if (!error && data) {
+          setIsAdmin(data === 'admin' || data === 'superadmin');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   useEffect(() => {
     fetchPastQuestions();
@@ -161,13 +182,13 @@ const PastQuestions = () => {
           </p>
         </div>
 
-        {/* Upload Section */}
-        {user && (
+        {/* Upload Section - Only for Admins */}
+        {user && isAdmin && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
-                Upload Past Question
+                Upload Past Question (Admin Only)
               </CardTitle>
               <CardDescription>
                 Share past questions with the community
