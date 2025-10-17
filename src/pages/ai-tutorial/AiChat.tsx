@@ -35,12 +35,27 @@ const AiChat = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw error;
+      }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
-    } catch (error) {
+      if (data?.error) {
+        console.error('AI gateway error:', data.error);
+        if (data.error.includes('Rate limit')) {
+          toast.error('Rate limit exceeded. Please try again later.');
+        } else if (data.error.includes('Credits exhausted')) {
+          toast.error('AI credits exhausted. Please contact support.');
+        } else {
+          toast.error('AI service temporarily unavailable.');
+        }
+        return;
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: data.message || 'Sorry, I could not generate a response.' }]);
+    } catch (error: any) {
       console.error('Chat error:', error);
-      toast.error('Failed to send message. Please try again.');
+      toast.error(error?.message || 'Failed to send message. Please try again.');
     } finally {
       setLoading(false);
     }

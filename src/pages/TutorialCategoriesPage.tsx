@@ -21,7 +21,7 @@ const TutorialCategoriesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Maintenance mode flag - set to true to enable maintenance mode
-  const isMaintenanceMode = true;
+  const isMaintenanceMode = false;
   
   const categories: Category[] = [
     {

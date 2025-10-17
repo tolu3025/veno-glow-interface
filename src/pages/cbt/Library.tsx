@@ -20,8 +20,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/providers/AuthProvider";
 import { FileText } from "lucide-react";
 
-// Empty resources array - removed all books
-const RESOURCES: any[] = [];
+// Sample resources for demonstration - admin can upload more via Past Questions page
+const RESOURCES = [
+  {
+    id: 1,
+    title: "Introduction to Biology",
+    author: "Dr. Sarah Johnson",
+    subject: "Biology",
+    category: "textbook",
+    description: "Comprehensive guide to biological sciences covering cells, genetics, and evolution",
+    pages: 450,
+    size: "15.2 MB",
+    downloadUrl: "#"
+  },
+  {
+    id: 2,
+    title: "Advanced Mathematics",
+    author: "Prof. Michael Chen",
+    subject: "Mathematics",
+    category: "textbook",
+    description: "Advanced mathematical concepts including calculus, algebra, and statistics",
+    pages: 380,
+    size: "12.8 MB",
+    downloadUrl: "#"
+  },
+  {
+    id: 3,
+    title: "JAMB Past Questions 2023",
+    author: "JAMB Board",
+    subject: "General",
+    category: "pastquestion",
+    description: "Complete collection of JAMB examination questions from 2023",
+    pages: 120,
+    size: "8.5 MB",
+    downloadUrl: "#"
+  }
+];
 
 const Library = () => {
   const { toast } = useToast();
@@ -41,7 +75,7 @@ const Library = () => {
     return matchesTab && matchesSearch && matchesSubject;
   });
 
-  const uniqueSubjects: (string | undefined)[] = [];
+  const uniqueSubjects = Array.from(new Set(RESOURCES.map(r => r.subject).filter(Boolean)));
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -118,13 +152,76 @@ const Library = () => {
         
         {/* Resource cards */}
         <TabsContent value={activeTab} className="space-y-4">
-          <div className="text-center py-10">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground opacity-30" />
-            <h3 className="mt-4 text-lg font-medium">No resources found</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              There are currently no resources available in the library.
-            </p>
-          </div>
+          {filteredResources.length === 0 ? (
+            <div className="text-center py-10">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground opacity-30" />
+              <h3 className="mt-4 text-lg font-medium">No resources found</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {searchTerm || selectedSubject 
+                  ? "Try adjusting your filters or search terms."
+                  : "Check back later for new resources or visit the Past Questions page."}
+              </p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => window.location.href = '/cbt/past-questions'}
+              >
+                Browse Past Questions
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Author</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Pages</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredResources.map((resource) => (
+                    <TableRow key={resource.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div>{resource.title}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {resource.description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{resource.author}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                          {resource.subject}
+                        </span>
+                      </TableCell>
+                      <TableCell>{resource.pages}</TableCell>
+                      <TableCell>{resource.size}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            toast({
+                              title: "Coming Soon",
+                              description: "Direct downloads will be available soon. Please check the Past Questions page.",
+                            });
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
