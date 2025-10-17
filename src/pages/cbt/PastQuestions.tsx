@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Download, FileText, Search, Filter, BookOpen, School } from 'lucide-react';
+import { Upload, Download, FileText, Search, BookOpen, School } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
+import UploadPastQuestionDialog from '@/components/admin/UploadPastQuestionDialog';
 
 interface PastQuestion {
   id: string;
@@ -31,8 +32,8 @@ const PastQuestions = () => {
   const [selectedSchool, setSelectedSchool] = useState<string>('all');
   const [selectedExamType, setSelectedExamType] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -101,47 +102,6 @@ const PastQuestions = () => {
     setFilteredQuestions(filtered);
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    if (file.type !== 'application/pdf') {
-      toast.error('Please upload a PDF file');
-      return;
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('File size must be less than 20MB');
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `past-questions/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
-
-      // Here you would show a dialog to collect metadata
-      // For now, we'll show a success message
-      toast.success('File uploaded! Please add details in the form.');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload file');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleDownload = async (fileUrl: string, title: string) => {
     try {
@@ -195,25 +155,19 @@ const PastQuestions = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <Input
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                  className="max-w-md"
-                  id="pdf-upload"
-                />
-                <Button 
-                  disabled={uploading}
-                  onClick={() => document.getElementById('pdf-upload')?.click()}
-                >
-                  {uploading ? 'Uploading...' : 'Upload PDF'}
-                </Button>
-              </div>
+              <Button onClick={() => setUploadDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload PDF
+              </Button>
             </CardContent>
           </Card>
         )}
+
+        <UploadPastQuestionDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          onSuccess={fetchPastQuestions}
+        />
 
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">

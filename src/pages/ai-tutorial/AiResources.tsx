@@ -46,7 +46,7 @@ const AiResources = () => {
       title: 'Learning Tips',
       description: 'Discover effective study strategies and tips',
       icon: Lightbulb,
-      link: '/cbt',
+      link: '/ai-tutorial/learning-tips',
       color: 'bg-yellow-500'
     }
   ];

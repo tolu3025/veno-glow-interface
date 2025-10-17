@@ -23,6 +23,7 @@ import AiCreateTest from "@/pages/cbt/AiCreateTest";
 import PastQuestions from "@/pages/cbt/PastQuestions";
 import AiChat from "@/pages/ai-tutorial/AiChat";
 import AiResources from "@/pages/ai-tutorial/AiResources";
+import LearningTips from "@/pages/ai-tutorial/LearningTips";
 
 export const routes = [
   {
@@ -118,6 +119,10 @@ export const routes = [
   {
     path: "/ai-tutorial/resources",
     element: <AiResources />,
+  },
+  {
+    path: "/ai-tutorial/learning-tips",
+    element: <LearningTips />,
   },
   {
     path: "*",
