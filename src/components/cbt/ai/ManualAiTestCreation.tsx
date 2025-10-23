@@ -107,7 +107,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
                       <div className="flex items-center justify-between w-full">
                         <span>{subjectOption.name}</span>
                         <span className="text-xs text-muted-foreground ml-2">
-                          ({subjectOption.question_count} questions - {subjectOption.source})
+                          ({subjectOption.question_count} questions)
                         </span>
                       </div>
                     </SelectItem>

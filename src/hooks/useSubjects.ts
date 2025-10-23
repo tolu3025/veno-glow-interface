@@ -8,7 +8,6 @@ import { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-j
 export type Subject = {
   name: string;
   question_count: number;
-  source: 'admin' | 'ai-generated' | 'combined';
 };
 
 // Define a type-safe version of querySafe with proper TypeScript definitions
@@ -94,7 +93,7 @@ export const useSubjects = () => {
     return () => window.removeEventListener('online', handleOnline);
   }, [checkConnection]);
 
-  // Set up real-time subscription for both questions and user_tests tables
+  // Set up real-time subscription for questions table
   useEffect(() => {
     const questionsChannel = supabase
       .channel('subjects-realtime-questions')
@@ -113,42 +112,8 @@ export const useSubjects = () => {
       )
       .subscribe();
 
-    const userTestsChannel = supabase
-      .channel('subjects-realtime-user-tests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_tests'
-        },
-        (payload) => {
-          console.log('Real-time update received for user_tests:', payload);
-          window.dispatchEvent(new CustomEvent('subjects-updated'));
-        }
-      )
-      .subscribe();
-
-    const userTestQuestionsChannel = supabase
-      .channel('subjects-realtime-user-test-questions')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_test_questions'
-        },
-        (payload) => {
-          console.log('Real-time update received for user_test_questions:', payload);
-          window.dispatchEvent(new CustomEvent('subjects-updated'));
-        }
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(questionsChannel);
-      supabase.removeChannel(userTestsChannel);
-      supabase.removeChannel(userTestQuestionsChannel);
     };
   }, []);
 
@@ -180,78 +145,39 @@ export const useSubjects = () => {
       });
       
       try {
-        console.log('Fetching subjects from both admin questions and AI-generated tests...');
+        console.log('Fetching subjects from questions table...');
         
-        // Query the questions table (main question bank) and test_questions (user created questions)
-        const [questionsResult, testQuestionsResult] = await Promise.race([
-          Promise.all([
-            querySafe<{ subject: string }[]>(async () => {
-              return await supabase
-                .from('questions')
-                .select('subject');
-            }),
-            querySafe<{ subject: string }[]>(async () => {
-              return await supabase
-                .from('test_questions')
-                .select('subject')
-                .not('subject', 'is', null);
-            })
-          ]),
+        // Query only the questions table
+        const questionsResult = await Promise.race([
+          querySafe<{ subject: string }[]>(async () => {
+            return await supabase
+              .from('questions')
+              .select('subject');
+          }),
           timeoutPromise
         ]);
         
-        // Process main questions (question bank)
-        const questionBankCounts: Record<string, number> = {};
+        // Process questions
+        const questionCounts: Record<string, number> = {};
         if (questionsResult.data) {
           questionsResult.data.forEach((q: { subject: string }) => {
             if (q.subject && q.subject.trim()) {
               const subject = q.subject.trim();
-              questionBankCounts[subject] = (questionBankCounts[subject] || 0) + 1;
+              questionCounts[subject] = (questionCounts[subject] || 0) + 1;
             }
           });
         }
         
-        // Process user created test questions
-        const testQuestionCounts: Record<string, number> = {};
-        if (testQuestionsResult.data) {
-          testQuestionsResult.data.forEach((q: { subject: string }) => {
-            if (q.subject && q.subject.trim()) {
-              const subject = q.subject.trim();
-              testQuestionCounts[subject] = (testQuestionCounts[subject] || 0) + 1;
-            }
-          });
-        }
-        
-        // Combine both sources
-        const allSubjects = new Set([
-          ...Object.keys(questionBankCounts),
-          ...Object.keys(testQuestionCounts)
-        ]);
-        
-        const formattedSubjects: Subject[] = Array.from(allSubjects)
-          .filter(name => name && name.trim()) // Filter out any undefined/null/empty subjects
-          .map(name => {
-            const questionBankCount = questionBankCounts[name] || 0;
-            const testQuestionCount = testQuestionCounts[name] || 0;
-            const totalCount = questionBankCount + testQuestionCount;
-            
-            let source: 'admin' | 'ai-generated' | 'combined' = 'admin';
-            if (questionBankCount > 0 && testQuestionCount > 0) {
-              source = 'combined';
-            } else if (testQuestionCount > 0) {
-              source = 'ai-generated';
-            }
-            
-            return {
-              name,
-              question_count: totalCount,
-              source
-            };
-          })
-          .filter(subject => subject.question_count > 0) // Only include subjects with questions
+        const formattedSubjects: Subject[] = Object.entries(questionCounts)
+          .filter(([name]) => name && name.trim())
+          .map(([name, count]) => ({
+            name,
+            question_count: count
+          }))
+          .filter(subject => subject.question_count > 0)
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        console.log('Formatted subjects from question bank and test questions:', formattedSubjects);
+        console.log('Formatted subjects from questions table:', formattedSubjects);
         
         // Cache the results locally for offline use
         localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));
