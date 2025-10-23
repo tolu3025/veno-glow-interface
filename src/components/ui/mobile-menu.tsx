@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface MobileMenuProps {
-  mainLinks: { name: string; path: string }[];
+  mainLinks: { name: string; path: string; external?: boolean }[];
 }
 
 const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
@@ -103,13 +103,25 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
               <h3 className="text-sm font-medium px-4">Main Navigation</h3>
               <nav className="flex flex-col space-y-1">
                 {mainLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    to={link.path}
-                    className={`px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center ${location.pathname === link.path ? 'bg-accent text-accent-foreground font-medium' : ''}`}
-                  >
-                    {link.name}
-                  </Link>
+                  link.external ? (
+                    <a
+                      key={link.name}
+                      href={link.path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link
+                      key={link.name}
+                      to={link.path}
+                      className={`px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center ${location.pathname === link.path ? 'bg-accent text-accent-foreground font-medium' : ''}`}
+                    >
+                      {link.name}
+                    </Link>
+                  )
                 ))}
               </nav>
             </div>

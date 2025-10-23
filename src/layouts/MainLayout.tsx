@@ -22,7 +22,7 @@ const MainLayout = () => {
     { name: "Home", path: "/" },
     { name: "CBT", path: "/cbt" },
     { name: "AI Tutor", path: "/ai-tutorial/resources" },
-    { name: "Blog", path: "/blog" }
+    { name: "Blog", path: "https://venoblog.online", external: true }
   ];
 
   const handleSignOut = async () => {
@@ -58,13 +58,25 @@ const MainLayout = () => {
           
           <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 mx-6">
             {mainLinks.map((link) => (
-              <Link 
-                key={link.name} 
-                to={link.path} 
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                {link.name}
-              </Link>
+              link.external ? (
+                <a
+                  key={link.name}
+                  href={link.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  {link.name}
+                </a>
+              ) : (
+                <Link 
+                  key={link.name} 
+                  to={link.path} 
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  {link.name}
+                </Link>
+              )
             ))}
           </nav>
           

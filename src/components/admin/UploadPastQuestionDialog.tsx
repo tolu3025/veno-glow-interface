@@ -22,7 +22,7 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
     school: '',
     year: '',
     subject: '',
-    exam_type: 'other' as 'post-utme' | 'waec' | 'jamb' | 'neco' | 'other'
+    exam_type: '100-level' as '100-level' | '200-level' | '300-level' | '400-level' | '500-level' | '600-level' | 'post-utme' | 'waec' | 'jamb' | 'neco' | 'other'
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +101,7 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
         school: '',
         year: '',
         subject: '',
-        exam_type: 'other'
+        exam_type: '100-level'
       });
     } catch (error) {
       console.error('Upload error:', error);
@@ -202,6 +202,12 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="100-level">100 Level</SelectItem>
+                  <SelectItem value="200-level">200 Level</SelectItem>
+                  <SelectItem value="300-level">300 Level</SelectItem>
+                  <SelectItem value="400-level">400 Level</SelectItem>
+                  <SelectItem value="500-level">500 Level</SelectItem>
+                  <SelectItem value="600-level">600 Level</SelectItem>
                   <SelectItem value="post-utme">POST-UTME</SelectItem>
                   <SelectItem value="jamb">JAMB</SelectItem>
                   <SelectItem value="waec">WAEC</SelectItem>
