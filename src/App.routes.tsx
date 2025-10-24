@@ -24,6 +24,8 @@ import PastQuestions from "@/pages/cbt/PastQuestions";
 import AiChat from "@/pages/ai-tutorial/AiChat";
 import AiResources from "@/pages/ai-tutorial/AiResources";
 import LearningTips from "@/pages/ai-tutorial/LearningTips";
+import TutorialInfo from "@/pages/TutorialInfo";
+import VideoPlayerPage from "@/pages/VideoPlayerPage";
 
 export const routes = [
   {
@@ -123,6 +125,14 @@ export const routes = [
   {
     path: "/ai-tutorial/learning-tips",
     element: <LearningTips />,
+  },
+  {
+    path: "/ai-tutorial/study-materials",
+    element: <TutorialInfo />,
+  },
+  {
+    path: "/ai-tutorial/video-tutorials",
+    element: <VideoPlayerPage />,
   },
   {
     path: "*",
