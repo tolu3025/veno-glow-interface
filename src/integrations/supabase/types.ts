@@ -1755,10 +1755,7 @@ export type Database = {
         Args: { expires_at?: string; reason: string; target_user_id: string }
         Returns: string
       }
-      check_if_table_exists: {
-        Args: { table_name: string }
-        Returns: boolean
-      }
+      check_if_table_exists: { Args: { table_name: string }; Returns: boolean }
       create_notification: {
         Args: {
           p_message: string
@@ -1768,72 +1765,43 @@ export type Database = {
         }
         Returns: string
       }
-      dblink: {
-        Args: { "": string }
-        Returns: Record<string, unknown>[]
-      }
-      dblink_cancel_query: {
-        Args: { "": string }
-        Returns: string
-      }
-      dblink_close: {
-        Args: { "": string }
-        Returns: string
-      }
-      dblink_connect: {
-        Args: { "": string }
-        Returns: string
-      }
-      dblink_connect_u: {
-        Args: { "": string }
-        Returns: string
-      }
-      dblink_current_query: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      dblink_disconnect: {
-        Args: Record<PropertyKey, never> | { "": string }
-        Returns: string
-      }
-      dblink_error_message: {
-        Args: { "": string }
-        Returns: string
-      }
-      dblink_exec: {
-        Args: { "": string }
-        Returns: string
-      }
+      dblink: { Args: { "": string }; Returns: Record<string, unknown>[] }
+      dblink_cancel_query: { Args: { "": string }; Returns: string }
+      dblink_close: { Args: { "": string }; Returns: string }
+      dblink_connect: { Args: { "": string }; Returns: string }
+      dblink_connect_u: { Args: { "": string }; Returns: string }
+      dblink_current_query: { Args: never; Returns: string }
+      dblink_disconnect:
+        | { Args: { "": string }; Returns: string }
+        | { Args: never; Returns: string }
+      dblink_error_message: { Args: { "": string }; Returns: string }
+      dblink_exec: { Args: { "": string }; Returns: string }
       dblink_fdw_validator: {
         Args: { catalog: unknown; options: string[] }
         Returns: undefined
       }
-      dblink_get_connections: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
-      dblink_get_notify: {
-        Args: Record<PropertyKey, never> | { conname: string }
-        Returns: Record<string, unknown>[]
-      }
+      dblink_get_connections: { Args: never; Returns: string[] }
+      dblink_get_notify:
+        | { Args: never; Returns: Record<string, unknown>[] }
+        | { Args: { conname: string }; Returns: Record<string, unknown>[] }
       dblink_get_pkey: {
         Args: { "": string }
         Returns: Database["public"]["CompositeTypes"]["dblink_pkey_results"][]
+        SetofOptions: {
+          from: "*"
+          to: "dblink_pkey_results"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       dblink_get_result: {
         Args: { "": string }
         Returns: Record<string, unknown>[]
       }
-      dblink_is_busy: {
-        Args: { "": string }
-        Returns: number
-      }
-      generate_share_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      dblink_is_busy: { Args: { "": string }; Returns: number }
+      generate_share_code: { Args: never; Returns: string }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_new_questions: {
@@ -1859,19 +1827,16 @@ export type Database = {
         }[]
       }
       get_public_results: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           participant_email: string
           score: number
         }[]
       }
-      get_realtime_status: {
-        Args: { table_name: string }
-        Returns: boolean
-      }
+      get_realtime_status: { Args: { table_name: string }; Returns: boolean }
       get_subjects_from_questions: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           name: string
           question_count: number
@@ -1896,7 +1861,7 @@ export type Database = {
         }[]
       }
       get_user_activity_summary: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           recent_signups: number
           total_points: number
@@ -1915,18 +1880,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_user_banned: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_current_user_admin: { Args: never; Returns: boolean }
+      is_user_banned: { Args: { user_id: string }; Returns: boolean }
       register_investor: {
         Args: {
           p_current_value: number
@@ -1947,14 +1903,8 @@ export type Database = {
         }
         Returns: string
       }
-      test_ai_chat_function: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      unban_user: {
-        Args: { target_user_id: string }
-        Returns: boolean
-      }
+      test_ai_chat_function: { Args: never; Returns: undefined }
+      unban_user: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
       anatomy_question_category:
