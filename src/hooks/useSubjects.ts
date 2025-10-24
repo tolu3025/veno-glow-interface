@@ -43,6 +43,12 @@ export const useSubjects = () => {
   // Update online status using the isOnline function from the client
   const online = isOnline();
 
+  // Clear old cached data on mount to prevent stale data
+  useEffect(() => {
+    // Clear potentially stale cached subjects
+    localStorage.removeItem('cached_subjects');
+  }, []);
+
   // Connection testing function with retry capability
   const checkConnection = useCallback(async () => {
     if (retryCount >= MAX_RETRIES && !online) {
@@ -184,6 +190,11 @@ export const useSubjects = () => {
         trackSuccess();
         return formattedSubjects;
         
+        // Cache the results locally for offline use
+        localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));
+        trackSuccess();
+        return formattedSubjects;
+        
       } catch (error: any) {
         console.error('Error in useSubjects query:', error);
         
@@ -206,18 +217,11 @@ export const useSubjects = () => {
       }
     },
     retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10000), // Exponential backoff
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10000),
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    // Provide initial data from local storage if available
-    initialData: () => {
-      const cachedSubjects = localStorage.getItem('cached_subjects');
-      if (cachedSubjects) {
-        console.log('Using initial data from local storage');
-        return JSON.parse(cachedSubjects) as Subject[];
-      }
-      return undefined;
-    },
+    staleTime: 1 * 60 * 1000, // Reduce cache time to 1 minute for faster updates
+    // Don't use initial data to force fresh fetch
+    initialData: undefined,
     meta: {
       // These functions can be used by components to manage connection
       retry: checkConnection,
