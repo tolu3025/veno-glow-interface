@@ -153,28 +153,29 @@ export const useSubjects = () => {
       try {
         console.log('Fetching subjects from questions table...');
         
-        // Query only the questions table
-        const questionsResult = await Promise.race([
-          querySafe<{ subject: string }[]>(async () => {
-            return await supabase
-              .from('questions')
-              .select('subject');
-          }),
+        // Fetch all questions but only select the subject field for efficiency
+        const { data: questions, error } = await Promise.race([
+          supabase
+            .from('questions')
+            .select('subject'),
           timeoutPromise
-        ]);
+        ]) as { data: { subject: string }[] | null; error: any };
         
-        // Process questions
-        const questionCounts: Record<string, number> = {};
-        if (questionsResult.data) {
-          questionsResult.data.forEach((q: { subject: string }) => {
-            if (q.subject && q.subject.trim()) {
-              const subject = q.subject.trim();
-              questionCounts[subject] = (questionCounts[subject] || 0) + 1;
-            }
-          });
+        if (error) {
+          console.error('Error fetching subjects:', error);
+          throw error;
         }
         
-        const formattedSubjects: Subject[] = Object.entries(questionCounts)
+        // Aggregate subject counts in JavaScript
+        const subjectCounts: Record<string, number> = {};
+        (questions || []).forEach(q => {
+          if (q.subject && q.subject.trim()) {
+            const subject = q.subject.trim();
+            subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
+          }
+        });
+        
+        const formattedSubjects: Subject[] = Object.entries(subjectCounts)
           .filter(([name]) => name && name.trim())
           .map(([name, count]) => ({
             name,
@@ -183,12 +184,7 @@ export const useSubjects = () => {
           .filter(subject => subject.question_count > 0)
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        console.log('Formatted subjects from questions table:', formattedSubjects);
-        
-        // Cache the results locally for offline use
-        localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));
-        trackSuccess();
-        return formattedSubjects;
+        console.log(`Fetched ${formattedSubjects.length} subjects from ${questions?.length || 0} questions`);
         
         // Cache the results locally for offline use
         localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));
