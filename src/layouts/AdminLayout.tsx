@@ -3,7 +3,7 @@ import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { Settings, User, Home, HelpCircle, FileText, Users, UserMinus } from 'lucide-react';
+import { Settings, User, Home, HelpCircle, FileText, Users, UserMinus, Upload } from 'lucide-react';
 
 const AdminLayout = () => {
   const { user } = useAuth();
@@ -78,9 +78,20 @@ const AdminLayout = () => {
             Questions
           </NavLink>
 
+          <NavLink 
+            to="/admin/past-questions" 
+            className={({ isActive }) => 
+              `flex items-center p-2 rounded-lg ${
+                isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'
+              }`
+            }
+          >
+            <Upload size={18} className="mr-2" />
+            Past Questions
+          </NavLink>
           
           <NavLink 
-            to="/admin/assign-admin" 
+            to="/admin/assign-admin"
             className={({ isActive }) => 
               `flex items-center p-2 rounded-lg ${
                 isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'

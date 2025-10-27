@@ -153,35 +153,26 @@ export const useSubjects = () => {
       try {
         console.log('Fetching subjects from questions table...');
         
-        // Fetch all questions with subject field
-        const { data: questions, error } = await supabase
-          .from('questions')
-          .select('subject');
+        // Use RPC call to get subjects with counts from database aggregation
+        // This is more efficient and avoids client-side row limits
+        const { data: subjectsData, error } = await supabase
+          .rpc('get_subjects_from_questions');
         
         if (error) {
-          console.error('Error fetching subjects:', error);
+          console.error('Error fetching subjects via RPC:', error);
           throw error;
         }
         
-        // Aggregate subject counts in JavaScript
-        const subjectCounts: Record<string, number> = {};
-        (questions || []).forEach(q => {
-          if (q.subject && q.subject.trim()) {
-            const subject = q.subject.trim();
-            subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
-          }
-        });
-        
-        const formattedSubjects: Subject[] = Object.entries(subjectCounts)
-          .filter(([name]) => name && name.trim())
-          .map(([name, count]) => ({
-            name,
-            question_count: count
+        // Format the data
+        const formattedSubjects: Subject[] = (subjectsData || [])
+          .filter((s: any) => s.name && s.name.trim() && s.question_count > 0)
+          .map((s: any) => ({
+            name: s.name.trim(),
+            question_count: Number(s.question_count)
           }))
-          .filter(subject => subject.question_count > 0)
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        console.log(`Fetched ${formattedSubjects.length} subjects from ${questions?.length || 0} questions`);
+        console.log(`Fetched ${formattedSubjects.length} subjects with counts`);
         
         // Cache the results locally for offline use
         localStorage.setItem('cached_subjects', JSON.stringify(formattedSubjects));
