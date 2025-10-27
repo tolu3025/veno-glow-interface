@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Download, FileText, Search, BookOpen, School } from 'lucide-react';
+import { Download, FileText, Search, BookOpen, School } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/providers/AuthProvider';
-import UploadPastQuestionDialog from '@/components/admin/UploadPastQuestionDialog';
 
 interface PastQuestion {
   id: string;
@@ -25,35 +23,12 @@ interface PastQuestion {
 }
 
 const PastQuestions = () => {
-  const { user } = useAuth();
   const [pastQuestions, setPastQuestions] = useState<PastQuestion[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<PastQuestion[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSchool, setSelectedSchool] = useState<string>('all');
   const [selectedExamType, setSelectedExamType] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabase.rpc('get_current_user_role');
-        if (!error && data) {
-          setIsAdmin(data === 'admin' || data === 'superadmin');
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user]);
 
   useEffect(() => {
     fetchPastQuestions();
@@ -141,33 +116,6 @@ const PastQuestions = () => {
             Access past questions for all schools, JAMB, WAEC, and post-UTME
           </p>
         </div>
-
-        {/* Upload Section - Only for Admins */}
-        {user && isAdmin && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Upload Past Question (Admin Only)
-              </CardTitle>
-              <CardDescription>
-                Share past questions with the community
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setUploadDialogOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload PDF
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <UploadPastQuestionDialog
-          open={uploadDialogOpen}
-          onOpenChange={setUploadDialogOpen}
-          onSuccess={fetchPastQuestions}
-        />
 
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">

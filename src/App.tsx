@@ -54,6 +54,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminQuestions from "./pages/admin/AdminQuestions";
+import AdminPastQuestions from "./pages/admin/AdminPastQuestions";
 
 import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AssignAdmin from "./pages/admin/AssignAdmin";
@@ -161,6 +162,7 @@ const AppRoutes = () => {
           <Route path="users" element={<AdminUsers />} />
           <Route path="user-management" element={<AdminUserManagement />} />
           <Route path="questions" element={<AdminQuestions />} />
+          <Route path="past-questions" element={<AdminPastQuestions />} />
           
           <Route path="assign-admin" element={<AssignAdmin />} />
         </Route>

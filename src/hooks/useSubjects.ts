@@ -153,13 +153,10 @@ export const useSubjects = () => {
       try {
         console.log('Fetching subjects from questions table...');
         
-        // Fetch all questions but only select the subject field for efficiency
-        const { data: questions, error } = await Promise.race([
-          supabase
-            .from('questions')
-            .select('subject'),
-          timeoutPromise
-        ]) as { data: { subject: string }[] | null; error: any };
+        // Fetch all questions with subject field
+        const { data: questions, error } = await supabase
+          .from('questions')
+          .select('subject');
         
         if (error) {
           console.error('Error fetching subjects:', error);
