@@ -73,7 +73,22 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
         .getPublicUrl(filePath);
 
       // Insert metadata into database
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData?.user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Verify user is admin
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userData.user.id)
+        .single();
+
+      if (roleError || !roleData || !['admin', 'superadmin'].includes(roleData.role)) {
+        throw new Error('Only admins can upload past questions');
+      }
       
       const { error: insertError } = await supabase
         .from('past_questions')
@@ -85,10 +100,13 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
           exam_type: formData.exam_type,
           file_url: publicUrl,
           file_size: file.size,
-          uploaded_by: userData?.user?.id
+          uploaded_by: userData.user.id
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        throw insertError;
+      }
 
       toast.success('Past question uploaded successfully!');
       onSuccess();
