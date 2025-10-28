@@ -72,22 +72,11 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
         .from('documents')
         .getPublicUrl(filePath);
 
-      // Insert metadata into database
+      // Insert metadata into database (admin check handled by RLS)
       const { data: userData, error: userError } = await supabase.auth.getUser();
       
       if (userError || !userData?.user?.id) {
         throw new Error('User not authenticated');
-      }
-
-      // Verify user is admin
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userData.user.id)
-        .single();
-
-      if (roleError || !roleData || !['admin', 'superadmin'].includes(roleData.role)) {
-        throw new Error('Only admins can upload past questions');
       }
       
       const { error: insertError } = await supabase
