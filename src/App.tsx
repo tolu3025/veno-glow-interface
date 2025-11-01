@@ -176,7 +176,6 @@ const AppRoutes = () => {
           <Route path="/ai-tutorial/chat" element={<AiChat />} />
           <Route path="/ai-tutorial/resources" element={<AiResources />} />
           <Route path="/tutorial/info" element={<TutorialInfo />} />
-          <Route path="/tutorial/categories" element={<TutorialCategoriesPage />} />
           <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
           
           {/* Bot route - adding it here as a regular route */}

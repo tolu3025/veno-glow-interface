@@ -119,8 +119,8 @@ const TutorialLearnMore = () => {
             <Button onClick={() => navigate('/ai-tutorial/chat')}>
               <BookOpen className="mr-2 h-4 w-4" /> Chat with AI Tutor
             </Button>
-            <Button variant="outline" onClick={() => navigate('/tutorial/categories')}>
-              Explore Categories
+            <Button variant="outline" onClick={() => navigate('/tutorial/info')}>
+              View Tutorials
             </Button>
           </div>
         </div>

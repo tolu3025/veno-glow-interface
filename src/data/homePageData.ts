@@ -20,8 +20,8 @@ export const bannerSlides = [
     title: "Educational Resources",
     subtitle: "Discover comprehensive tutorials and educational content designed to enhance your learning experience.",
     background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-    primaryButton: { text: "Browse Resources", link: "/tutorial/categories" },
-    secondaryButton: { text: "View Tutorials", link: "/tutorial/info" }
+    primaryButton: { text: "View Tutorials", link: "/tutorial/info" },
+    secondaryButton: { text: "Take a Test", link: "/cbt" }
   }
 ];
 
@@ -31,12 +31,6 @@ export const tutorials = [
     description: "Experience comprehensive computer-based testing with real-time feedback and performance analytics.",
     icon: Book,
     href: "/cbt",
-  },
-  {
-    title: "Tutorial Categories",
-    description: "Explore comprehensive learning resources and educational content across various subjects.",
-    icon: BookOpen,
-    href: "/tutorial/categories",
   },
   {
     title: "Learning Materials",
