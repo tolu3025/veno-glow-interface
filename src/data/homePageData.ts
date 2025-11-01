@@ -17,25 +17,11 @@ export const bannerSlides = [
     secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
   },
   {
-    title: "Expert-Led AI Tutorials",
-    subtitle: "Access comprehensive AI-powered learning resources and chat with our intelligent tutor.",
-    background: "bg-gradient-to-r from-veno-primary to-blue-600",
-    primaryButton: { text: "Chat with AI", link: "/ai-tutorial/chat" },
-    secondaryButton: { text: "View Resources", link: "/ai-tutorial/resources" }
-  },
-  {
     title: "Educational Resources",
     subtitle: "Discover comprehensive tutorials and educational content designed to enhance your learning experience.",
     background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-    primaryButton: { text: "Browse Resources", link: "/ai-tutorial/resources" },
-    secondaryButton: { text: "View Categories", link: "/tutorial/categories" }
-  },
-  {
-    title: "AI-Powered Learning",
-    subtitle: "Leverage our intelligent AI assistant to enhance your learning experience with personalized guidance.",
-    background: "bg-gradient-to-r from-veno-secondary to-veno-primary",
-    primaryButton: { text: "Chat with AI", link: "/bot" },
-    secondaryButton: { text: "Learn More", link: "/bot" }
+    primaryButton: { text: "Browse Resources", link: "/tutorial/categories" },
+    secondaryButton: { text: "View Tutorials", link: "/tutorial/info" }
   }
 ];
 
@@ -47,16 +33,16 @@ export const tutorials = [
     href: "/cbt",
   },
   {
-    title: "AI Learning Assistant",
-    description: "Get personalized learning support and instant answers to your academic questions.",
-    icon: Bot,
-    href: "/ai-tutorial/chat",
+    title: "Tutorial Categories",
+    description: "Explore comprehensive learning resources and educational content across various subjects.",
+    icon: BookOpen,
+    href: "/tutorial/categories",
   },
   {
-    title: "AI Tutorial Library",
-    description: "Access comprehensive AI-powered resources and learning materials for various subjects.",
+    title: "Learning Materials",
+    description: "Access study materials and resources designed to enhance your learning experience.",
     icon: FileText,
-    href: "/ai-tutorial/resources",
+    href: "/tutorial/info",
   },
 ];
 

@@ -218,18 +218,27 @@ export class BillingService {
 
       console.log('Flutterwave payment response:', paymentData);
 
-      // Open payment link - iOS-friendly approach
+      // Open payment link - Enhanced iOS-friendly approach
       if (paymentData.success && paymentData.link) {
-        // Create a temporary anchor element and click it
-        // This works better on iOS than window.open()
-        const link = document.createElement('a');
-        link.href = paymentData.link;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success('Payment page opened in new tab');
+        // Detect iOS devices
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        if (isIOS) {
+          // For iOS: Use window.location to navigate directly in the same tab
+          // This is the most reliable method for iOS Safari
+          toast.info('Redirecting to payment page...');
+          window.location.href = paymentData.link;
+        } else {
+          // For other devices: Use anchor element approach
+          const link = document.createElement('a');
+          link.href = paymentData.link;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success('Payment page opened in new tab');
+        }
       } else {
         toast.error('Failed to get payment link');
         return null;
