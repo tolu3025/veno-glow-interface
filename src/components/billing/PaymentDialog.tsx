@@ -35,18 +35,18 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       const paymentId = await BillingService.createPaymentSession(featureType);
       
       if (paymentId) {
-        // Payment window opened, show success state
+        // Payment initiated successfully - close dialog and let user complete in new tab
+        setPaymentCompleted(true);
+        
+        // Close dialog after showing brief success message
         setTimeout(() => {
-          setPaymentCompleted(true);
+          onOpenChange(false);
+          setPaymentCompleted(false);
           setIsProcessing(false);
           
-          // Auto close and trigger callback after 3 seconds
-          setTimeout(() => {
-            onPaymentComplete?.();
-            onOpenChange(false);
-            setPaymentCompleted(false);
-          }, 3000);
-        }, 1000);
+          // Trigger callback to refresh access status
+          onPaymentComplete?.();
+        }, 2000);
       } else {
         setIsProcessing(false);
         toast.error('Failed to initiate payment. Please try again.');
@@ -83,9 +83,9 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
         {paymentCompleted ? (
           <div className="flex flex-col items-center py-8">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Payment Window Opened!</h3>
+            <h3 className="text-lg font-semibold mb-2">Redirecting to Payment...</h3>
             <p className="text-muted-foreground text-center">
-              Complete your payment in the new tab. You'll get unlimited access once payment is confirmed.
+              Complete your payment in the checkout page. You'll get unlimited access once payment is confirmed.
             </p>
           </div>
         ) : (

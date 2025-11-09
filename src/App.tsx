@@ -32,6 +32,9 @@ import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BotPage from "./pages/BotPage";
 import NotFound from "./pages/NotFound";
+import PaymentSuccess from "./pages/payment/PaymentSuccess";
+import PaymentFailed from "./pages/payment/PaymentFailed";
+import PaymentProcessing from "./pages/payment/PaymentProcessing";
 import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -146,6 +149,11 @@ const AppRoutes = () => {
         <Route path="/ads-policy" element={<AdsPolicy />} />
         <Route path="/maintenance" element={<UnderMaintenancePage />} />
         <Route path="/services" element={<ServicesPage />} />
+        
+        {/* Payment routes */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/failed" element={<PaymentFailed />} />
+        <Route path="/payment/processing" element={<PaymentProcessing />} />
         
         {/* Public test routes - no auth required */}
         <Route path="/test/:shareCode" element={<TakeTestByCode />} />

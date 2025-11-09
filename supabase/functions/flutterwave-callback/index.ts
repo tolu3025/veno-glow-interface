@@ -87,32 +87,35 @@ serve(async (req) => {
         }
 
         // Redirect to success page
+        const FRONTEND_URL = req.headers.get('origin') || 'https://veno.app';
         return new Response(null, {
           status: 302,
           headers: {
             ...corsHeaders,
-            'Location': `${req.headers.get('origin') || 'https://veno.app'}/cbt?payment=success`
+            'Location': `${FRONTEND_URL}/payment/success`
           }
         });
       }
     }
 
     // Redirect to failure page
+    const FRONTEND_URL = req.headers.get('origin') || 'https://veno.app';
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${req.headers.get('origin') || 'https://veno.app'}/cbt?payment=failed`
+        'Location': `${FRONTEND_URL}/payment/failed`
       }
     });
 
   } catch (error) {
     console.error('Error in flutterwave-callback function:', error);
+    const FRONTEND_URL = req.headers.get('origin') || 'https://veno.app';
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${req.headers.get('origin') || 'https://veno.app'}/cbt?payment=error`
+        'Location': `${FRONTEND_URL}/payment/failed`
       }
     });
   }
