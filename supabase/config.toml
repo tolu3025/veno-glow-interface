@@ -41,3 +41,9 @@ verify_jwt = false
 [functions.ai-tutor]
 verify_jwt = false
 
+[functions.flutterwave-callback]
+verify_jwt = false
+
+[functions.flutterwave-payment]
+verify_jwt = true
+
