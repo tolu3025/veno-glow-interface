@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   featureType,
   onPaymentComplete
 }) => {
+  const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
@@ -35,18 +37,14 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       const paymentId = await BillingService.createPaymentSession(featureType);
       
       if (paymentId) {
-        // Payment initiated successfully - close dialog and let user complete in new tab
-        setPaymentCompleted(true);
+        // Redirect to payment processing page
+        toast.info('Redirecting to payment processing...');
         
-        // Close dialog after showing brief success message
-        setTimeout(() => {
-          onOpenChange(false);
-          setPaymentCompleted(false);
-          setIsProcessing(false);
-          
-          // Trigger callback to refresh access status
-          onPaymentComplete?.();
-        }, 2000);
+        // Close the dialog
+        onOpenChange(false);
+        
+        // Redirect to processing page with payment details
+        navigate(`/payment/processing?payment_id=${paymentId}&feature_type=${featureType}`);
       } else {
         setIsProcessing(false);
         toast.error('Failed to initiate payment. Please try again.');

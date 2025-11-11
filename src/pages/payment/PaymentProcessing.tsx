@@ -21,8 +21,6 @@ const PaymentProcessing = () => {
     }, 300);
 
     const verifyPayment = async () => {
-      setVerificationStep('Validating transaction...');
-      setProgress(20);
       const status = searchParams.get('status');
       const transactionId = searchParams.get('transaction_id');
       const txRef = searchParams.get('tx_ref');
@@ -30,6 +28,59 @@ const PaymentProcessing = () => {
       const featureType = searchParams.get('feature_type');
 
       console.log('Payment processing params:', { status, transactionId, txRef, paymentId, featureType });
+
+      // If we have payment_id and feature_type but no status yet, we're waiting for the callback
+      if (paymentId && featureType && !status) {
+        setVerificationStep('Waiting for payment...');
+        setProgress(20);
+        
+        // Poll payment status from database
+        const pollPaymentStatus = setInterval(async () => {
+          try {
+            const { data: payment, error } = await supabase
+              .from('user_payments')
+              .select('status')
+              .eq('id', paymentId)
+              .single();
+
+            if (error) {
+              console.error('Error checking payment status:', error);
+              return;
+            }
+
+            console.log('Current payment status:', payment?.status);
+
+            if (payment?.status === 'completed') {
+              clearInterval(pollPaymentStatus);
+              clearInterval(progressInterval);
+              setVerificationStep('Payment confirmed!');
+              setProgress(100);
+              setTimeout(() => navigate('/payment/success'), 500);
+            } else if (payment?.status === 'failed') {
+              clearInterval(pollPaymentStatus);
+              clearInterval(progressInterval);
+              navigate('/payment/failed');
+            }
+          } catch (error) {
+            console.error('Error polling payment status:', error);
+          }
+        }, 2000); // Poll every 2 seconds
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollPaymentStatus);
+          clearInterval(progressInterval);
+          navigate('/payment/failed');
+        }, 300000);
+
+        return () => {
+          clearInterval(pollPaymentStatus);
+          clearInterval(progressInterval);
+        };
+      }
+
+      setVerificationStep('Validating transaction...');
+      setProgress(20);
 
       // If payment was cancelled or failed
       if (status === 'cancelled' || status === 'failed') {
