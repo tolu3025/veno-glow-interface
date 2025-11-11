@@ -13,7 +13,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const FRONTEND_URL = req.headers.get('origin') || 'https://veno.app';
+  // Get frontend URL from environment variable or construct from request
+  const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 
+                       req.headers.get('referer')?.split('/payment')[0] || 
+                       'https://venobot.online';
 
   try {
     const url = new URL(req.url);
