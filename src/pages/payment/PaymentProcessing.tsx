@@ -70,7 +70,7 @@ const PaymentProcessing = () => {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Processing Payment</h1>
           <p className="text-muted-foreground max-w-md">
-            Please wait while we process your payment. Do not close this window.
+            Please wait while we verify your payment. Do not close this window.
           </p>
         </div>
         <div className="text-sm text-muted-foreground">
