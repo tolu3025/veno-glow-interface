@@ -65,19 +65,29 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
         .from('documents')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
+
+      console.log('File uploaded successfully to:', filePath);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
 
+      console.log('Public URL:', publicUrl);
+
       // Insert metadata into database (admin check handled by RLS)
       const { data: userData, error: userError } = await supabase.auth.getUser();
       
       if (userError || !userData?.user?.id) {
-        throw new Error('User not authenticated');
+        console.error('User authentication error:', userError);
+        throw new Error('User not authenticated. Please log in again.');
       }
+
+      console.log('Authenticated user ID:', userData.user.id);
       
       const { error: insertError } = await supabase
         .from('past_questions')
@@ -93,9 +103,19 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
         });
 
       if (insertError) {
-        console.error('Insert error details:', insertError);
-        throw insertError;
+        console.error('Database insert error:', insertError);
+        
+        // Provide specific error messages
+        if (insertError.code === '42501') {
+          throw new Error('Permission denied. You must be an admin to upload past questions.');
+        } else if (insertError.code === '23505') {
+          throw new Error('A past question with this information already exists.');
+        } else {
+          throw new Error(`Database error: ${insertError.message}`);
+        }
       }
+
+      console.log('Past question inserted successfully');
 
       toast.success('Past question uploaded successfully!');
       onSuccess();
@@ -110,9 +130,12 @@ const UploadPastQuestionDialog = ({ open, onOpenChange, onSuccess }: UploadPastQ
         subject: '',
         exam_type: '100-level'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload past question');
+      
+      // Show specific error message
+      const errorMessage = error.message || 'Failed to upload past question. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
     }
