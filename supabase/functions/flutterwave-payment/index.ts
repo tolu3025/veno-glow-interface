@@ -24,10 +24,10 @@ serve(async (req) => {
     // Generate unique transaction reference
     const txRef = `veno_${paymentId}_${Date.now()}`;
 
-    // Get frontend URL for redirects
-    const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 
+    // Get frontend URL for redirects (remove trailing slash to avoid double slashes)
+    const FRONTEND_URL = (Deno.env.get('FRONTEND_URL') || 
                          req.headers.get('referer')?.split('/pricing')[0]?.split('/cbt')[0] || 
-                         'https://venobot.online';
+                         'https://venobot.online').replace(/\/$/, '');
 
     const payload = {
       tx_ref: txRef,
