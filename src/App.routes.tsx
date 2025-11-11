@@ -26,6 +26,9 @@ import AiResources from "@/pages/ai-tutorial/AiResources";
 import LearningTips from "@/pages/ai-tutorial/LearningTips";
 import TutorialInfo from "@/pages/TutorialInfo";
 import VideoPlayerPage from "@/pages/VideoPlayerPage";
+import PaymentSuccess from "@/pages/payment/PaymentSuccess";
+import PaymentFailed from "@/pages/payment/PaymentFailed";
+import PaymentProcessing from "@/pages/payment/PaymentProcessing";
 
 export const routes = [
   {
@@ -133,6 +136,20 @@ export const routes = [
   {
     path: "/ai-tutorial/video-tutorials",
     element: <VideoPlayerPage />,
+  },
+  
+  // Payment Routes
+  {
+    path: "/payment/success",
+    element: <PaymentSuccess />,
+  },
+  {
+    path: "/payment/failed",
+    element: <PaymentFailed />,
+  },
+  {
+    path: "/payment/processing",
+    element: <PaymentProcessing />,
   },
   {
     path: "*",
