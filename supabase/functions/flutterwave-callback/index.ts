@@ -9,6 +9,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Flutterwave callback invoked:', { method: req.method, url: req.url });
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -56,8 +58,18 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+    console.log('Environment check:', {
+      hasFlutterwaveKey: !!flutterwaveSecretKey,
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey
+    });
+
     if (!flutterwaveSecretKey || !supabaseUrl || !supabaseKey) {
-      console.error('Missing required environment variables');
+      console.error('Missing required environment variables', {
+        flutterwaveSecretKey: !!flutterwaveSecretKey,
+        supabaseUrl: !!supabaseUrl,
+        supabaseKey: !!supabaseKey
+      });
       
       if (req.method === 'GET') {
         return new Response(null, {
@@ -69,7 +81,15 @@ serve(async (req) => {
         });
       }
       
-      return new Response(JSON.stringify({ success: false, error: 'Configuration error' }), {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Configuration error - missing required secrets',
+        details: {
+          hasFlutterwaveKey: !!flutterwaveSecretKey,
+          hasSupabaseUrl: !!supabaseUrl,
+          hasSupabaseKey: !!supabaseKey
+        }
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -99,6 +119,8 @@ serve(async (req) => {
     }
 
     if (status === 'successful' && transactionId) {
+      console.log('Verifying transaction with Flutterwave:', transactionId);
+      
       // Verify the transaction with Flutterwave
       const verifyResponse = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
         method: 'GET',
@@ -108,8 +130,9 @@ serve(async (req) => {
         },
       });
 
+      console.log('Flutterwave API response status:', verifyResponse.status);
       const verifyData = await verifyResponse.json();
-      console.log('Flutterwave verification response:', verifyData);
+      console.log('Flutterwave verification response:', JSON.stringify(verifyData, null, 2));
 
       if (verifyData.status === 'success' && verifyData.data.status === 'successful') {
         console.log('Payment verified successfully');
