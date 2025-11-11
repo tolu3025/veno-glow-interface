@@ -86,7 +86,12 @@ const PaymentProcessing = () => {
       setProgress(20);
 
       // If payment was cancelled or failed
-      if (status === 'cancelled' || status === 'failed') {
+      if (status === 'cancelled') {
+        navigate('/cbt');
+        return;
+      }
+      
+      if (status === 'failed') {
         navigate('/payment/failed');
         return;
       }

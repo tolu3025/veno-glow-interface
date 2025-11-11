@@ -82,11 +82,13 @@ serve(async (req) => {
       console.log('Payment cancelled or failed:', status);
       
       if (req.method === 'GET') {
+        // Redirect to /cbt for cancelled payments, /payment/failed for failed
+        const redirectPath = status === 'cancelled' ? '/cbt' : '/payment/failed';
         return new Response(null, {
           status: 302,
           headers: {
             ...corsHeaders,
-            'Location': `${FRONTEND_URL}/payment/failed`
+            'Location': `${FRONTEND_URL}${redirectPath}`
           }
         });
       }
