@@ -19,12 +19,38 @@ serve(async (req) => {
                        'https://venobot.online';
 
   try {
-    const url = new URL(req.url);
-    const status = url.searchParams.get('status');
-    const txRef = url.searchParams.get('tx_ref');
-    const transactionId = url.searchParams.get('transaction_id');
+    let status, txRef, transactionId, paymentId, featureType;
 
-    console.log('Flutterwave callback received:', { status, txRef, transactionId });
+    // Handle GET requests (direct Flutterwave redirects - for backwards compatibility)
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      status = url.searchParams.get('status');
+      txRef = url.searchParams.get('tx_ref');
+      transactionId = url.searchParams.get('transaction_id');
+      
+      console.log('Flutterwave callback received (GET):', { status, txRef, transactionId });
+      
+      // Redirect to frontend with parameters
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          'Location': `${FRONTEND_URL}/payment/processing?status=${status || 'failed'}&transaction_id=${transactionId || ''}&tx_ref=${txRef || ''}`
+        }
+      });
+    }
+
+    // Handle POST requests (verification from frontend)
+    if (req.method === 'POST') {
+      const body = await req.json();
+      status = body.status;
+      transactionId = body.transaction_id;
+      txRef = body.tx_ref;
+      paymentId = body.payment_id;
+      featureType = body.feature_type;
+      
+      console.log('Payment verification request received:', { status, txRef, transactionId, paymentId, featureType });
+    }
 
     const flutterwaveSecretKey = Deno.env.get('FLUTTERWAVE_SECRET_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -32,12 +58,20 @@ serve(async (req) => {
 
     if (!flutterwaveSecretKey || !supabaseUrl || !supabaseKey) {
       console.error('Missing required environment variables');
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          'Location': `${FRONTEND_URL}/payment/failed`
-        }
+      
+      if (req.method === 'GET') {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            ...corsHeaders,
+            'Location': `${FRONTEND_URL}/payment/failed`
+          }
+        });
+      }
+      
+      return new Response(JSON.stringify({ success: false, error: 'Configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -46,12 +80,19 @@ serve(async (req) => {
     // Handle cancelled or failed payments
     if (status === 'cancelled' || status === 'failed' || !transactionId) {
       console.log('Payment cancelled or failed:', status);
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          'Location': `${FRONTEND_URL}/payment/failed`
-        }
+      
+      if (req.method === 'GET') {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            ...corsHeaders,
+            'Location': `${FRONTEND_URL}/payment/failed`
+          }
+        });
+      }
+      
+      return new Response(JSON.stringify({ success: false, status: status || 'failed' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -71,10 +112,11 @@ serve(async (req) => {
       if (verifyData.status === 'success' && verifyData.data.status === 'successful') {
         console.log('Payment verified successfully');
         
-        const paymentId = verifyData.data.meta?.payment_id;
-        const featureType = verifyData.data.meta?.feature_type;
+        // Get payment details from transaction or request
+        const transactionPaymentId = verifyData.data.meta?.payment_id || paymentId;
+        const transactionFeatureType = verifyData.data.meta?.feature_type || featureType;
 
-        if (paymentId && featureType) {
+        if (transactionPaymentId && transactionFeatureType) {
           // Update payment status
           await supabase
             .from('user_payments')
@@ -83,13 +125,13 @@ serve(async (req) => {
               completed_at: new Date().toISOString(),
               stripe_payment_intent_id: transactionId
             })
-            .eq('id', paymentId);
+            .eq('id', transactionPaymentId);
 
           // Get user from payment
           const { data: payment } = await supabase
             .from('user_payments')
             .select('user_id')
-            .eq('id', paymentId)
+            .eq('id', transactionPaymentId)
             .single();
 
           if (payment) {
@@ -102,7 +144,7 @@ serve(async (req) => {
               .from('user_feature_access')
               .upsert({
                 user_id: payment.user_id,
-                feature_type: featureType,
+                feature_type: transactionFeatureType,
                 access_count: -1, // Unlimited for monthly subscription
                 unlimited_access: true,
                 expires_at: expiryDate.toISOString(),
@@ -113,44 +155,73 @@ serve(async (req) => {
           }
         }
 
-        // Redirect to success page
-        return new Response(null, {
-          status: 302,
-          headers: {
-            ...corsHeaders,
-            'Location': `${FRONTEND_URL}/payment/success`
-          }
+        // Return success response for POST or redirect for GET
+        if (req.method === 'GET') {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              ...corsHeaders,
+              'Location': `${FRONTEND_URL}/payment/success`
+            }
+          });
+        }
+        
+        return new Response(JSON.stringify({ success: true, status: 'successful' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       } else {
         console.log('Payment verification failed:', verifyData);
-        return new Response(null, {
-          status: 302,
-          headers: {
-            ...corsHeaders,
-            'Location': `${FRONTEND_URL}/payment/failed`
-          }
+        
+        if (req.method === 'GET') {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              ...corsHeaders,
+              'Location': `${FRONTEND_URL}/payment/failed`
+            }
+          });
+        }
+        
+        return new Response(JSON.stringify({ success: false, error: 'Verification failed' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
     }
 
     // Redirect to failure page for any other case
     console.log('Payment not successful, redirecting to failed page');
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...corsHeaders,
-        'Location': `${FRONTEND_URL}/payment/failed`
-      }
+    
+    if (req.method === 'GET') {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          'Location': `${FRONTEND_URL}/payment/failed`
+        }
+      });
+    }
+    
+    return new Response(JSON.stringify({ success: false, status: 'unknown' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Error in flutterwave-callback function:', error);
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...corsHeaders,
-        'Location': `${FRONTEND_URL}/payment/failed`
-      }
+    
+    if (req.method === 'GET') {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          'Location': `${FRONTEND_URL}/payment/failed`
+        }
+      });
+    }
+    
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });

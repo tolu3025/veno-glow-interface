@@ -24,11 +24,16 @@ serve(async (req) => {
     // Generate unique transaction reference
     const txRef = `veno_${paymentId}_${Date.now()}`;
 
+    // Get frontend URL for redirects
+    const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 
+                         req.headers.get('referer')?.split('/pricing')[0]?.split('/cbt')[0] || 
+                         'https://venobot.online';
+
     const payload = {
       tx_ref: txRef,
       amount: amount,
       currency: currency,
-      redirect_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/flutterwave-callback`,
+      redirect_url: `${FRONTEND_URL}/payment/processing?tx_ref=${txRef}&payment_id=${paymentId}&feature_type=${featureType}`,
       payment_options: "card,mobilemoney,ussd",
       customer: {
         email: userEmail,
