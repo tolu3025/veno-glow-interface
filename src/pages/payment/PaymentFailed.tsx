@@ -56,8 +56,18 @@ const PaymentFailed = () => {
           </Button>
         </div>
 
+        <div className="pt-2">
+          <Button 
+            variant="ghost"
+            onClick={() => navigate('/cbt')}
+            className="w-full"
+          >
+            Return to Dashboard
+          </Button>
+        </div>
+
         <p className="text-sm text-muted-foreground">
-          Need help? Contact support at support@venoapp.com
+          Need help? Contact support at support@venobot.online
         </p>
       </div>
     </div>

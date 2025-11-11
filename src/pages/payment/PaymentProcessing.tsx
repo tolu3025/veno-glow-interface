@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, CheckCircle2, Shield, CreditCard } from 'lucide-react';
+import { Loader2, CheckCircle2, Shield, CreditCard, ArrowLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 const PaymentProcessing = () => {
   const navigate = useNavigate();
@@ -55,7 +56,9 @@ const PaymentProcessing = () => {
               clearInterval(progressInterval);
               setVerificationStep('Payment confirmed!');
               setProgress(100);
-              setTimeout(() => navigate('/payment/success'), 500);
+              setTimeout(() => {
+                navigate(`/payment/success?payment_id=${paymentId}&feature_type=${featureType}`);
+              }, 500);
             } else if (payment?.status === 'failed') {
               clearInterval(pollPaymentStatus);
               clearInterval(progressInterval);
@@ -88,7 +91,7 @@ const PaymentProcessing = () => {
         return;
       }
 
-      // If successful, verify with backend
+      // If successful, verify with backend (this is when user is redirected back from Flutterwave)
       if (status === 'successful' && transactionId) {
         try {
           setVerificationStep('Verifying with payment provider...');
@@ -113,7 +116,9 @@ const PaymentProcessing = () => {
             setVerificationStep('Payment confirmed!');
             setProgress(100);
             clearInterval(progressInterval);
-            setTimeout(() => navigate('/payment/success'), 500);
+            setTimeout(() => {
+              navigate(`/payment/success?payment_id=${paymentId}&feature_type=${featureType}`);
+            }, 500);
           }
         } catch (error) {
           console.error('Error verifying payment:', error);
@@ -206,10 +211,22 @@ const PaymentProcessing = () => {
         </div>
 
         {/* Footer Message */}
-        <div className="text-center pt-4">
-          <p className="text-xs text-muted-foreground">
-            Secure payment processing • Typically completes in 10-15 seconds
-          </p>
+        <div className="space-y-4 pt-4">
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              Secure payment processing • Typically completes in 10-15 seconds
+            </p>
+          </div>
+          
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/cbt')}
+            className="w-full"
+            size="sm"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Cancel and Return
+          </Button>
         </div>
       </div>
     </div>
