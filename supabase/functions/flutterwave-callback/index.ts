@@ -42,16 +42,41 @@ serve(async (req) => {
       });
     }
 
-    // Handle POST requests (verification from frontend)
+    // Handle POST requests (both webhooks from Flutterwave and verification from frontend)
     if (req.method === 'POST') {
       const body = await req.json();
-      status = body.status;
-      transactionId = body.transaction_id;
-      txRef = body.tx_ref;
-      paymentId = body.payment_id;
-      featureType = body.feature_type;
+      console.log('POST request body:', JSON.stringify(body, null, 2));
       
-      console.log('Payment verification request received:', { status, txRef, transactionId, paymentId, featureType });
+      // Check if this is a Flutterwave webhook
+      if (body.event === 'charge.completed' && body.data) {
+        console.log('Flutterwave webhook detected');
+        status = body.data.status;
+        transactionId = body.data.id.toString();
+        txRef = body.data.tx_ref;
+        
+        // Extract payment_id from tx_ref (format: veno_{payment_id}_{timestamp})
+        if (txRef && txRef.startsWith('veno_')) {
+          const parts = txRef.split('_');
+          paymentId = parts[1];
+        }
+        
+        // Get feature_type from metadata
+        if (body.data.meta) {
+          paymentId = paymentId || body.data.meta.payment_id;
+          featureType = body.data.meta.feature_type;
+        }
+        
+        console.log('Extracted from webhook:', { status, transactionId, txRef, paymentId, featureType });
+      } else {
+        // Manual verification from frontend
+        console.log('Manual verification from frontend');
+        status = body.status;
+        transactionId = body.transaction_id;
+        txRef = body.tx_ref;
+        paymentId = body.payment_id;
+        featureType = body.feature_type;
+        console.log('Frontend verification params:', { status, txRef, transactionId, paymentId, featureType });
+      }
     }
 
     const flutterwaveSecretKey = Deno.env.get('FLUTTERWAVE_SECRET_KEY');

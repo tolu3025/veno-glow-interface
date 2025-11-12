@@ -28,6 +28,10 @@ serve(async (req) => {
     const FRONTEND_URL = (Deno.env.get('FRONTEND_URL') || 
                          req.headers.get('referer')?.split('/pricing')[0]?.split('/cbt')[0] || 
                          'https://venobot.online').replace(/\/$/, '');
+    
+    // Get Supabase URL for webhook callback
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const webhookUrl = `${SUPABASE_URL}/functions/v1/flutterwave-callback`;
 
     const payload = {
       tx_ref: txRef,
@@ -42,13 +46,16 @@ serve(async (req) => {
       customizations: {
         title: `Veno CBT - ${featureType === 'manual_test' ? 'Manual Test Creation' : 'AI Test Creation'}`,
         description: `Payment for ${featureType.replace('_', ' ')} feature access`,
-        logo: "https://veno.app/logo.png"
+        logo: "https://venobot.online/veno-logo.png"
       },
       meta: {
         payment_id: paymentId,
-        feature_type: featureType
+        feature_type: featureType,
+        webhook_url: webhookUrl
       }
     };
+    
+    console.log('Webhook URL configured:', webhookUrl);
 
     console.log('Initiating Flutterwave payment with payload:', payload);
 
