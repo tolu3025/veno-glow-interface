@@ -44,8 +44,17 @@ serve(async (req) => {
 
     // Handle POST requests (both webhooks from Flutterwave and verification from frontend)
     if (req.method === 'POST') {
-      const body = await req.json();
-      console.log('POST request body:', JSON.stringify(body, null, 2));
+      let body;
+      try {
+        body = await req.json();
+        console.log('POST request received:', JSON.stringify(body, null, 2));
+      } catch (error) {
+        console.error('Failed to parse request body:', error);
+        return new Response(
+          JSON.stringify({ error: 'Invalid request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
       // Check if this is a Flutterwave webhook
       if (body.event === 'charge.completed' && body.data) {

@@ -1,11 +1,58 @@
-import React from 'react';
-import { XCircle, ArrowLeft, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { XCircle, ArrowLeft, HelpCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [isRetrying, setIsRetrying] = useState(false);
+  
+  const txRef = searchParams.get('tx_ref');
+  const transactionId = searchParams.get('transaction_id');
+  const paymentId = searchParams.get('payment_id');
+
+  const handleRetryVerification = async () => {
+    if (!transactionId || !txRef || !paymentId) {
+      toast.error('Missing payment information. Please contact support.');
+      return;
+    }
+
+    setIsRetrying(true);
+    
+    try {
+      console.log('Retrying payment verification...', { transactionId, txRef, paymentId });
+      
+      // Call the flutterwave-callback function to manually verify
+      const { data, error } = await supabase.functions.invoke('flutterwave-callback', {
+        body: {
+          transaction_id: transactionId,
+          tx_ref: txRef,
+          payment_id: paymentId,
+          status: 'successful'
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('Verification response:', data);
+      
+      if (data?.success) {
+        toast.success('Payment verified successfully!');
+        navigate('/payment/success');
+      } else {
+        toast.error(data?.message || 'Payment verification failed. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Retry verification error:', error);
+      toast.error('Failed to verify payment. Please contact support.');
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -40,11 +87,22 @@ const PaymentFailed = () => {
         </Card>
 
         <div className="space-y-3">
+          {txRef && transactionId && paymentId && (
+            <Button
+              onClick={handleRetryVerification}
+              disabled={isRetrying}
+              className="w-full"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Verifying...' : 'Retry Payment Verification'}
+            </Button>
+          )}
           <Button 
             onClick={() => navigate('/pricing')}
             className="w-full"
+            variant={txRef && transactionId && paymentId ? 'outline' : 'default'}
           >
-            Try Again
+            Try New Payment
           </Button>
           <Button 
             variant="outline"
