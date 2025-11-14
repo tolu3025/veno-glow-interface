@@ -23,23 +23,18 @@ serve(async (req) => {
   try {
     let status, txRef, transactionId, paymentId, featureType;
 
-    // Handle GET requests (direct Flutterwave redirects - for backwards compatibility)
+    // Handle GET requests (direct Flutterwave redirects)
     if (req.method === 'GET') {
       const url = new URL(req.url);
       status = url.searchParams.get('status');
       txRef = url.searchParams.get('tx_ref');
       transactionId = url.searchParams.get('transaction_id');
+      paymentId = url.searchParams.get('payment_id');
+      featureType = url.searchParams.get('feature_type');
       
-      console.log('Flutterwave callback received (GET):', { status, txRef, transactionId });
+      console.log('Flutterwave redirect received (GET):', { status, txRef, transactionId, paymentId, featureType });
       
-      // Redirect to frontend with parameters
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          'Location': `${FRONTEND_URL}/payment/processing?status=${status || 'failed'}&transaction_id=${transactionId || ''}&tx_ref=${txRef || ''}`
-        }
-      });
+      // Continue processing to verify and then redirect
     }
 
     // Handle POST requests (both webhooks from Flutterwave and verification from frontend)
