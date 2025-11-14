@@ -99,43 +99,64 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
     }
   }, [streak, user]);
 
-  // Check if user is active today
+  // Check if user is active today - runs on mount and when user changes
   useEffect(() => {
     if (!user) return;
     
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (streak.lastActivity !== today) {
-      if (isConsecutiveDay(streak.lastActivity)) {
-        setStreak(prev => ({
-          ...prev,
-          currentStreak: prev.currentStreak + 1,
-          lastActivity: today,
-        }));
+    const checkDailyStreak = () => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get saved streak to compare
+      const userId = user.id;
+      const savedStreakKey = `veno-streak-${userId}`;
+      const savedStreak = localStorage.getItem(savedStreakKey);
+      
+      if (savedStreak) {
+        const parsed = JSON.parse(savedStreak);
+        const lastActivity = parsed.lastActivity;
         
-        if (streak.currentStreak + 1 >= 1) {
-          toast.success(`🔥 Day ${streak.currentStreak + 1} streak! Keep it up!`);
+        // Only update if we haven't checked today
+        if (lastActivity !== today) {
+          if (isConsecutiveDay(lastActivity)) {
+            // Consecutive day - increment streak
+            setStreak(prev => {
+              const newStreak = prev.currentStreak + 1;
+              toast.success(`🔥 Day ${newStreak} streak! Keep it up!`);
+              
+              return {
+                ...prev,
+                currentStreak: newStreak,
+                lastActivity: today,
+              };
+            });
+          } else if (lastActivity) {
+            // User broke their streak - RESET
+            const newInactiveDays = [...parsed.inactiveDays || []];
+            
+            if (lastActivity && !newInactiveDays.includes(lastActivity)) {
+              newInactiveDays.push(lastActivity);
+            }
+            
+            setStreak(prev => ({
+              ...prev,
+              currentStreak: 1,
+              lastActivity: today,
+              points: 0,
+              inactiveDays: newInactiveDays,
+            }));
+            toast.info("Your streak was reset. Points have been cleared. Start fresh today!");
+          } else {
+            // First time user
+            setStreak(prev => ({
+              ...prev,
+              currentStreak: 1,
+              lastActivity: today,
+            }));
+            toast.success("🎉 You've started your first streak! Welcome to Veno!");
+          }
         }
-      } else if (streak.lastActivity) {
-        // User broke their streak - RESET POINTS
-        const inactiveDate = streak.lastActivity;
-        const newInactiveDays = [...streak.inactiveDays];
-        
-        // Add the inactive day if it's not already in the list
-        if (inactiveDate && !newInactiveDays.includes(inactiveDate)) {
-          newInactiveDays.push(inactiveDate);
-        }
-        
-        setStreak(prev => ({
-          ...prev,
-          currentStreak: 1,
-          lastActivity: today,
-          points: 0, // Reset points when streak breaks
-          inactiveDays: newInactiveDays, // Update inactive days
-        }));
-        toast.info("Your streak was reset. Points have been cleared. Start fresh today!");
       } else {
-        // First time user
+        // No saved data - first time
         setStreak(prev => ({
           ...prev,
           currentStreak: 1,
@@ -143,7 +164,15 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         }));
         toast.success("🎉 You've started your first streak! Welcome to Veno!");
       }
-    }
+    };
+    
+    // Check immediately on mount
+    checkDailyStreak();
+    
+    // Also check every hour in case day changes while user is active
+    const interval = setInterval(checkDailyStreak, 60 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, [user]);
 
   // Check for course unlocks when points change
