@@ -211,11 +211,16 @@ serve(async (req) => {
 
         // Return success response for POST or redirect for GET
         if (req.method === 'GET') {
+          // Include payment details in redirect URL
+          const successUrl = new URL(`${FRONTEND_URL}/payment/success`);
+          if (transactionPaymentId) successUrl.searchParams.set('payment_id', transactionPaymentId);
+          if (transactionFeatureType) successUrl.searchParams.set('feature_type', transactionFeatureType);
+          
           return new Response(null, {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${FRONTEND_URL}/payment/success`
+              'Location': successUrl.toString()
             }
           });
         }
@@ -227,11 +232,18 @@ serve(async (req) => {
         console.log('Payment verification failed:', verifyData);
         
         if (req.method === 'GET') {
+          // Include transaction details for retry
+          const failedUrl = new URL(`${FRONTEND_URL}/payment/failed`);
+          if (transactionId) failedUrl.searchParams.set('transaction_id', transactionId);
+          if (txRef) failedUrl.searchParams.set('tx_ref', txRef);
+          if (transactionPaymentId) failedUrl.searchParams.set('payment_id', transactionPaymentId);
+          if (transactionFeatureType) failedUrl.searchParams.set('feature_type', transactionFeatureType);
+          
           return new Response(null, {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${FRONTEND_URL}/payment/failed`
+              'Location': failedUrl.toString()
             }
           });
         }
@@ -247,11 +259,15 @@ serve(async (req) => {
     console.log('Payment not successful, redirecting to failed page');
     
     if (req.method === 'GET') {
+      const failedUrl = new URL(`${FRONTEND_URL}/payment/failed`);
+      if (transactionId) failedUrl.searchParams.set('transaction_id', transactionId);
+      if (txRef) failedUrl.searchParams.set('tx_ref', txRef);
+      
       return new Response(null, {
         status: 302,
         headers: {
           ...corsHeaders,
-          'Location': `${FRONTEND_URL}/payment/failed`
+          'Location': failedUrl.toString()
         }
       });
     }
@@ -264,11 +280,14 @@ serve(async (req) => {
     console.error('Error in flutterwave-callback function:', error);
     
     if (req.method === 'GET') {
+      // Get FRONTEND_URL safely in catch block
+      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://venobot.online';
+      
       return new Response(null, {
         status: 302,
         headers: {
           ...corsHeaders,
-          'Location': `${FRONTEND_URL}/payment/failed`
+          'Location': `${frontendUrl}/payment/failed?error=${encodeURIComponent(error.message)}`
         }
       });
     }
