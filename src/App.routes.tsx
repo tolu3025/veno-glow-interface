@@ -21,14 +21,8 @@ import PublicLeaderboards from "@/pages/cbt/PublicLeaderboards";
 
 import AiCreateTest from "@/pages/cbt/AiCreateTest";
 import PastQuestions from "@/pages/cbt/PastQuestions";
-import AiChat from "@/pages/ai-tutorial/AiChat";
-import AiResources from "@/pages/ai-tutorial/AiResources";
-import LearningTips from "@/pages/ai-tutorial/LearningTips";
-import TutorialInfo from "@/pages/TutorialInfo";
-import VideoPlayerPage from "@/pages/VideoPlayerPage";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
 import PaymentFailed from "@/pages/payment/PaymentFailed";
-import PaymentProcessing from "@/pages/payment/PaymentProcessing";
 
 export const routes = [
   {
@@ -117,26 +111,6 @@ export const routes = [
     path: "/cbt/past-questions",
     element: <PastQuestions />,
   },
-  {
-    path: "/ai-tutorial/chat",
-    element: <AiChat />,
-  },
-  {
-    path: "/ai-tutorial/resources",
-    element: <AiResources />,
-  },
-  {
-    path: "/ai-tutorial/learning-tips",
-    element: <LearningTips />,
-  },
-  {
-    path: "/ai-tutorial/study-materials",
-    element: <TutorialInfo />,
-  },
-  {
-    path: "/ai-tutorial/video-tutorials",
-    element: <VideoPlayerPage />,
-  },
   
   // Payment Routes
   {
@@ -146,10 +120,6 @@ export const routes = [
   {
     path: "/payment/failed",
     element: <PaymentFailed />,
-  },
-  {
-    path: "/payment/processing",
-    element: <PaymentProcessing />,
   },
   {
     path: "*",

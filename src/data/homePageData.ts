@@ -15,13 +15,6 @@ export const bannerSlides = [
     background: "bg-gradient-to-r from-purple-600 to-veno-primary",
     primaryButton: { text: "Take a Test", link: "/cbt" },
     secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
-  },
-  {
-    title: "Educational Resources",
-    subtitle: "Discover comprehensive tutorials and educational content designed to enhance your learning experience.",
-    background: "bg-gradient-to-r from-blue-600 to-veno-secondary",
-    primaryButton: { text: "View Tutorials", link: "/tutorial/info" },
-    secondaryButton: { text: "Take a Test", link: "/cbt" }
   }
 ];
 
@@ -31,12 +24,6 @@ export const tutorials = [
     description: "Experience comprehensive computer-based testing with real-time feedback and performance analytics.",
     icon: Book,
     href: "/cbt",
-  },
-  {
-    title: "Learning Materials",
-    description: "Access study materials and resources designed to enhance your learning experience.",
-    icon: FileText,
-    href: "/tutorial/info",
   },
 ];
 
