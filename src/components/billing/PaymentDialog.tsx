@@ -37,14 +37,9 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       const paymentId = await BillingService.createPaymentSession(featureType);
       
       if (paymentId) {
-        // Redirect to payment processing page
-        toast.info('Redirecting to payment processing...');
-        
-        // Close the dialog
+        // Payment link opened - close dialog and let Flutterwave handle the rest
         onOpenChange(false);
-        
-        // Redirect to processing page with payment details
-        navigate(`/payment/processing?payment_id=${paymentId}&feature_type=${featureType}`);
+        setIsProcessing(false);
       } else {
         setIsProcessing(false);
         toast.error('Failed to initiate payment. Please try again.');
