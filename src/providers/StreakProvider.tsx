@@ -11,13 +11,15 @@ interface StreakState {
   visitedPages: Set<string>;
   watchedVideos: Set<string>;
   unlockedCourses: Set<string>;
-  inactiveDays: string[]; // Add tracking for inactive days
+  inactiveDays: string[];
+  completedQuizzes: Set<string>; // Track completed quiz IDs
 }
 
 interface StreakContextType {
   streak: StreakState;
   addPageVisit: (page: string) => void;
   addVideoWatch: (videoId: string, points?: number) => void;
+  addQuizCompletion: (quizId: string, score: number) => void; // New method
   getStreakMessage: () => string;
   isCourseUnlocked: (courseId: string) => boolean;
 }
@@ -28,8 +30,9 @@ const DEFAULT_STREAK_STATE: StreakState = {
   points: 0,
   visitedPages: new Set(),
   watchedVideos: new Set(),
-  unlockedCourses: new Set(["intro-course"]), // Default unlocked course
-  inactiveDays: [], // Initialize empty inactive days array
+  unlockedCourses: new Set(["intro-course"]),
+  inactiveDays: [],
+  completedQuizzes: new Set(),
 };
 
 // Certification courses that can be unlocked with streak points
@@ -70,6 +73,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
           watchedVideos: new Set(parsed.watchedVideos || []),
           unlockedCourses: new Set(parsed.unlockedCourses || ["intro-course"]),
           inactiveDays: parsed.inactiveDays || [],
+          completedQuizzes: new Set(parsed.completedQuizzes || []),
         });
       } catch (error) {
         console.error("Error parsing saved streak data:", error);
@@ -91,6 +95,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         visitedPages: Array.from(streak.visitedPages),
         watchedVideos: Array.from(streak.watchedVideos),
         unlockedCourses: Array.from(streak.unlockedCourses),
+        completedQuizzes: Array.from(streak.completedQuizzes),
       };
       
       localStorage.setItem(savedStreakKey, JSON.stringify(serializedStreak));
@@ -130,7 +135,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
               };
             });
           } else if (lastActivity) {
-            // User broke their streak - RESET
+            // User broke their streak - RESET streak counter only, keep points
             const newInactiveDays = [...parsed.inactiveDays || []];
             
             if (lastActivity && !newInactiveDays.includes(lastActivity)) {
@@ -141,10 +146,9 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
               ...prev,
               currentStreak: 1,
               lastActivity: today,
-              points: 0,
               inactiveDays: newInactiveDays,
             }));
-            toast.info("Your streak was reset. Points have been cleared. Start fresh today!");
+            toast.info("Your streak was reset, but your points are safe! Start a new streak today!");
           } else {
             // First time user
             setStreak(prev => ({
@@ -263,6 +267,53 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const addQuizCompletion = (quizId: string, score: number) => {
+    if (!user) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    setStreak(prev => {
+      // Check if already completed this quiz today
+      const quizKey = `${quizId}-${today}`;
+      if (prev.completedQuizzes.has(quizKey)) return prev;
+      
+      const newCompletedQuizzes = new Set(prev.completedQuizzes);
+      newCompletedQuizzes.add(quizKey);
+      
+      // Award points based on score
+      let pointsEarned = 5; // Base points for completing
+      if (score >= 80) pointsEarned += 10; // Bonus for high score
+      else if (score >= 60) pointsEarned += 5; // Bonus for good score
+      
+      const newPoints = prev.points + pointsEarned;
+      
+      // Update streak if this is a new day
+      let newStreak = prev.currentStreak;
+      let newLastActivity = prev.lastActivity;
+      
+      if (prev.lastActivity !== today) {
+        if (isConsecutiveDay(prev.lastActivity)) {
+          newStreak = prev.currentStreak + 1;
+          toast.success(`🔥 Day ${newStreak} streak! Quiz completed!`);
+        } else if (!prev.lastActivity) {
+          newStreak = 1;
+          toast.success("🎉 First quiz streak started!");
+        }
+        newLastActivity = today;
+      }
+      
+      toast.success(`🎯 +${pointsEarned} streak points! Score: ${score}%`);
+      
+      return {
+        ...prev,
+        currentStreak: newStreak,
+        lastActivity: newLastActivity,
+        points: newPoints,
+        completedQuizzes: newCompletedQuizzes,
+      };
+    });
+  };
+
   const getStreakMessage = (): string => {
     if (streak.currentStreak >= 30) {
       return `🔥 ${streak.currentStreak} day streak! Master level!`;
@@ -288,6 +339,7 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         streak, 
         addPageVisit, 
         addVideoWatch,
+        addQuizCompletion,
         getStreakMessage,
         isCourseUnlocked
       }}
