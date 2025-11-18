@@ -34,7 +34,6 @@ import BotPage from "./pages/BotPage";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/payment/PaymentSuccess";
 import PaymentFailed from "./pages/payment/PaymentFailed";
-import PaymentProcessing from "./pages/payment/PaymentProcessing";
 import MainLayout from "./layouts/MainLayout";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -153,7 +152,6 @@ const AppRoutes = () => {
         {/* Payment routes */}
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failed" element={<PaymentFailed />} />
-        <Route path="/payment/processing" element={<PaymentProcessing />} />
         
         {/* Public test routes - no auth required */}
         <Route path="/test/:shareCode" element={<TakeTestByCode />} />

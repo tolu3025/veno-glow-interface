@@ -37,7 +37,7 @@ serve(async (req) => {
       tx_ref: txRef,
       amount: amount,
       currency: currency,
-      redirect_url: webhookUrl,
+      redirect_url: `${FRONTEND_URL}/payment/success?tx_ref=${txRef}&payment_id=${paymentId}`,
       payment_options: "card,mobilemoney,ussd",
       customer: {
         email: userEmail,
