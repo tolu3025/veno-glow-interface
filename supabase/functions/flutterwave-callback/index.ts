@@ -147,8 +147,9 @@ serve(async (req) => {
       });
     }
 
-    if (status === 'successful' && transactionId) {
-      console.log('Verifying transaction with Flutterwave:', transactionId);
+    // Verify transaction for both successful and pending-validation statuses
+    if ((status === 'successful' || status === 'success-pending-validation') && transactionId) {
+      console.log('Verifying transaction with Flutterwave:', { transactionId, status });
       
       // Verify the transaction with Flutterwave
       const verifyResponse = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
@@ -236,8 +237,8 @@ serve(async (req) => {
           const failedUrl = new URL(`${FRONTEND_URL}/payment/failed`);
           if (transactionId) failedUrl.searchParams.set('transaction_id', transactionId);
           if (txRef) failedUrl.searchParams.set('tx_ref', txRef);
-          if (transactionPaymentId) failedUrl.searchParams.set('payment_id', transactionPaymentId);
-          if (transactionFeatureType) failedUrl.searchParams.set('feature_type', transactionFeatureType);
+          if (paymentId) failedUrl.searchParams.set('payment_id', paymentId);
+          if (featureType) failedUrl.searchParams.set('feature_type', featureType);
           
           return new Response(null, {
             status: 302,
