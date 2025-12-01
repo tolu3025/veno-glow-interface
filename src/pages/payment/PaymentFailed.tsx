@@ -1,19 +1,59 @@
-import React, { useState } from 'react';
-import { XCircle, ArrowLeft, HelpCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, ArrowLeft, Calendar, CreditCard, Tag, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
+import { BillingService } from '@/services/billingService';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
   
   const txRef = searchParams.get('tx_ref');
   const transactionId = searchParams.get('transaction_id');
   const paymentId = searchParams.get('payment_id');
+  const featureType = searchParams.get('feature_type');
+
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      if (paymentId) {
+        try {
+          // Check if payment was actually successful
+          const { data: payment, error } = await supabase
+            .from('user_payments')
+            .select('*')
+            .eq('id', paymentId)
+            .single();
+
+          if (!error && payment && payment.status === 'completed') {
+            // Payment was successful, show success details
+            const pricing = BillingService.getFeaturePricing(payment.payment_type as any);
+            setPaymentDetails({
+              ...payment,
+              planName: pricing.planName,
+              formattedAmount: `₦${(payment.amount / 100).toLocaleString()}`
+            });
+          }
+        } catch (error) {
+          console.error('Error checking payment status:', error);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkPaymentStatus();
+  }, [paymentId]);
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
 
   const handleRetryVerification = async () => {
     if (!transactionId || !txRef || !paymentId) {
@@ -54,37 +94,141 @@ const PaymentFailed = () => {
     }
   };
 
+  // If payment was actually successful, show success page
+  if (paymentDetails) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping opacity-20">
+                  <div className="h-20 w-20 rounded-full bg-green-500" />
+                </div>
+                <CheckCircle className="h-20 w-20 text-green-500 relative z-10" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold">Payment Successful!</h1>
+              <p className="text-muted-foreground">
+                Your subscription has been activated successfully.
+              </p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Tag className="h-4 w-4" />
+                    <span className="text-sm">Plan</span>
+                  </div>
+                  <span className="font-semibold">{paymentDetails.planName}</span>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CreditCard className="h-4 w-4" />
+                    <span className="text-sm">Amount Paid</span>
+                  </div>
+                  <span className="font-semibold text-green-600">{paymentDetails.formattedAmount}</span>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm">Valid Until</span>
+                  </div>
+                  <span className="font-semibold">
+                    {paymentDetails.expires_at 
+                      ? new Date(paymentDetails.expires_at).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })
+                      : 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Transaction ID: {paymentDetails.id.slice(0, 8)}...
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-3">
+            <Button 
+              onClick={handlePrintReceipt}
+              className="w-full"
+              variant="outline"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Print Receipt
+            </Button>
+            <Button 
+              onClick={() => navigate('/cbt')}
+              className="w-full"
+              size="lg"
+            >
+              Start Creating Tests
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="w-full"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Return to Dashboard
+            </Button>
+          </div>
+
+          <p className="text-sm text-muted-foreground text-center">
+            Need help? Contact support at support@venobot.online
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-6">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If payment actually failed, show failure page
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="text-center space-y-6 max-w-md w-full">
         <div className="flex justify-center">
-          <XCircle className="h-20 w-20 text-destructive" />
+          <CheckCircle className="h-20 w-20 text-green-500" />
         </div>
         
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">Payment Failed</h1>
+          <h1 className="text-3xl font-bold">Checking Payment Status</h1>
           <p className="text-muted-foreground">
-            We couldn't process your payment. This could be due to insufficient funds, network issues, or the payment was cancelled.
+            We're verifying your payment with Flutterwave. If you completed the payment, your subscription should be activated shortly.
           </p>
         </div>
-
-        <Card>
-          <CardContent className="pt-6 space-y-3 text-left">
-            <div className="flex items-start gap-3">
-              <HelpCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div className="text-sm space-y-1">
-                <p className="font-medium">Common reasons for payment failure:</p>
-                <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                  <li>Insufficient account balance</li>
-                  <li>Network connectivity issues</li>
-                  <li>Payment cancelled by user</li>
-                  <li>Card expired or blocked</li>
-                  <li>Bank declined the transaction</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <div className="space-y-3">
           {txRef && transactionId && paymentId && (
@@ -93,16 +237,15 @@ const PaymentFailed = () => {
               disabled={isRetrying}
               className="w-full"
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
-              {isRetrying ? 'Verifying...' : 'Retry Payment Verification'}
+              <Printer className={`mr-2 h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Verifying...' : 'Verify Payment Status'}
             </Button>
           )}
           <Button 
-            onClick={() => navigate('/pricing')}
+            onClick={() => navigate('/cbt')}
             className="w-full"
-            variant={txRef && transactionId && paymentId ? 'outline' : 'default'}
           >
-            Try New Payment
+            Go to Dashboard
           </Button>
           <Button 
             variant="outline"
@@ -111,16 +254,6 @@ const PaymentFailed = () => {
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
-          </Button>
-        </div>
-
-        <div className="pt-2">
-          <Button 
-            variant="ghost"
-            onClick={() => navigate('/cbt')}
-            className="w-full"
-          >
-            Return to Dashboard
           </Button>
         </div>
 

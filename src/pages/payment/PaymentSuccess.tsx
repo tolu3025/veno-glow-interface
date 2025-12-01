@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, ArrowLeft, Calendar, CreditCard, Tag } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Calendar, CreditCard, Tag, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -53,6 +53,10 @@ const PaymentSuccess = () => {
 
     return () => clearTimeout(timeout);
   }, [navigate, searchParams]);
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -133,6 +137,14 @@ const PaymentSuccess = () => {
         ) : null}
 
         <div className="space-y-3">
+          <Button 
+            onClick={handlePrintReceipt}
+            className="w-full"
+            variant="outline"
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Print Receipt
+          </Button>
           <Button 
             onClick={() => navigate('/cbt')}
             className="w-full"
