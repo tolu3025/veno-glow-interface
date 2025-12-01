@@ -54,9 +54,15 @@ export class BillingService {
 
       if (!data) return false;
 
-      // Check if access has expired
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        return false;
+      // Check if access has expired with 3-day grace period
+      if (data.expires_at) {
+        const expiryDate = new Date(data.expires_at);
+        const gracePeriodEnd = new Date(expiryDate);
+        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 3); // Add 3 days grace period
+        
+        if (new Date() > gracePeriodEnd) {
+          return false;
+        }
       }
 
       // Check if they have remaining access count or unlimited access
