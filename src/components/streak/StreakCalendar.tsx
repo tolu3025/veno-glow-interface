@@ -1,8 +1,9 @@
-
 import React from "react";
 import { useStreak } from "@/providers/StreakProvider";
 import { cn } from "@/lib/utils";
 import { format, addDays, subDays } from "date-fns";
+import { motion } from "framer-motion";
+import { Flame, X, Check } from "lucide-react";
 
 export function StreakCalendar() {
   const { streak } = useStreak();
@@ -18,74 +19,111 @@ export function StreakCalendar() {
     const isToday = format(today, "yyyy-MM-dd") === dateString;
     const isPast = date < today;
     
-    // Default to inactive for past days
     let status = "inactive";
     
-    // Check if this date is the streak's last activity
     if (isActive) {
       status = "active";
-    } 
-    // Mark as missed day
-    else if (isInactive) {
+    } else if (isInactive) {
       status = "missed";
     }
     
-    // Is this today?
     if (isToday) {
       status = streak.lastActivity === dateString ? "today-active" : "today";
     }
     
     dayElements.push(
-      <div key={dateString} className="relative group">
+      <motion.div 
+        key={dateString} 
+        className="relative group"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: (29 - i) * 0.02 }}
+      >
         <div 
           className={cn(
-            "h-8 w-8 rounded-md flex items-center justify-center text-xs transition-all",
-            status === "active" && "bg-green-100 dark:bg-green-800/30 text-green-700 dark:text-green-400",
-            status === "missed" && "bg-red-100 dark:bg-red-800/30 text-red-700 dark:text-red-400",
-            status === "inactive" && isPast && "bg-muted/20 text-muted-foreground",
-            status === "today" && "bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-400 ring-2 ring-amber-500 ring-offset-1 ring-offset-background",
-            status === "today-active" && "bg-green-100 dark:bg-green-800/30 text-green-700 dark:text-green-400 ring-2 ring-green-500 ring-offset-1 ring-offset-background",
-            !isPast && "bg-background text-muted-foreground"
+            "h-9 w-9 rounded-xl flex items-center justify-center text-xs font-medium transition-all relative overflow-hidden",
+            status === "active" && "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30",
+            status === "missed" && "bg-gradient-to-br from-red-400 to-rose-500 text-white shadow-lg shadow-red-500/30",
+            status === "inactive" && isPast && "bg-muted/30 text-muted-foreground",
+            status === "today" && "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/40 ring-2 ring-orange-400 ring-offset-2 ring-offset-background",
+            status === "today-active" && "bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/40 ring-2 ring-green-400 ring-offset-2 ring-offset-background",
+            !isPast && status !== "today" && status !== "today-active" && "bg-background text-muted-foreground border border-dashed border-muted-foreground/30"
           )}
         >
-          {format(date, "d")}
+          {/* Icon indicator */}
+          {status === "active" || status === "today-active" ? (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <Flame className="h-4 w-4 drop-shadow-sm" />
+            </motion.div>
+          ) : status === "missed" ? (
+            <X className="h-4 w-4" />
+          ) : status === "today" ? (
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <Flame className="h-4 w-4" />
+            </motion.div>
+          ) : (
+            format(date, "d")
+          )}
         </div>
-        <div className="absolute hidden group-hover:block bg-black text-white p-1 rounded text-xs bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap z-10">
-          {format(date, "MMM d, yyyy")}
-          {isActive && <span className="ml-1">(active)</span>}
-          {isInactive && <span className="ml-1 text-red-300">(missed)</span>}
+        
+        {/* Tooltip */}
+        <div className="absolute hidden group-hover:flex flex-col items-center bg-slate-900 text-white px-2 py-1.5 rounded-lg text-xs bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-10 shadow-xl">
+          <span className="font-medium">{format(date, "MMM d, yyyy")}</span>
+          {status === "active" || status === "today-active" ? (
+            <span className="text-green-400 flex items-center gap-1">
+              <Check className="h-3 w-3" /> Quiz Completed
+            </span>
+          ) : status === "missed" ? (
+            <span className="text-red-400">Streak Lost</span>
+          ) : status === "today" ? (
+            <span className="text-orange-400">Complete a quiz!</span>
+          ) : null}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
         </div>
-      </div>
+      </motion.div>
     );
   }
   
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-7 gap-1 justify-items-center">
-        {dayElements.slice(0, 7).map((day, i) => (
-          <div key={`weekday-${i}`} className="text-xs text-center text-muted-foreground w-8">
-            {format(addDays(subDays(today, 29), i), "EEEEE")}
+      {/* Weekday headers */}
+      <div className="grid grid-cols-7 gap-1.5 justify-items-center mb-2">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+          <div key={`weekday-${i}`} className="text-xs font-semibold text-muted-foreground w-9 text-center">
+            {day}
           </div>
         ))}
+      </div>
+      
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1.5 justify-items-center">
         {dayElements}
       </div>
       
-      <div className="flex flex-wrap justify-around gap-2 pt-3 text-xs text-center">
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 bg-green-100 dark:bg-green-800/30 rounded"></div>
-          <span className="text-muted-foreground">Active day</span>
+      {/* Legend */}
+      <div className="flex flex-wrap justify-center gap-4 pt-4 border-t">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 rounded-md bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+            <Flame className="h-2.5 w-2.5 text-white" />
+          </div>
+          <span className="text-xs text-muted-foreground">Active</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 bg-red-100 dark:bg-red-800/30 rounded"></div>
-          <span className="text-muted-foreground">Missed day</span>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 rounded-md bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
+            <X className="h-2.5 w-2.5 text-white" />
+          </div>
+          <span className="text-xs text-muted-foreground">Missed</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 bg-amber-100 dark:bg-amber-800/30 rounded"></div>
-          <span className="text-muted-foreground">Today</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 bg-muted/20 rounded"></div>
-          <span className="text-muted-foreground">Inactive day</span>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 ring-1 ring-orange-400 ring-offset-1 ring-offset-background" />
+          <span className="text-xs text-muted-foreground">Today</span>
         </div>
       </div>
     </div>
