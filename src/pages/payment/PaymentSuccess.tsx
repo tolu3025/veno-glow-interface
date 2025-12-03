@@ -14,10 +14,11 @@ const PaymentSuccess = () => {
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const featureType = searchParams.get('feature_type');
+
   useEffect(() => {
     const fetchPaymentDetails = async () => {
       const paymentId = searchParams.get('payment_id');
-      const featureType = searchParams.get('feature_type');
 
       if (paymentId) {
         try {
@@ -46,13 +47,14 @@ const PaymentSuccess = () => {
 
     fetchPaymentDetails();
 
-    // Auto-redirect after 10 seconds
+    // Auto-redirect after 5 seconds to the appropriate create page
     const timeout = setTimeout(() => {
-      navigate('/cbt');
-    }, 10000);
+      const redirectPath = featureType === 'ai_test' ? '/cbt/ai-create' : '/cbt/create';
+      navigate(redirectPath);
+    }, 5000);
 
     return () => clearTimeout(timeout);
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, featureType]);
 
   const handlePrintReceipt = () => {
     window.print();
@@ -146,24 +148,24 @@ const PaymentSuccess = () => {
             Print Receipt
           </Button>
           <Button 
-            onClick={() => navigate('/cbt')}
-            className="w-full"
+            onClick={() => navigate(featureType === 'ai_test' ? '/cbt/ai-create' : '/cbt/create')}
+            className="w-full bg-veno-primary hover:bg-veno-primary/90"
             size="lg"
           >
-            Start Creating Tests
+            {featureType === 'ai_test' ? 'Create Test with AI' : 'Create Manual Test'}
           </Button>
           <Button 
             variant="outline"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/cbt')}
             className="w-full"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Return to Dashboard
+            Go to CBT Dashboard
           </Button>
         </div>
 
         <p className="text-sm text-muted-foreground text-center">
-          Redirecting automatically in 10 seconds...
+          Redirecting to create test in 5 seconds...
         </p>
       </div>
     </div>
