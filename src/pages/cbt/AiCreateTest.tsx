@@ -6,7 +6,7 @@ const AiCreateTest = () => {
 
   useEffect(() => {
     // Redirect to the main create test page which has the proper billing flow
-    navigate('/cbt/create-test', { replace: true });
+    navigate('/cbt/create', { replace: true });
   }, [navigate]);
 
   return null;
