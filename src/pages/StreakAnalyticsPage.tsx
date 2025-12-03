@@ -1,7 +1,7 @@
 import React from "react";
 import { useStreak } from "@/providers/StreakProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ChevronRight, Calendar, Trophy, Flame, Award, Star, Target, Zap, BookOpen } from "lucide-react";
+import { ChevronRight, Calendar, Trophy, Flame, Award, Star, Target, Zap, BookOpen, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { StreakCalendar } from "@/components/streak/StreakCalendar";
@@ -53,18 +53,32 @@ const StreakAnalyticsPage = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-      <div className="container py-6 max-w-4xl">
-        {/* Header */}
+      {/* Mobile Header */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b md:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Flame className="h-5 w-5 text-orange-500" />
+            <span className="font-bold">Streak Analytics</span>
+          </div>
+          <div className="w-10" /> {/* Spacer for alignment */}
+        </div>
+      </div>
+      
+      <div className="container py-4 sm:py-6 px-3 sm:px-4 max-w-4xl">
+        {/* Desktop Header - hidden on mobile */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
+          className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
               Streak Analytics
             </h1>
-            <p className="text-muted-foreground mt-1">Track your learning progress and achievements</p>
+            <p className="text-sm md:text-base text-muted-foreground mt-1">Track your learning progress and achievements</p>
           </div>
           <Button variant="outline" onClick={() => navigate(-1)} className="mt-4 md:mt-0">
             <ChevronRight className="mr-2 h-4 w-4 rotate-180" />
@@ -76,10 +90,10 @@ const StreakAnalyticsPage = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid gap-6 md:grid-cols-2"
+          className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2"
         >
           {/* Main Streak Card - Snapchat Style */}
-          <motion.div variants={itemVariants} className="col-span-2">
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2">
             <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
               {/* Animated background glow */}
               <div className={cn(
@@ -88,8 +102,8 @@ const StreakAnalyticsPage = () => {
                 "blur-3xl"
               )} />
               
-              <CardContent className="relative p-8">
-                <div className="flex flex-col lg:flex-row items-center gap-8">
+              <CardContent className="relative p-4 sm:p-6 md:p-8">
+                <div className="flex flex-col items-center gap-4 sm:gap-6 md:gap-8 lg:flex-row">
                   {/* Main Streak Circle */}
                   <motion.div
                     animate={{ 
@@ -101,22 +115,22 @@ const StreakAnalyticsPage = () => {
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className={cn(
-                      "relative flex flex-col items-center justify-center",
-                      "w-40 h-40 rounded-full",
+                      "relative flex flex-col items-center justify-center shrink-0",
+                      "w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full",
                       "bg-gradient-to-br", tierInfo.color
                     )}
                   >
-                    <div className="absolute inset-2 rounded-full bg-slate-900/90 flex flex-col items-center justify-center">
+                    <div className="absolute inset-1.5 sm:inset-2 rounded-full bg-slate-900/90 flex flex-col items-center justify-center">
                       <motion.div
                         animate={{ scale: [1, 1.2, 1], rotate: [0, -5, 5, 0] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
                       >
-                        <Flame className="h-10 w-10 text-orange-500 mb-1 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]" />
+                        <Flame className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-orange-500 mb-0.5 sm:mb-1 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]" />
                       </motion.div>
-                      <span className="text-5xl font-black text-white tabular-nums">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-black text-white tabular-nums">
                         {streak.currentStreak}
                       </span>
-                      <span className="text-xs text-white/60 font-semibold uppercase tracking-wider">
+                      <span className="text-[10px] sm:text-xs text-white/60 font-semibold uppercase tracking-wider">
                         Day Streak
                       </span>
                     </div>
@@ -148,58 +162,58 @@ const StreakAnalyticsPage = () => {
                   </motion.div>
                   
                   {/* Stats and Info */}
-                  <div className="flex-1 text-center lg:text-left">
-                    <div className="flex items-center justify-center lg:justify-start gap-2 mb-3">
-                      <span className="text-2xl">{tierInfo.emoji}</span>
+                  <div className="flex-1 text-center lg:text-left w-full">
+                    <div className="flex items-center justify-center lg:justify-start gap-2 mb-2 sm:mb-3">
+                      <span className="text-xl sm:text-2xl">{tierInfo.emoji}</span>
                       <span className={cn(
-                        "font-bold text-xl bg-gradient-to-r bg-clip-text text-transparent",
+                        "font-bold text-lg sm:text-xl bg-gradient-to-r bg-clip-text text-transparent",
                         tierInfo.color
                       )}>
                         {tierInfo.tier} Tier
                       </span>
                     </div>
                     
-                    <p className="text-white/80 text-lg mb-4">{getStreakMessage()}</p>
+                    <p className="text-white/80 text-sm sm:text-base md:text-lg mb-3 sm:mb-4">{getStreakMessage()}</p>
                     
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="bg-white/5 rounded-xl p-3 text-center">
-                        <Star className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
-                        <div className="text-xl font-bold text-white">{streak.points}</div>
-                        <div className="text-[10px] text-white/50 uppercase">Points</div>
+                    <div className="grid grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+                      <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
+                        <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.points}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Points</div>
                       </div>
-                      <div className="bg-white/5 rounded-xl p-3 text-center">
-                        <BookOpen className="h-5 w-5 text-blue-400 mx-auto mb-1" />
-                        <div className="text-xl font-bold text-white">{streak.completedQuizzes.size}</div>
-                        <div className="text-[10px] text-white/50 uppercase">Quizzes</div>
+                      <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
+                        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.completedQuizzes.size}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Quizzes</div>
                       </div>
-                      <div className="bg-white/5 rounded-xl p-3 text-center">
-                        <Award className="h-5 w-5 text-purple-400 mx-auto mb-1" />
-                        <div className="text-xl font-bold text-white">{streak.unlockedCourses.size}</div>
-                        <div className="text-[10px] text-white/50 uppercase">Badges</div>
+                      <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
+                        <Award className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.unlockedCourses.size}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Badges</div>
                       </div>
-                      <div className="bg-white/5 rounded-xl p-3 text-center">
-                        <Target className="h-5 w-5 text-green-400 mx-auto mb-1" />
-                        <div className="text-xl font-bold text-white">{streak.visitedPages.size}</div>
-                        <div className="text-[10px] text-white/50 uppercase">Pages</div>
+                      <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
+                        <Target className="h-4 w-4 sm:h-5 sm:w-5 text-green-400 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.visitedPages.size}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Pages</div>
                       </div>
                     </div>
                     
                     {/* Today's Status */}
                     <div className={cn(
-                      "mt-4 p-3 rounded-xl text-center",
+                      "mt-3 sm:mt-4 p-2 sm:p-3 rounded-lg sm:rounded-xl text-center",
                       hasQuizToday 
                         ? "bg-green-500/20 border border-green-500/30" 
                         : "bg-orange-500/20 border border-orange-500/30"
                     )}>
                       {hasQuizToday ? (
-                        <p className="text-green-400 font-medium flex items-center justify-center gap-2">
-                          <Zap className="h-4 w-4" />
+                        <p className="text-green-400 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2">
+                          <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           You've kept your streak alive today!
                         </p>
                       ) : (
-                        <p className="text-orange-400 font-medium flex items-center justify-center gap-2">
-                          <Flame className="h-4 w-4" />
+                        <p className="text-orange-400 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2">
+                          <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           Complete a quiz to save your streak!
                         </p>
                       )}
@@ -211,9 +225,9 @@ const StreakAnalyticsPage = () => {
           </motion.div>
           
           {/* Calendar Card */}
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="col-span-1">
             <Card className="h-full">
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
                     <Calendar className="h-5 w-5 text-indigo-500" />
@@ -229,23 +243,23 @@ const StreakAnalyticsPage = () => {
           </motion.div>
           
           {/* Next Milestone Card */}
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="col-span-1">
             <Card className="h-full overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                    <Trophy className="h-5 w-5 text-amber-500" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                    <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                   </div>
                   Next Milestone
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {nextMilestone.points - streak.points} points to {nextMilestone.name}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Custom Progress Bar */}
-                  <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+                  <div className="relative h-3 sm:h-4 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${progressPercentage}%` }}
@@ -253,28 +267,28 @@ const StreakAnalyticsPage = () => {
                       className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-foreground/80">
+                      <span className="text-[10px] sm:text-xs font-bold text-foreground/80">
                         {Math.round(progressPercentage)}%
                       </span>
                     </div>
                   </div>
                   
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">{streak.points} pts</span>
                     <span className="font-semibold text-amber-500">{nextMilestone.points} pts</span>
                   </div>
                   
                   {/* Milestone Preview */}
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl p-4 text-center">
-                    <Award className="h-8 w-8 text-amber-500 mx-auto mb-2" />
-                    <p className="font-semibold text-sm">{nextMilestone.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                    <Award className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 mx-auto mb-1.5 sm:mb-2" />
+                    <p className="font-semibold text-xs sm:text-sm">{nextMilestone.name}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                       Unlocks at {nextMilestone.points} points
                     </p>
                   </div>
                   
                   <Button 
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white" 
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm" 
                     onClick={() => navigate('/cbt')}
                   >
                     <Zap className="h-4 w-4 mr-2" />
@@ -286,18 +300,18 @@ const StreakAnalyticsPage = () => {
           </motion.div>
           
           {/* Achievements Card */}
-          <motion.div variants={itemVariants} className="col-span-2">
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                    <Award className="h-5 w-5 text-purple-500" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <Award className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                   </div>
                   Your Achievements
                 </CardTitle>
-                <CardDescription>Certifications and milestones you've earned</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Certifications and milestones you've earned</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                 <StreakAchievements />
               </CardContent>
             </Card>
