@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from 'sonner';
-import { Plus, Wand2, Loader2 } from 'lucide-react';
+import { Plus, ArrowLeft } from 'lucide-react';
 import FeatureAccessGuard from '@/components/billing/FeatureAccessGuard';
 
 // Define the allowed difficulty values as a union type
@@ -79,10 +79,6 @@ const CreateTest = () => {
     }
   };
 
-  const handleAICreateTest = () => {
-    navigate('/cbt/ai-create');
-  };
-
   if (!user) {
     return (
       <div className="container mx-auto py-8 max-w-3xl">
@@ -100,34 +96,35 @@ const CreateTest = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-3xl">
-      <div className="grid gap-6">
-        {/* AI Create Test Option */}
-        <FeatureAccessGuard featureType="ai_test">
-          <Card className="border-2 border-dashed border-veno-primary/20 hover:border-veno-primary/40 transition-colors">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center">
-                <Wand2 className="mr-2 h-5 w-5 text-veno-primary" />
-                Create Test with AI
-              </CardTitle>
-              <CardDescription>
-                Generate a complete test automatically using AI based on your specifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={handleAICreateTest}
-                className="w-full bg-veno-primary hover:bg-veno-primary/90"
-              >
-                <Wand2 className="mr-2 h-4 w-4" />
-                Create Test with AI
-              </Button>
-            </CardContent>
-          </Card>
-        </FeatureAccessGuard>
+    <div className="container mx-auto py-4 md:py-8 max-w-3xl px-4">
+      {/* Mobile Header */}
+      <div className="flex items-center gap-3 mb-6 md:hidden">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate('/cbt')}
+          className="shrink-0"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-xl font-bold">Manual Test Creation</h1>
+          <p className="text-sm text-muted-foreground">Create your own test</p>
+        </div>
+      </div>
 
-        {/* Manual Test Creation */}
-        <FeatureAccessGuard featureType="manual_test">
+      {/* Desktop Header */}
+      <div className="hidden md:block mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Plus className="h-6 w-6" />
+          Create Manual Test
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Create a test from scratch with your own questions
+        </p>
+      </div>
+
+      <FeatureAccessGuard featureType="manual_test">
           <Card>
             <CardHeader>
               <CardTitle className="text-xl flex items-center">
@@ -249,7 +246,6 @@ const CreateTest = () => {
             </CardContent>
           </Card>
         </FeatureAccessGuard>
-      </div>
     </div>
   );
 };
