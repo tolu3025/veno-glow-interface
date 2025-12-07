@@ -98,18 +98,19 @@ const AiCreateTest = () => {
         throw testError;
       }
 
-      // Insert questions
+      // Insert questions to test_questions table (consistent with manual test creation)
       const questionsToInsert = questions.map((q: any) => ({
         test_id: testData.id,
-        question_text: q.question,
+        question: q.question,
         options: q.options,
         answer: q.answer,
         explanation: q.explanation || '',
-        subject: params.subject
+        subject: params.subject,
+        difficulty: params.difficulty
       }));
 
       const { error: questionsError } = await supabase
-        .from('user_test_questions')
+        .from('test_questions')
         .insert(questionsToInsert);
 
       if (questionsError) {
