@@ -101,15 +101,16 @@ const ManualQuestionEntry: React.FC<ManualQuestionEntryProps> = ({
 
       const questionData = {
         test_id: testId,
-        question_text: question.trim(),
+        question: question.trim(),
         options: validOptions,
         answer: adjustedCorrectAnswer,
         explanation: explanation.trim() || null,
+        difficulty,
         subject: subject.trim()
       };
 
       const { error } = await supabase
-        .from('user_test_questions')
+        .from('test_questions')
         .insert(questionData);
 
       if (error) throw error;

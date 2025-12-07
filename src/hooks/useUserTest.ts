@@ -86,9 +86,9 @@ export const useUserTest = (testId: string) => {
           }
         }
         
-        // Load questions - now works for both authenticated and unauthenticated users
+        // Load questions from test_questions table
         const { data: questionsData, error: questionsError } = await supabase
-          .from('user_test_questions')
+          .from('test_questions')
           .select('*')
           .eq('test_id', testId);
           
@@ -102,8 +102,8 @@ export const useUserTest = (testId: string) => {
           
           const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
             id: q.id,
-            text: q.question_text,
-            question: q.question_text,
+            text: q.question,
+            question: q.question,
             options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
             correctOption: q.answer,
             answer: q.answer,
