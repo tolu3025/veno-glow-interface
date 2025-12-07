@@ -96,8 +96,9 @@ export const useTestManagement = (testId: string, guestTestTakerInfo?: GuestTest
     
     setLoadingQuestions(true);
     try {
+      // Fetch from test_questions table (where ManualQuestionEntry saves)
       const { data, error } = await supabase
-        .from('user_test_questions')
+        .from('test_questions')
         .select('*')
         .eq('test_id', testId);
 
@@ -106,7 +107,7 @@ export const useTestManagement = (testId: string, guestTestTakerInfo?: GuestTest
       // Transform the data to match our Question interface
       const transformedQuestions: Question[] = (data || []).map(q => ({
         id: q.id,
-        question_text: q.question_text,
+        question_text: q.question,
         options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [],
         answer: q.answer,
         explanation: q.explanation,
@@ -313,9 +314,9 @@ export const useTestManagement = (testId: string, guestTestTakerInfo?: GuestTest
   const handleEditQuestion = async (updatedQuestion: Question) => {
     try {
       const { error } = await supabase
-        .from('user_test_questions')
+        .from('test_questions')
         .update({
-          question_text: updatedQuestion.question_text,
+          question: updatedQuestion.question_text,
           options: updatedQuestion.options,
           answer: updatedQuestion.answer,
           explanation: updatedQuestion.explanation,
@@ -334,7 +335,7 @@ export const useTestManagement = (testId: string, guestTestTakerInfo?: GuestTest
   const handleDeleteQuestion = async (questionId: string) => {
     try {
       const { error } = await supabase
-        .from('user_test_questions')
+        .from('test_questions')
         .delete()
         .eq('id', questionId);
 
