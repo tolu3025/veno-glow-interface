@@ -126,6 +126,32 @@ const JoinChallenge = () => {
         return;
       }
 
+      // Get current user's display name for notification
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('display_name, email')
+        .eq('id', user.id)
+        .single();
+
+      const opponentName = userProfile?.display_name || userProfile?.email?.split('@')[0] || 'Someone';
+
+      // Notify the host that their challenge was accepted
+      try {
+        await supabase.functions.invoke('send-challenge-notification', {
+          body: {
+            type: 'challenge_accepted',
+            challengeId: challenge.id,
+            hostId: challenge.host_id,
+            opponentUsername: opponentName,
+            subject: challenge.subject,
+            shareCode: shareCode,
+          },
+        });
+      } catch (notifError) {
+        console.error('Failed to send acceptance notification:', notifError);
+        // Don't block the challenge if notification fails
+      }
+
       toast({
         title: 'Challenge accepted!',
         description: 'The battle is starting...',
