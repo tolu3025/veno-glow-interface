@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import { VenoLogo } from "@/components/ui/logo";
 import { supabase } from '@/integrations/supabase/client';
 import CertificatesSection from '@/components/certificate/CertificatesSection';
-
 const DashboardPage = () => {
   const {
     user
@@ -87,19 +86,17 @@ const DashboardPage = () => {
           article_title: string;
           timestamp: string;
         }[] = [];
-        
         if (userProfile?.activities) {
           const activities = Array.isArray(userProfile.activities) ? userProfile.activities : [];
           const blogReadActivities = activities.filter((activity: any) => activity.type === 'blog_read');
           articlesRead = blogReadActivities.length;
-          
+
           // Extract article information for reading history
           articlesReadList = blogReadActivities.map((activity: any) => ({
             article_id: activity.article_id,
             article_title: activity.article_title || 'Untitled Article',
             timestamp: activity.timestamp
           })).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-          
           commentsPosted = activities.filter((activity: any) => activity.type === 'blog_comment').length;
         }
 
@@ -280,10 +277,7 @@ const DashboardPage = () => {
                       <Book className="h-6 w-6 text-veno-primary" />
                       <span>Veno CBT</span>
                     </Button>
-                    <Button onClick={() => navigate('/marketplace')} variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
-                      <ShoppingCart className="h-6 w-6 text-veno-primary" />
-                      <span>Tutorial</span>
-                    </Button>
+                    
                     <Button onClick={() => navigate('/blog')} variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
                       <FileText className="h-6 w-6 text-veno-primary" />
                       <span>Blog</span>
@@ -397,27 +391,19 @@ const DashboardPage = () => {
                             </div>
                             
                             {/* Reading history */}
-                            {userData.blogStats.articlesReadList.length > 0 && (
-                              <div className="mt-6">
+                            {userData.blogStats.articlesReadList.length > 0 && <div className="mt-6">
                                 <h3 className="text-sm font-medium mb-3">Recently Read Articles</h3>
                                 <ul className="space-y-2">
-                                  {userData.blogStats.articlesReadList.slice(0, 5).map((article, idx) => (
-                                    <li key={idx} className="flex justify-between items-center text-sm p-2 bg-background/50 rounded">
-                                      <Button 
-                                        variant="link" 
-                                        className="p-0 h-auto text-left justify-start"
-                                        onClick={() => navigate(`/blog/${article.article_id}`)}
-                                      >
+                                  {userData.blogStats.articlesReadList.slice(0, 5).map((article, idx) => <li key={idx} className="flex justify-between items-center text-sm p-2 bg-background/50 rounded">
+                                      <Button variant="link" className="p-0 h-auto text-left justify-start" onClick={() => navigate(`/blog/${article.article_id}`)}>
                                         {article.article_title}
                                       </Button>
                                       <span className="text-muted-foreground text-xs">
                                         {new Date(article.timestamp).toLocaleDateString()}
                                       </span>
-                                    </li>
-                                  ))}
+                                    </li>)}
                                 </ul>
-                              </div>
-                            )}
+                              </div>}
                             
                             <div className="flex justify-end">
                               <Button variant="outline" onClick={() => navigate('/blog')} className="border-veno-primary/30 text-veno-primary text-xs mt-2">
