@@ -302,8 +302,13 @@ const StreakAnalyticsPage = () => {
                   </div>
                   
                   <Button 
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm" 
-                    onClick={() => navigate('/cbt/streak-challenge')}
+                    type="button"
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm cursor-pointer" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate('/cbt/streak-challenge');
+                    }}
                   >
                     <Swords className="h-4 w-4 mr-2" />
                     Challenge Someone
