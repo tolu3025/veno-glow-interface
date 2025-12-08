@@ -962,10 +962,12 @@ export type Database = {
           difficulty: string
           duration_seconds: number
           expires_at: string | null
+          host_finished: boolean | null
           host_id: string
           host_score: number | null
           id: string
           is_draw: boolean | null
+          opponent_finished: boolean | null
           opponent_id: string | null
           opponent_score: number | null
           questions: Json | null
@@ -980,10 +982,12 @@ export type Database = {
           difficulty?: string
           duration_seconds: number
           expires_at?: string | null
+          host_finished?: boolean | null
           host_id: string
           host_score?: number | null
           id?: string
           is_draw?: boolean | null
+          opponent_finished?: boolean | null
           opponent_id?: string | null
           opponent_score?: number | null
           questions?: Json | null
@@ -998,10 +1002,12 @@ export type Database = {
           difficulty?: string
           duration_seconds?: number
           expires_at?: string | null
+          host_finished?: boolean | null
           host_id?: string
           host_score?: number | null
           id?: string
           is_draw?: boolean | null
+          opponent_finished?: boolean | null
           opponent_id?: string | null
           opponent_score?: number | null
           questions?: Json | null
