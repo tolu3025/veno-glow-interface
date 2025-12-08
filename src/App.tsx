@@ -266,11 +266,8 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
           
-          <Route path="/cbt/challenge/:shareCode" element={
-            <ProtectedRoute>
-              <JoinChallenge />
-            </ProtectedRoute>
-          } />
+          {/* Challenge link route - accessible without auth so users can see challenge details first */}
+          <Route path="/cbt/challenge/:shareCode" element={<JoinChallenge />} />
           
           <Route path="/settings" element={
             <ProtectedRoute>
