@@ -1,15 +1,15 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
-import { UserCircle, LogOut, LogIn, Moon, Sun, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
+import { UserCircle, LogOut, LogIn, Moon, Sun, Facebook, Instagram, Youtube } from "lucide-react";
 import { toast } from "sonner";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import { StreakDisplay } from "@/components/streak/StreakDisplay";
 import { FloatingPaths } from "@/components/ui/background-paths";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
@@ -82,6 +82,8 @@ const MainLayout = () => {
           <div className="ml-auto flex items-center space-x-4">
             {/* Streak display - hidden on mobile via the component's internal styling */}
             <StreakDisplay variant="compact" />
+            
+            <NotificationBell />
             
             <Button 
               variant="ghost" 
