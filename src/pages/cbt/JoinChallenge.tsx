@@ -14,7 +14,7 @@ import { ChallengeResults } from '@/components/challenge/ChallengeResults';
 const JoinChallenge = () => {
   const { shareCode } = useParams<{ shareCode: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   
   const [challenge, setChallenge] = useState<any>(null);
   const [hostProfile, setHostProfile] = useState<{ display_name?: string; email?: string } | null>(null);
@@ -26,6 +26,9 @@ const JoinChallenge = () => {
   const [battleResult, setBattleResult] = useState<any>(null);
 
   useEffect(() => {
+    // Don't fetch until we know the auth state
+    if (authLoading) return;
+    
     const fetchChallenge = async () => {
       if (!shareCode) {
         setError('Invalid challenge link');
@@ -97,7 +100,7 @@ const JoinChallenge = () => {
     };
 
     fetchChallenge();
-  }, [shareCode, user]);
+  }, [shareCode, user, authLoading]);
 
   const handleJoinChallenge = async () => {
     if (!user || !challenge) return;
@@ -259,7 +262,8 @@ const JoinChallenge = () => {
     );
   }
 
-  if (isLoading) {
+  // Wait for auth to finish loading before checking user
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-veno-primary" />
