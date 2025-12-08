@@ -9,7 +9,6 @@ import { useTheme } from "@/providers/ThemeProvider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import { StreakDisplay } from "@/components/streak/StreakDisplay";
 import { FloatingPaths } from "@/components/ui/background-paths";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
@@ -21,6 +20,7 @@ const MainLayout = () => {
   const mainLinks = [
     { name: "Home", path: "/" },
     { name: "CBT", path: "/cbt" },
+    { name: "Streak Challenge", path: "/cbt/streak-challenge" },
     { name: "Blog", path: "https://venoblog.online", external: true }
   ];
 
@@ -82,8 +82,6 @@ const MainLayout = () => {
           <div className="ml-auto flex items-center space-x-4">
             {/* Streak display - hidden on mobile via the component's internal styling */}
             <StreakDisplay variant="compact" />
-            
-            <NotificationBell />
             
             <Button 
               variant="ghost" 
