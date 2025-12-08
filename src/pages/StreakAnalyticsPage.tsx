@@ -1,17 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useStreak } from "@/providers/StreakProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ChevronRight, Calendar, Trophy, Flame, Award, Star, Target, Zap, BookOpen, ArrowLeft } from "lucide-react";
+import { ChevronRight, Calendar, Trophy, Flame, Award, Star, Target, Zap, BookOpen, ArrowLeft, Swords, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { StreakCalendar } from "@/components/streak/StreakCalendar";
 import { StreakAchievements } from "@/components/streak/StreakAchievements";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ChallengeStats {
+  current_streak: number;
+  highest_streak: number;
+  total_wins: number;
+  total_challenges: number;
+}
 
 const StreakAnalyticsPage = () => {
   const { streak, getStreakMessage } = useStreak();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [challengeStats, setChallengeStats] = useState<ChallengeStats | null>(null);
+  
+  useEffect(() => {
+    if (user) {
+      supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single()
+        .then(({ data }) => {
+          if (data) setChallengeStats(data);
+        });
+    }
+  }, [user]);
   
   const today = new Date().toISOString().split('T')[0];
   const hasQuizToday = streak.lastActivity === today;
@@ -21,12 +41,13 @@ const StreakAnalyticsPage = () => {
   const prevCertLevel = [0, 50, 100, 200, 500].find((_, i, arr) => arr[i + 1] > streak.points) || 0;
   const progressPercentage = ((streak.points - prevCertLevel) / (nextCertLevel - prevCertLevel)) * 100;
 
-  // Streak tier calculation
+  // Challenge Streak tier calculation (based on challenge wins)
   const getStreakTier = () => {
-    if (streak.currentStreak >= 30) return { tier: "Legendary", color: "from-purple-500 via-pink-500 to-red-500", emoji: "👑" };
-    if (streak.currentStreak >= 14) return { tier: "Epic", color: "from-blue-500 via-cyan-400 to-teal-500", emoji: "💎" };
-    if (streak.currentStreak >= 7) return { tier: "Rare", color: "from-orange-500 via-amber-500 to-yellow-500", emoji: "⚡" };
-    if (streak.currentStreak >= 3) return { tier: "Common", color: "from-orange-600 to-red-500", emoji: "🔥" };
+    const challengeStreak = challengeStats?.current_streak || 0;
+    if (challengeStreak >= 30) return { tier: "Legendary", color: "from-purple-500 via-pink-500 to-red-500", emoji: "👑" };
+    if (challengeStreak >= 14) return { tier: "Epic", color: "from-blue-500 via-cyan-400 to-teal-500", emoji: "💎" };
+    if (challengeStreak >= 7) return { tier: "Rare", color: "from-orange-500 via-amber-500 to-yellow-500", emoji: "⚡" };
+    if (challengeStreak >= 3) return { tier: "Common", color: "from-orange-600 to-red-500", emoji: "🔥" };
     return { tier: "Starter", color: "from-orange-400 to-orange-600", emoji: "✨" };
   };
   
@@ -128,10 +149,10 @@ const StreakAnalyticsPage = () => {
                         <Flame className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-orange-500 mb-0.5 sm:mb-1 drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]" />
                       </motion.div>
                       <span className="text-3xl sm:text-4xl md:text-5xl font-black text-white tabular-nums">
-                        {streak.currentStreak}
+                        {challengeStats?.current_streak || 0}
                       </span>
                       <span className="text-[10px] sm:text-xs text-white/60 font-semibold uppercase tracking-wider">
-                        Day Streak
+                        Win Streak
                       </span>
                     </div>
                     
@@ -146,7 +167,7 @@ const StreakAnalyticsPage = () => {
                         stroke="url(#analyticsGradient)"
                         strokeWidth="6"
                         strokeLinecap="round"
-                        strokeDasharray={`${Math.min((streak.currentStreak / 30) * 100, 100) * 2.95} 300`}
+                        strokeDasharray={`${Math.min(((challengeStats?.current_streak || 0) / 30) * 100, 100) * 2.95} 300`}
                         initial={{ strokeDashoffset: 300 }}
                         animate={{ strokeDashoffset: 0 }}
                         transition={{ duration: 1.5, ease: "easeOut" }}
@@ -178,45 +199,38 @@ const StreakAnalyticsPage = () => {
                     {/* Quick Stats */}
                     <div className="grid grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                       <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
-                        <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mx-auto mb-0.5 sm:mb-1" />
-                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.points}</div>
-                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Points</div>
+                        <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{challengeStats?.total_wins || 0}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Wins</div>
                       </div>
                       <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
-                        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mx-auto mb-0.5 sm:mb-1" />
-                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.completedQuizzes.size}</div>
-                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Quizzes</div>
+                        <Swords className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{challengeStats?.total_challenges || 0}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Battles</div>
                       </div>
                       <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
                         <Award className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400 mx-auto mb-0.5 sm:mb-1" />
-                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.unlockedCourses.size}</div>
-                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Badges</div>
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{challengeStats?.highest_streak || 0}</div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Best</div>
                       </div>
                       <div className="bg-white/5 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center">
                         <Target className="h-4 w-4 sm:h-5 sm:w-5 text-green-400 mx-auto mb-0.5 sm:mb-1" />
-                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">{streak.visitedPages.size}</div>
-                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Pages</div>
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white">
+                          {challengeStats?.total_challenges ? Math.round((challengeStats.total_wins / challengeStats.total_challenges) * 100) : 0}%
+                        </div>
+                        <div className="text-[8px] sm:text-[10px] text-white/50 uppercase">Win Rate</div>
                       </div>
                     </div>
                     
-                    {/* Today's Status */}
-                    <div className={cn(
-                      "mt-3 sm:mt-4 p-2 sm:p-3 rounded-lg sm:rounded-xl text-center",
-                      hasQuizToday 
-                        ? "bg-green-500/20 border border-green-500/30" 
-                        : "bg-orange-500/20 border border-orange-500/30"
-                    )}>
-                      {hasQuizToday ? (
-                        <p className="text-green-400 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2">
-                          <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          You've kept your streak alive today!
-                        </p>
-                      ) : (
-                        <p className="text-orange-400 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2">
-                          <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          Complete a quiz to save your streak!
-                        </p>
-                      )}
+                    {/* Challenge CTA */}
+                    <div className="mt-3 sm:mt-4 p-2 sm:p-3 rounded-lg sm:rounded-xl text-center bg-veno-primary/20 border border-veno-primary/30">
+                      <Button 
+                        onClick={() => navigate('/cbt/streak-challenge')}
+                        className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+                      >
+                        <Swords className="h-4 w-4 mr-2" />
+                        Start a Challenge
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -250,49 +264,49 @@ const StreakAnalyticsPage = () => {
                   <div className="p-1.5 sm:p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
                     <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                   </div>
-                  Next Milestone
+                  Challenge Stats
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  {nextMilestone.points - streak.points} points to {nextMilestone.name}
+                  Your PvP battle performance
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                 <div className="space-y-3 sm:space-y-4">
-                  {/* Custom Progress Bar */}
+                  {/* Win Rate Progress */}
                   <div className="relative h-3 sm:h-4 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${progressPercentage}%` }}
+                      animate={{ width: `${challengeStats?.total_challenges ? Math.round((challengeStats.total_wins / challengeStats.total_challenges) * 100) : 0}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-veno-primary to-emerald-500 rounded-full"
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-[10px] sm:text-xs font-bold text-foreground/80">
-                        {Math.round(progressPercentage)}%
+                        {challengeStats?.total_challenges ? Math.round((challengeStats.total_wins / challengeStats.total_challenges) * 100) : 0}% Win Rate
                       </span>
                     </div>
                   </div>
                   
                   <div className="flex justify-between text-xs sm:text-sm">
-                    <span className="text-muted-foreground">{streak.points} pts</span>
-                    <span className="font-semibold text-amber-500">{nextMilestone.points} pts</span>
+                    <span className="text-muted-foreground">{challengeStats?.total_wins || 0} wins</span>
+                    <span className="font-semibold text-veno-primary">{challengeStats?.total_challenges || 0} battles</span>
                   </div>
                   
-                  {/* Milestone Preview */}
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
-                    <Award className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 mx-auto mb-1.5 sm:mb-2" />
-                    <p className="font-semibold text-xs sm:text-sm">{nextMilestone.name}</p>
+                  {/* Best Streak Preview */}
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center">
+                    <Flame className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500 mx-auto mb-1.5 sm:mb-2" />
+                    <p className="font-semibold text-xs sm:text-sm">Best Win Streak: {challengeStats?.highest_streak || 0}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
-                      Unlocks at {nextMilestone.points} points
+                      Keep winning to beat your record!
                     </p>
                   </div>
                   
                   <Button 
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm" 
-                    onClick={() => navigate('/cbt')}
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm" 
+                    onClick={() => navigate('/cbt/streak-challenge')}
                   >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Take a Quiz
+                    <Swords className="h-4 w-4 mr-2" />
+                    Challenge Someone
                   </Button>
                 </div>
               </CardContent>

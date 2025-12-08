@@ -1,7 +1,14 @@
 
-import { Book, BookOpen, Bot, FileText, CheckCircle } from "lucide-react";
+import { Book, BookOpen, Bot, FileText, CheckCircle, Flame } from "lucide-react";
 
 export const bannerSlides = [
+  {
+    title: "Challenge Your Friends",
+    subtitle: "Battle other players in real-time PvP CBT challenges. Build your streak, climb the leaderboard, and prove you're the best!",
+    background: "bg-gradient-to-r from-orange-500 via-red-500 to-pink-600",
+    primaryButton: { text: "Start Challenge", link: "/cbt/streak-challenge" },
+    secondaryButton: { text: "View Leaderboard", link: "/cbt/streak-leaderboard" }
+  },
   {
     title: "Learn Anywhere, Anytime",
     subtitle: "Access your courses on any device with our responsive platform that adapts to your schedule and learning style.",
