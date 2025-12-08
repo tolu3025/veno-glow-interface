@@ -20,6 +20,7 @@ import PastQuestions from "./pages/cbt/PastQuestions";
 import QuizExplanations from "./pages/cbt/QuizExplanations";
 import StreakChallenge from "./pages/cbt/StreakChallenge";
 import StreakChallengeLeaderboard from "./pages/cbt/StreakChallengeLeaderboard";
+import JoinChallenge from "./pages/cbt/JoinChallenge";
 import AiChat from "./pages/ai-tutorial/AiChat";
 import AiResources from "./pages/ai-tutorial/AiResources";
 import TakeTest from "./pages/cbt/TakeTest";
@@ -262,6 +263,12 @@ const AppRoutes = () => {
           <Route path="/cbt/streak-leaderboard" element={
             <ProtectedRoute>
               <StreakChallengeLeaderboard />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/challenge/:shareCode" element={
+            <ProtectedRoute>
+              <JoinChallenge />
             </ProtectedRoute>
           } />
           
