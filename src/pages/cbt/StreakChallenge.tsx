@@ -128,6 +128,10 @@ const StreakChallenge = () => {
           opponentId={selectedOpponent.id}
           opponentUsername={selectedOpponent.username}
           onChallengeCreated={(id) => console.log('Challenge created:', id)}
+          onChallengeAccepted={(challenge) => {
+            setActiveChallenge(challenge);
+            setShowSetupModal(false);
+          }}
         />
       )}
 
