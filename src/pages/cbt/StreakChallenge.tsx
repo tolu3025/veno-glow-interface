@@ -53,61 +53,24 @@ const StreakChallenge = () => {
     const isHost = activeChallenge.host_id === user.id;
     const totalQuestions = (activeChallenge.questions as any[])?.length || 0;
     
-    // Update the challenge with this player's score
+    // Update the challenge with this player's score and mark them as finished
     const updateData = isHost 
-      ? { host_score: score }
-      : { opponent_score: score };
+      ? { host_score: score, host_finished: true }
+      : { opponent_score: score, opponent_finished: true };
     
     await supabase
       .from('streak_challenges')
       .update(updateData)
       .eq('id', activeChallenge.id);
 
-    // Check if both players have submitted
-    const { data: challenge } = await supabase
-      .from('streak_challenges')
-      .select('*')
-      .eq('id', activeChallenge.id)
-      .single();
-
-    // Check if both scores are set (not default 0 for the one we didn't just set)
-    const otherScore = isHost ? challenge?.opponent_score : challenge?.host_score;
-    const bothFinished = otherScore !== null && otherScore !== undefined && otherScore > 0;
-
-    if (bothFinished) {
-      // Both finished - process result
-      await supabase.functions.invoke('process-challenge-result', {
-        body: {
-          challengeId: activeChallenge.id,
-          hostScore: isHost ? score : challenge?.host_score,
-          opponentScore: isHost ? challenge?.opponent_score : score,
-        },
-      });
-
-      // Fetch final result
-      const { data: result } = await supabase.from('streak_challenges').select('*').eq('id', activeChallenge.id).single();
-      const { data: stats } = await supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single();
-      
-      setBattleResult({
-        isWinner: result?.winner_id === user.id,
-        isDraw: result?.is_draw,
-        yourScore: isHost ? result?.host_score : result?.opponent_score,
-        opponentScore: isHost ? result?.opponent_score : result?.host_score,
-        totalQuestions,
-        newStreak: stats?.current_streak || 0,
-        streakChange: result?.winner_id === user.id ? 1 : 0,
-      });
-      setActiveChallenge(null);
-    } else {
-      // Wait for opponent
-      setWaitingState({
-        challengeId: activeChallenge.id,
-        yourScore: score,
-        totalQuestions,
-        isHost,
-      });
-      setActiveChallenge(null);
-    }
+    // Always go to waiting state - let WaitingForOpponent handle sync
+    setWaitingState({
+      challengeId: activeChallenge.id,
+      yourScore: score,
+      totalQuestions,
+      isHost,
+    });
+    setActiveChallenge(null);
   };
 
   const handleBothFinished = useCallback(async (result: {
