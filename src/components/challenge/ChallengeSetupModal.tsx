@@ -6,6 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { SuspenseCountdown } from './SuspenseCountdown';
+import { ChallengeWaitingRoom } from './ChallengeWaitingRoom';
+import { Challenge } from '@/hooks/useChallengeSubscription';
+import { useAuth } from '@/providers/AuthProvider';
+import { toast } from '@/hooks/use-toast';
 
 interface ChallengeSetupModalProps {
   isOpen: boolean;
@@ -13,6 +17,7 @@ interface ChallengeSetupModalProps {
   opponentId: string;
   opponentUsername: string;
   onChallengeCreated: (challengeId: string) => void;
+  onChallengeAccepted?: (challenge: Challenge) => void;
 }
 
 const DURATION_OPTIONS = [
@@ -28,13 +33,17 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
   opponentId,
   opponentUsername,
   onChallengeCreated,
+  onChallengeAccepted,
 }) => {
+  const { user } = useAuth();
   const [subjects, setSubjects] = useState<string[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedDuration, setSelectedDuration] = useState<number>(60);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuspense, setShowSuspense] = useState(false);
   const [userStreak, setUserStreak] = useState(0);
+  const [createdChallengeId, setCreatedChallengeId] = useState<string | null>(null);
+  const [showWaitingRoom, setShowWaitingRoom] = useState(false);
 
   // Fetch available subjects
   useEffect(() => {
@@ -80,8 +89,16 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
   const createChallenge = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Get host username
+      const { data: hostProfile } = await supabase
+        .from('profiles')
+        .select('email, display_name')
+        .eq('id', user.id)
+        .single();
+
+      const hostUsername = hostProfile?.display_name || hostProfile?.email?.split('@')[0] || 'Someone';
 
       // Generate questions using AI
       const { data: questionsData, error: questionsError } = await supabase.functions.invoke(
@@ -115,17 +132,76 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
 
       if (challengeError) throw challengeError;
 
+      // Send notifications (email + in-app)
+      const { error: notifError } = await supabase.functions.invoke('send-challenge-notification', {
+        body: {
+          challengeId: challenge.id,
+          opponentId: opponentId,
+          hostUsername: hostUsername,
+          subject: selectedSubject,
+          durationSeconds: selectedDuration,
+        },
+      });
+
+      if (notifError) {
+        console.error('Failed to send notifications:', notifError);
+        // Don't throw - challenge was created, just notify user
+        toast({
+          title: 'Challenge sent!',
+          description: 'Notification delivery may be delayed.',
+        });
+      } else {
+        toast({
+          title: 'Challenge sent!',
+          description: `${opponentUsername} has been notified via email and in-app notification.`,
+        });
+      }
+
+      setCreatedChallengeId(challenge.id);
+      setShowWaitingRoom(true);
       onChallengeCreated(challenge.id);
-      onClose();
     } catch (error) {
       console.error('Error creating challenge:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create challenge. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
       setShowSuspense(false);
     }
   };
 
+  const handleChallengeAccepted = (challenge: Challenge) => {
+    setShowWaitingRoom(false);
+    onClose();
+    if (onChallengeAccepted) {
+      onChallengeAccepted(challenge);
+    }
+  };
+
+  const handleWaitingRoomCancel = () => {
+    setShowWaitingRoom(false);
+    setCreatedChallengeId(null);
+    onClose();
+  };
+
   const is4MinMode = selectedDuration === 240;
+
+  // Show waiting room after challenge is created
+  if (showWaitingRoom && createdChallengeId) {
+    return (
+      <ChallengeWaitingRoom
+        challengeId={createdChallengeId}
+        opponentUsername={opponentUsername}
+        subject={selectedSubject}
+        durationSeconds={selectedDuration}
+        onChallengeAccepted={handleChallengeAccepted}
+        onCancel={handleWaitingRoomCancel}
+      />
+    );
+  }
 
   if (showSuspense) {
     return (
