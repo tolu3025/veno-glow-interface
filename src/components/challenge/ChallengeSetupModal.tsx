@@ -3,14 +3,13 @@ import { motion } from 'framer-motion';
 import { BookOpen, Clock, Zap, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { SuspenseCountdown } from './SuspenseCountdown';
 import { ChallengeWaitingRoom } from './ChallengeWaitingRoom';
 import { Challenge } from '@/hooks/useChallengeSubscription';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from '@/hooks/use-toast';
-
 interface ChallengeSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,25 +35,13 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
   onChallengeAccepted,
 }) => {
   const { user } = useAuth();
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [subjectInput, setSubjectInput] = useState<string>('');
   const [selectedDuration, setSelectedDuration] = useState<number>(60);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuspense, setShowSuspense] = useState(false);
   const [userStreak, setUserStreak] = useState(0);
   const [createdChallengeId, setCreatedChallengeId] = useState<string | null>(null);
   const [showWaitingRoom, setShowWaitingRoom] = useState(false);
-
-  // Fetch available subjects
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      const { data } = await supabase.rpc('get_subjects_from_questions');
-      if (data) {
-        setSubjects(data.map((s: any) => s.name));
-      }
-    };
-    fetchSubjects();
-  }, []);
 
   // Fetch user's current streak
   useEffect(() => {
@@ -75,7 +62,7 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
   }, []);
 
   const handleSendChallenge = async () => {
-    if (!selectedSubject) return;
+    if (!subjectInput.trim()) return;
 
     // Show suspense animation for 4-minute mode
     if (selectedDuration === 240) {
@@ -100,12 +87,14 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
 
       const hostUsername = hostProfile?.display_name || hostProfile?.email?.split('@')[0] || 'Someone';
 
+      const subject = subjectInput.trim();
+      
       // Generate questions using AI
       const { data: questionsData, error: questionsError } = await supabase.functions.invoke(
         'generate-challenge-questions',
         {
           body: {
-            subject: selectedSubject,
+            subject: subject,
             durationSeconds: selectedDuration,
             hostStreak: userStreak,
           },
@@ -120,7 +109,7 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
         .insert({
           host_id: user.id,
           opponent_id: opponentId,
-          subject: selectedSubject,
+          subject: subject,
           duration_seconds: selectedDuration,
           difficulty: questionsData.difficulty,
           questions: questionsData.questions,
@@ -138,7 +127,7 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
           challengeId: challenge.id,
           opponentId: opponentId,
           hostUsername: hostUsername,
-          subject: selectedSubject,
+          subject: subject,
           durationSeconds: selectedDuration,
         },
       });
@@ -195,7 +184,7 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
       <ChallengeWaitingRoom
         challengeId={createdChallengeId}
         opponentUsername={opponentUsername}
-        subject={selectedSubject}
+        subject={subjectInput}
         durationSeconds={selectedDuration}
         onChallengeAccepted={handleChallengeAccepted}
         onCancel={handleWaitingRoomCancel}
@@ -206,7 +195,7 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
   if (showSuspense) {
     return (
       <SuspenseCountdown
-        subject={selectedSubject}
+        subject={subjectInput}
         onComplete={createChallenge}
       />
     );
@@ -223,24 +212,21 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Subject Selection */}
+          {/* Subject Input - Free Text */}
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
-              Select Subject
+              Enter Subject/Topic
             </label>
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              value={subjectInput}
+              onChange={(e) => setSubjectInput(e.target.value)}
+              placeholder="e.g., Physics, Algebra, Nigerian History, Organic Chemistry..."
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter any topic - calculations will be auto-detected
+            </p>
           </div>
 
           {/* Duration Selection */}
@@ -297,7 +283,7 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
             </Button>
             <Button
               onClick={handleSendChallenge}
-              disabled={!selectedSubject || isLoading}
+              disabled={!subjectInput.trim() || isLoading}
               className={`flex-1 ${
                 is4MinMode
                   ? 'bg-destructive hover:bg-destructive/90'

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Trophy, Zap, Users, ArrowLeft } from 'lucide-react';
+import { Flame, Trophy, Zap, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { ChallengeSetupModal } from '@/components/challenge/ChallengeSetupModal'
 import { IncomingChallengePopup } from '@/components/challenge/IncomingChallengePopup';
 import { BattleArena } from '@/components/challenge/BattleArena';
 import { ChallengeResults } from '@/components/challenge/ChallengeResults';
+import { WaitingForOpponent } from '@/components/challenge/WaitingForOpponent';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
 
@@ -25,6 +26,7 @@ const StreakChallenge = () => {
   const [selectedOpponent, setSelectedOpponent] = useState<{ id: string; username: string } | null>(null);
   const [userStats, setUserStats] = useState({ currentStreak: 0, highestStreak: 0, totalWins: 0 });
   const [battleResult, setBattleResult] = useState<any>(null);
+  const [waitingState, setWaitingState] = useState<{ challengeId: string; yourScore: number; totalQuestions: number; isHost: boolean } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -49,29 +51,102 @@ const StreakChallenge = () => {
   const handleBattleComplete = async (score: number) => {
     if (!activeChallenge || !user) return;
     const isHost = activeChallenge.host_id === user.id;
+    const totalQuestions = (activeChallenge.questions as any[])?.length || 0;
     
-    await supabase.functions.invoke('process-challenge-result', {
-      body: {
-        challengeId: activeChallenge.id,
-        hostScore: isHost ? score : activeChallenge.host_score,
-        opponentScore: isHost ? activeChallenge.opponent_score : score,
-      },
-    });
+    // Update the challenge with this player's score
+    const updateData = isHost 
+      ? { host_score: score }
+      : { opponent_score: score };
+    
+    await supabase
+      .from('streak_challenges')
+      .update(updateData)
+      .eq('id', activeChallenge.id);
 
-    const { data: result } = await supabase.from('streak_challenges').select('*').eq('id', activeChallenge.id).single();
-    const { data: stats } = await supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single();
-    
-    setBattleResult({
-      isWinner: result?.winner_id === user.id,
-      isDraw: result?.is_draw,
-      yourScore: isHost ? result?.host_score : result?.opponent_score,
-      opponentScore: isHost ? result?.opponent_score : result?.host_score,
-      totalQuestions: (activeChallenge.questions as any[])?.length || 0,
-      newStreak: stats?.current_streak || 0,
-      streakChange: result?.winner_id === user.id ? 1 : 0,
-    });
-    setActiveChallenge(null);
+    // Check if both players have submitted
+    const { data: challenge } = await supabase
+      .from('streak_challenges')
+      .select('*')
+      .eq('id', activeChallenge.id)
+      .single();
+
+    // Check if both scores are set (not default 0 for the one we didn't just set)
+    const otherScore = isHost ? challenge?.opponent_score : challenge?.host_score;
+    const bothFinished = otherScore !== null && otherScore !== undefined && otherScore > 0;
+
+    if (bothFinished) {
+      // Both finished - process result
+      await supabase.functions.invoke('process-challenge-result', {
+        body: {
+          challengeId: activeChallenge.id,
+          hostScore: isHost ? score : challenge?.host_score,
+          opponentScore: isHost ? challenge?.opponent_score : score,
+        },
+      });
+
+      // Fetch final result
+      const { data: result } = await supabase.from('streak_challenges').select('*').eq('id', activeChallenge.id).single();
+      const { data: stats } = await supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single();
+      
+      setBattleResult({
+        isWinner: result?.winner_id === user.id,
+        isDraw: result?.is_draw,
+        yourScore: isHost ? result?.host_score : result?.opponent_score,
+        opponentScore: isHost ? result?.opponent_score : result?.host_score,
+        totalQuestions,
+        newStreak: stats?.current_streak || 0,
+        streakChange: result?.winner_id === user.id ? 1 : 0,
+      });
+      setActiveChallenge(null);
+    } else {
+      // Wait for opponent
+      setWaitingState({
+        challengeId: activeChallenge.id,
+        yourScore: score,
+        totalQuestions,
+        isHost,
+      });
+      setActiveChallenge(null);
+    }
   };
+
+  const handleBothFinished = useCallback(async (result: {
+    hostScore: number;
+    opponentScore: number;
+    winnerId: string | null;
+    isDraw: boolean;
+  }) => {
+    if (!user || !waitingState) return;
+
+    const { data: stats } = await supabase
+      .from('user_challenge_stats')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    setBattleResult({
+      isWinner: result.winnerId === user.id,
+      isDraw: result.isDraw,
+      yourScore: waitingState.yourScore,
+      opponentScore: waitingState.isHost ? result.opponentScore : result.hostScore,
+      totalQuestions: waitingState.totalQuestions,
+      newStreak: stats?.current_streak || 0,
+      streakChange: result.winnerId === user.id ? 1 : 0,
+    });
+    setWaitingState(null);
+  }, [user, waitingState]);
+
+  // Show waiting for opponent screen
+  if (waitingState) {
+    return (
+      <WaitingForOpponent
+        challengeId={waitingState.challengeId}
+        yourScore={waitingState.yourScore}
+        totalQuestions={waitingState.totalQuestions}
+        onBothFinished={handleBothFinished}
+      />
+    );
+  }
 
   if (!user) {
     return (
