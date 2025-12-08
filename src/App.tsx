@@ -18,6 +18,8 @@ import CreateTest from "./pages/cbt/CreateTest";
 import AiCreateTest from "./pages/cbt/AiCreateTest";
 import PastQuestions from "./pages/cbt/PastQuestions";
 import QuizExplanations from "./pages/cbt/QuizExplanations";
+import StreakChallenge from "./pages/cbt/StreakChallenge";
+import StreakChallengeLeaderboard from "./pages/cbt/StreakChallengeLeaderboard";
 import AiChat from "./pages/ai-tutorial/AiChat";
 import AiResources from "./pages/ai-tutorial/AiResources";
 import TakeTest from "./pages/cbt/TakeTest";
@@ -248,6 +250,18 @@ const AppRoutes = () => {
           <Route path="/cbt/analytics" element={
             <ProtectedRoute>
               <Analytics />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/streak-challenge" element={
+            <ProtectedRoute>
+              <StreakChallenge />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/cbt/streak-leaderboard" element={
+            <ProtectedRoute>
+              <StreakChallengeLeaderboard />
             </ProtectedRoute>
           } />
           
