@@ -1,4 +1,3 @@
-
 import Index from "@/pages/Index";
 import Services from "@/pages/Services";
 import Contact from "@/pages/Contact";
@@ -18,9 +17,10 @@ import Maintenance from "@/pages/Maintenance";
 import CbtPage from "@/pages/CbtPage";
 import CreateTest from "@/pages/cbt/CreateTest";
 import PublicLeaderboards from "@/pages/cbt/PublicLeaderboards";
-
 import AiCreateTest from "@/pages/cbt/AiCreateTest";
 import PastQuestions from "@/pages/cbt/PastQuestions";
+import StreakChallenge from "@/pages/cbt/StreakChallenge";
+import StreakChallengeLeaderboard from "@/pages/cbt/StreakChallengeLeaderboard";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
 import PaymentFailed from "@/pages/payment/PaymentFailed";
 
@@ -110,6 +110,14 @@ export const routes = [
   {
     path: "/cbt/past-questions",
     element: <PastQuestions />,
+  },
+  {
+    path: "/cbt/streak-challenge",
+    element: <StreakChallenge />,
+  },
+  {
+    path: "/cbt/streak-leaderboard",
+    element: <StreakChallengeLeaderboard />,
   },
   
   // Payment Routes

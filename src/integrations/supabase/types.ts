@@ -358,6 +358,44 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_answers: {
+        Row: {
+          answered_at: string
+          challenge_id: string
+          id: string
+          is_correct: boolean
+          question_index: number
+          selected_answer: number
+          user_id: string
+        }
+        Insert: {
+          answered_at?: string
+          challenge_id: string
+          id?: string
+          is_correct: boolean
+          question_index: number
+          selected_answer: number
+          user_id: string
+        }
+        Update: {
+          answered_at?: string
+          challenge_id?: string
+          id?: string
+          is_correct?: boolean
+          question_index?: number
+          selected_answer?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_answers_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "streak_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_history: {
         Row: {
           content: string
@@ -917,6 +955,63 @@ export type Database = {
         }
         Relationships: []
       }
+      streak_challenges: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          difficulty: string
+          duration_seconds: number
+          expires_at: string | null
+          host_id: string
+          host_score: number | null
+          id: string
+          is_draw: boolean | null
+          opponent_id: string | null
+          opponent_score: number | null
+          questions: Json | null
+          started_at: string | null
+          status: string
+          subject: string
+          winner_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          duration_seconds: number
+          expires_at?: string | null
+          host_id: string
+          host_score?: number | null
+          id?: string
+          is_draw?: boolean | null
+          opponent_id?: string | null
+          opponent_score?: number | null
+          questions?: Json | null
+          started_at?: string | null
+          status?: string
+          subject: string
+          winner_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          duration_seconds?: number
+          expires_at?: string | null
+          host_id?: string
+          host_score?: number | null
+          id?: string
+          is_draw?: boolean | null
+          opponent_id?: string | null
+          opponent_score?: number | null
+          questions?: Json | null
+          started_at?: string | null
+          status?: string
+          subject?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       test_attempts: {
         Row: {
           completed_at: string | null
@@ -1348,6 +1443,42 @@ export type Database = {
           is_active?: boolean | null
           reason?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_challenge_stats: {
+        Row: {
+          created_at: string
+          current_streak: number
+          highest_streak: number
+          id: string
+          last_challenge_date: string | null
+          total_challenges: number
+          total_wins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          highest_streak?: number
+          id?: string
+          last_challenge_date?: string | null
+          total_challenges?: number
+          total_wins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          highest_streak?: number
+          id?: string
+          last_challenge_date?: string | null
+          total_challenges?: number
+          total_wins?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
