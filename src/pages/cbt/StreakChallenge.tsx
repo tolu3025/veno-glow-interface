@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Trophy, Zap, ArrowLeft } from 'lucide-react';
+import { Flame, Trophy, Zap, ArrowLeft, Link } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { useOnlineUsers } from '@/hooks/useOnlineUsers';
 import { useChallengeSubscription } from '@/hooks/useChallengeSubscription';
 import { OnlineUsersList } from '@/components/challenge/OnlineUsersList';
 import { ChallengeSetupModal } from '@/components/challenge/ChallengeSetupModal';
+import { CreateChallengeLinkModal } from '@/components/challenge/CreateChallengeLinkModal';
 import { IncomingChallengePopup } from '@/components/challenge/IncomingChallengePopup';
 import { BattleArena } from '@/components/challenge/BattleArena';
 import { ChallengeResults } from '@/components/challenge/ChallengeResults';
@@ -23,6 +24,7 @@ const StreakChallenge = () => {
   const { incomingChallenge, activeChallenge, setActiveChallenge, acceptChallenge, declineChallenge } = useChallengeSubscription();
   
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState<{ id: string; username: string } | null>(null);
   const [userStats, setUserStats] = useState({ currentStreak: 0, highestStreak: 0, totalWins: 0 });
   const [battleResult, setBattleResult] = useState<any>(null);
@@ -173,6 +175,11 @@ const StreakChallenge = () => {
         />
       )}
 
+      <CreateChallengeLinkModal
+        isOpen={showLinkModal}
+        onClose={() => setShowLinkModal(false)}
+      />
+
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <Button variant="ghost" onClick={() => navigate('/cbt')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to CBT
@@ -208,6 +215,9 @@ const StreakChallenge = () => {
           <Card className="veno-card">
             <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="w-5 h-5" /> Quick Actions</CardTitle></CardHeader>
             <CardContent className="space-y-3">
+              <Button className="w-full bg-veno-primary hover:bg-veno-primary/90" onClick={() => setShowLinkModal(true)}>
+                <Link className="w-4 h-4 mr-2" /> Create Challenge Link
+              </Button>
               <Button className="w-full" variant="outline" onClick={() => navigate('/cbt/streak-leaderboard')}>
                 <Trophy className="w-4 h-4 mr-2" /> View Leaderboard
               </Button>

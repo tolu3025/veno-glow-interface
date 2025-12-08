@@ -21,6 +21,7 @@ import AiCreateTest from "@/pages/cbt/AiCreateTest";
 import PastQuestions from "@/pages/cbt/PastQuestions";
 import StreakChallenge from "@/pages/cbt/StreakChallenge";
 import StreakChallengeLeaderboard from "@/pages/cbt/StreakChallengeLeaderboard";
+import JoinChallenge from "@/pages/cbt/JoinChallenge";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
 import PaymentFailed from "@/pages/payment/PaymentFailed";
 
@@ -118,6 +119,10 @@ export const routes = [
   {
     path: "/cbt/streak-leaderboard",
     element: <StreakChallengeLeaderboard />,
+  },
+  {
+    path: "/cbt/challenge/:shareCode",
+    element: <JoinChallenge />,
   },
   
   // Payment Routes

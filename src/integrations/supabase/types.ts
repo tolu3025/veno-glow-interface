@@ -971,6 +971,7 @@ export type Database = {
           opponent_id: string | null
           opponent_score: number | null
           questions: Json | null
+          share_code: string | null
           started_at: string | null
           status: string
           subject: string
@@ -991,6 +992,7 @@ export type Database = {
           opponent_id?: string | null
           opponent_score?: number | null
           questions?: Json | null
+          share_code?: string | null
           started_at?: string | null
           status?: string
           subject: string
@@ -1011,6 +1013,7 @@ export type Database = {
           opponent_id?: string | null
           opponent_score?: number | null
           questions?: Json | null
+          share_code?: string | null
           started_at?: string | null
           status?: string
           subject?: string
