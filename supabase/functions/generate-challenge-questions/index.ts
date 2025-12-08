@@ -6,6 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Subjects that typically involve calculations
+const CALCULATION_SUBJECTS = [
+  'physics', 'mathematics', 'math', 'maths', 'chemistry', 'economics',
+  'accounting', 'statistics', 'calculus', 'algebra', 'geometry',
+  'trigonometry', 'mechanics', 'thermodynamics', 'kinematics',
+  'dynamics', 'statics', 'quantum', 'engineering', 'finance',
+  'quantitative', 'numerical', 'arithmetic', 'computation'
+];
+
+// Check if subject involves calculations
+function isCalculationSubject(subject: string): boolean {
+  const lowerSubject = subject.toLowerCase();
+  
+  // Check for explicit calculation keywords
+  if (lowerSubject.includes('calculation') || lowerSubject.includes('solve') || 
+      lowerSubject.includes('compute') || lowerSubject.includes('formula')) {
+    return true;
+  }
+  
+  // Check against known calculation subjects
+  return CALCULATION_SUBJECTS.some(calcSubject => 
+    lowerSubject.includes(calcSubject)
+  );
+}
+
 // Get difficulty based on streak level
 function getDifficultyFromStreak(streak: number, is4MinMode: boolean): string {
   let difficulty: string;
@@ -54,8 +79,9 @@ serve(async (req) => {
     const is4MinMode = durationSeconds === 240;
     const difficulty = getDifficultyFromStreak(hostStreak || 0, is4MinMode);
     const questionCount = getQuestionCount(durationSeconds);
+    const isCalculation = isCalculationSubject(subject);
     
-    console.log(`Calculated: difficulty=${difficulty}, questionCount=${questionCount}`);
+    console.log(`Calculated: difficulty=${difficulty}, questionCount=${questionCount}, isCalculation=${isCalculation}`);
     
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
@@ -63,27 +89,53 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert question generator for educational assessments. Generate exactly ${questionCount} multiple-choice questions about ${subject} at ${difficulty} difficulty level.
+    // Build calculation-specific instructions if needed
+    const calculationInstructions = isCalculation ? `
+
+CALCULATION QUESTIONS REQUIREMENT:
+Since this is a calculation-based subject, you MUST:
+1. Include numerical problems that require step-by-step calculations
+2. Provide clear given values and ask for specific calculated results
+3. Use proper mathematical notation and units
+4. Make sure each option is a plausible numerical answer
+5. In the explanation, show the complete solution with:
+   - **Given**: List all given values with units
+   - **Required**: What needs to be found
+   - **Formula**: The formula(s) used
+   - **Solution**: Step-by-step calculation
+   - **Answer**: Final answer with proper units (boxed)
+
+Example format for explanation:
+"**Given:** m = 5 kg, v = 10 m/s
+**Required:** Kinetic Energy (KE)
+**Formula:** KE = ½mv²
+**Solution:** KE = ½ × 5 × 10² = ½ × 5 × 100 = 250 J
+**Answer:** \\boxed{250 \\text{ J}}"
+` : '';
+
+    const systemPrompt = `You are an expert question generator for educational assessments. Generate exactly ${questionCount} multiple-choice questions about "${subject}" at ${difficulty} difficulty level.
 
 Each question must have:
 - A clear, concise question text
 - Exactly 4 options (labeled A, B, C, D)
 - One correct answer (index 0-3)
-- A brief explanation
-
+- A detailed explanation
+${calculationInstructions}
 Return a JSON array with this exact structure:
 [
   {
     "question": "Question text here",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "answer": 0,
-    "explanation": "Brief explanation of the correct answer"
+    "explanation": "Detailed explanation of the correct answer"
   }
 ]
 
 IMPORTANT: 
-- Return ONLY the JSON array, no additional text
-- For ${difficulty} difficulty: ${difficulty === 'easy' ? 'Basic concepts, straightforward questions' : difficulty === 'medium' ? 'Moderate complexity, requires understanding' : difficulty === 'hard' ? 'Complex scenarios, deeper knowledge needed' : 'Expert-level, highly challenging questions'}`;
+- Return ONLY the JSON array, no additional text or markdown
+- For ${difficulty} difficulty: ${difficulty === 'easy' ? 'Basic concepts, straightforward questions' : difficulty === 'medium' ? 'Moderate complexity, requires understanding' : difficulty === 'hard' ? 'Complex scenarios, deeper knowledge needed' : 'Expert-level, highly challenging questions'}
+- Make questions engaging and educational
+- Ensure all options are plausible`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -95,7 +147,7 @@ IMPORTANT:
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate ${questionCount} ${difficulty} difficulty questions about ${subject} for a competitive challenge.` }
+          { role: 'user', content: `Generate ${questionCount} ${difficulty} difficulty questions about "${subject}" for a competitive challenge.${isCalculation ? ' These should be calculation-based problems requiring numerical solutions.' : ''}` }
         ],
         max_tokens: 4000,
       }),
@@ -138,12 +190,13 @@ IMPORTANT:
       explanation: q.explanation || 'No explanation provided',
     }));
 
-    console.log(`Successfully generated ${questions.length} questions`);
+    console.log(`Successfully generated ${questions.length} questions (calculation: ${isCalculation})`);
 
     return new Response(JSON.stringify({ 
       questions, 
       difficulty,
-      questionCount: questions.length 
+      questionCount: questions.length,
+      isCalculation
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
