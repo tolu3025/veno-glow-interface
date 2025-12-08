@@ -169,6 +169,9 @@ const StreakChallenge = () => {
               <Button className="w-full" variant="outline" onClick={() => navigate('/cbt/streak-leaderboard')}>
                 <Trophy className="w-4 h-4 mr-2" /> View Leaderboard
               </Button>
+              <Button className="w-full" variant="outline" onClick={() => navigate('/streak-analytics')}>
+                <Flame className="w-4 h-4 mr-2" /> Streak Analytics
+              </Button>
             </CardContent>
           </Card>
         </div>
