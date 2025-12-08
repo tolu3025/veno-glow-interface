@@ -286,6 +286,9 @@ const JoinChallenge = () => {
   }
 
   if (!user) {
+    // Preserve the challenge URL so user returns here after login
+    const currentPath = `/cbt/challenge/${shareCode}`;
+    
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -304,7 +307,10 @@ const JoinChallenge = () => {
                 {challenge?.duration_seconds} seconds • {(challenge?.questions as any[])?.length || 0} questions
               </p>
             </div>
-            <Button onClick={() => navigate('/auth')} className="w-full bg-veno-primary">
+            <Button 
+              onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(currentPath)}`)} 
+              className="w-full bg-veno-primary"
+            >
               Sign In to Accept
             </Button>
           </CardContent>
