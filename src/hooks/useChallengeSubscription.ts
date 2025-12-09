@@ -20,6 +20,9 @@ export interface Challenge {
   started_at: string | null;
   completed_at: string | null;
   expires_at: string | null;
+  share_code: string | null;
+  host_finished: boolean | null;
+  opponent_finished: boolean | null;
 }
 
 export interface IncomingChallenge {
