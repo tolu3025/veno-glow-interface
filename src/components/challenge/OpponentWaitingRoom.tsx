@@ -63,8 +63,13 @@ export const OpponentWaitingRoom: React.FC<OpponentWaitingRoomProps> = ({
       
       if (data && data.started_at) {
         setHostJoined(true);
+        // Merge with original challenge to ensure all fields are present
+        const mergedChallenge = {
+          ...challenge,
+          ...data,
+        } as Challenge;
         setTimeout(() => {
-          onBothReady(data as Challenge);
+          onBothReady(mergedChallenge);
         }, 2000);
         return true;
       }
@@ -90,8 +95,13 @@ export const OpponentWaitingRoom: React.FC<OpponentWaitingRoomProps> = ({
           // Check if host has joined (started_at is set)
           if (updated.started_at && !hostJoined) {
             setHostJoined(true);
+            // Merge with original challenge to ensure all fields (especially questions) are present
+            const mergedChallenge = {
+              ...challenge,
+              ...updated,
+            } as Challenge;
             setTimeout(() => {
-              onBothReady(updated as Challenge);
+              onBothReady(mergedChallenge);
             }, 2000);
           }
         }

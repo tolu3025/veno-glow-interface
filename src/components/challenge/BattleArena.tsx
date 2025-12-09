@@ -36,10 +36,29 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
   onComplete,
 }) => {
   const { user } = useAuth();
+  
+  // Ensure questions is always a valid array
+  const safeQuestions = Array.isArray(questions) && questions.length > 0 ? questions : [];
+  
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<(number | null)[]>(new Array(questions.length).fill(null));
+  const [answers, setAnswers] = useState<(number | null)[]>(new Array(safeQuestions.length).fill(null));
   const [timeRemaining, setTimeRemaining] = useState(durationSeconds);
+
+  // Handle case when questions are empty/invalid
+  if (safeQuestions.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 text-center">
+        <Card className="p-8">
+          <h2 className="text-xl font-bold mb-4 text-destructive">Error Loading Battle</h2>
+          <p className="text-muted-foreground mb-4">Questions could not be loaded for this challenge.</p>
+          <Button onClick={() => onComplete(0)} variant="outline">
+            Return to Challenge
+          </Button>
+        </Card>
+      </div>
+    );
+  }
   const [opponentProgress, setOpponentProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -119,12 +138,12 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
 
     // Calculate score
     const score = answers.reduce((acc, answer, idx) => {
-      if (answer === questions[idx].answer) return acc + 1;
+      if (answer === safeQuestions[idx]?.answer) return acc + 1;
       return acc;
     }, 0);
 
     onComplete(score);
-  }, [answers, questions, onComplete, isSubmitting]);
+  }, [answers, safeQuestions, onComplete, isSubmitting]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -132,19 +151,19 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const question = questions[currentQuestion];
+  const question = safeQuestions[currentQuestion];
   const isTimeCritical = timeRemaining <= 10;
 
   return (
     <div className="max-w-2xl mx-auto p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            Question {currentQuestion + 1}/{questions.length}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Question {currentQuestion + 1}/{safeQuestions.length}
+            </div>
+            <Progress value={(currentQuestion / safeQuestions.length) * 100} className="w-24" />
           </div>
-          <Progress value={(currentQuestion / questions.length) * 100} className="w-24" />
-        </div>
 
         <motion.div
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-bold ${
@@ -162,8 +181,8 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
       <div className="mb-4 p-3 rounded-lg bg-muted/50 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{opponentName}'s progress</span>
         <div className="flex items-center gap-2">
-          <Progress value={(opponentProgress / questions.length) * 100} className="w-20" />
-          <span className="text-sm font-medium">{opponentProgress}/{questions.length}</span>
+          <Progress value={(opponentProgress / safeQuestions.length) * 100} className="w-20" />
+          <span className="text-sm font-medium">{opponentProgress}/{safeQuestions.length}</span>
         </div>
       </div>
 
@@ -234,12 +253,12 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
         <Button
           variant="outline"
           onClick={() => {
-            if (currentQuestion < questions.length - 1) {
+            if (currentQuestion < safeQuestions.length - 1) {
               setCurrentQuestion(prev => prev + 1);
               setSelectedAnswer(null);
             }
           }}
-          disabled={selectedAnswer !== null || currentQuestion === questions.length - 1}
+          disabled={selectedAnswer !== null || currentQuestion === safeQuestions.length - 1}
         >
           Skip
         </Button>
