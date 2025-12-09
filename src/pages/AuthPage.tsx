@@ -65,6 +65,27 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
     }
   };
 
+  const sendCustomConfirmationEmail = async (userEmail: string, confirmationUrl: string) => {
+    try {
+      console.log('Sending custom confirmation email to:', userEmail);
+      const { error } = await supabase.functions.invoke('brevo-email-confirmation', {
+        body: {
+          email: userEmail,
+          name: userEmail.split('@')[0],
+          confirmationUrl: confirmationUrl,
+        },
+      });
+
+      if (error) {
+        console.error('Error sending custom confirmation email:', error);
+      } else {
+        console.log('Custom confirmation email sent successfully');
+      }
+    } catch (err) {
+      console.error('Failed to send custom confirmation email:', err);
+    }
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -80,7 +101,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
         const redirectUrl = `${window.location.origin}${returnTo}`;
         console.log('Sign up redirect URL:', redirectUrl);
         
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -95,6 +116,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
             toast.error(error.message);
           }
         } else {
+          // Send custom confirmation email via Brevo
+          if (data?.user?.id) {
+            // Generate a confirmation URL using the Supabase confirmation endpoint
+            const confirmationUrl = `https://oavauprgngpftanumlzs.supabase.co/auth/v1/verify?token=${data.user.id}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
+            await sendCustomConfirmationEmail(email, confirmationUrl);
+          }
           toast.success('Please check your email to confirm your account');
         }
       } else {
