@@ -32,7 +32,13 @@ export const HostJoinPrompt: React.FC<HostJoinPromptProps> = ({
 
       if (error) throw error;
       
-      onJoin(updatedChallenge as Challenge);
+      // Merge with original challenge to ensure all fields are present
+      const mergedChallenge = {
+        ...challenge,
+        ...updatedChallenge,
+      } as Challenge;
+      
+      onJoin(mergedChallenge);
     } catch (error) {
       console.error('Error joining challenge:', error);
       setIsJoining(false);
