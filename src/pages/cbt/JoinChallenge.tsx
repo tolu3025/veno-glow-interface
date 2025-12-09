@@ -109,13 +109,14 @@ const JoinChallenge = () => {
 
     setIsJoining(true);
     try {
-      // Update challenge with opponent_id and start the battle
+      // Update challenge with opponent_id but DON'T set started_at
+      // The host will set started_at when they click "Join Battle"
       const { data: updatedChallenge, error: updateError } = await supabase
         .from('streak_challenges')
         .update({
           opponent_id: user.id,
           status: 'in_progress',
-          started_at: new Date().toISOString(),
+          // NOTE: Do NOT set started_at here - host sets it when they join
         })
         .eq('id', challenge.id)
         .eq('status', 'pending')
@@ -231,6 +232,11 @@ const JoinChallenge = () => {
     setWaitingState(null);
   };
 
+  const handleTimeout = () => {
+    setWaitingForHost(null);
+    navigate('/cbt/streak-challenge');
+  };
+
   // Render opponent waiting room (after accepting, waiting for host)
   if (waitingForHost) {
     return (
@@ -238,6 +244,7 @@ const JoinChallenge = () => {
         challenge={waitingForHost}
         hostName={hostProfile?.display_name || hostProfile?.email?.split('@')[0] || 'Host'}
         onBothReady={handleBothReady}
+        onTimeout={handleTimeout}
       />
     );
   }

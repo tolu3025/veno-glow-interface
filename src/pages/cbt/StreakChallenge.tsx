@@ -32,6 +32,7 @@ const StreakChallenge = () => {
   const [waitingState, setWaitingState] = useState<{ challengeId: string; yourScore: number; totalQuestions: number; isHost: boolean } | null>(null);
   const [pendingJoinChallenge, setPendingJoinChallenge] = useState<Challenge | null>(null);
 
+  // Fetch user stats
   useEffect(() => {
     if (user) {
       supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single()
@@ -39,6 +40,29 @@ const StreakChallenge = () => {
           if (data) setUserStats({ currentStreak: data.current_streak, highestStreak: data.highest_streak, totalWins: data.total_wins });
         });
     }
+  }, [user]);
+
+  // Check for accepted challenges that need host to join (on page load/refresh)
+  useEffect(() => {
+    if (!user) return;
+
+    const checkForAcceptedChallenges = async () => {
+      const { data: challenges } = await supabase
+        .from('streak_challenges')
+        .select('*')
+        .eq('host_id', user.id)
+        .eq('status', 'in_progress')
+        .not('share_code', 'is', null)
+        .is('started_at', null)
+        .not('opponent_id', 'is', null);
+
+      if (challenges && challenges.length > 0) {
+        // Show the most recent accepted challenge
+        setPendingJoinChallenge(challenges[0] as Challenge);
+      }
+    };
+
+    checkForAcceptedChallenges();
   }, [user]);
 
   const handleChallengeUser = (userId: string, username: string) => {
