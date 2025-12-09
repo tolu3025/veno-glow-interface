@@ -24,12 +24,41 @@ const StreakAnalyticsPage = () => {
   const navigate = useNavigate();
   const [challengeStats, setChallengeStats] = useState<ChallengeStats | null>(null);
   
-  useEffect(() => {
+  const fetchStats = async () => {
     if (user) {
-      supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single()
-        .then(({ data }) => {
-          if (data) setChallengeStats(data);
-        });
+      const { data } = await supabase
+        .from('user_challenge_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      if (data) setChallengeStats(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+
+    // Real-time subscription for updates
+    if (user) {
+      const channel = supabase
+        .channel('analytics-stats-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_challenge_stats',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchStats();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
   
