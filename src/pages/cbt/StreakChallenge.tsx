@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Trophy, Zap, ArrowLeft, Link } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/providers/AuthProvider';
 import { useOnlineUsers } from '@/hooks/useOnlineUsers';
-import { useChallengeSubscription } from '@/hooks/useChallengeSubscription';
+import { useChallengeSubscription, Challenge } from '@/hooks/useChallengeSubscription';
 import { OnlineUsersList } from '@/components/challenge/OnlineUsersList';
 import { ChallengeSetupModal } from '@/components/challenge/ChallengeSetupModal';
 import { CreateChallengeLinkModal } from '@/components/challenge/CreateChallengeLinkModal';
@@ -14,8 +14,8 @@ import { IncomingChallengePopup } from '@/components/challenge/IncomingChallenge
 import { BattleArena } from '@/components/challenge/BattleArena';
 import { ChallengeResults } from '@/components/challenge/ChallengeResults';
 import { WaitingForOpponent } from '@/components/challenge/WaitingForOpponent';
+import { PendingChallenges } from '@/components/challenge/PendingChallenges';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
 
 const StreakChallenge = () => {
   const navigate = useNavigate();
@@ -49,6 +49,11 @@ const StreakChallenge = () => {
     const challenge = await acceptChallenge(incomingChallenge.challenge.id);
     if (challenge) setActiveChallenge(challenge);
   };
+
+  // Handle when a link-based challenge is accepted by someone
+  const handleLinkChallengeAccepted = useCallback((challenge: Challenge) => {
+    setActiveChallenge(challenge);
+  }, []);
 
   const handleBattleComplete = async (score: number) => {
     if (!activeChallenge || !user) return;
@@ -208,6 +213,11 @@ const StreakChallenge = () => {
             <div className="text-2xl font-bold">{userStats.totalWins}</div>
             <div className="text-sm text-muted-foreground">Total Wins</div>
           </Card>
+        </div>
+
+        {/* Pending Challenges Section */}
+        <div className="mb-6">
+          <PendingChallenges onChallengeAccepted={handleLinkChallengeAccepted} />
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
