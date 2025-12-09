@@ -67,19 +67,20 @@ export const PendingChallenges: React.FC<PendingChallengesProps> = ({ onChalleng
         },
         (payload) => {
           const challenge = payload.new as Challenge;
+          const oldChallenge = payload.old as Challenge;
           
-          // Check if a pending link challenge was just accepted
-          if (challenge.status === 'in_progress' && challenge.share_code) {
+          // Check if a pending link challenge was just accepted (opponent joined)
+          if (challenge.status === 'in_progress' && challenge.share_code && oldChallenge.status === 'pending') {
             // Remove from pending list
             setPendingChallenges(prev => prev.filter(c => c.id !== challenge.id));
             
             // Notify the host and allow them to join
             toast({
-              title: 'Challenge Accepted!',
-              description: 'Your challenge has been accepted. Joining battle...',
+              title: 'Challenge Accepted! 🎉',
+              description: 'Your opponent is waiting. Click to join the battle!',
             });
             
-            // Trigger the battle arena for the host
+            // Trigger the callback to show host the join prompt
             onChallengeAccepted(challenge);
           }
           

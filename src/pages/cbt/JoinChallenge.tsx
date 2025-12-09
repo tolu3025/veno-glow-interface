@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { BattleArena } from '@/components/challenge/BattleArena';
 import { WaitingForOpponent } from '@/components/challenge/WaitingForOpponent';
 import { ChallengeResults } from '@/components/challenge/ChallengeResults';
+import { OpponentWaitingRoom } from '@/components/challenge/OpponentWaitingRoom';
 
 const JoinChallenge = () => {
   const { shareCode } = useParams<{ shareCode: string }>();
@@ -24,6 +25,7 @@ const JoinChallenge = () => {
   const [activeChallenge, setActiveChallenge] = useState<any>(null);
   const [waitingState, setWaitingState] = useState<{ challengeId: string; yourScore: number; totalQuestions: number; isHost: boolean } | null>(null);
   const [battleResult, setBattleResult] = useState<any>(null);
+  const [waitingForHost, setWaitingForHost] = useState<any>(null);
 
   useEffect(() => {
     // Don't fetch until we know the auth state
@@ -157,10 +159,11 @@ const JoinChallenge = () => {
 
       toast({
         title: 'Challenge accepted!',
-        description: 'The battle is starting...',
+        description: 'Waiting for host to join...',
       });
 
-      setActiveChallenge(updatedChallenge);
+      // Show waiting room for opponent instead of going directly to battle
+      setWaitingForHost(updatedChallenge);
     } catch (err) {
       console.error('Error joining challenge:', err);
       toast({
@@ -171,6 +174,11 @@ const JoinChallenge = () => {
     } finally {
       setIsJoining(false);
     }
+  };
+
+  const handleBothReady = (readyChallenge: any) => {
+    setWaitingForHost(null);
+    setActiveChallenge(readyChallenge);
   };
 
   const handleBattleComplete = async (score: number) => {
@@ -222,6 +230,17 @@ const JoinChallenge = () => {
     });
     setWaitingState(null);
   };
+
+  // Render opponent waiting room (after accepting, waiting for host)
+  if (waitingForHost) {
+    return (
+      <OpponentWaitingRoom
+        challenge={waitingForHost}
+        hostName={hostProfile?.display_name || hostProfile?.email?.split('@')[0] || 'Host'}
+        onBothReady={handleBothReady}
+      />
+    );
+  }
 
   // Render battle arena if challenge is active
   if (activeChallenge) {
