@@ -15,6 +15,7 @@ import { BattleArena } from '@/components/challenge/BattleArena';
 import { ChallengeResults } from '@/components/challenge/ChallengeResults';
 import { WaitingForOpponent } from '@/components/challenge/WaitingForOpponent';
 import { PendingChallenges } from '@/components/challenge/PendingChallenges';
+import { HostJoinPrompt } from '@/components/challenge/HostJoinPrompt';
 import { supabase } from '@/integrations/supabase/client';
 
 const StreakChallenge = () => {
@@ -29,6 +30,7 @@ const StreakChallenge = () => {
   const [userStats, setUserStats] = useState({ currentStreak: 0, highestStreak: 0, totalWins: 0 });
   const [battleResult, setBattleResult] = useState<any>(null);
   const [waitingState, setWaitingState] = useState<{ challengeId: string; yourScore: number; totalQuestions: number; isHost: boolean } | null>(null);
+  const [pendingJoinChallenge, setPendingJoinChallenge] = useState<Challenge | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -50,8 +52,15 @@ const StreakChallenge = () => {
     if (challenge) setActiveChallenge(challenge);
   };
 
-  // Handle when a link-based challenge is accepted by someone
+  // Handle when a link-based challenge is accepted by someone - show join prompt
   const handleLinkChallengeAccepted = useCallback((challenge: Challenge) => {
+    // Show the host join prompt instead of immediately entering battle
+    setPendingJoinChallenge(challenge);
+  }, []);
+
+  // Handle when host clicks "Join Battle" 
+  const handleHostJoinBattle = useCallback((challenge: Challenge) => {
+    setPendingJoinChallenge(null);
     setActiveChallenge(challenge);
   }, []);
 
@@ -114,6 +123,17 @@ const StreakChallenge = () => {
         yourScore={waitingState.yourScore}
         totalQuestions={waitingState.totalQuestions}
         onBothFinished={handleBothFinished}
+      />
+    );
+  }
+
+  // Show host join prompt when their link challenge is accepted
+  if (pendingJoinChallenge) {
+    return (
+      <HostJoinPrompt
+        challenge={pendingJoinChallenge}
+        onJoin={handleHostJoinBattle}
+        onDismiss={() => setPendingJoinChallenge(null)}
       />
     );
   }
