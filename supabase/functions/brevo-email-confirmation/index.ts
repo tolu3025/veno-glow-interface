@@ -14,21 +14,18 @@ interface EmailRequest {
 
 const getEmailTemplate = (name: string, actionUrl: string, type: 'confirmation' | 'password_reset') => {
   const isPasswordReset = type === 'password_reset';
-  const title = isPasswordReset ? '🔐 Password Reset Request' : '✉️ Email Verification';
-  const subject = isPasswordReset ? '🔐 Password Reset Request - VenoBot' : '✉️ Confirm Your Email - VenoBot';
-  const buttonText = isPasswordReset ? 'Reset My Password' : 'Verify My Email';
+  const title = isPasswordReset ? 'Reset Your Password' : 'Confirm Your Email';
+  const subject = isPasswordReset ? 'Reset Your VenoBot Password' : 'Confirm Your VenoBot Account';
+  const buttonText = isPasswordReset ? 'Reset Password' : 'Confirm Email';
   const mainMessage = isPasswordReset 
-    ? 'We received a request to reset your password for your <strong>VenoBot</strong> account.'
-    : 'Welcome to <strong>VenoBot</strong>! Please verify your email address to complete your registration.';
-  const actionPrompt = isPasswordReset 
-    ? 'Click the button below to securely reset your password:'
-    : 'Click the button below to verify your email:';
-  const securityNote = isPasswordReset
+    ? 'We received a request to reset your password. Click the button below to create a new password:'
+    : 'Thank you for joining VenoBot! Please confirm your email address to unlock all features and start your learning journey:';
+  const expiryMessage = isPasswordReset 
+    ? 'This link will expire in 1 hour for security reasons.'
+    : 'This link will expire in 24 hours for security reasons.';
+  const ignoreMessage = isPasswordReset
     ? "If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged."
-    : "If you didn't create an account with VenoBot, you can safely ignore this email.";
-  const footerNote = isPasswordReset
-    ? 'For security reasons, we cannot reset your password without clicking the link above.'
-    : 'For security reasons, we cannot verify your account without clicking the link above.';
+    : "If you didn't create an account with VenoBot, please ignore this email.";
 
   return {
     subject,
@@ -40,90 +37,119 @@ const getEmailTemplate = (name: string, actionUrl: string, type: 'confirmation' 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>${title}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #1a1a2e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #1a1a2e;">
+<body style="margin: 0; padding: 0; background-color: #f0fdf4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f0fdf4;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #16213e; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;">
           
-          <!-- Blue Header -->
+          <!-- Header with Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); padding: 40px 30px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 16px;">${isPasswordReset ? '🔐' : '✉️'}</div>
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">${title}</h1>
+            <td style="background: linear-gradient(135deg, #166534 0%, #15803d 50%, #22c55e 100%); border-radius: 16px 16px 0 0; padding: 40px 30px; text-align: center;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center;">
+                    <!-- Logo Circle -->
+                    <div style="width: 80px; height: 80px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; display: inline-block; line-height: 80px;">
+                      <span style="font-size: 40px; color: #ffffff; font-weight: bold;">V</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">VenoBot</h1>
+                    <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500;">Smart Learning, Better Results</p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Main Content -->
           <tr>
-            <td style="background-color: #1e2a47; padding: 40px 30px;">
+            <td style="background-color: #ffffff; padding: 40px 30px;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <!-- Icon -->
+                <tr>
+                  <td style="text-align: center; padding-bottom: 24px;">
+                    <div style="width: 64px; height: 64px; background-color: #dcfce7; border-radius: 50%; margin: 0 auto; display: inline-block; line-height: 64px;">
+                      <span style="font-size: 28px;">${isPasswordReset ? '🔐' : '✉️'}</span>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Title -->
+                <tr>
+                  <td style="text-align: center; padding-bottom: 16px;">
+                    <h2 style="margin: 0; color: #166534; font-size: 24px; font-weight: 600;">${title}</h2>
+                  </td>
+                </tr>
                 
                 <!-- Greeting -->
                 <tr>
                   <td style="padding-bottom: 16px;">
-                    <p style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 600;">Hello${name ? ', ' + name : ''},</p>
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">Hello${name ? ' <strong>' + name + '</strong>' : ''},</p>
                   </td>
                 </tr>
                 
                 <!-- Main Message -->
                 <tr>
-                  <td style="padding-bottom: 16px;">
-                    <p style="margin: 0; color: #b8c5d6; font-size: 16px; line-height: 1.6;">${mainMessage}</p>
-                  </td>
-                </tr>
-                
-                <!-- Action Prompt -->
-                <tr>
                   <td style="padding-bottom: 28px;">
-                    <p style="margin: 0; color: #b8c5d6; font-size: 16px; line-height: 1.6;">${actionPrompt}</p>
+                    <p style="margin: 0; color: #4b5563; font-size: 15px; line-height: 1.7;">${mainMessage}</p>
                   </td>
                 </tr>
                 
                 <!-- CTA Button -->
                 <tr>
                   <td style="text-align: center; padding-bottom: 28px;">
-                    <a href="${actionUrl}" style="display: inline-block; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 8px; font-size: 18px; font-weight: 600; box-shadow: 0 4px 15px rgba(0, 102, 204, 0.4);">${buttonText}</a>
+                    <a href="${actionUrl}" style="display: inline-block; background: linear-gradient(135deg, #166534 0%, #15803d 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.3);">${buttonText}</a>
+                  </td>
+                </tr>
+                
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 20px 0;">
+                    <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);"></div>
                   </td>
                 </tr>
                 
                 <!-- Alternative Link -->
                 <tr>
-                  <td style="padding-bottom: 12px;">
-                    <p style="margin: 0; color: #8899aa; font-size: 14px;">Or copy and paste this link into your browser:</p>
+                  <td style="padding-bottom: 16px;">
+                    <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">If the button doesn't work, copy and paste this link into your browser:</p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding-bottom: 24px;">
-                    <div style="background-color: #0d1528; padding: 16px; border-radius: 8px; word-break: break-all;">
-                      <a href="${actionUrl}" style="color: #4da6ff; text-decoration: none; font-size: 14px; line-height: 1.5;">${actionUrl}</a>
-                    </div>
+                    <p style="margin: 0; background-color: #f3f4f6; padding: 12px 16px; border-radius: 8px; word-break: break-all;">
+                      <a href="${actionUrl}" style="color: #166534; text-decoration: none; font-size: 12px;">${actionUrl}</a>
+                    </p>
                   </td>
                 </tr>
                 
-                <!-- Expiry Warning -->
+                <!-- Expiry Notice -->
                 <tr>
                   <td style="padding-bottom: 24px;">
-                    <div style="background-color: #3d2a00; border-left: 4px solid #ffaa00; padding: 16px; border-radius: 0 8px 8px 0;">
-                      <p style="margin: 0; color: #ffd699; font-size: 14px;">
-                        <strong style="color: #ffaa00;">⚠️ Important:</strong> This link will expire in <strong style="color: #ffaa00;">15 minutes</strong> for security reasons.
-                      </p>
+                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; color: #92400e; font-size: 13px;">⏰ ${expiryMessage}</p>
                     </div>
                   </td>
                 </tr>
                 
                 <!-- Security Notice -->
                 <tr>
-                  <td style="padding-bottom: 16px;">
-                    <p style="margin: 0; color: #8899aa; font-size: 14px; line-height: 1.6;">${securityNote}</p>
-                  </td>
-                </tr>
-                
-                <!-- Footer Note -->
-                <tr>
                   <td>
-                    <p style="margin: 0; color: #667788; font-size: 13px; line-height: 1.5;">${footerNote}</p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 13px; line-height: 1.6; font-style: italic;">${ignoreMessage}</p>
                   </td>
                 </tr>
               </table>
@@ -132,9 +158,43 @@ const getEmailTemplate = (name: string, actionUrl: string, type: 'confirmation' 
           
           <!-- Footer -->
           <tr>
-            <td style="border-top: 1px solid #2a3a50; padding: 24px 30px; text-align: center;">
-              <p style="margin: 0; color: #22c55e; font-size: 14px; font-weight: 600;">VenoBot</p>
-              <p style="margin: 8px 0 0; color: #667788; font-size: 12px;">Your AI-Powered Learning Companion</p>
+            <td style="background-color: #166534; border-radius: 0 0 16px 16px; padding: 30px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center; padding-bottom: 16px;">
+                    <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500;">Stay Connected</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center; padding-bottom: 20px;">
+                    <!-- Social Links -->
+                    <a href="https://twitter.com/venobot" style="display: inline-block; width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 6px; line-height: 36px; text-decoration: none;">
+                      <span style="color: #ffffff; font-size: 14px;">𝕏</span>
+                    </a>
+                    <a href="https://facebook.com/venobot" style="display: inline-block; width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 6px; line-height: 36px; text-decoration: none;">
+                      <span style="color: #ffffff; font-size: 14px;">f</span>
+                    </a>
+                    <a href="https://instagram.com/venobot" style="display: inline-block; width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 6px; line-height: 36px; text-decoration: none;">
+                      <span style="color: #ffffff; font-size: 14px;">📷</span>
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center; padding-bottom: 12px;">
+                    <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">
+                      Need help? Contact us at <a href="mailto:support@venobot.online" style="color: #86efac; text-decoration: none;">support@venobot.online</a>
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0; color: rgba(255,255,255,0.5); font-size: 11px;">
+                      © ${new Date().getFullYear()} VenoBot. All rights reserved.<br>
+                      <a href="https://venobot.online" style="color: rgba(255,255,255,0.6); text-decoration: none;">venobot.online</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
