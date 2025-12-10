@@ -11,20 +11,21 @@ import { VenoLogo } from '@/components/ui/logo';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 interface AuthPageProps {
   initialMode?: 'login' | 'signup';
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
-  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,24 +66,52 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
     }
   };
 
-  const sendCustomConfirmationEmail = async (userEmail: string, confirmationUrl: string) => {
+  const sendCustomEmail = async (userEmail: string, actionUrl: string, type: 'confirmation' | 'password_reset') => {
     try {
-      console.log('Sending custom confirmation email to:', userEmail);
+      console.log(`Sending custom ${type} email to:`, userEmail);
       const { error } = await supabase.functions.invoke('brevo-email-confirmation', {
         body: {
           email: userEmail,
           name: userEmail.split('@')[0],
-          confirmationUrl: confirmationUrl,
+          confirmationUrl: actionUrl,
+          type: type,
         },
       });
 
       if (error) {
-        console.error('Error sending custom confirmation email:', error);
+        console.error(`Error sending custom ${type} email:`, error);
       } else {
-        console.log('Custom confirmation email sent successfully');
+        console.log(`Custom ${type} email sent successfully`);
       }
     } catch (err) {
-      console.error('Failed to send custom confirmation email:', err);
+      console.error(`Failed to send custom ${type} email:`, err);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const redirectUrl = `${window.location.origin}/auth?mode=reset`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        // Send custom password reset email
+        await sendCustomEmail(email, redirectUrl, 'password_reset');
+        setResetEmailSent(true);
+        toast.success('Password reset email sent! Check your inbox.');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,9 +147,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
         } else {
           // Send custom confirmation email via Brevo
           if (data?.user?.id) {
-            // Generate a confirmation URL using the Supabase confirmation endpoint
             const confirmationUrl = `https://oavauprgngpftanumlzs.supabase.co/auth/v1/verify?token=${data.user.id}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
-            await sendCustomConfirmationEmail(email, confirmationUrl);
+            await sendCustomEmail(email, confirmationUrl, 'confirmation');
           }
           toast.success('Please check your email to confirm your account');
         }
@@ -150,9 +178,90 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
     }
   };
 
+  // Forgot Password View
+  if (mode === 'forgot-password') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
+        <Card className="w-full max-w-md border-primary/20">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <VenoLogo className="h-8 w-8" />
+              <span className="text-2xl font-bold">VenoBot</span>
+            </div>
+            <CardTitle className="text-2xl text-center">
+              {resetEmailSent ? 'Check Your Email' : 'Reset Password'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {resetEmailSent 
+                ? 'We sent a password reset link to your email' 
+                : 'Enter your email to receive a password reset link'
+              }
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {resetEmailSent ? (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-3xl">📧</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the email? Check your spam folder or try again.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setResetEmailSent(false)}
+                  className="w-full"
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Send Reset Link
+                </Button>
+              </form>
+            )}
+          </CardContent>
+
+          <CardFooter>
+            <button
+              onClick={() => {
+                setMode('login');
+                setResetEmailSent(false);
+              }}
+              className="text-primary hover:underline font-medium text-sm w-full text-center flex items-center justify-center gap-2"
+              disabled={loading}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Sign In
+            </button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
+      <Card className="w-full max-w-md border-primary/20">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center gap-2 mb-4">
             <VenoLogo className="h-8 w-8" />
@@ -210,7 +319,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot-password')}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Input
                   id="password"
