@@ -1,6 +1,4 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -226,51 +224,42 @@ serve(async (req) => {
     console.log(`Sending ${type} email to:`, email);
     console.log("Action URL:", confirmationUrl);
     
-    // Check if SMTP password is set
-    const smtpPassword = Deno.env.get("BREVO_SMTP_PASSWORD");
-    if (!smtpPassword) {
-      console.error("BREVO_SMTP_PASSWORD is not set in environment variables");
-      throw new Error("SMTP configuration is incomplete");
+    // Check if API key is set
+    const apiKey = Deno.env.get("BREVO_API_KEY");
+    if (!apiKey) {
+      console.error("BREVO_API_KEY is not set in environment variables");
+      throw new Error("Email API configuration is incomplete");
     }
-    
-    // Setup SMTP client with Brevo settings
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp-relay.brevo.com",
-        port: 587,
-        tls: true,
-        auth: {
-          username: "89756a003@smtp-brevo.com",
-          password: smtpPassword,
-        },
-      },
-    });
 
     const displayName = name || email.split('@')[0];
     const emailContent = getEmailTemplate(displayName, confirmationUrl, type);
 
-    // Send the email
-    await client.send({
-      from: {
-        address: "bot@venobot.online",
-        name: "VenoBot",
+    // Send the email using Brevo REST API
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': apiKey,
       },
-      to: [
-        {
-          address: email,
-          name: displayName,
-        },
-      ],
-      subject: emailContent.subject,
-      html: emailContent.html,
+      body: JSON.stringify({
+        sender: { name: 'VenoBot', email: 'bot@venobot.online' },
+        to: [{ email: email, name: displayName }],
+        subject: emailContent.subject,
+        htmlContent: emailContent.html,
+      })
     });
 
-    // Close the connection
-    await client.close();
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Brevo API error:", errorData);
+      throw new Error(errorData.message || "Failed to send email");
+    }
+
+    const result = await response.json();
+    console.log(`${type} email sent successfully to:`, email, "Message ID:", result.messageId);
     
-    console.log(`${type} email sent successfully to:`, email);
-    
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, messageId: result.messageId }), {
       status: 200,
       headers: { 
         "Content-Type": "application/json",
