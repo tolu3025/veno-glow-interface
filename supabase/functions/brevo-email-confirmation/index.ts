@@ -11,7 +11,204 @@ interface EmailRequest {
   email: string;
   name?: string;
   confirmationUrl: string;
+  type?: 'confirmation' | 'password_reset';
 }
+
+const getEmailTemplate = (name: string, actionUrl: string, type: 'confirmation' | 'password_reset') => {
+  const isPasswordReset = type === 'password_reset';
+  const title = isPasswordReset ? 'Reset Your Password' : 'Confirm Your Email';
+  const subject = isPasswordReset ? 'Reset Your VenoBot Password' : 'Confirm Your VenoBot Account';
+  const buttonText = isPasswordReset ? 'Reset Password' : 'Confirm Email';
+  const mainMessage = isPasswordReset 
+    ? 'We received a request to reset your password. Click the button below to create a new password:'
+    : 'Thank you for joining VenoBot! Please confirm your email address to unlock all features and start your learning journey:';
+  const expiryMessage = isPasswordReset 
+    ? 'This link will expire in 1 hour for security reasons.'
+    : 'This link will expire in 24 hours for security reasons.';
+  const ignoreMessage = isPasswordReset
+    ? "If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged."
+    : "If you didn't create an account with VenoBot, please ignore this email.";
+
+  return {
+    subject,
+    html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${title}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f0fdf4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f0fdf4;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;">
+          
+          <!-- Header with Logo -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #166534 0%, #15803d 50%, #22c55e 100%); border-radius: 16px 16px 0 0; padding: 40px 30px; text-align: center;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center;">
+                    <!-- Logo Circle -->
+                    <div style="width: 80px; height: 80px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; display: inline-block; line-height: 80px;">
+                      <span style="font-size: 40px; color: #ffffff; font-weight: bold;">V</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">VenoBot</h1>
+                    <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500;">Smart Learning, Better Results</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="background-color: #ffffff; padding: 40px 30px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <!-- Icon -->
+                <tr>
+                  <td style="text-align: center; padding-bottom: 24px;">
+                    <div style="width: 64px; height: 64px; background-color: #dcfce7; border-radius: 50%; margin: 0 auto; display: inline-block; line-height: 64px;">
+                      <span style="font-size: 28px;">${isPasswordReset ? '🔐' : '✉️'}</span>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Title -->
+                <tr>
+                  <td style="text-align: center; padding-bottom: 16px;">
+                    <h2 style="margin: 0; color: #166534; font-size: 24px; font-weight: 600;">${title}</h2>
+                  </td>
+                </tr>
+                
+                <!-- Greeting -->
+                <tr>
+                  <td style="padding-bottom: 16px;">
+                    <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.6;">Hello${name ? ' <strong>' + name + '</strong>' : ''},</p>
+                  </td>
+                </tr>
+                
+                <!-- Main Message -->
+                <tr>
+                  <td style="padding-bottom: 28px;">
+                    <p style="margin: 0; color: #4b5563; font-size: 15px; line-height: 1.7;">${mainMessage}</p>
+                  </td>
+                </tr>
+                
+                <!-- CTA Button -->
+                <tr>
+                  <td style="text-align: center; padding-bottom: 28px;">
+                    <a href="${actionUrl}" style="display: inline-block; background: linear-gradient(135deg, #166534 0%, #15803d 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.3);">${buttonText}</a>
+                  </td>
+                </tr>
+                
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 20px 0;">
+                    <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);"></div>
+                  </td>
+                </tr>
+                
+                <!-- Alternative Link -->
+                <tr>
+                  <td style="padding-bottom: 16px;">
+                    <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">If the button doesn't work, copy and paste this link into your browser:</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 24px;">
+                    <p style="margin: 0; background-color: #f3f4f6; padding: 12px 16px; border-radius: 8px; word-break: break-all;">
+                      <a href="${actionUrl}" style="color: #166534; text-decoration: none; font-size: 12px;">${actionUrl}</a>
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Expiry Notice -->
+                <tr>
+                  <td style="padding-bottom: 24px;">
+                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0;">
+                      <p style="margin: 0; color: #92400e; font-size: 13px;">⏰ ${expiryMessage}</p>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Security Notice -->
+                <tr>
+                  <td>
+                    <p style="margin: 0; color: #9ca3af; font-size: 13px; line-height: 1.6; font-style: italic;">${ignoreMessage}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #166534; border-radius: 0 0 16px 16px; padding: 30px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center; padding-bottom: 16px;">
+                    <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500;">Stay Connected</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center; padding-bottom: 20px;">
+                    <!-- Social Links -->
+                    <a href="https://twitter.com/venobot" style="display: inline-block; width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 6px; line-height: 36px; text-decoration: none;">
+                      <span style="color: #ffffff; font-size: 14px;">𝕏</span>
+                    </a>
+                    <a href="https://facebook.com/venobot" style="display: inline-block; width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 6px; line-height: 36px; text-decoration: none;">
+                      <span style="color: #ffffff; font-size: 14px;">f</span>
+                    </a>
+                    <a href="https://instagram.com/venobot" style="display: inline-block; width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 6px; line-height: 36px; text-decoration: none;">
+                      <span style="color: #ffffff; font-size: 14px;">📷</span>
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center; padding-bottom: 12px;">
+                    <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">
+                      Need help? Contact us at <a href="mailto:support@venobot.online" style="color: #86efac; text-decoration: none;">support@venobot.online</a>
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0; color: rgba(255,255,255,0.5); font-size: 11px;">
+                      © ${new Date().getFullYear()} VenoBot. All rights reserved.<br>
+                      <a href="https://venobot.online" style="color: rgba(255,255,255,0.6); text-decoration: none;">venobot.online</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `
+  };
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -20,14 +217,14 @@ serve(async (req) => {
   }
   
   try {
-    const { email, name, confirmationUrl }: EmailRequest = await req.json();
+    const { email, name, confirmationUrl, type = 'confirmation' }: EmailRequest = await req.json();
     
     if (!email || !confirmationUrl) {
       throw new Error("Email and confirmationUrl are required");
     }
 
-    console.log("Sending confirmation email to:", email);
-    console.log("Confirmation URL:", confirmationUrl);
+    console.log(`Sending ${type} email to:`, email);
+    console.log("Action URL:", confirmationUrl);
     
     // Check if SMTP password is set
     const smtpPassword = Deno.env.get("BREVO_SMTP_PASSWORD");
@@ -49,196 +246,29 @@ serve(async (req) => {
       },
     });
 
-    // Prepare HTML for the email
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Confirm Your Veno Education Account</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-          
-          body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f9fafb;
-          }
-          .email-container {
-            max-width: 600px;
-            margin: 20px auto;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-          }
-          .header {
-            background-color: #165B33;
-            padding: 24px;
-            text-align: center;
-          }
-          .logo-container {
-            margin-bottom: 12px;
-          }
-          .logo {
-            width: 120px;
-            height: auto;
-          }
-          .logo-text {
-            color: white;
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0;
-          }
-          .tagline {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 16px;
-            margin-top: 8px;
-          }
-          .content {
-            padding: 32px 24px;
-            background-color: #ffffff;
-            border-left: 1px solid #e5e7eb;
-            border-right: 1px solid #e5e7eb;
-          }
-          .footer {
-            background-color: #165B33;
-            color: rgba(255, 255, 255, 0.9);
-            text-align: center;
-            padding: 16px 24px;
-            font-size: 14px;
-            border-radius: 0 0 8px 8px;
-          }
-          .footer p {
-            margin: 6px 0;
-          }
-          h1 {
-            color: #165B33;
-            margin-top: 0;
-            font-size: 24px;
-            font-weight: 600;
-          }
-          p {
-            margin-bottom: 16px;
-            color: #4b5563;
-          }
-          .highlight {
-            color: #165B33;
-            font-weight: 500;
-          }
-          .button {
-            display: inline-block;
-            background-color: #165B33;
-            color: #ffffff !important;
-            font-weight: 600;
-            text-decoration: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            margin: 24px 0;
-            text-align: center;
-            transition: background-color 0.2s ease;
-          }
-          .button:hover {
-            background-color: #0e4425;
-          }
-          .divider {
-            height: 1px;
-            background-color: #e5e7eb;
-            margin: 24px 0;
-          }
-          .confirmation-link {
-            word-break: break-all;
-            color: #165B33;
-            text-decoration: underline;
-          }
-          .contact-info {
-            font-size: 14px;
-            color: #6b7280;
-          }
-          .social-links {
-            margin-top: 16px;
-          }
-          .social-link {
-            display: inline-block;
-            margin: 0 8px;
-            color: white;
-            text-decoration: none;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-container">
-          <div class="header">
-            <div class="logo-container">
-              <img src="https://oavauprgngpftanumlzs.supabase.co/storage/v1/object/public/public-assets/veno-logo.png" alt="Veno Logo" class="logo">
-            </div>
-            <h1 class="logo-text">Veno Education</h1>
-            <p class="tagline">Empowering Learning Through Innovation</p>
-          </div>
-          
-          <div class="content">
-            <h1>Confirm Your Email Address</h1>
-            
-            <p>Hello${name ? ' ' + name : ''},</p>
-            
-            <p>Thank you for choosing <span class="highlight">Veno Education</span>! We're excited to have you join our community of learners and educators.</p>
-            
-            <p>To access all our platform features and ensure the security of your account, please confirm your email address by clicking the button below:</p>
-            
-            <div style="text-align: center;">
-              <a href="${confirmationUrl}" class="button">Confirm Email Address</a>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-            
-            <p><a href="${confirmationUrl}" class="confirmation-link">${confirmationUrl}</a></p>
-            
-            <p>This link will expire in 24 hours for security reasons.</p>
-            
-            <p class="contact-info">If you did not create an account with Veno Education or have any questions, please contact our support team at <a href="mailto:support@venoeducation.com">support@venoeducation.com</a>.</p>
-            
-            <p>Best regards,<br><span class="highlight">The Veno Education Team</span></p>
-          </div>
-          
-          <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Veno Education. All rights reserved.</p>
-            <p>123 Education Street, Learning City, VC 12345</p>
-            <div class="social-links">
-              <a href="#" class="social-link">Twitter</a> |
-              <a href="#" class="social-link">Facebook</a> |
-              <a href="#" class="social-link">LinkedIn</a>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const displayName = name || email.split('@')[0];
+    const emailContent = getEmailTemplate(displayName, confirmationUrl, type);
 
     // Send the email
     await client.send({
       from: {
         address: "bot@venobot.online",
-        name: "Veno",
+        name: "VenoBot",
       },
       to: [
         {
           address: email,
-          name: name || email,
+          name: displayName,
         },
       ],
-      subject: "Confirm Your Veno Education Account",
-      html: htmlContent,
+      subject: emailContent.subject,
+      html: emailContent.html,
     });
 
     // Close the connection
     await client.close();
     
-    console.log("Email sent successfully to:", email);
+    console.log(`${type} email sent successfully to:`, email);
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -249,7 +279,7 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error("Error sending confirmation email:", error);
+    console.error("Error sending email:", error);
     
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

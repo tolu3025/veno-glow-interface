@@ -1912,8 +1912,8 @@ export type Database = {
       dblink_connect_u: { Args: { "": string }; Returns: string }
       dblink_current_query: { Args: never; Returns: string }
       dblink_disconnect:
-        | { Args: { "": string }; Returns: string }
         | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
       dblink_error_message: { Args: { "": string }; Returns: string }
       dblink_exec: { Args: { "": string }; Returns: string }
       dblink_fdw_validator: {
@@ -1922,8 +1922,8 @@ export type Database = {
       }
       dblink_get_connections: { Args: never; Returns: string[] }
       dblink_get_notify:
-        | { Args: never; Returns: Record<string, unknown>[] }
         | { Args: { conname: string }; Returns: Record<string, unknown>[] }
+        | { Args: never; Returns: Record<string, unknown>[] }
       dblink_get_pkey: {
         Args: { "": string }
         Returns: Database["public"]["CompositeTypes"]["dblink_pkey_results"][]
