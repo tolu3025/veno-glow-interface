@@ -5,7 +5,7 @@ const BotPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate('/maintenance');
+    navigate('/ai-assistant');
   }, [navigate]);
 
   return null;

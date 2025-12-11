@@ -20,6 +20,7 @@ const MainLayout = () => {
   const mainLinks = [
     { name: "Home", path: "/" },
     { name: "CBT", path: "/cbt" },
+    { name: "AI Assistant", path: "/ai-assistant" },
     { name: "Streak Challenge", path: "/cbt/streak-challenge" },
     { name: "Blog", path: "https://venoblog.online", external: true }
   ];

@@ -51,6 +51,7 @@ import ContactPage from "./pages/ContactPage";
 import ServicesPage from "./pages/ServicesPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 import StreakAnalyticsPage from "./pages/StreakAnalyticsPage";
+import AIStudyAssistant from "./pages/AIStudyAssistant";
 
 import "./functions/appendToActivities";
 
@@ -189,6 +190,9 @@ const AppRoutes = () => {
           
           {/* Bot route - adding it here as a regular route */}
           <Route path="/bot" element={<BotPage />} />
+          
+          {/* AI Study Assistant route */}
+          <Route path="/ai-assistant" element={<AIStudyAssistant />} />
           
           {/* Streak analytics route */}
           <Route path="/streak-analytics" element={<StreakAnalyticsPage />} />

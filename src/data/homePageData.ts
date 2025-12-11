@@ -1,7 +1,14 @@
 
-import { Book, BookOpen, Bot, FileText, CheckCircle, Flame } from "lucide-react";
+import { Book, BookOpen, Bot, FileText, CheckCircle, Flame, Sparkles } from "lucide-react";
 
 export const bannerSlides = [
+  {
+    title: "AI Study Assistant",
+    subtitle: "Your intelligent learning companion. Upload documents, generate questions, solve problems, and get expert explanations across all subjects.",
+    background: "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600",
+    primaryButton: { text: "Start Learning", link: "/ai-assistant" },
+    secondaryButton: { text: "Learn More", link: "/ai-assistant" }
+  },
   {
     title: "Challenge Your Friends",
     subtitle: "Battle other players in real-time PvP CBT challenges. Build your streak, climb the leaderboard, and prove you're the best!",
@@ -35,6 +42,11 @@ export const tutorials = [
 ];
 
 export const features = [
+  {
+    title: "AI Study Assistant",
+    description: "Upload documents, generate questions, solve problems with step-by-step explanations across all subjects.",
+    icon: Sparkles,
+  },
   {
     title: "Personalized Learning Paths",
     description: "Customized study plans and recommendations based on your learning style and goals.",

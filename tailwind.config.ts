@@ -27,7 +27,8 @@ export default {
         sans: ["var(--font-sans)", "Inter", ...fontFamily.sans],
         heading: ["Montserrat", "sans-serif"],
         handwriting: ["Dancing Script", "cursive"],
-        body: ["Inter", "sans-serif"]
+        body: ["Inter", "sans-serif"],
+        comfortaa: ["Comfortaa", "cursive"],
       },
       colors: {
         border: "hsl(var(--border))",
