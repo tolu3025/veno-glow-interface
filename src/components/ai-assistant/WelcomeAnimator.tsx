@@ -78,7 +78,7 @@ const WelcomeAnimator: React.FC<WelcomeAnimatorProps> = ({ userName, onComplete,
         className="flex flex-col items-center justify-center py-12 px-4"
       >
         <div className="text-center">
-          <h2 className="font-comfortaa text-2xl md:text-3xl lg:text-4xl font-semibold text-primary">
+          <h2 className="font-heading text-2xl md:text-3xl lg:text-4xl font-semibold text-primary">
             {displayText}
             <span 
               className={`inline-block w-0.5 h-8 md:h-10 bg-primary ml-1 align-middle transition-opacity duration-100 ${
@@ -100,7 +100,7 @@ const WelcomeAnimator: React.FC<WelcomeAnimatorProps> = ({ userName, onComplete,
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 0.7, scale: 1 }}
               transition={{ delay: 1.5 + index * 0.1 }}
-              className="px-3 py-1.5 text-xs md:text-sm bg-muted rounded-full text-muted-foreground font-comfortaa"
+              className="px-3 py-1.5 text-xs md:text-sm bg-muted rounded-full text-muted-foreground"
             >
               {suggestion}
             </motion.span>

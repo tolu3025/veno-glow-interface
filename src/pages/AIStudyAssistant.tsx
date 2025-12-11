@@ -214,7 +214,7 @@ const AIStudyAssistant: React.FC = () => {
             </Button>
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              <h1 className="font-comfortaa font-semibold text-lg">AI Study Assistant</h1>
+              <h1 className="font-heading font-semibold text-lg">AI Study Assistant</h1>
             </div>
           </div>
         </div>
@@ -294,7 +294,7 @@ const AIStudyAssistant: React.FC = () => {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask anything... Generate questions, solve problems, create study notes..."
-                className="min-h-[52px] max-h-[200px] resize-none font-comfortaa text-sm"
+                className="min-h-[52px] max-h-[200px] resize-none text-sm"
                 rows={1}
               />
               <Button
@@ -311,7 +311,7 @@ const AIStudyAssistant: React.FC = () => {
               </Button>
             </div>
 
-            <p className="text-xs text-center text-muted-foreground font-comfortaa">
+            <p className="text-xs text-center text-muted-foreground">
               VenoBot AI can make mistakes. Verify important information.
             </p>
           </div>
