@@ -81,6 +81,47 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
     return null;
   };
 
+  const extractDocumentText = async (file: File): Promise<string> => {
+    try {
+      // Read file as base64
+      const base64 = await readFileAsBase64(file);
+      
+      // Call backend to extract text
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-document-text`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            fileData: base64,
+            fileName: file.name,
+            fileType: file.type,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to extract text');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.text) {
+        console.log(`Extracted ${result.charCount} characters from ${file.name}`);
+        return result.text;
+      } else {
+        throw new Error(result.error || 'No text extracted');
+      }
+    } catch (error) {
+      console.error('Document extraction error:', error);
+      throw error;
+    }
+  };
+
   const processFile = async (file: File, type: 'document' | 'image'): Promise<UploadedFile> => {
     const id = Math.random().toString(36).substring(7);
 
@@ -95,25 +136,34 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
       };
     }
 
-    // For documents - extract text content where possible
+    // For documents - extract text using backend
     const extension = file.name.split('.').pop()?.toLowerCase();
     let content = '';
     
     if (extension === 'txt') {
-      // Plain text files can be read directly
+      // Plain text files can be read directly in browser
       content = await readFileAsText(file);
+    } else if (extension === 'pdf' || extension === 'docx' || extension === 'doc') {
+      // Use backend extraction for PDF/DOCX
+      toast.info(`Extracting text from ${file.name}...`);
+      try {
+        content = await extractDocumentText(file);
+      } catch (error) {
+        console.error('Extraction failed:', error);
+        content = `[Document: ${file.name}] - Text extraction failed. Please describe the content or paste text directly.`;
+      }
     } else {
-      // For PDF/DOCX, read as base64 and include in context
-      // The AI will be informed about the document
-      const base64 = await readFileAsBase64(file);
-      content = `=== Document: ${file.name} ===\n[Document type: ${extension?.toUpperCase()}]\n[File uploaded for analysis - AI will process based on available context]\n\nNote: This is a ${extension?.toUpperCase()} file. Please describe what information you need from this document, and I'll help you to the best of my ability based on any text content that can be extracted.`;
+      content = `[Unsupported document format: ${file.name}]`;
     }
+
+    // Add file metadata header
+    const finalContent = `=== Document: ${file.name} ===\n${content}`;
 
     return {
       id,
       name: file.name,
       type: 'document',
-      content,
+      content: finalContent,
     };
   };
 
