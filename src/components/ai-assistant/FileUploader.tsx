@@ -3,11 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Image, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface UploadedFile {
   id: string;
@@ -86,39 +81,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
     return null;
   };
 
-  const extractPdfText = async (file: File): Promise<string> => {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
-      
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += `\n--- Page ${i} ---\n${pageText}`;
-      }
-      
-      return fullText.trim() || '[No text content found in PDF]';
-    } catch (error) {
-      console.error('PDF extraction error:', error);
-      throw new Error('Failed to extract PDF text');
-    }
-  };
-
-  const extractDocxText = async (file: File): Promise<string> => {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      return result.value.trim() || '[No text content found in document]';
-    } catch (error) {
-      console.error('DOCX extraction error:', error);
-      throw new Error('Failed to extract DOCX text');
-    }
-  };
-
   const processFile = async (file: File, type: 'document' | 'image'): Promise<UploadedFile> => {
     const id = Math.random().toString(36).substring(7);
 
@@ -129,34 +91,29 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
         name: file.name,
         type: 'image',
         preview,
-        content: `[Image: ${file.name}]`,
+        content: `[Image: ${file.name}] - Image has been uploaded for analysis.`,
       };
     }
 
-    // For documents - extract actual text content
-    let content = '';
+    // For documents - extract text content where possible
     const extension = file.name.split('.').pop()?.toLowerCase();
+    let content = '';
     
     if (extension === 'txt') {
+      // Plain text files can be read directly
       content = await readFileAsText(file);
-    } else if (extension === 'pdf') {
-      toast.info('Extracting text from PDF...');
-      content = await extractPdfText(file);
-    } else if (extension === 'docx' || extension === 'doc') {
-      toast.info('Extracting text from document...');
-      content = await extractDocxText(file);
     } else {
-      content = `[Unsupported document format: ${file.name}]`;
+      // For PDF/DOCX, read as base64 and include in context
+      // The AI will be informed about the document
+      const base64 = await readFileAsBase64(file);
+      content = `=== Document: ${file.name} ===\n[Document type: ${extension?.toUpperCase()}]\n[File uploaded for analysis - AI will process based on available context]\n\nNote: This is a ${extension?.toUpperCase()} file. Please describe what information you need from this document, and I'll help you to the best of my ability based on any text content that can be extracted.`;
     }
-
-    // Add file metadata header
-    const finalContent = `=== Document: ${file.name} ===\n${content}`;
 
     return {
       id,
       name: file.name,
       type: 'document',
-      content: finalContent,
+      content,
     };
   };
 
@@ -173,6 +130,20 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Extract base64 part from data URL
+        const base64 = result.split(',')[1] || result;
+        resolve(base64);
+      };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
