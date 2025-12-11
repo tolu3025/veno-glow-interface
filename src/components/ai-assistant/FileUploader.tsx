@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Image, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface UploadedFile {
   id: string;
@@ -44,6 +49,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
       try {
         const processedFile = await processFile(file, fileType);
         newFiles.push(processedFile);
+        toast.success(`Processed: ${file.name}`);
       } catch (error) {
         console.error('Error processing file:', error);
         toast.error(`Failed to process: ${file.name}`);
@@ -80,6 +86,39 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
     return null;
   };
 
+  const extractPdfText = async (file: File): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += `\n--- Page ${i} ---\n${pageText}`;
+      }
+      
+      return fullText.trim() || '[No text content found in PDF]';
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      throw new Error('Failed to extract PDF text');
+    }
+  };
+
+  const extractDocxText = async (file: File): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value.trim() || '[No text content found in document]';
+    } catch (error) {
+      console.error('DOCX extraction error:', error);
+      throw new Error('Failed to extract DOCX text');
+    }
+  };
+
   const processFile = async (file: File, type: 'document' | 'image'): Promise<UploadedFile> => {
     const id = Math.random().toString(36).substring(7);
 
@@ -90,25 +129,34 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
         name: file.name,
         type: 'image',
         preview,
-        content: `[Image uploaded: ${file.name}]`,
+        content: `[Image: ${file.name}]`,
       };
     }
 
-    // For documents
+    // For documents - extract actual text content
     let content = '';
-    if (file.name.endsWith('.txt')) {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (extension === 'txt') {
       content = await readFileAsText(file);
+    } else if (extension === 'pdf') {
+      toast.info('Extracting text from PDF...');
+      content = await extractPdfText(file);
+    } else if (extension === 'docx' || extension === 'doc') {
+      toast.info('Extracting text from document...');
+      content = await extractDocxText(file);
     } else {
-      // For PDF and DOCX, we'll send them to AI for processing
-      content = `[Document uploaded: ${file.name}] - The document content will be extracted and analyzed.`;
-      toast.info('Document uploaded. AI will analyze its content.');
+      content = `[Unsupported document format: ${file.name}]`;
     }
+
+    // Add file metadata header
+    const finalContent = `=== Document: ${file.name} ===\n${content}`;
 
     return {
       id,
       name: file.name,
       type: 'document',
-      content,
+      content: finalContent,
     };
   };
 
@@ -170,7 +218,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
         ) : (
           <Upload className="w-4 h-4" />
         )}
-        Upload Files
+        {isProcessing ? 'Processing...' : 'Upload Files'}
       </Button>
 
       <AnimatePresence>

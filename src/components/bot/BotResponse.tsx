@@ -11,6 +11,14 @@ interface BotResponseProps {
 }
 
 const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
+  // Pre-process text to convert \( \) and \[ \] to $ and $$ notation
+  // which remark-math expects
+  const processedMessage = message
+    .replace(/\\\(/g, '$')
+    .replace(/\\\)/g, '$')
+    .replace(/\\\[/g, '$$')
+    .replace(/\\\]/g, '$$');
+
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none break-words">
       <ReactMarkdown
@@ -113,7 +121,7 @@ const BotResponse: React.FC<BotResponseProps> = ({ message }) => {
           }
         }}
       >
-        {message}
+        {processedMessage}
       </ReactMarkdown>
     </div>
   );
