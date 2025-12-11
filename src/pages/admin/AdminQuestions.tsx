@@ -10,6 +10,7 @@ import { Trash2, Edit, Plus, Wand2, Upload, X, FileText, Settings, FolderEdit, S
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import LaTeXText from '@/components/ui/latex-text';
 
 interface Question {
   id: string;
@@ -596,7 +597,9 @@ const AdminQuestions = () => {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{question.question}</CardTitle>
+                  <CardTitle className="text-lg">
+                    <LaTeXText>{question.question}</LaTeXText>
+                  </CardTitle>
                   <CardDescription>
                     Subject: {question.subject} | Difficulty: {question.difficulty}
                     {question.topic && ` | Topic: ${question.topic}`}
@@ -642,7 +645,7 @@ const AdminQuestions = () => {
                       <Badge variant={index === question.answer ? "default" : "secondary"}>
                         {String.fromCharCode(65 + index)}
                       </Badge>
-                      <span>{option}</span>
+                      <span><LaTeXText>{option}</LaTeXText></span>
                       {index === question.answer && (
                         <Badge variant="default" className="ml-auto">Correct</Badge>
                       )}
@@ -652,8 +655,8 @@ const AdminQuestions = () => {
                   )
                 }
                 {question.explanation && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded">
-                    <strong>Explanation:</strong> {question.explanation}
+                  <div className="mt-4 p-3 bg-muted rounded">
+                    <strong>Explanation:</strong> <LaTeXText>{question.explanation}</LaTeXText>
                   </div>
                 )}
               </div>

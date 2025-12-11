@@ -48,7 +48,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isStreaming })
             : 'bg-card border border-border rounded-tl-sm'
         }`}>
           {isUser ? (
-            <p className="text-sm md:text-base whitespace-pre-wrap font-comfortaa">{content}</p>
+            <p className="text-sm md:text-base whitespace-pre-wrap">{content}</p>
           ) : (
             <div className="text-sm md:text-base">
               <BotResponse message={content} />

@@ -33,18 +33,26 @@ serve(async (req) => {
 
     // Check if this is a mathematical subject that needs LaTeX formatting
     const isMathematicalSubject = (subjectName: string) => {
-      const mathSubjects = ['mathematics', 'physics', 'chemistry', 'engineering', 'calculus', 'algebra', 'geometry', 'statistics'];
+      const mathSubjects = [
+        'mathematics', 'math', 'maths', 'physics', 'chemistry', 'engineering', 
+        'calculus', 'algebra', 'geometry', 'statistics', 'linear algebra',
+        'trigonometry', 'differential', 'integral', 'mechanics', 'thermodynamics',
+        'electronics', 'accounting', 'economics', 'finance', 'quantitative'
+      ];
       return mathSubjects.some(mathSub => subjectName.toLowerCase().includes(mathSub));
     };
 
-    const isMatematical = isMathematicalSubject(subject);
+    const topicName = topic || '';
+    const isMatematical = isMathematicalSubject(subject) || isMathematicalSubject(topicName);
     const hasCalculationRequest = description && (
       description.toLowerCase().includes('calculation') ||
       description.toLowerCase().includes('formula') ||
       description.toLowerCase().includes('equation') ||
       description.toLowerCase().includes('step') ||
       description.toLowerCase().includes('solve') ||
-      description.toLowerCase().includes('derivation')
+      description.toLowerCase().includes('derivation') ||
+      description.toLowerCase().includes('matrix') ||
+      description.toLowerCase().includes('vector')
     );
 
     const shouldFormatMath = isMatematical || hasCalculationRequest;
@@ -56,22 +64,34 @@ serve(async (req) => {
     if (shouldFormatMath) {
       formatInstructions = `
 
-IMPORTANT - Mathematical Formatting Requirements:
-- Use LaTeX notation for all mathematical expressions in questions, options, and explanations
-- Inline math: Use $...$ for inline formulas (e.g., $x^2 + 1$)
-- Display math: Use $$...$$ for centered equations (e.g., $$\\frac{d}{dx}[x^2] = 2x$$)
-- Include step-by-step calculations in explanations using proper LaTeX
-- Format fractions as $\\frac{numerator}{denominator}$
-- Use proper notation for functions, derivatives, integrals, etc.
-- For physics: Include units and proper scientific notation
-- Show detailed working steps in explanations with clear mathematical reasoning
+CRITICAL - Mathematical Formatting Requirements:
+You MUST format all mathematical content properly using these EXACT rules:
 
-Example explanation format:
-"Step 1: Apply the formula $F = ma$
-$$F = (5 \\text{ kg})(2 \\text{ m/s}^2) = 10 \\text{ N}$$
+1. For INLINE math (within text): Use \\( ... \\) notation
+   Example: "Find the value of \\(x\\) when \\(2x + 5 = 15\\)"
 
-Step 2: Calculate the work done
-$$W = F \\cdot d = 10 \\text{ N} \\times 3 \\text{ m} = 30 \\text{ J}$$"`;
+2. For DISPLAY math (centered equations): Use \\[ ... \\] notation
+   Example: "\\[x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\\]"
+
+3. Matrix notation:
+   \\[\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}\\]
+
+4. Fractions: \\(\\frac{numerator}{denominator}\\)
+
+5. Subscripts/Superscripts: \\(x_1\\), \\(x^2\\), \\(a_{ij}\\)
+
+6. Greek letters: \\(\\alpha\\), \\(\\beta\\), \\(\\theta\\), \\(\\lambda\\)
+
+7. Special symbols: \\(\\sum\\), \\(\\int\\), \\(\\prod\\), \\(\\sqrt{}\\)
+
+8. For step-by-step solutions, format like:
+   "**Step 1:** Given that \\(A\\) is a \\(3 \\times 3\\) matrix...
+   
+   **Step 2:** Calculate the determinant:
+   \\[\\det(A) = a(ei - fh) - b(di - fg) + c(dh - eg)\\]"
+
+DO NOT use $ or $$ symbols - ONLY use \\( \\) for inline and \\[ \\] for display math.
+DO NOT leave mathematical expressions as plain text with dollar signs.`;
     }
 
     // Function to generate questions in batches
