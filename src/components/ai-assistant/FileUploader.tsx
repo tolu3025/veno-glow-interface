@@ -32,6 +32,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
     if (files.length === 0) return;
 
     setIsProcessing(true);
+    const newFiles: UploadedFile[] = [];
 
     for (const file of files) {
       const fileType = getFileType(file);
@@ -42,15 +43,30 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
 
       try {
         const processedFile = await processFile(file, fileType);
-        setUploadedFiles(prev => [...prev, processedFile]);
+        newFiles.push(processedFile);
       } catch (error) {
         console.error('Error processing file:', error);
         toast.error(`Failed to process: ${file.name}`);
       }
     }
 
+    // Update files and context together
+    setUploadedFiles(prev => {
+      const allFiles = [...prev, ...newFiles];
+      // Update context with new files immediately
+      const docContext = allFiles
+        .filter(f => f.type === 'document')
+        .map(f => f.content)
+        .join('\n\n');
+      const imgContext = allFiles
+        .filter(f => f.type === 'image')
+        .map(f => f.preview || f.content)
+        .join('\n');
+      onFilesProcessed(docContext, imgContext);
+      return allFiles;
+    });
+
     setIsProcessing(false);
-    updateContext();
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -115,22 +131,20 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
   };
 
   const removeFile = (id: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== id));
-    updateContext();
-  };
-
-  const updateContext = () => {
-    const documentContext = uploadedFiles
-      .filter(f => f.type === 'document')
-      .map(f => f.content)
-      .join('\n\n');
-    
-    const imageContext = uploadedFiles
-      .filter(f => f.type === 'image')
-      .map(f => f.content)
-      .join('\n');
-
-    onFilesProcessed(documentContext, imageContext);
+    setUploadedFiles(prev => {
+      const remaining = prev.filter(f => f.id !== id);
+      // Update context with remaining files
+      const docContext = remaining
+        .filter(f => f.type === 'document')
+        .map(f => f.content)
+        .join('\n\n');
+      const imgContext = remaining
+        .filter(f => f.type === 'image')
+        .map(f => f.preview || f.content)
+        .join('\n');
+      onFilesProcessed(docContext, imgContext);
+      return remaining;
+    });
   };
 
   return (
@@ -149,7 +163,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
         size="sm"
         onClick={() => fileInputRef.current?.click()}
         disabled={isProcessing}
-        className="gap-2 font-comfortaa"
+        className="gap-2"
       >
         {isProcessing ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -180,7 +194,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
                 ) : (
                   <Image className="w-4 h-4 text-primary" />
                 )}
-                <span className="max-w-[120px] truncate font-comfortaa text-xs">{file.name}</span>
+                <span className="max-w-[120px] truncate text-xs">{file.name}</span>
                 <button
                   onClick={() => removeFile(file.id)}
                   className="p-0.5 hover:bg-destructive/20 rounded"
