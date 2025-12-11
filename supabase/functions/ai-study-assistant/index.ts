@@ -12,10 +12,11 @@ serve(async (req) => {
 
   try {
     const { messages, documentContext, imageContext } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY is not configured");
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are VenoBot AI Study Assistant - an advanced educational AI with human-level reasoning capabilities. You are designed to help students and professionals learn effectively across ALL subjects and educational levels.
@@ -86,14 +87,16 @@ ${imageContext ? `\n## Image Context:\nThe user has uploaded an image. Analyze a
 
 Always be encouraging, thorough, and provide actionable learning insights.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log("Calling OpenAI API with model gpt-4o-mini");
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
@@ -103,25 +106,28 @@ Always be encouraging, thorough, and provide actionable learning insights.`;
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI API error:", response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits exhausted. Please add credits to continue." }), {
-          status: 402,
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "Invalid API key. Please check configuration." }), {
+          status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("OpenAI API response received, streaming...");
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
