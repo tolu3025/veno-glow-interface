@@ -9,8 +9,6 @@ import { toast } from 'sonner';
 import WelcomeAnimator from '@/components/ai-assistant/WelcomeAnimator';
 import ChatMessage from '@/components/ai-assistant/ChatMessage';
 import FileUploader from '@/components/ai-assistant/FileUploader';
-import RichTextPanel from '@/components/ai-assistant/RichTextPanel';
-import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -36,7 +34,6 @@ const AIStudyAssistant: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [documentContext, setDocumentContext] = useState('');
   const [imageContext, setImageContext] = useState('');
-  const [lastAssistantMessage, setLastAssistantMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -151,8 +148,6 @@ const AIStudyAssistant: React.FC = () => {
         }
       }
 
-      setLastAssistantMessage(assistantMessage);
-
       // Clear files after processing
       if (uploadedFiles.length > 0) {
         setUploadedFiles([]);
@@ -173,17 +168,6 @@ const AIStudyAssistant: React.FC = () => {
       e.preventDefault();
       sendMessage();
     }
-  };
-
-  const handleRegenerate = async () => {
-    if (messages.length < 2) return;
-    
-    // Remove last assistant message and resend
-    const lastUserMessageIndex = messages.length - 2;
-    const userMessage = messages[lastUserMessageIndex];
-    
-    setMessages(prev => prev.slice(0, -1));
-    setInput(userMessage.content);
   };
 
   if (authLoading) {
@@ -263,18 +247,6 @@ const AIStudyAssistant: React.FC = () => {
           </div>
         </div>
 
-        {/* Rich Text Panel */}
-        {lastAssistantMessage && messages.length > 0 && (
-          <div className="px-4 pb-4">
-            <div className="max-w-3xl mx-auto">
-              <RichTextPanel
-                content={lastAssistantMessage}
-                onRegenerate={handleRegenerate}
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Input Area */}
         <div className="border-t border-border bg-background p-4">
