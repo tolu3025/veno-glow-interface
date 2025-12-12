@@ -342,13 +342,6 @@ const AIStudyAssistant: React.FC = () => {
         {/* Input Area - Fixed at bottom */}
         <div className="shrink-0 border-t border-border bg-background p-4">
           <div className="w-full space-y-3">
-            {/* File Uploader */}
-            <FileUploader
-              onFilesProcessed={handleFilesProcessed}
-              uploadedFiles={uploadedFiles}
-              setUploadedFiles={setUploadedFiles}
-            />
-
             {/* Input Box - Full width */}
             <div className="flex gap-2 items-end">
               <Textarea

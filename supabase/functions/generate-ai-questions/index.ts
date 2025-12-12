@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -64,41 +63,68 @@ serve(async (req) => {
     if (shouldFormatMath) {
       formatInstructions = `
 
-CRITICAL MATHEMATICAL FORMATTING RULES:
-You MUST format all mathematical content as PLAIN TEXT. DO NOT use any LaTeX, dollar signs, or special notation.
+CRITICAL - PROPER LaTeX MATHEMATICAL FORMATTING:
+You MUST format all mathematical expressions using proper LaTeX notation.
 
-FORMATTING RULES:
-1. Write fractions as: "a/b" or "a divided by b"
-   Example: "1/2", "3/4", "x/y"
+LaTeX FORMATTING RULES:
+1. Inline math: Wrap expressions in single dollar signs
+   Example: $x^2 + 2x + 1 = 0$, $E = mc^2$
 
-2. Write exponents as: "x^2" or "x squared" or "x to the power of 2"
-   Example: "x^2 + 2x + 1", "a squared plus b squared"
+2. Fractions: Use \\frac{numerator}{denominator}
+   Example: $\\frac{1}{2}$, $\\frac{a+b}{c}$, $\\frac{dy}{dx}$
 
-3. Write square roots as: "sqrt(x)" or "square root of x"
-   Example: "sqrt(16) = 4", "square root of 25 is 5"
+3. Square roots: Use \\sqrt{expression}
+   Example: $\\sqrt{16}$, $\\sqrt{x^2 + y^2}$
 
-4. Write subscripts as: "x_1" or "x sub 1"
-   Example: "a_1, a_2, a_3", "velocity v_0"
+4. Exponents: Use ^{exponent}
+   Example: $x^{2}$, $a^{n+1}$, $e^{-x}$
 
-5. Greek letters: spell them out
-   Example: "alpha", "beta", "theta", "pi", "omega"
+5. Subscripts: Use _{subscript}
+   Example: $x_{1}$, $a_{n}$, $v_{0}$
 
-6. Special symbols:
-   - Summation: "sum of" or "Σ (sigma)"
-   - Integration: "integral of"
-   - Infinity: "infinity" or "∞"
-   - Plus/minus: "+/-" or "plus or minus"
+6. Greek letters: Use backslash notation
+   Example: $\\alpha$, $\\beta$, $\\theta$, $\\pi$, $\\omega$, $\\lambda$
 
-7. Matrices: Write as text descriptions or use simple notation
-   Example: "Matrix A = [[1, 2], [3, 4]]" or "a 2x2 matrix with elements..."
+7. Special operators:
+   - Multiplication: $\\times$ or $\\cdot$
+   - Division: $\\div$
+   - Plus/minus: $\\pm$
+   - Greater/less than or equal: $\\leq$, $\\geq$
+   - Not equal: $\\neq$
+   - Approximately: $\\approx$
+   - Infinity: $\\infty$
+   - Summation: $\\sum_{i=1}^{n}$
+   - Integral: $\\int_{a}^{b}$
 
-8. For step-by-step solutions, format like:
-   "Step 1: Given that x = 5 and y = 3...
-    Step 2: Substitute values: 2(5) + 3 = 13
-    Step 3: Therefore, the answer is 13"
+8. Logarithms: Use \\log_{base}
+   Example: $\\log_{2}(x)$, $\\log_{10}(100)$, $\\ln(x)$
 
-ABSOLUTELY NO: $, $$, \\(, \\), \\[, \\], \\frac, \\sqrt, \\begin, \\end, or any LaTeX commands.
-Write everything in plain, readable text format.`;
+9. Trigonometric functions: Use \\sin, \\cos, \\tan
+   Example: $\\sin(\\theta)$, $\\cos^{2}(x)$, $\\tan^{-1}(x)$
+
+10. For calculations with steps, format like:
+    Given: $m = 5$ kg, $a = 2$ m/s²
+    Formula: $F = ma$
+    Solution: $F = 5 \\times 2 = 10$ N
+    Answer: The force is $\\boxed{10 \\text{ N}}$
+
+EXAMPLE QUESTION:
+"Solve for x: $\\log_{2}(x^{2} - 5x + 6) = 1$"
+
+EXAMPLE OPTIONS:
+A) $x = 2$ or $x = 4$
+B) $x = 1$ or $x = 3$  
+C) $x = 4$ only
+D) $x = -1$ or $x = 4$
+
+EXAMPLE EXPLANATION:
+"Step 1: Convert to exponential form: $\\log_{2}(x^{2} - 5x + 6) = 1$ means $2^{1} = x^{2} - 5x + 6$
+Step 2: Simplify: $x^{2} - 5x + 6 = 2$
+Step 3: Rearrange: $x^{2} - 5x + 4 = 0$
+Step 4: Factor: $(x - 1)(x - 4) = 0$
+Step 5: Solve: $x = 1$ or $x = 4$
+Step 6: Check validity in original equation - both values give positive arguments for the log
+Answer: $\\boxed{x = 1 \\text{ or } x = 4}$"`;
     }
 
     // Function to generate questions in batches
@@ -111,17 +137,17 @@ Requirements:
 - Include clear explanations for correct answers
 - Questions should test real understanding
 - Make questions educational and meaningful
-${shouldFormatMath ? '- Write all mathematical expressions in plain text format (NO LaTeX, NO dollar signs)' : ''}
-${shouldFormatMath ? '- Include step-by-step solutions with calculations in plain text' : ''}
+${shouldFormatMath ? '- Use proper LaTeX notation for ALL mathematical expressions (wrap in $ signs)' : ''}
+${shouldFormatMath ? '- Include step-by-step solutions using proper mathematical notation' : ''}
 
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
     {
-      "question": "Question text here with plain text math like x^2 + 2x = 0?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "question": "Question text with proper LaTeX like $x^{2} + 2x = 0$",
+      "options": ["Option A with $formula$", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Clear explanation with step-by-step calculations in plain text format."
+      "explanation": "Clear explanation with step-by-step calculations using proper LaTeX."
     }
   ]
 }
@@ -140,7 +166,7 @@ Generate exactly ${batchSize} questions.`;
           messages: [
             { 
               role: 'system', 
-              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL: Write ALL mathematical expressions in plain text. DO NOT use LaTeX, dollar signs ($), backslashes, or any special math notation. Write fractions as "a/b", exponents as "x^2", square roots as "sqrt(x)", etc.' : ''}` 
+              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL: Format ALL mathematical expressions using proper LaTeX notation wrapped in $ signs. Use \\frac{}{} for fractions, \\sqrt{} for roots, \\log_{base}() for logarithms, ^{} for exponents, _{} for subscripts, and proper Greek letters like \\alpha, \\beta, \\theta, etc.' : ''}` 
             },
             { role: 'user', content: prompt }
           ],
@@ -213,57 +239,6 @@ Generate exactly ${batchSize} questions.`;
       return questionsData.questions;
     };
 
-    // Clean up any remaining LaTeX artifacts
-    const cleanMathContent = (text: string): string => {
-      if (!text) return text;
-      
-      // Remove dollar sign LaTeX delimiters
-      let cleaned = text.replace(/\$\$(.*?)\$\$/g, '$1');
-      cleaned = cleaned.replace(/\$(.*?)\$/g, '$1');
-      
-      // Remove backslash LaTeX delimiters
-      cleaned = cleaned.replace(/\\\[(.*?)\\\]/g, '$1');
-      cleaned = cleaned.replace(/\\\((.*?)\\\)/g, '$1');
-      
-      // Replace common LaTeX commands with plain text
-      cleaned = cleaned.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1/$2)');
-      cleaned = cleaned.replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)');
-      cleaned = cleaned.replace(/\\sqrt\[([^\]]*)\]\{([^}]*)\}/g, '$1-root($2)');
-      cleaned = cleaned.replace(/\\times/g, '×');
-      cleaned = cleaned.replace(/\\div/g, '÷');
-      cleaned = cleaned.replace(/\\pm/g, '±');
-      cleaned = cleaned.replace(/\\leq/g, '≤');
-      cleaned = cleaned.replace(/\\geq/g, '≥');
-      cleaned = cleaned.replace(/\\neq/g, '≠');
-      cleaned = cleaned.replace(/\\approx/g, '≈');
-      cleaned = cleaned.replace(/\\infty/g, '∞');
-      cleaned = cleaned.replace(/\\pi/g, 'π');
-      cleaned = cleaned.replace(/\\alpha/g, 'α');
-      cleaned = cleaned.replace(/\\beta/g, 'β');
-      cleaned = cleaned.replace(/\\gamma/g, 'γ');
-      cleaned = cleaned.replace(/\\delta/g, 'δ');
-      cleaned = cleaned.replace(/\\theta/g, 'θ');
-      cleaned = cleaned.replace(/\\lambda/g, 'λ');
-      cleaned = cleaned.replace(/\\mu/g, 'μ');
-      cleaned = cleaned.replace(/\\sigma/g, 'σ');
-      cleaned = cleaned.replace(/\\omega/g, 'ω');
-      cleaned = cleaned.replace(/\\sum/g, 'Σ');
-      cleaned = cleaned.replace(/\\int/g, '∫');
-      cleaned = cleaned.replace(/\\prod/g, 'Π');
-      
-      // Clean up subscripts and superscripts
-      cleaned = cleaned.replace(/\^{([^}]*)}/g, '^$1');
-      cleaned = cleaned.replace(/_{([^}]*)}/g, '_$1');
-      
-      // Remove remaining backslashes before common math terms
-      cleaned = cleaned.replace(/\\([a-zA-Z]+)/g, '$1');
-      
-      // Clean up extra whitespace
-      cleaned = cleaned.replace(/\s+/g, ' ').trim();
-      
-      return cleaned;
-    };
-
     // Determine batching strategy - Always ensure we generate the exact count requested
     let allQuestions = [];
     
@@ -300,21 +275,21 @@ Generate exactly ${batchSize} questions.`;
       allQuestions = await generateQuestionsInBatch(count);
     }
 
-    // Validate and clean the questions
+    // Validate the questions (keep LaTeX formatting intact)
     const validatedQuestions = allQuestions.map((q: any, index: number) => {
       if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length !== 4) {
         throw new Error(`Invalid question format at index ${index}`);
       }
       
       return {
-        question: cleanMathContent(q.question),
-        options: q.options.map((opt: string) => cleanMathContent(opt)),
+        question: q.question,
+        options: q.options,
         answer: typeof q.answer === 'number' ? q.answer : 0,
-        explanation: cleanMathContent(q.explanation || 'No explanation provided')
+        explanation: q.explanation || 'No explanation provided'
       };
     });
 
-    console.log(`Successfully generated ${validatedQuestions.length} questions${shouldFormatMath ? ' with plain text math formatting' : ''}`);
+    console.log(`Successfully generated ${validatedQuestions.length} questions${shouldFormatMath ? ' with LaTeX math formatting' : ''}`);
 
     return new Response(JSON.stringify({ 
       success: true,
