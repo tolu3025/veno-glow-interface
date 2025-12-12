@@ -45,6 +45,16 @@ interface QuestionsListProps {
   fetchTestQuestions: () => Promise<void>;
 }
 
+// Preprocess LaTeX to convert \( \) and \[ \] to $ and $$ for remark-math
+const preprocessLatex = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/\\\(/g, '$')
+    .replace(/\\\)/g, '$')
+    .replace(/\\\[/g, '$$')
+    .replace(/\\\]/g, '$$');
+};
+
 export const QuestionsList = ({
   questions,
   loadingQuestions,
@@ -248,7 +258,7 @@ export const QuestionsList = ({
                         p: ({ children }) => <p>{children}</p>,
                       }}
                     >
-                      {question.question}
+                      {preprocessLatex(question.question)}
                     </ReactMarkdown>
                   </div>
                   <div className="space-y-2">
@@ -273,7 +283,7 @@ export const QuestionsList = ({
                                 p: ({ children }) => <span>{children}</span>,
                               }}
                             >
-                              {option}
+                              {preprocessLatex(option)}
                             </ReactMarkdown>
                           </div>
                           {optionIndex === question.answer && (
@@ -297,7 +307,7 @@ export const QuestionsList = ({
                                 p: ({ children }) => <p className="text-blue-700 dark:text-blue-300/90">{children}</p>,
                               }}
                             >
-                              {question.explanation}
+                              {preprocessLatex(question.explanation || '')}
                             </ReactMarkdown>
                           </div>
                         </div>

@@ -43,7 +43,12 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   const [resultsVisibility, setResultsVisibility] = useState('public');
 
   const isMathematicalSubject = (subjectName: string) => {
-    const mathSubjects = ['mathematics', 'physics', 'chemistry', 'engineering', 'calculus', 'algebra', 'geometry', 'statistics'];
+    const mathSubjects = [
+      'mathematics', 'math', 'maths', 'physics', 'chemistry', 'engineering', 
+      'calculus', 'algebra', 'geometry', 'statistics', 'linear algebra',
+      'trigonometry', 'differential', 'integral', 'mechanics', 'thermodynamics',
+      'electronics', 'accounting', 'economics', 'finance', 'quantitative'
+    ];
     return mathSubjects.some(mathSub => subjectName.toLowerCase().includes(mathSub));
   };
 

@@ -64,45 +64,47 @@ serve(async (req) => {
       formatInstructions = `
 
 CRITICAL - MATHEMATICAL FORMATTING RULES:
-Format all mathematical expressions using SIMPLE LaTeX notation that renders correctly.
+Format all mathematical expressions using LaTeX with \\( \\) for inline math and \\[ \\] for display math.
 
 MUST FOLLOW THESE EXACT RULES:
-1. Wrap ALL math expressions in single dollar signs: $expression$
-2. Use simple notation - AVOID complex environments like \\begin{pmatrix}, \\begin{bmatrix}
+1. Wrap ALL inline math expressions with \\( and \\): \\(expression\\)
+2. Wrap ALL display/block math with \\[ and \\]: \\[expression\\]
+3. Use simple notation - AVOID complex environments like \\begin{pmatrix}, \\begin{bmatrix}
 
 CORRECT EXAMPLES (USE THESE):
-- Equations: $x^2 - 4x + 3 = 0$
-- Fractions: $\\frac{1}{3}$, $\\frac{x^3}{3}$
-- Integrals: $\\int_0^1 x^2 dx$
-- Logarithms: $\\log_2(x) = 5$
-- Square roots: $\\sqrt{16} = 4$
-- Exponents: $2^5 = 32$
-- Vectors: Given $\\vec{a} = [1, 2]$, $\\vec{b} = [3, 4]$, compute $\\vec{a} \\cdot \\vec{b}$
-- Matrices: For matrix A with elements (2,1), (1,3), find determinant = $ad - bc$
-- Trig: $\\sin(\\theta)$, $\\cos(x)$
-- Greek: $\\alpha$, $\\beta$, $\\pi$
+- Equations: Solve for x: \\(x^2 - 4x + 3 = 0\\)
+- Fractions: \\(\\frac{1}{3}\\), \\(\\frac{x^3}{3}\\)
+- Integrals: \\(\\int_0^1 x^2 dx\\)
+- Logarithms: \\(\\log_2(x) = 5\\)
+- Square roots: \\(\\sqrt{16} = 4\\)
+- Exponents: \\(2^5 = 32\\)
+- Vectors: Given \\(\\vec{a} = [1, 2]\\), \\(\\vec{b} = [3, 4]\\), compute \\(\\vec{a} \\cdot \\vec{b}\\)
+- Matrices: For matrix A with elements (2,1), (1,3), find determinant = \\(ad - bc\\)
+- Trig: \\(\\sin(\\theta)\\), \\(\\cos(x)\\)
+- Greek: \\(\\alpha\\), \\(\\beta\\), \\(\\pi\\)
+- Multiplication: \\(2 \\times 3 = 6\\)
 
 WRONG (DO NOT USE):
-- $\\begin{pmatrix}$ or any \\begin{} environments
-- Raw text like "log_2" without dollar signs
-- Complex LaTeX that may not render
+- $expression$ notation - use \\( \\) instead
+- \\begin{pmatrix} or any \\begin{} environments
+- Raw text like "log_2" without LaTeX delimiters
 
 FOR MATRICES AND VECTORS:
 - Describe matrices in words: "Let A be a 2×2 matrix with entries..."
 - Or use simple notation: "Matrix A = [[2,1],[1,3]]"
-- Calculate and show final answer: "det(A) = (2)(3) - (1)(1) = 5"
+- Calculate and show final answer: "det(A) = \\((2)(3) - (1)(1) = 5\\)"
 
 EXAMPLE QUESTION FORMAT:
-"Solve for x: $x^2 - 4x + 3 = 0$"
+"Solve for x: \\(x^2 - 4x + 3 = 0\\)"
 
 EXAMPLE OPTIONS:
-A. 1 and 3
-B. 2 and 4
-C. -1 and -3
-D. 1 and 4
+A. \\(x = 1\\) and \\(x = 3\\)
+B. \\(x = 2\\) and \\(x = 4\\)
+C. \\(x = -1\\) and \\(x = -3\\)
+D. \\(x = 1\\) and \\(x = 4\\)
 
 EXAMPLE EXPLANATION:
-"Factor: $(x - 1)(x - 3) = 0$ so $x = 1$ and $x = 3$."`;
+"Factor: \\((x - 1)(x - 3) = 0\\) so \\(x = 1\\) and \\(x = 3\\)."`;
     }
 
     // Function to generate questions in batches
@@ -115,14 +117,14 @@ Requirements:
 - Include clear explanations for correct answers
 - Questions should test real understanding
 - Make questions educational and meaningful
-${shouldFormatMath ? '- Use SIMPLE LaTeX notation (wrap in $ signs) - AVOID \\\\begin{} environments' : ''}
+${shouldFormatMath ? '- Use LaTeX notation with \\\\( \\\\) for inline math and \\\\[ \\\\] for display math - AVOID \\\\begin{} environments' : ''}
 ${shouldFormatMath ? '- For matrices, describe in words or use simple notation like [[a,b],[c,d]]' : ''}
 
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
     {
-      "question": "Question text with proper LaTeX like $x^{2} + 2x = 0$",
+      "question": "Question text with proper LaTeX like \\(x^{2} + 2x = 0\\)",
       "options": ["Option A with $formula$", "Option B", "Option C", "Option D"],
       "answer": 0,
       "explanation": "Clear explanation with step-by-step calculations using proper LaTeX."
@@ -144,7 +146,7 @@ Generate exactly ${batchSize} questions.`;
           messages: [
             { 
               role: 'system', 
-              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL: Use SIMPLE LaTeX notation wrapped in $ signs. NEVER use \\\\begin{pmatrix}, \\\\begin{bmatrix} or any \\\\begin{} environments. For matrices, describe in words or use notation like [[a,b],[c,d]]. Use $\\\\frac{a}{b}$, $\\\\sqrt{x}$, $\\\\log_2(x)$, $x^2$, etc.' : ''}` 
+              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL: Use LaTeX with \\\\( \\\\) for inline math and \\\\[ \\\\] for display math. NEVER use $ signs or \\\\begin{pmatrix}, \\\\begin{bmatrix} or any \\\\begin{} environments. For matrices, describe in words or use notation like [[a,b],[c,d]]. Use \\\\(\\\\frac{a}{b}\\\\), \\\\(\\\\sqrt{x}\\\\), \\\\(\\\\log_2(x)\\\\), \\\\(x^2\\\\), etc.' : ''}` 
             },
             { role: 'user', content: prompt }
           ],
