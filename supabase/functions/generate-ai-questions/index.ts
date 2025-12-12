@@ -64,34 +64,41 @@ serve(async (req) => {
     if (shouldFormatMath) {
       formatInstructions = `
 
-CRITICAL - Mathematical Formatting Requirements:
-You MUST format all mathematical content properly using these EXACT rules:
+CRITICAL MATHEMATICAL FORMATTING RULES:
+You MUST format all mathematical content as PLAIN TEXT. DO NOT use any LaTeX, dollar signs, or special notation.
 
-1. For INLINE math (within text): Use \\( ... \\) notation
-   Example: "Find the value of \\(x\\) when \\(2x + 5 = 15\\)"
+FORMATTING RULES:
+1. Write fractions as: "a/b" or "a divided by b"
+   Example: "1/2", "3/4", "x/y"
 
-2. For DISPLAY math (centered equations): Use \\[ ... \\] notation
-   Example: "\\[x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\\]"
+2. Write exponents as: "x^2" or "x squared" or "x to the power of 2"
+   Example: "x^2 + 2x + 1", "a squared plus b squared"
 
-3. Matrix notation:
-   \\[\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}\\]
+3. Write square roots as: "sqrt(x)" or "square root of x"
+   Example: "sqrt(16) = 4", "square root of 25 is 5"
 
-4. Fractions: \\(\\frac{numerator}{denominator}\\)
+4. Write subscripts as: "x_1" or "x sub 1"
+   Example: "a_1, a_2, a_3", "velocity v_0"
 
-5. Subscripts/Superscripts: \\(x_1\\), \\(x^2\\), \\(a_{ij}\\)
+5. Greek letters: spell them out
+   Example: "alpha", "beta", "theta", "pi", "omega"
 
-6. Greek letters: \\(\\alpha\\), \\(\\beta\\), \\(\\theta\\), \\(\\lambda\\)
+6. Special symbols:
+   - Summation: "sum of" or "Σ (sigma)"
+   - Integration: "integral of"
+   - Infinity: "infinity" or "∞"
+   - Plus/minus: "+/-" or "plus or minus"
 
-7. Special symbols: \\(\\sum\\), \\(\\int\\), \\(\\prod\\), \\(\\sqrt{}\\)
+7. Matrices: Write as text descriptions or use simple notation
+   Example: "Matrix A = [[1, 2], [3, 4]]" or "a 2x2 matrix with elements..."
 
 8. For step-by-step solutions, format like:
-   "**Step 1:** Given that \\(A\\) is a \\(3 \\times 3\\) matrix...
-   
-   **Step 2:** Calculate the determinant:
-   \\[\\det(A) = a(ei - fh) - b(di - fg) + c(dh - eg)\\]"
+   "Step 1: Given that x = 5 and y = 3...
+    Step 2: Substitute values: 2(5) + 3 = 13
+    Step 3: Therefore, the answer is 13"
 
-DO NOT use $ or $$ symbols - ONLY use \\( \\) for inline and \\[ \\] for display math.
-DO NOT leave mathematical expressions as plain text with dollar signs.`;
+ABSOLUTELY NO: $, $$, \\(, \\), \\[, \\], \\frac, \\sqrt, \\begin, \\end, or any LaTeX commands.
+Write everything in plain, readable text format.`;
     }
 
     // Function to generate questions in batches
@@ -104,25 +111,17 @@ Requirements:
 - Include clear explanations for correct answers
 - Questions should test real understanding
 - Make questions educational and meaningful
-${shouldFormatMath ? '- Use proper LaTeX formatting for all mathematical content' : ''}
-${shouldFormatMath ? '- Include step-by-step solutions with calculations where appropriate' : ''}
-
-CRITICAL JSON FORMATTING RULES:
-- Return ONLY valid JSON - no additional text before or after
-- For LaTeX expressions: Use single backslashes (\\) not double (\\\\)
-- Escape all special characters properly in JSON strings
-- Use proper JSON string escaping for quotes and backslashes
-- Ensure all strings are properly terminated
-- Do not include line breaks within JSON string values
+${shouldFormatMath ? '- Write all mathematical expressions in plain text format (NO LaTeX, NO dollar signs)' : ''}
+${shouldFormatMath ? '- Include step-by-step solutions with calculations in plain text' : ''}
 
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
     {
-      "question": "Question text here${shouldFormatMath ? ' with $LaTeX$ formatting if needed' : ''}?",
+      "question": "Question text here with plain text math like x^2 + 2x = 0?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Clear explanation${shouldFormatMath ? ' with step-by-step calculations using LaTeX formatting' : ''} of why this answer is correct."
+      "explanation": "Clear explanation with step-by-step calculations in plain text format."
     }
   ]
 }
@@ -141,7 +140,7 @@ Generate exactly ${batchSize} questions.`;
           messages: [
             { 
               role: 'system', 
-              content: `You are an expert educator specialized in creating high-quality educational questions${shouldFormatMath ? ' with proper mathematical formatting using LaTeX' : ''}. You MUST respond with valid JSON only - no additional text. Ensure proper JSON escaping for all special characters including backslashes in LaTeX expressions.${shouldFormatMath ? ' When dealing with mathematical content, use LaTeX notation extensively for formulas, equations, and calculations.' : ''}` 
+              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL: Write ALL mathematical expressions in plain text. DO NOT use LaTeX, dollar signs ($), backslashes, or any special math notation. Write fractions as "a/b", exponents as "x^2", square roots as "sqrt(x)", etc.' : ''}` 
             },
             { role: 'user', content: prompt }
           ],
@@ -214,6 +213,57 @@ Generate exactly ${batchSize} questions.`;
       return questionsData.questions;
     };
 
+    // Clean up any remaining LaTeX artifacts
+    const cleanMathContent = (text: string): string => {
+      if (!text) return text;
+      
+      // Remove dollar sign LaTeX delimiters
+      let cleaned = text.replace(/\$\$(.*?)\$\$/g, '$1');
+      cleaned = cleaned.replace(/\$(.*?)\$/g, '$1');
+      
+      // Remove backslash LaTeX delimiters
+      cleaned = cleaned.replace(/\\\[(.*?)\\\]/g, '$1');
+      cleaned = cleaned.replace(/\\\((.*?)\\\)/g, '$1');
+      
+      // Replace common LaTeX commands with plain text
+      cleaned = cleaned.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1/$2)');
+      cleaned = cleaned.replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)');
+      cleaned = cleaned.replace(/\\sqrt\[([^\]]*)\]\{([^}]*)\}/g, '$1-root($2)');
+      cleaned = cleaned.replace(/\\times/g, '×');
+      cleaned = cleaned.replace(/\\div/g, '÷');
+      cleaned = cleaned.replace(/\\pm/g, '±');
+      cleaned = cleaned.replace(/\\leq/g, '≤');
+      cleaned = cleaned.replace(/\\geq/g, '≥');
+      cleaned = cleaned.replace(/\\neq/g, '≠');
+      cleaned = cleaned.replace(/\\approx/g, '≈');
+      cleaned = cleaned.replace(/\\infty/g, '∞');
+      cleaned = cleaned.replace(/\\pi/g, 'π');
+      cleaned = cleaned.replace(/\\alpha/g, 'α');
+      cleaned = cleaned.replace(/\\beta/g, 'β');
+      cleaned = cleaned.replace(/\\gamma/g, 'γ');
+      cleaned = cleaned.replace(/\\delta/g, 'δ');
+      cleaned = cleaned.replace(/\\theta/g, 'θ');
+      cleaned = cleaned.replace(/\\lambda/g, 'λ');
+      cleaned = cleaned.replace(/\\mu/g, 'μ');
+      cleaned = cleaned.replace(/\\sigma/g, 'σ');
+      cleaned = cleaned.replace(/\\omega/g, 'ω');
+      cleaned = cleaned.replace(/\\sum/g, 'Σ');
+      cleaned = cleaned.replace(/\\int/g, '∫');
+      cleaned = cleaned.replace(/\\prod/g, 'Π');
+      
+      // Clean up subscripts and superscripts
+      cleaned = cleaned.replace(/\^{([^}]*)}/g, '^$1');
+      cleaned = cleaned.replace(/_{([^}]*)}/g, '_$1');
+      
+      // Remove remaining backslashes before common math terms
+      cleaned = cleaned.replace(/\\([a-zA-Z]+)/g, '$1');
+      
+      // Clean up extra whitespace
+      cleaned = cleaned.replace(/\s+/g, ' ').trim();
+      
+      return cleaned;
+    };
+
     // Determine batching strategy - Always ensure we generate the exact count requested
     let allQuestions = [];
     
@@ -257,14 +307,14 @@ Generate exactly ${batchSize} questions.`;
       }
       
       return {
-        question: q.question,
-        options: q.options,
+        question: cleanMathContent(q.question),
+        options: q.options.map((opt: string) => cleanMathContent(opt)),
         answer: typeof q.answer === 'number' ? q.answer : 0,
-        explanation: q.explanation || 'No explanation provided'
+        explanation: cleanMathContent(q.explanation || 'No explanation provided')
       };
     });
 
-    console.log(`Successfully generated ${validatedQuestions.length} questions${shouldFormatMath ? ' with mathematical formatting' : ''}`);
+    console.log(`Successfully generated ${validatedQuestions.length} questions${shouldFormatMath ? ' with plain text math formatting' : ''}`);
 
     return new Response(JSON.stringify({ 
       success: true,
