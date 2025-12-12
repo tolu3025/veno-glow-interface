@@ -35,19 +35,23 @@ const AIStudyAssistant: React.FC = () => {
   const [documentContext, setDocumentContext] = useState('');
   const [imageContext, setImageContext] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const userName = user?.user_metadata?.display_name || 
                    user?.email?.split('@')[0] || 
                    'Learner';
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Scroll to bottom without animation to prevent shaking
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -59,6 +63,7 @@ const AIStudyAssistant: React.FC = () => {
   const handleFilesProcessed = useCallback((docContext: string, imgContext: string) => {
     setDocumentContext(docContext);
     setImageContext(imgContext);
+    console.log('Document context updated:', docContext.length, 'characters');
   }, []);
 
   const handleWelcomeComplete = () => {
@@ -85,13 +90,16 @@ const AIStudyAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Log the context being sent
+      console.log('Sending to AI with document context:', documentContext.length, 'characters');
+      
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-study-assistant`,
+        `https://oavauprgngpftanumlzs.supabase.co/functions/v1/ai-study-assistant`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hdmF1cHJnbmdwZnRhbnVtbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2NjAwNzcsImV4cCI6MjA1MDIzNjA3N30.KSCyROzMVdoW0_lrknnbx6TmabgZTEdsDNVZ67zuKyg`,
           },
           body: JSON.stringify({
             messages: newMessages.map(m => ({ role: m.role, content: m.content })),
@@ -172,21 +180,17 @@ const AIStudyAssistant: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-      >
-        <div className="container flex items-center justify-between h-14 px-4">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Compact Header */}
+      <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
+        <div className="flex items-center justify-between h-12 px-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -202,22 +206,28 @@ const AIStudyAssistant: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.header>
+      </header>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="max-w-3xl mx-auto">
-            {/* Welcome Animation */}
-            {showWelcome && messages.length === 0 && (
+      {/* Chat Area - Full width, no constraints */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{ minHeight: 0 }}
+      >
+        <div className="w-full px-4 py-4">
+          {/* Welcome Animation */}
+          {showWelcome && messages.length === 0 && (
+            <div className="flex justify-center py-8">
               <WelcomeAnimator
                 userName={userName}
                 onComplete={handleWelcomeComplete}
                 isTyping={isTyping}
               />
-            )}
+            </div>
+          )}
 
-            {/* Messages */}
+          {/* Messages - Full width */}
+          <div className="space-y-4">
             {messages.map((message, index) => (
               <ChatMessage
                 key={index}
@@ -229,8 +239,8 @@ const AIStudyAssistant: React.FC = () => {
 
             {/* Loading indicator */}
             {isLoading && messages[messages.length - 1]?.role === 'user' && (
-              <div className="flex gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-veno-primary/20 flex items-center justify-center">
+              <div className="flex gap-3">
+                <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
                   <Loader2 className="w-4 h-4 text-primary animate-spin" />
                 </div>
                 <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
@@ -242,51 +252,50 @@ const AIStudyAssistant: React.FC = () => {
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
+
+          <div ref={messagesEndRef} className="h-4" />
         </div>
+      </div>
 
+      {/* Input Area - Fixed at bottom */}
+      <div className="shrink-0 border-t border-border bg-background p-4">
+        <div className="w-full space-y-3">
+          {/* File Uploader */}
+          <FileUploader
+            onFilesProcessed={handleFilesProcessed}
+            uploadedFiles={uploadedFiles}
+            setUploadedFiles={setUploadedFiles}
+          />
 
-        {/* Input Area */}
-        <div className="border-t border-border bg-background p-4">
-          <div className="max-w-3xl mx-auto space-y-3">
-            {/* File Uploader */}
-            <FileUploader
-              onFilesProcessed={handleFilesProcessed}
-              uploadedFiles={uploadedFiles}
-              setUploadedFiles={setUploadedFiles}
+          {/* Input Box - Full width */}
+          <div className="flex gap-2 items-end">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything... Generate questions, solve problems, create study notes..."
+              className="min-h-[52px] max-h-[200px] resize-none text-sm flex-1"
+              rows={1}
             />
-
-            {/* Input Box */}
-            <div className="flex gap-2 items-end">
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask anything... Generate questions, solve problems, create study notes..."
-                className="min-h-[52px] max-h-[200px] resize-none text-sm"
-                rows={1}
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
-                size="icon"
-                className="h-[52px] w-[52px] shrink-0"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Send className="w-5 h-5" />
-                )}
-              </Button>
-            </div>
-
-            <p className="text-xs text-center text-muted-foreground">
-              VenoBot AI can make mistakes. Verify important information.
-            </p>
+            <Button
+              onClick={sendMessage}
+              disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
+              size="icon"
+              className="h-[52px] w-[52px] shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </Button>
           </div>
+
+          <p className="text-xs text-center text-muted-foreground">
+            VenoBot AI can make mistakes. Verify important information.
+          </p>
         </div>
       </div>
     </div>

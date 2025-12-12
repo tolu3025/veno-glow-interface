@@ -12,14 +12,21 @@ serve(async (req) => {
 
   try {
     const { messages, documentContext, imageContext } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    
+    // Try both API key variations
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("OPENAI_API_KEY1");
     
     if (!OPENAI_API_KEY) {
       console.error("OPENAI_API_KEY is not configured");
       throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are VenoBot AI Study Assistant - an advanced educational AI with human-level reasoning capabilities. You are designed to help students and professionals learn effectively across ALL subjects and educational levels.
+    // Log incoming context for debugging
+    console.log("Document context received:", documentContext ? `${documentContext.length} characters` : "none");
+    console.log("Image context received:", imageContext ? `${imageContext.length} characters` : "none");
+
+    // Build the system prompt with document context
+    let systemPrompt = `You are VenoBot AI Study Assistant - an advanced educational AI with human-level reasoning capabilities. You are designed to help students and professionals learn effectively across ALL subjects and educational levels.
 
 ## Your Core Capabilities:
 1. **Document Analysis**: Extract and analyze content from uploaded documents (PDF, DOCX, TXT) and images
@@ -79,15 +86,44 @@ $\\boxed{\\text{Final answer with units}}$
 - Use tables when presenting structured data
 - Use LaTeX for mathematical expressions: $inline$ or $$display$$
 - Use code blocks for programming content
-- Create highlighted study blocks for key concepts
+- Create highlighted study blocks for key concepts`;
 
-${documentContext ? `\n## Document Context:\nThe user has uploaded a document with the following content:\n${documentContext}\n\nAnalyze this content deeply and be ready to:\n1. Generate questions from it\n2. Explain concepts within it\n3. Create summaries and study notes\n4. Identify the subject and complexity level` : ''}
+    // Add document context if provided
+    if (documentContext && documentContext.trim().length > 0) {
+      systemPrompt += `
 
-${imageContext ? `\n## Image Context:\nThe user has uploaded an image. Analyze any text, diagrams, handwritten notes, or visual content and incorporate it into your responses.` : ''}
+## IMPORTANT - Document Content Provided by User:
+The user has uploaded a document. Here is the extracted content from their document:
 
-Always be encouraging, thorough, and provide actionable learning insights.`;
+--- START OF DOCUMENT ---
+${documentContext}
+--- END OF DOCUMENT ---
+
+INSTRUCTIONS FOR HANDLING THIS DOCUMENT:
+1. You MUST acknowledge that you have received and can read the document
+2. Analyze this content thoroughly
+3. When the user asks questions about it, reference specific parts of the document
+4. You can generate questions from this content
+5. You can explain concepts within it
+6. You can create summaries and study notes from it
+7. Identify the subject and complexity level of the content`;
+    }
+
+    // Add image context if provided
+    if (imageContext && imageContext.trim().length > 0) {
+      systemPrompt += `
+
+## Image Context:
+The user has uploaded an image. Analyze any text, diagrams, handwritten notes, or visual content and incorporate it into your responses.
+Image description: ${imageContext}`;
+    }
+
+    systemPrompt += `
+
+Always be encouraging, thorough, and provide actionable learning insights. If the user has uploaded a document, always acknowledge it and work with its content.`;
 
     console.log("Calling OpenAI API with model gpt-4o-mini");
+    console.log("System prompt length:", systemPrompt.length, "characters");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -102,6 +138,7 @@ Always be encouraging, thorough, and provide actionable learning insights.`;
           ...messages,
         ],
         stream: true,
+        max_tokens: 4000,
       }),
     });
 
