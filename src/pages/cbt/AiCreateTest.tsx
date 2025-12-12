@@ -76,19 +76,20 @@ const AiCreateTest = () => {
         return;
       }
 
-      // Create the test
+      // Create the test - trim subject to prevent duplicates
+      const trimmedSubject = params.subject.trim();
       const { data: testData, error: testError } = await supabase
         .from('user_tests')
         .insert({
-          title: testTitle,
-          subject: params.subject,
+          title: testTitle.trim(),
+          subject: trimmedSubject,
           creator_id: user.id,
           question_count: questions.length,
           difficulty: params.difficulty,
           time_limit: params.timeLimit,
           allow_retakes: params.allowRetakes,
           results_visibility: params.resultsVisibility,
-          description: params.description || `AI-generated test on ${params.topic || params.subject}`
+          description: params.description || `AI-generated test on ${params.topic?.trim() || trimmedSubject}`
         })
         .select()
         .single();
@@ -105,7 +106,7 @@ const AiCreateTest = () => {
         options: q.options,
         answer: q.answer,
         explanation: q.explanation || '',
-        subject: params.subject,
+        subject: trimmedSubject,
         difficulty: params.difficulty
       }));
 

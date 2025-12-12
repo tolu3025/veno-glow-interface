@@ -168,7 +168,7 @@ const AdminQuestions = () => {
       const { error } = await supabase
         .from('questions')
         .insert([{
-          subject: newQuestion.subject,
+          subject: newQuestion.subject.trim(),
           question: newQuestion.question,
           options: newQuestion.options,
           answer: newQuestion.answer,
@@ -360,15 +360,16 @@ const AdminQuestions = () => {
         throw new Error('Invalid response format from AI service');
       }
 
-      // Insert the generated questions
+      // Insert the generated questions - trim subject to prevent duplicates
+      const trimmedSubject = (aiSubject || 'General').trim();
       const questionsToInsert = data.questions.map((q: any) => ({
-        subject: aiSubject || 'General',
+        subject: trimmedSubject,
         question: q.question,
         options: q.options,
         answer: q.answer,
         difficulty: aiDifficulty as 'beginner' | 'intermediate' | 'advanced',
         explanation: q.explanation,
-        topic: aiTopic || null,
+        topic: aiTopic?.trim() || null,
         semester: 'first'
       }));
 
