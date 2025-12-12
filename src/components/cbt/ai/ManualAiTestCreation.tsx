@@ -8,9 +8,8 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Wand2, Calculator, BookOpen, Loader2 } from 'lucide-react';
+import { Wand2, Calculator, BookOpen } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useSubjects } from '@/hooks/useSubjects';
 
 type TestDifficulty = "beginner" | "intermediate" | "advanced";
 
@@ -33,16 +32,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
   onGenerateTest,
   loading
 }) => {
-  const { data: subjects, isLoading: subjectsLoading, error: subjectsError } = useSubjects();
-  
-  // Debug logging
-  React.useEffect(() => {
-    console.log('ManualAiTestCreation - Subjects data:', subjects);
-    console.log('ManualAiTestCreation - Subjects loading:', subjectsLoading);
-    console.log('ManualAiTestCreation - Subjects error:', subjectsError);
-  }, [subjects, subjectsLoading, subjectsError]);
   const [subject, setSubject] = useState('');
-  const [customSubject, setCustomSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState<TestDifficulty>('intermediate');
   const [questionCount, setQuestionCount] = useState(10);
@@ -57,13 +47,11 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
     return mathSubjects.some(mathSub => subjectName.toLowerCase().includes(mathSub));
   };
 
-  const currentSubject = subject === 'custom' ? customSubject : subject;
-  const showMathAlert = isMathematicalSubject(currentSubject);
+  const showMathAlert = isMathematicalSubject(subject);
 
   const handleGenerate = () => {
-    const finalSubject = subject === 'custom' ? customSubject : subject;
     onGenerateTest({
-      subject: finalSubject,
+      subject,
       topic: topic || undefined,
       difficulty,
       questionCount,
@@ -75,7 +63,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
     });
   };
 
-  const isValid = subject === 'custom' ? customSubject.trim() : subject;
+  const isValid = subject.trim();
 
   return (
     <Card>
@@ -90,47 +78,14 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
       <CardContent className="space-y-4">
         <div className="space-y-3">
           <Label>Subject</Label>
-          {subjectsLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-veno-primary" />
-              <span className="ml-2 text-sm text-muted-foreground">Loading subjects...</span>
-            </div>
-          ) : (
-            <Select value={subject} onValueChange={setSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select subject from question banks" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects && subjects.length > 0 ? (
-                  subjects.map((subjectOption) => (
-                    <SelectItem key={subjectOption.name} value={subjectOption.name}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{subjectOption.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          ({subjectOption.question_count} questions)
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="" disabled>No subjects available in question banks</SelectItem>
-                )}
-                <SelectItem value="custom">Custom subject...</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-          
-          {subject === 'custom' && (
-            <div className="pt-2">
-              <Label>Custom Subject</Label>
-              <Input 
-                value={customSubject} 
-                onChange={e => setCustomSubject(e.target.value)} 
-                placeholder="Enter custom subject" 
-                className="mt-1" 
-              />
-            </div>
-          )}
+          <Input 
+            value={subject} 
+            onChange={e => setSubject(e.target.value)} 
+            placeholder="Enter subject (e.g., Mathematics, Physics, Biology, History)" 
+          />
+          <p className="text-xs text-muted-foreground">
+            Type any subject - AI will generate questions based on your input
+          </p>
         </div>
 
         {showMathAlert && (
@@ -255,7 +210,7 @@ const ManualAiTestCreation: React.FC<ManualAiTestCreationProps> = ({
         
         <Button 
           onClick={handleGenerate} 
-          disabled={loading || !isValid || subjectsLoading} 
+          disabled={loading || !isValid} 
           className="w-full"
         >
           {loading ? 'Generating Test...' : 'Generate Test'}
