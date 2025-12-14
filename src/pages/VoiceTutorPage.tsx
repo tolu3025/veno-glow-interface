@@ -1,23 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Mic, BookOpen, Sparkles } from 'lucide-react';
+import { Mic, BookOpen, Sparkles, Plus } from 'lucide-react';
 import VoiceTutor from '@/components/voice-tutor/VoiceTutor';
+import VoiceChatHistorySidebar from '@/components/voice-tutor/VoiceChatHistorySidebar';
+import { useVoiceChatHistory } from '@/hooks/useVoiceChatHistory';
 import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+
+interface TranscriptEntry {
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+}
 
 const VoiceTutorPage: React.FC = () => {
+  const { toast } = useToast();
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState<TranscriptEntry[]>([]);
+  
+  const {
+    sessions,
+    currentSessionId,
+    setCurrentSessionId,
+    loading,
+    createSession,
+    updateTranscript,
+    deleteSession,
+    loadSessionTranscript
+  } = useVoiceChatHistory();
 
-  const handleStartSession = () => {
-    setSessionStarted(true);
+  const handleStartSession = async () => {
+    const sessionId = await createSession(subject || undefined, topic || undefined);
+    if (sessionId) {
+      setCurrentTranscript([]);
+      setSessionStarted(true);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to create voice session",
+        variant: "destructive"
+      });
+    }
   };
+
+  const handleSelectSession = useCallback(async (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+    const transcript = await loadSessionTranscript(sessionId);
+    setCurrentTranscript(transcript);
+    
+    // Find session to get subject/topic
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setSubject(session.subject || '');
+      setTopic(session.topic || '');
+    }
+    setSessionStarted(true);
+  }, [loadSessionTranscript, setCurrentSessionId, sessions]);
+
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    await deleteSession(sessionId);
+    toast({
+      title: "Session deleted",
+      description: "Voice chat history has been removed"
+    });
+  }, [deleteSession, toast]);
+
+  const handleTranscriptUpdate = useCallback((transcript: TranscriptEntry[]) => {
+    if (currentSessionId) {
+      updateTranscript(currentSessionId, transcript);
+    }
+  }, [currentSessionId, updateTranscript]);
 
   const handleBack = () => {
     setSessionStarted(false);
+    setCurrentSessionId(null);
+    setCurrentTranscript([]);
+  };
+
+  const handleNewSession = async () => {
+    setSubject('');
+    setTopic('');
+    const sessionId = await createSession();
+    if (sessionId) {
+      setCurrentTranscript([]);
+    }
   };
 
   if (sessionStarted) {
@@ -25,21 +96,42 @@ const VoiceTutorPage: React.FC = () => {
       <div className="min-h-screen bg-background">
         <div className="container max-w-4xl mx-auto py-4">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">VenoBot Voice Tutor</h1>
-              {subject && (
-                <p className="text-sm text-muted-foreground">
-                  Subject: {subject}{topic ? ` - ${topic}` : ''}
-                </p>
-              )}
+            <div className="flex items-center gap-3">
+              <VoiceChatHistorySidebar
+                sessions={sessions}
+                currentSessionId={currentSessionId}
+                onSelectSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+                loading={loading}
+              />
+              <div>
+                <h1 className="text-xl font-bold text-foreground">VenoBot Voice Tutor</h1>
+                {subject && (
+                  <p className="text-sm text-muted-foreground">
+                    Subject: {subject}{topic ? ` - ${topic}` : ''}
+                  </p>
+                )}
+              </div>
             </div>
-            <Button variant="outline" onClick={handleBack}>
-              Back to Setup
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleNewSession} className="gap-2">
+                <Plus className="w-4 h-4" />
+                New Session
+              </Button>
+              <Button variant="outline" onClick={handleBack}>
+                Back to Setup
+              </Button>
+            </div>
           </div>
           
           <Card className="h-[calc(100vh-140px)]">
-            <VoiceTutor subject={subject} topic={topic} />
+            <VoiceTutor 
+              subject={subject} 
+              topic={topic}
+              sessionId={currentSessionId}
+              initialTranscript={currentTranscript}
+              onTranscriptUpdate={handleTranscriptUpdate}
+            />
           </Card>
         </div>
       </div>
@@ -76,6 +168,17 @@ const VoiceTutorPage: React.FC = () => {
             <p className="text-muted-foreground">
               Real-time AI-powered voice tutoring for your exam preparation
             </p>
+          </div>
+
+          {/* History Button */}
+          <div className="flex justify-center mb-6">
+            <VoiceChatHistorySidebar
+              sessions={sessions}
+              currentSessionId={currentSessionId}
+              onSelectSession={handleSelectSession}
+              onDeleteSession={handleDeleteSession}
+              loading={loading}
+            />
           </div>
 
           {/* Setup Card */}

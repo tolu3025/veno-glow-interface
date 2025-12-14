@@ -1929,6 +1929,36 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          subject: string | null
+          topic: string | null
+          transcript: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subject?: string | null
+          topic?: string | null
+          transcript?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subject?: string | null
+          topic?: string | null
+          transcript?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       admin_user_view: {
