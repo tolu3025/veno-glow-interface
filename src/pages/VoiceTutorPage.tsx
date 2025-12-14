@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Mic, BookOpen, Sparkles, Plus } from 'lucide-react';
+import { Mic, BookOpen, Sparkles, Plus, ArrowLeft } from 'lucide-react';
 import VoiceTutor from '@/components/voice-tutor/VoiceTutor';
 import VoiceChatHistorySidebar from '@/components/voice-tutor/VoiceChatHistorySidebar';
 import { useVoiceChatHistory } from '@/hooks/useVoiceChatHistory';
@@ -94,9 +94,20 @@ const VoiceTutorPage: React.FC = () => {
   if (sessionStarted) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-4xl mx-auto py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+        <div className="container max-w-4xl mx-auto py-2 sm:py-4 px-2 sm:px-4">
+          {/* Header - Responsive */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              {/* Back button on mobile */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleBack}
+                className="sm:hidden p-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              
               <VoiceChatHistorySidebar
                 sessions={sessions}
                 currentSessionId={currentSessionId}
@@ -104,27 +115,27 @@ const VoiceTutorPage: React.FC = () => {
                 onDeleteSession={handleDeleteSession}
                 loading={loading}
               />
-              <div>
-                <h1 className="text-xl font-bold text-foreground">VenoBot Voice Tutor</h1>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base sm:text-xl font-bold text-foreground truncate">VenoBot Voice Tutor</h1>
                 {subject && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">
                     Subject: {subject}{topic ? ` - ${topic}` : ''}
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleNewSession} className="gap-2">
-                <Plus className="w-4 h-4" />
-                New Session
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <Button variant="outline" size="sm" onClick={handleNewSession} className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">New</span>
               </Button>
-              <Button variant="outline" onClick={handleBack}>
+              <Button variant="outline" size="sm" onClick={handleBack} className="hidden sm:flex text-xs sm:text-sm">
                 Back to Setup
               </Button>
             </div>
           </div>
           
-          <Card className="h-[calc(100vh-140px)]">
+          <Card className="h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
             <VoiceTutor 
               subject={subject} 
               topic={topic}
@@ -139,39 +150,39 @@ const VoiceTutorPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-background py-4 sm:py-6 md:py-8">
+      <div className="container max-w-2xl mx-auto px-3 sm:px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
+          {/* Header - Responsive */}
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="flex justify-center mb-3 sm:mb-4">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Mic className="w-10 h-10 text-primary" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Mic className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
                 </div>
                 <motion.div
-                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-accent flex items-center justify-center"
+                  className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-accent flex items-center justify-center"
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
-                  <Sparkles className="w-3 h-3 text-accent-foreground" />
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-accent-foreground" />
                 </motion.div>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
               VenoBot Voice Tutor
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground px-4">
               Real-time AI-powered voice tutoring for your exam preparation
             </p>
           </div>
 
           {/* History Button */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4 sm:mb-6">
             <VoiceChatHistorySidebar
               sessions={sessions}
               currentSessionId={currentSessionId}
@@ -181,74 +192,78 @@ const VoiceTutorPage: React.FC = () => {
             />
           </div>
 
-          {/* Setup Card */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
+          {/* Setup Card - Responsive */}
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
                 Session Setup
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Optionally specify a subject and topic for focused tutoring
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="subject">Subject (Optional)</Label>
-                <Input
-                  id="subject"
-                  placeholder="e.g., Mathematics, Physics, Chemistry"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="topic">Topic (Optional)</Label>
-                <Input
-                  id="topic"
-                  placeholder="e.g., Quadratic Equations, Newton's Laws"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                />
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="subject" className="text-xs sm:text-sm">Subject (Optional)</Label>
+                  <Input
+                    id="subject"
+                    placeholder="e.g., Mathematics, Physics"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="topic" className="text-xs sm:text-sm">Topic (Optional)</Label>
+                  <Input
+                    id="topic"
+                    placeholder="e.g., Quadratic Equations"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
               </div>
 
               <Button
                 onClick={handleStartSession}
-                className="w-full gap-2"
+                className="w-full gap-2 py-4 sm:py-5 text-sm sm:text-base"
                 size="lg"
               >
-                <Mic className="w-5 h-5" />
+                <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
                 Start Voice Session
               </Button>
             </CardContent>
           </Card>
 
-          {/* Features */}
+          {/* Features - Responsive */}
           <Card>
-            <CardHeader>
-              <CardTitle>What VenoBot Can Do</CardTitle>
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg">What VenoBot Can Do</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
+                  <span className="text-primary mt-0.5 sm:mt-1">•</span>
                   <span>Explain complex concepts in simple, understandable terms</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
+                  <span className="text-primary mt-0.5 sm:mt-1">•</span>
                   <span>Generate practice questions and provide instant feedback</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
+                  <span className="text-primary mt-0.5 sm:mt-1">•</span>
                   <span>Help with JAMB, WAEC, NECO, POST-UTME, and university exams</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
+                  <span className="text-primary mt-0.5 sm:mt-1">•</span>
                   <span>Cover subjects including Math, Science, Business, Arts, and more</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
+                  <span className="text-primary mt-0.5 sm:mt-1">•</span>
                   <span>Adapt explanations based on your understanding level</span>
                 </li>
               </ul>
