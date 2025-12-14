@@ -63,3 +63,6 @@ verify_jwt = false
 
 [functions.extract-document-text]
 verify_jwt = false
+
+[functions.realtime-voice-token]
+verify_jwt = true

@@ -52,6 +52,7 @@ import ServicesPage from "./pages/ServicesPage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
 import StreakAnalyticsPage from "./pages/StreakAnalyticsPage";
 import AIStudyAssistant from "./pages/AIStudyAssistant";
+import VoiceTutorPage from "./pages/VoiceTutorPage";
 
 import "./functions/appendToActivities";
 
@@ -193,6 +194,13 @@ const AppRoutes = () => {
           
           {/* AI Study Assistant route */}
           <Route path="/ai-assistant" element={<AIStudyAssistant />} />
+          
+          {/* Voice Tutor route */}
+          <Route path="/voice-tutor" element={
+            <ProtectedRoute>
+              <VoiceTutorPage />
+            </ProtectedRoute>
+          } />
           
           {/* Streak analytics route */}
           <Route path="/streak-analytics" element={<StreakAnalyticsPage />} />
