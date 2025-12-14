@@ -56,7 +56,7 @@ serve(async (req) => {
 
     const shouldFormatMath = isMatematical || hasCalculationRequest;
 
-    const topicText = topic ? ` about ${topic}` : '';
+const topicText = topic ? ` about ${topic}` : '';
     const descriptionText = description ? `\n\nSpecific requirements: ${description}` : '';
     
     let formatInstructions = '';
@@ -64,47 +64,41 @@ serve(async (req) => {
       formatInstructions = `
 
 CRITICAL - MATHEMATICAL FORMATTING RULES:
-Format all mathematical expressions using LaTeX with \\( \\) for inline math and \\[ \\] for display math.
+You MUST format ALL mathematical expressions using LaTeX with backslash-parentheses notation.
 
-MUST FOLLOW THESE EXACT RULES:
-1. Wrap ALL inline math expressions with \\( and \\): \\(expression\\)
-2. Wrap ALL display/block math with \\[ and \\]: \\[expression\\]
-3. Use simple notation - AVOID complex environments like \\begin{pmatrix}, \\begin{bmatrix}
+REQUIRED NOTATION (USE EXACTLY):
+- Inline math: \\( expression \\)
+- Display math: \\[ expression \\]
 
-CORRECT EXAMPLES (USE THESE):
-- Equations: Solve for x: \\(x^2 - 4x + 3 = 0\\)
-- Fractions: \\(\\frac{1}{3}\\), \\(\\frac{x^3}{3}\\)
-- Integrals: \\(\\int_0^1 x^2 dx\\)
-- Logarithms: \\(\\log_2(x) = 5\\)
-- Square roots: \\(\\sqrt{16} = 4\\)
-- Exponents: \\(2^5 = 32\\)
-- Vectors: Given \\(\\vec{a} = [1, 2]\\), \\(\\vec{b} = [3, 4]\\), compute \\(\\vec{a} \\cdot \\vec{b}\\)
-- Matrices: For matrix A with elements (2,1), (1,3), find determinant = \\(ad - bc\\)
-- Trig: \\(\\sin(\\theta)\\), \\(\\cos(x)\\)
-- Greek: \\(\\alpha\\), \\(\\beta\\), \\(\\pi\\)
-- Multiplication: \\(2 \\times 3 = 6\\)
+NEVER USE:
+- Dollar signs ($) for math - FORBIDDEN
+- \\begin{pmatrix}, \\begin{bmatrix}, or ANY \\begin{} environments - FORBIDDEN
 
-WRONG (DO NOT USE):
-- $expression$ notation - use \\( \\) instead
-- \\begin{pmatrix} or any \\begin{} environments
-- Raw text like "log_2" without LaTeX delimiters
+CORRECT EXAMPLES:
+- Quadratic: "Solve \\(x^2 - 4x + 3 = 0\\)"
+- Fraction: "Simplify \\(\\frac{3}{4} + \\frac{1}{2}\\)"
+- Integral: "Evaluate \\(\\int_0^1 x^2 \\, dx\\)"
+- Square root: "Find \\(\\sqrt{144}\\)"
+- Exponent: "Calculate \\(2^8\\)"
+- Logarithm: "Solve \\(\\log_2(x) = 5\\)"
+- Trigonometry: "Find \\(\\sin(30°)\\)"
+- Greek letters: "Given \\(\\alpha = 45°\\)"
 
-FOR MATRICES AND VECTORS:
-- Describe matrices in words: "Let A be a 2×2 matrix with entries..."
-- Or use simple notation: "Matrix A = [[2,1],[1,3]]"
-- Calculate and show final answer: "det(A) = \\((2)(3) - (1)(1) = 5\\)"
+FOR MATRICES - Describe in words:
+- "Let A be a 2×2 matrix with elements [[2,1],[1,3]]"
+- "The determinant is \\((2)(3) - (1)(1) = 5\\)"
 
-EXAMPLE QUESTION FORMAT:
+EXAMPLE QUESTION:
 "Solve for x: \\(x^2 - 4x + 3 = 0\\)"
 
-EXAMPLE OPTIONS:
+EXAMPLE OPTIONS (each option uses \\( \\)):
 A. \\(x = 1\\) and \\(x = 3\\)
 B. \\(x = 2\\) and \\(x = 4\\)
 C. \\(x = -1\\) and \\(x = -3\\)
-D. \\(x = 1\\) and \\(x = 4\\)
+D. \\(x = 0\\) and \\(x = 4\\)
 
 EXAMPLE EXPLANATION:
-"Factor: \\((x - 1)(x - 3) = 0\\) so \\(x = 1\\) and \\(x = 3\\)."`;
+"Using factorization: \\((x - 1)(x - 3) = 0\\). Setting each factor to zero: \\(x - 1 = 0\\) gives \\(x = 1\\), and \\(x - 3 = 0\\) gives \\(x = 3\\). Therefore, the solutions are \\(x = 1\\) and \\(x = 3\\)."`;
     }
 
     // Function to generate questions in batches
@@ -117,17 +111,16 @@ Requirements:
 - Include clear explanations for correct answers
 - Questions should test real understanding
 - Make questions educational and meaningful
-${shouldFormatMath ? '- Use LaTeX notation with \\\\( \\\\) for inline math and \\\\[ \\\\] for display math - AVOID \\\\begin{} environments' : ''}
-${shouldFormatMath ? '- For matrices, describe in words or use simple notation like [[a,b],[c,d]]' : ''}
+${shouldFormatMath ? '- ALL math must use \\\\( \\\\) notation - NEVER use $ signs' : ''}
 
 Return ONLY valid JSON in this exact format:
 {
   "questions": [
     {
-      "question": "Question text with proper LaTeX like \\(x^{2} + 2x = 0\\)",
-      "options": ["Option A with $formula$", "Option B", "Option C", "Option D"],
+      "question": "Question text here",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Clear explanation with step-by-step calculations using proper LaTeX."
+      "explanation": "Clear explanation here."
     }
   ]
 }
@@ -144,9 +137,9 @@ Generate exactly ${batchSize} questions.`;
         body: JSON.stringify({
           model: 'gpt-4.1-2025-04-14',
           messages: [
-            { 
+{ 
               role: 'system', 
-              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL: Use LaTeX with \\\\( \\\\) for inline math and \\\\[ \\\\] for display math. NEVER use $ signs or \\\\begin{pmatrix}, \\\\begin{bmatrix} or any \\\\begin{} environments. For matrices, describe in words or use notation like [[a,b],[c,d]]. Use \\\\(\\\\frac{a}{b}\\\\), \\\\(\\\\sqrt{x}\\\\), \\\\(\\\\log_2(x)\\\\), \\\\(x^2\\\\), etc.' : ''}` 
+              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL MATH RULE: Format ALL math using \\\\( expression \\\\) for inline and \\\\[ expression \\\\] for display. ABSOLUTELY NEVER use dollar signs ($). NEVER use \\\\begin{} environments. Examples: \\\\(x^2\\\\), \\\\(\\\\frac{a}{b}\\\\), \\\\(\\\\sqrt{x}\\\\), \\\\(\\\\int f(x) dx\\\\).' : ''}` 
             },
             { role: 'user', content: prompt }
           ],

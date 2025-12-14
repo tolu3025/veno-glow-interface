@@ -76,12 +76,23 @@ const QuizExplanations: React.FC = () => {
        /[\d+\-*/=()^]/.test(text) || /step\s+\d+/i.test(text);
   };
 
+  // Preprocess LaTeX: convert \( \) to $ and \[ \] to $$
+  const preprocessLatex = (text: string): string => {
+    if (!text) return '';
+    return text
+      .replace(/\\\(/g, '$')
+      .replace(/\\\)/g, '$')
+      .replace(/\\\[/g, '$$')
+      .replace(/\\\]/g, '$$');
+  };
+
   // Enhanced LaTeX rendering with better error handling
   const renderLatexContent = (text: string): string => {
     if (!text) return '';
     
     try {
-      let processedText = text;
+      // First preprocess to convert \( \) notation to $ notation
+      let processedText = preprocessLatex(text);
       
       // Handle display math ($$...$$) first
       processedText = processedText.replace(/\$\$(.*?)\$\$/g, (match, formula) => {
