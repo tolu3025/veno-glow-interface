@@ -6,25 +6,34 @@ import { RealtimeVoiceChat } from '@/utils/RealtimeAudio';
 import { Mic, MicOff, Phone, PhoneOff, Volume2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface TranscriptEntry {
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+}
+
 interface VoiceTutorProps {
   subject?: string;
   topic?: string;
+  sessionId?: string | null;
+  initialTranscript?: TranscriptEntry[];
+  onTranscriptUpdate?: (transcript: TranscriptEntry[]) => void;
 }
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected';
 
-interface TranscriptEntry {
-  role: 'user' | 'assistant';
-  text: string;
-  timestamp: Date;
-}
-
-const VoiceTutor: React.FC<VoiceTutorProps> = ({ subject, topic }) => {
+const VoiceTutor: React.FC<VoiceTutorProps> = ({ 
+  subject, 
+  topic, 
+  sessionId,
+  initialTranscript = [],
+  onTranscriptUpdate 
+}) => {
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
-  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>(initialTranscript);
   const [currentUserTranscript, setCurrentUserTranscript] = useState('');
   const [currentAssistantTranscript, setCurrentAssistantTranscript] = useState('');
   
@@ -54,7 +63,7 @@ const VoiceTutor: React.FC<VoiceTutorProps> = ({ subject, topic }) => {
           setTranscript(prev => [...prev, {
             role: 'assistant',
             text: event.transcript || currentAssistantTranscript,
-            timestamp: new Date()
+            timestamp: new Date().toISOString()
           }]);
           setCurrentAssistantTranscript('');
         }
@@ -73,7 +82,7 @@ const VoiceTutor: React.FC<VoiceTutorProps> = ({ subject, topic }) => {
           setTranscript(prev => [...prev, {
             role: 'user',
             text: event.transcript,
-            timestamp: new Date()
+            timestamp: new Date().toISOString()
           }]);
         }
         break;
@@ -116,12 +125,29 @@ const VoiceTutor: React.FC<VoiceTutorProps> = ({ subject, topic }) => {
   }, [handleMessage, subject, topic, toast]);
 
   const endConversation = useCallback(() => {
+    // Save transcript before disconnecting
+    if (onTranscriptUpdate && transcript.length > 0) {
+      onTranscriptUpdate(transcript);
+    }
     chatRef.current?.disconnect();
     chatRef.current = null;
-    setTranscript([]);
     setCurrentAssistantTranscript('');
     setCurrentUserTranscript('');
-  }, []);
+  }, [onTranscriptUpdate, transcript]);
+
+  // Save transcript when it changes
+  useEffect(() => {
+    if (sessionId && onTranscriptUpdate && transcript.length > 0) {
+      onTranscriptUpdate(transcript);
+    }
+  }, [transcript, sessionId, onTranscriptUpdate]);
+
+  // Load initial transcript when provided
+  useEffect(() => {
+    if (initialTranscript.length > 0) {
+      setTranscript(initialTranscript);
+    }
+  }, [initialTranscript]);
 
   useEffect(() => {
     return () => {
