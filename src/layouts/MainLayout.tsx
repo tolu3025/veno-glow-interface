@@ -21,6 +21,7 @@ const MainLayout = () => {
     { name: "Home", path: "/" },
     { name: "CBT", path: "/cbt" },
     { name: "AI Assistant", path: "/ai-assistant" },
+    { name: "Voice Tutor", path: "/voice-tutor" },
     { name: "Streak Challenge", path: "/cbt/streak-challenge" },
     { name: "Blog", path: "https://venoblog.online", external: true }
   ];
