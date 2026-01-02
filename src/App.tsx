@@ -11,6 +11,7 @@ import { StreakMissedDialog } from "@/components/streak/StreakMissedDialog";
 import { StreakMilestoneDialog } from "@/components/streak/StreakMilestoneDialog";
 import { RouteTracker } from "@/components/RouteTracker";
 import { InstructionPopup } from "@/components/popups/InstructionPopup";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import AdminSetup from "@/components/AdminSetup";
 import Index from "./pages/Index";
 import CbtPage from "./pages/cbt/index";
@@ -53,6 +54,7 @@ import VideoPlayerPage from "./pages/VideoPlayerPage";
 import StreakAnalyticsPage from "./pages/StreakAnalyticsPage";
 import AIStudyAssistant from "./pages/AIStudyAssistant";
 import VoiceTutorPage from "./pages/VoiceTutorPage";
+import InstallPage from "./pages/InstallPage";
 
 import "./functions/appendToActivities";
 
@@ -148,6 +150,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signup" element={<AuthPage initialMode="signup" />} />
+        <Route path="/install" element={<InstallPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/ads-policy" element={<AdsPolicy />} />
@@ -313,6 +316,7 @@ const App = () => {
                   <Toaster />
                   <Sonner />
                   <AdminSetup />
+                  <InstallPrompt />
                   <AppRoutes />
                 </TooltipProvider>
               </StreakProvider>
