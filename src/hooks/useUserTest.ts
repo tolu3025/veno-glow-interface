@@ -86,18 +86,48 @@ export const useUserTest = (testId: string) => {
           }
         }
         
-        // Load questions from test_questions table
-        const { data: questionsData, error: questionsError } = await supabase
+        // Load questions from test_questions table first
+        let questionsData: any[] = [];
+        
+        const { data: testQuestionsData, error: testQuestionsError } = await supabase
           .from('test_questions')
           .select('*')
           .eq('test_id', testId);
           
-        if (questionsError) {
-          console.error("Error fetching questions:", questionsError);
-          throw questionsError;
+        if (testQuestionsError) {
+          console.error("Error fetching from test_questions:", testQuestionsError);
         }
         
-        if (questionsData && questionsData.length > 0) {
+        if (testQuestionsData && testQuestionsData.length > 0) {
+          questionsData = testQuestionsData;
+          console.log("Found questions in test_questions:", testQuestionsData.length);
+        } else {
+          // Fallback to user_test_questions if no questions found
+          console.log("No questions in test_questions, checking user_test_questions...");
+          const { data: userTestQuestionsData, error: userTestQuestionsError } = await supabase
+            .from('user_test_questions')
+            .select('*')
+            .eq('test_id', testId);
+            
+          if (userTestQuestionsError) {
+            console.error("Error fetching from user_test_questions:", userTestQuestionsError);
+          }
+          
+          if (userTestQuestionsData && userTestQuestionsData.length > 0) {
+            // Map user_test_questions format to match expected format
+            questionsData = userTestQuestionsData.map(q => ({
+              id: q.id,
+              question: q.question_text,
+              options: q.options,
+              answer: q.answer,
+              explanation: q.explanation,
+              subject: q.subject
+            }));
+            console.log("Found questions in user_test_questions:", userTestQuestionsData.length);
+          }
+        }
+        
+        if (questionsData.length > 0) {
           console.log("Raw questions data:", questionsData);
           
           const formattedQuestions: QuizQuestion[] = questionsData.map(q => ({
