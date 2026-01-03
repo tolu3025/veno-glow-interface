@@ -10,6 +10,7 @@ import ChatMessage from '@/components/ai-assistant/ChatMessage';
 import FileUploader from '@/components/ai-assistant/FileUploader';
 import ChatHistorySidebar from '@/components/ai-assistant/ChatHistorySidebar';
 import { useChatHistory } from '@/hooks/useChatHistory';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -27,6 +28,7 @@ interface UploadedFile {
 const AIStudyAssistant: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +37,7 @@ const AIStudyAssistant: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [documentContext, setDocumentContext] = useState('');
   const [imageContext, setImageContext] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -244,16 +246,32 @@ const AIStudyAssistant: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="h-screen bg-background flex overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {user && sidebarOpen && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
       {/* Sidebar - Chat History */}
       {user && sidebarOpen && (
         <ChatHistorySidebar
           sessions={sessions}
           currentSessionId={currentSessionId}
           loading={sessionsLoading}
-          onSelectSession={handleSelectSession}
-          onNewChat={handleNewChat}
+          onSelectSession={(id) => {
+            handleSelectSession(id);
+            if (isMobile) setSidebarOpen(false);
+          }}
+          onNewChat={() => {
+            handleNewChat();
+            if (isMobile) setSidebarOpen(false);
+          }}
           onDeleteSession={deleteSession}
+          isMobile={isMobile}
+          onClose={() => setSidebarOpen(false)}
         />
       )}
 

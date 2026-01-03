@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Plus, Trash2, Loader2 } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,8 @@ interface ChatHistorySidebarProps {
   onSelectSession: (sessionId: string) => void;
   onNewChat: () => void;
   onDeleteSession: (sessionId: string) => void;
+  isMobile?: boolean;
+  onClose?: () => void;
 }
 
 const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
@@ -28,11 +30,31 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
   onSelectSession,
   onNewChat,
   onDeleteSession,
+  isMobile = false,
+  onClose,
 }) => {
   return (
-    <div className="w-64 border-r border-border bg-card/50 flex flex-col h-full">
-      {/* New Chat Button */}
+    <div className={cn(
+      "border-r border-border bg-card/50 flex flex-col h-full",
+      isMobile 
+        ? "fixed inset-y-0 left-0 w-72 z-50 shadow-xl" 
+        : "w-64"
+    )}>
+      {/* Header with close button for mobile */}
       <div className="p-3 border-b border-border">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="font-semibold text-sm">Chat History</span>
+          {isMobile && onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         <Button
           onClick={onNewChat}
           variant="outline"
