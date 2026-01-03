@@ -108,11 +108,16 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     
+    const userId = user.id;
+    const sessionKey = `veno-streak-checked-${userId}`;
+    
+    // Only check once per session to prevent toast spam on refresh
+    if (sessionStorage.getItem(sessionKey)) {
+      return;
+    }
+    
     const checkDailyStreak = () => {
       const today = new Date().toISOString().split('T')[0];
-      
-      // Get saved streak to compare
-      const userId = user.id;
       const savedStreakKey = `veno-streak-${userId}`;
       const savedStreak = localStorage.getItem(savedStreakKey);
       
@@ -120,44 +125,45 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(savedStreak);
         const lastActivity = parsed.lastActivity;
         
-        // Only update if we haven't checked today
-        if (lastActivity !== today) {
-          if (isConsecutiveDay(lastActivity)) {
-            // Consecutive day - increment streak
-            setStreak(prev => {
-              const newStreak = prev.currentStreak + 1;
-              toast.success(`🔥 Day ${newStreak} streak! Keep it up!`);
-              
-              return {
-                ...prev,
-                currentStreak: newStreak,
-                lastActivity: today,
-              };
-            });
-          } else if (lastActivity) {
-            // User broke their streak - RESET streak counter only, keep points
-            const newInactiveDays = [...parsed.inactiveDays || []];
-            
-            if (lastActivity && !newInactiveDays.includes(lastActivity)) {
-              newInactiveDays.push(lastActivity);
-            }
-            
-            setStreak(prev => ({
+        // If already active today, no toast needed
+        if (lastActivity === today) {
+          sessionStorage.setItem(sessionKey, 'true');
+          return;
+        }
+        
+        if (isConsecutiveDay(lastActivity)) {
+          // Consecutive day - increment streak
+          setStreak(prev => {
+            const newStreak = prev.currentStreak + 1;
+            toast.success(`🔥 Day ${newStreak} streak! Keep it up!`);
+            return {
               ...prev,
-              currentStreak: 1,
+              currentStreak: newStreak,
               lastActivity: today,
-              inactiveDays: newInactiveDays,
-            }));
-            toast.info("Your streak was reset, but your points are safe! Start a new streak today!");
-          } else {
-            // First time user
-            setStreak(prev => ({
-              ...prev,
-              currentStreak: 1,
-              lastActivity: today,
-            }));
-            toast.success("🎉 You've started your first streak! Welcome to Veno!");
+            };
+          });
+        } else if (lastActivity) {
+          // User broke their streak - RESET streak counter only, keep points
+          const newInactiveDays = [...parsed.inactiveDays || []];
+          if (!newInactiveDays.includes(lastActivity)) {
+            newInactiveDays.push(lastActivity);
           }
+          
+          setStreak(prev => ({
+            ...prev,
+            currentStreak: 1,
+            lastActivity: today,
+            inactiveDays: newInactiveDays,
+          }));
+          toast.info("Your streak was reset, but your points are safe! Start a new streak today!");
+        } else {
+          // First time user
+          setStreak(prev => ({
+            ...prev,
+            currentStreak: 1,
+            lastActivity: today,
+          }));
+          toast.success("🎉 You've started your first streak! Welcome to Veno!");
         }
       } else {
         // No saved data - first time
@@ -168,15 +174,12 @@ export function StreakProvider({ children }: { children: React.ReactNode }) {
         }));
         toast.success("🎉 You've started your first streak! Welcome to Veno!");
       }
+      
+      // Mark as checked for this session
+      sessionStorage.setItem(sessionKey, 'true');
     };
     
-    // Check immediately on mount
     checkDailyStreak();
-    
-    // Also check every hour in case day changes while user is active
-    const interval = setInterval(checkDailyStreak, 60 * 60 * 1000);
-    
-    return () => clearInterval(interval);
   }, [user]);
 
   // Check for course unlocks when points change

@@ -1,5 +1,5 @@
 
-import { Book, BookOpen, Bot, FileText, CheckCircle, Flame, Sparkles } from "lucide-react";
+import { Book, BookOpen, Bot, FileText, CheckCircle, Flame, Sparkles, GraduationCap } from "lucide-react";
 
 export const bannerSlides = [
   {
@@ -38,6 +38,12 @@ export const tutorials = [
     description: "Experience comprehensive computer-based testing with real-time feedback and performance analytics.",
     icon: Book,
     href: "/cbt",
+  },
+  {
+    title: "Organization Exams",
+    description: "Conduct secure digital exams for schools and institutions with AI-powered question generation and anti-cheat features.",
+    icon: GraduationCap,
+    href: "/org-exam",
   },
 ];
 
