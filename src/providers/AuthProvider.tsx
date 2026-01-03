@@ -90,11 +90,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast.success("Your profile has been updated");
       }
       
-      // Handle email confirmation
-      if (event === "SIGNED_IN" && currentSession?.user?.email_confirmed_at) {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+      // Handle email confirmation - only show toast when user actually confirms via link
+      // Check for the specific URL parameter to avoid showing on every refresh
+      if (event === "SIGNED_IN" && window.location.search.includes('confirmation=true')) {
         toast.success("Email confirmed successfully!");
+        // Clean up the URL
+        window.history.replaceState({}, '', window.location.pathname);
       }
     });
 
