@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -20,6 +20,7 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
 
   // App navigation links that were previously in AppNavigation.tsx
   const appLinks = [
@@ -68,6 +69,7 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
     try {
       await signOut();
       toast.success("Signed out successfully");
+      setOpen(false);
       navigate("/");
     } catch (error) {
       toast.error("Error signing out");
@@ -78,8 +80,17 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const handleLinkClick = (path: string, requiresAuth?: boolean) => {
+    if (requiresAuth && !user) {
+      navigate('/auth');
+    } else {
+      navigate(path);
+    }
+    setOpen(false);
+  };
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
           <Menu size={24} />
@@ -89,10 +100,13 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
       <SheetContent side="right" className="w-[300px] sm:w-[400px]">
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between mb-6 mt-2">
-            <Link to="/" className="flex items-center space-x-2">
+            <button 
+              onClick={() => handleLinkClick('/')} 
+              className="flex items-center space-x-2"
+            >
               <VenoLogo className="h-8 w-8" />
               <span className="font-bold text-xl">Veno</span>
-            </Link>
+            </button>
             <Button onClick={toggleTheme} variant="ghost" size="icon">
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
@@ -109,18 +123,19 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
                       href={link.path}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => setOpen(false)}
                       className="px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center"
                     >
                       {link.name}
                     </a>
                   ) : (
-                    <Link
+                    <button
                       key={link.name}
-                      to={link.path}
-                      className={`px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center ${location.pathname === link.path ? 'bg-accent text-accent-foreground font-medium' : ''}`}
+                      onClick={() => handleLinkClick(link.path)}
+                      className={`px-4 py-2 hover:bg-accent rounded-md transition-colors flex items-center text-left w-full ${location.pathname === link.path ? 'bg-accent text-accent-foreground font-medium' : ''}`}
                     >
                       {link.name}
-                    </Link>
+                    </button>
                   )
                 ))}
               </nav>
@@ -130,20 +145,14 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
               <h3 className="text-sm font-medium px-4">App Navigation</h3>
               <nav className="flex flex-col space-y-1">
                 {appLinks.map((link) => (
-                  <Link
+                  <button
                     key={link.name}
-                    to={link.path}
-                    className={`flex items-center px-4 py-2 hover:bg-accent rounded-md transition-colors ${isActive(link.path) ? 'bg-accent text-accent-foreground font-medium' : ''}`}
-                    onClick={(e) => {
-                      if (link.requiresAuth && !user) {
-                        e.preventDefault();
-                        navigate('/auth');
-                      }
-                    }}
+                    onClick={() => handleLinkClick(link.path, link.requiresAuth)}
+                    className={`flex items-center px-4 py-2 hover:bg-accent rounded-md transition-colors text-left w-full ${isActive(link.path) ? 'bg-accent text-accent-foreground font-medium' : ''}`}
                   >
                     {link.icon && <link.icon className="mr-2 h-5 w-5" />}
                     {link.name}
-                  </Link>
+                  </button>
                 ))}
               </nav>
             </div>
@@ -176,7 +185,7 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
             ) : (
               <Button 
                 className="w-full"
-                onClick={() => navigate('/auth')}
+                onClick={() => handleLinkClick('/auth')}
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In
