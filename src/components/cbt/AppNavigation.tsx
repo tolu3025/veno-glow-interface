@@ -1,20 +1,32 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, PlusCircle, BarChart, WifiOff, BookOpen, Library, Flame } from "lucide-react";
+import { Home, PlusCircle, BarChart, WifiOff, BookOpen, Library, Flame, Coins, Mic, Crown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { CoinService } from "@/services/coinService";
+import { BillingService } from "@/services/billingService";
+import { CoinHistoryModal } from "@/components/coins/CoinHistoryModal";
 
 const AppNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const [isOffline, setIsOffline] = React.useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [coinBalance, setCoinBalance] = useState(0);
+  const [showCoinHistory, setShowCoinHistory] = useState(false);
+  const [hasVoiceTutorAccess, setHasVoiceTutorAccess] = useState(false);
 
-  // Monitor online status
+  // Fetch coin balance
+  useEffect(() => {
+    if (user) {
+      CoinService.getCoinBalance().then(setCoinBalance);
+      BillingService.hasFeatureAccess('voice_tutor').then(setHasVoiceTutorAccess);
+    }
+  }, [user]);
   React.useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
@@ -62,6 +74,13 @@ const AppNavigation = () => {
       highlight: true,
     },
     {
+      name: "Voice Tutor",
+      path: "/voice-tutor",
+      icon: <Mic size={18} />,
+      authRequired: true,
+      isPremium: !hasVoiceTutorAccess,
+    },
+    {
       name: "Quiz",
       path: "/cbt?tab=quiz",
       icon: <BookOpen size={18} />,
@@ -104,11 +123,11 @@ const AppNavigation = () => {
           {navItems.map((item) => (
             <Button
               key={item.name}
-              variant={item.highlight ? "default" : "ghost"}
+              variant={(item as any).highlight ? "default" : "ghost"}
               className={`justify-start mb-1 ${
                 location.pathname === item.path 
                   ? 'font-bold bg-primary/10 text-primary hover:bg-primary/20' 
-                  : item.highlight 
+                  : (item as any).highlight 
                     ? 'bg-veno-primary hover:bg-veno-primary/90 text-white' 
                     : ''
               }`}
@@ -116,10 +135,28 @@ const AppNavigation = () => {
               disabled={item.authRequired && !user}
             >
               {item.icon}
-              <span className="ml-2">{item.name}</span>
+              <span className="ml-2 flex-1 text-left">{item.name}</span>
+              {(item as any).isPremium && (
+                <Crown className="w-3 h-3 text-amber-500" />
+              )}
             </Button>
           ))}
         </nav>
+        
+        {/* Coin Balance */}
+        {user && (
+          <div className="px-4 py-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
+              onClick={() => setShowCoinHistory(true)}
+            >
+              <Coins className="w-4 h-4" />
+              <span className="font-semibold">{coinBalance} Coins</span>
+            </Button>
+          </div>
+        )}
+        
         <div className="px-4 py-6">
           {user ? (
             <Button variant="outline" className="w-full" onClick={() => navigate('/dashboard')}>
@@ -132,6 +169,8 @@ const AppNavigation = () => {
           )}
         </div>
       </div>
+      
+      <CoinHistoryModal open={showCoinHistory} onOpenChange={setShowCoinHistory} />
     </aside>
   );
 };

@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type FeatureType = 'manual_test' | 'ai_test';
+export type FeatureType = 'manual_test' | 'ai_test' | 'voice_tutor';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
 export interface UserFeatureAccess {
@@ -156,6 +156,13 @@ export class BillingService {
         currency: 'NGN',
         accessCount: -1, // Unlimited for monthly subscription
         planName: 'Pro Plan',
+        isMonthly: true
+      },
+      voice_tutor: { 
+        amount: 500000, // ₦5000 in kobo for Voice Tutor
+        currency: 'NGN',
+        accessCount: -1, // Unlimited for monthly subscription
+        planName: 'Voice Tutor Premium',
         isMonthly: true
       }
     };

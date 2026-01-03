@@ -476,6 +476,36 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_tests: {
         Row: {
           created_at: string | null
@@ -541,6 +571,36 @@ export type Database = {
           original_filename?: string
           storage_path?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feature_unlocks: {
+        Row: {
+          coins_spent: number
+          created_at: string
+          expires_at: string
+          feature_type: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          coins_spent?: number
+          created_at?: string
+          expires_at: string
+          feature_type: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          coins_spent?: number
+          created_at?: string
+          expires_at?: string
+          feature_type?: string
+          id?: string
+          unlocked_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1519,10 +1579,12 @@ export type Database = {
           highest_streak: number
           id: string
           last_challenge_date: string | null
+          last_ranked_at: string | null
           total_challenges: number
           total_wins: number
           updated_at: string
           user_id: string
+          weekly_rank: number | null
         }
         Insert: {
           created_at?: string
@@ -1530,10 +1592,12 @@ export type Database = {
           highest_streak?: number
           id?: string
           last_challenge_date?: string | null
+          last_ranked_at?: string | null
           total_challenges?: number
           total_wins?: number
           updated_at?: string
           user_id: string
+          weekly_rank?: number | null
         }
         Update: {
           created_at?: string
@@ -1541,8 +1605,37 @@ export type Database = {
           highest_streak?: number
           id?: string
           last_challenge_date?: string | null
+          last_ranked_at?: string | null
           total_challenges?: number
           total_wins?: number
+          updated_at?: string
+          user_id?: string
+          weekly_rank?: number | null
+        }
+        Relationships: []
+      }
+      user_coins: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
           updated_at?: string
           user_id?: string
         }

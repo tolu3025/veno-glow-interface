@@ -1,10 +1,10 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Medal, Handshake, RotateCcw, Home, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, Medal, Handshake, RotateCcw, Home, TrendingUp, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import confetti from 'canvas-confetti';
-import { useEffect } from 'react';
+import { CoinService, COIN_REWARDS } from '@/services/coinService';
 
 interface ChallengeResultsProps {
   isWinner: boolean;
@@ -15,6 +15,7 @@ interface ChallengeResultsProps {
   opponentName: string;
   streakChange: number;
   newStreak: number;
+  challengeId?: string;
   onRematch: () => void;
   onGoHome: () => void;
 }
@@ -28,11 +29,26 @@ export const ChallengeResults: React.FC<ChallengeResultsProps> = ({
   opponentName,
   streakChange,
   newStreak,
+  challengeId,
   onRematch,
   onGoHome,
 }) => {
+  const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   useEffect(() => {
     if (isWinner) {
+      // Award coins for winning
+      const awardCoins = async () => {
+        if (challengeId) {
+          const success = await CoinService.awardChallengeWin(challengeId);
+          if (success) {
+            setCoinsEarned(COIN_REWARDS.challenge_win);
+            setTimeout(() => setShowCoinAnimation(true), 500);
+          }
+        }
+      };
+      awardCoins();
+
       // Victory confetti
       const duration = 3000;
       const end = Date.now() + duration;
@@ -59,7 +75,7 @@ export const ChallengeResults: React.FC<ChallengeResultsProps> = ({
       };
       frame();
     }
-  }, [isWinner]);
+  }, [isWinner, challengeId]);
 
   return (
     <div className="max-w-md mx-auto p-4">
@@ -158,18 +174,35 @@ export const ChallengeResults: React.FC<ChallengeResultsProps> = ({
             </div>
           </motion.div>
 
-          {/* Streak change indicator */}
-          {streakChange > 0 && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.7, type: 'spring' }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-500 mb-6"
-            >
-              <TrendingUp className="w-4 h-4" />
-              Streak +{streakChange}!
-            </motion.div>
-          )}
+          {/* Streak and coin indicators */}
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
+            {streakChange > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.7, type: 'spring' }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-500"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Streak +{streakChange}!
+              </motion.div>
+            )}
+            
+            <AnimatePresence>
+              {showCoinAnimation && coinsEarned > 0 && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ delay: 0.1, type: 'spring' }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 text-amber-500"
+                >
+                  <Coins className="w-4 h-4" />
+                  +{coinsEarned} Coins!
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Action Buttons */}
           <motion.div

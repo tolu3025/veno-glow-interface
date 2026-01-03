@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Trophy, Zap, ArrowLeft, Link } from 'lucide-react';
+import { Flame, Trophy, Zap, ArrowLeft, Link, Coins } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,9 @@ import { ChallengeResults } from '@/components/challenge/ChallengeResults';
 import { WaitingForOpponent } from '@/components/challenge/WaitingForOpponent';
 import { PendingChallenges } from '@/components/challenge/PendingChallenges';
 import { HostJoinPrompt } from '@/components/challenge/HostJoinPrompt';
+import { CoinDisplay } from '@/components/coins/CoinDisplay';
+import { CoinHistoryModal } from '@/components/coins/CoinHistoryModal';
+import { CoinService, COIN_REWARDS } from '@/services/coinService';
 import { supabase } from '@/integrations/supabase/client';
 
 const StreakChallenge = () => {
@@ -31,14 +34,18 @@ const StreakChallenge = () => {
   const [battleResult, setBattleResult] = useState<any>(null);
   const [waitingState, setWaitingState] = useState<{ challengeId: string; yourScore: number; totalQuestions: number; isHost: boolean } | null>(null);
   const [pendingJoinChallenge, setPendingJoinChallenge] = useState<Challenge | null>(null);
+  const [showCoinHistory, setShowCoinHistory] = useState(false);
+  const [coinBalance, setCoinBalance] = useState(0);
 
-  // Fetch user stats
+  // Fetch user stats and coin balance
   useEffect(() => {
     if (user) {
       supabase.from('user_challenge_stats').select('*').eq('user_id', user.id).single()
         .then(({ data }) => {
           if (data) setUserStats({ currentStreak: data.current_streak, highestStreak: data.highest_streak, totalWins: data.total_wins });
         });
+      
+      CoinService.getCoinBalance().then(setCoinBalance);
     }
   }, [user]);
 
@@ -135,6 +142,7 @@ const StreakChallenge = () => {
       totalQuestions: waitingState.totalQuestions,
       newStreak: stats?.current_streak || 0,
       streakChange: result.winnerId === user.id ? 1 : 0,
+      challengeId: waitingState.challengeId,
     });
     setWaitingState(null);
   }, [user, waitingState]);
@@ -241,7 +249,7 @@ const StreakChallenge = () => {
           <p className="text-muted-foreground mt-2">Challenge other players in real-time battles!</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="veno-card p-4 text-center">
             <Flame className="w-8 h-8 mx-auto mb-2 text-orange-500" />
             <div className="text-2xl font-bold">{userStats.currentStreak}</div>
@@ -256,6 +264,14 @@ const StreakChallenge = () => {
             <Zap className="w-8 h-8 mx-auto mb-2 text-veno-primary" />
             <div className="text-2xl font-bold">{userStats.totalWins}</div>
             <div className="text-sm text-muted-foreground">Total Wins</div>
+          </Card>
+          <Card 
+            className="veno-card p-4 text-center cursor-pointer hover:bg-amber-500/5 transition-colors"
+            onClick={() => setShowCoinHistory(true)}
+          >
+            <Coins className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+            <div className="text-2xl font-bold text-amber-500">{coinBalance}</div>
+            <div className="text-sm text-muted-foreground">Coins</div>
           </Card>
         </div>
 
@@ -282,6 +298,8 @@ const StreakChallenge = () => {
           </Card>
         </div>
       </div>
+      
+      <CoinHistoryModal open={showCoinHistory} onOpenChange={setShowCoinHistory} />
     </div>
   );
 };

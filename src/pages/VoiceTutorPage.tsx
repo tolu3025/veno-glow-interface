@@ -1,14 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Mic, BookOpen, Sparkles, Plus, ArrowLeft } from 'lucide-react';
+import { Mic, BookOpen, Sparkles, Plus, ArrowLeft, Lock, Coins, Crown } from 'lucide-react';
 import VoiceTutor from '@/components/voice-tutor/VoiceTutor';
 import VoiceChatHistorySidebar from '@/components/voice-tutor/VoiceChatHistorySidebar';
 import { useVoiceChatHistory } from '@/hooks/useVoiceChatHistory';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { BillingService } from '@/services/billingService';
+import { CoinService, FEATURE_COSTS } from '@/services/coinService';
+import PaymentDialog from '@/components/billing/PaymentDialog';
+import { UnlockCountdown } from '@/components/coins/UnlockCountdown';
 
 interface TranscriptEntry {
   role: 'user' | 'assistant';
@@ -18,10 +23,18 @@ interface TranscriptEntry {
 
 const VoiceTutorPage: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [sessionStarted, setSessionStarted] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState<TranscriptEntry[]>([]);
+  
+  // Access control states
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [coinBalance, setCoinBalance] = useState(0);
+  const [coinUnlockExpiry, setCoinUnlockExpiry] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
   
   const {
     sessions,
@@ -33,6 +46,66 @@ const VoiceTutorPage: React.FC = () => {
     deleteSession,
     loadSessionTranscript
   } = useVoiceChatHistory();
+
+  // Check access on mount
+  useEffect(() => {
+    checkAccess();
+  }, [user]);
+
+  const checkAccess = async () => {
+    if (!user) {
+      setHasAccess(false);
+      return;
+    }
+
+    // Check subscription access
+    const subscribed = await BillingService.hasFeatureAccess('voice_tutor');
+    if (subscribed) {
+      setHasAccess(true);
+      return;
+    }
+
+    // Check coin unlock
+    const coinUnlock = await CoinService.getActiveUnlock('voice_tutor');
+    if (coinUnlock) {
+      setHasAccess(true);
+      setCoinUnlockExpiry(coinUnlock.expires_at);
+      return;
+    }
+
+    // No access
+    setHasAccess(false);
+    
+    // Get coin balance for display
+    const balance = await CoinService.getCoinBalance();
+    setCoinBalance(balance);
+  };
+
+  const handleUnlockWithCoins = async () => {
+    setIsUnlocking(true);
+    const result = await CoinService.unlockFeatureWithCoins('voice_tutor');
+    setIsUnlocking(false);
+
+    if (result.success) {
+      toast({
+        title: "Voice Tutor Unlocked! 🎉",
+        description: "You now have 24-hour access to the AI Voice Tutor.",
+      });
+      setHasAccess(true);
+      setCoinUnlockExpiry(result.expiresAt || null);
+    } else {
+      toast({
+        title: "Unlock Failed",
+        description: result.error || "Not enough coins",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePaymentComplete = () => {
+    setShowPaymentDialog(false);
+    checkAccess();
+  };
 
   const handleStartSession = async () => {
     const sessionId = await createSession(subject || undefined, topic || undefined);
@@ -91,6 +164,123 @@ const VoiceTutorPage: React.FC = () => {
     }
   };
 
+  // Loading state
+  if (hasAccess === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Gated view - no access
+  if (!hasAccess) {
+    const cost = FEATURE_COSTS.voice_tutor;
+    const hasEnoughCoins = coinBalance >= cost;
+
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container max-w-lg mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <Card className="border-primary/20">
+              <CardHeader className="pb-4">
+                <div className="flex justify-center mb-4">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Lock className="w-10 h-10 text-primary" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
+                      <Crown className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                </div>
+                <CardTitle className="text-2xl">AI Voice Tutor</CardTitle>
+                <CardDescription className="text-base">
+                  Premium feature for personalized voice-based exam preparation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-muted/50 rounded-lg p-4 text-left space-y-2">
+                  <p className="text-sm text-muted-foreground">With Voice Tutor, you can:</p>
+                  <ul className="text-sm space-y-1">
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Have real-time voice conversations with AI
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Get explanations adapted to your level
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Practice with AI-generated questions
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Subscribe Button */}
+                <Button
+                  onClick={() => setShowPaymentDialog(true)}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  <Crown className="w-4 h-4" />
+                  Subscribe - ₦5,000/month
+                </Button>
+
+                {/* Coin Unlock */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-muted" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">or</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleUnlockWithCoins}
+                  variant={hasEnoughCoins ? "outline" : "ghost"}
+                  className={`w-full gap-2 ${!hasEnoughCoins ? 'opacity-60' : ''}`}
+                  size="lg"
+                  disabled={!hasEnoughCoins || isUnlocking}
+                >
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  Unlock with {cost} Coins (24h access)
+                </Button>
+
+                <div className="flex items-center justify-center gap-2 text-sm">
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  <span className="text-muted-foreground">
+                    Your balance: <span className={hasEnoughCoins ? 'text-amber-500 font-semibold' : 'text-destructive font-semibold'}>{coinBalance}</span>
+                  </span>
+                </div>
+
+                {!hasEnoughCoins && (
+                  <p className="text-sm text-muted-foreground">
+                    🏆 Win streak challenges and finish in the top 10 to earn coins!
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        <PaymentDialog
+          isOpen={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          featureType="voice_tutor"
+          onPaymentComplete={handlePaymentComplete}
+        />
+      </div>
+    );
+  }
+
+  // Active session view
   if (sessionStarted) {
     return (
       <div className="min-h-screen bg-background">
@@ -125,6 +315,9 @@ const VoiceTutorPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              {coinUnlockExpiry && (
+                <UnlockCountdown expiresAt={coinUnlockExpiry} onExpire={checkAccess} />
+              )}
               <Button variant="outline" size="sm" onClick={handleNewSession} className="gap-1 sm:gap-2 text-xs sm:text-sm">
                 <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden xs:inline">New</span>
@@ -149,6 +342,7 @@ const VoiceTutorPage: React.FC = () => {
     );
   }
 
+  // Setup view (has access)
   return (
     <div className="min-h-screen bg-background py-4 sm:py-6 md:py-8">
       <div className="container max-w-2xl mx-auto px-3 sm:px-4">
@@ -179,6 +373,13 @@ const VoiceTutorPage: React.FC = () => {
             <p className="text-sm sm:text-base text-muted-foreground px-4">
               Real-time AI-powered voice tutoring for your exam preparation
             </p>
+            
+            {/* Show unlock countdown if using coin access */}
+            {coinUnlockExpiry && (
+              <div className="flex justify-center mt-3">
+                <UnlockCountdown expiresAt={coinUnlockExpiry} onExpire={checkAccess} />
+              </div>
+            )}
           </div>
 
           {/* History Button */}
