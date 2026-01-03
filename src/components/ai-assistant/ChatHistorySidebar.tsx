@@ -41,7 +41,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
         : "w-64"
     )}>
       {/* Header with close button for mobile */}
-      <div className="p-3 border-b border-border">
+      <div className="p-3 pt-14 border-b border-border">
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="font-semibold text-sm">Chat History</span>
           {isMobile && onClose && (
