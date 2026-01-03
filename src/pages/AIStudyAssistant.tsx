@@ -246,7 +246,7 @@ const AIStudyAssistant: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden relative">
+    <div className="fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {user && sidebarOpen && isMobile && (
         <div 
@@ -275,120 +275,114 @@ const AIStudyAssistant: React.FC = () => {
         />
       )}
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Compact Header */}
-        <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
-          <div className="flex items-center justify-between h-12 px-4">
-            <div className="flex items-center gap-3">
-              {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="h-8 w-8"
-                >
-                  {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-                </Button>
-              )}
+      {/* Header - Fixed height */}
+      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
+        <div className="flex items-center justify-between h-12 px-4">
+          <div className="flex items-center gap-3">
+            {user && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(-1)}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="h-8 w-8"
               >
-                <ArrowLeft className="w-4 h-4" />
+                {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </Button>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h1 className="font-heading font-semibold text-lg">AI Study Assistant</h1>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Chat Area - Full width, no constraints */}
-        <div 
-          ref={chatContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden"
-          style={{ minHeight: 0 }}
-        >
-          <div className="w-full px-4 py-4">
-            {/* Welcome Animation */}
-            {showWelcome && messages.length === 0 && (
-              <div className="flex justify-center py-8">
-                <WelcomeAnimator
-                  userName={userName}
-                  onComplete={handleWelcomeComplete}
-                  isTyping={isTyping}
-                />
-              </div>
             )}
-
-            {/* Messages - Full width */}
-            <div className="space-y-4">
-              {messages.map((message, index) => (
-                <ChatMessage
-                  key={index}
-                  role={message.role}
-                  content={message.content}
-                  isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
-                />
-              ))}
-
-              {/* Loading indicator */}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                  </div>
-                  <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h1 className="font-heading font-semibold text-lg">AI Study Assistant</h1>
             </div>
-
-            <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
+      </header>
 
-        {/* Input Area - Fixed at bottom */}
-        <div className="shrink-0 border-t border-border bg-background p-4">
-          <div className="w-full space-y-3">
-            {/* Input Box - Full width */}
-            <div className="flex gap-2 items-end">
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask anything... Generate questions, solve problems, create study notes..."
-                className="min-h-[52px] max-h-[200px] resize-none text-sm flex-1"
-                rows={1}
+      {/* Chat Area - Scrollable, takes remaining space */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
+      >
+        <div className="w-full px-4 py-4">
+          {/* Welcome Animation */}
+          {showWelcome && messages.length === 0 && (
+            <div className="flex justify-center py-8">
+              <WelcomeAnimator
+                userName={userName}
+                onComplete={handleWelcomeComplete}
+                isTyping={isTyping}
               />
-              <Button
-                onClick={sendMessage}
-                disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
-                size="icon"
-                className="h-[52px] w-[52px] shrink-0"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Send className="w-5 h-5" />
-                )}
-              </Button>
             </div>
+          )}
 
-            <p className="text-xs text-center text-muted-foreground">
-              VenoBot AI can make mistakes. Verify important information.
-            </p>
+          {/* Messages - Full width */}
+          <div className="space-y-4">
+            {messages.map((message, index) => (
+              <ChatMessage
+                key={index}
+                role={message.role}
+                content={message.content}
+                isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
+              />
+            ))}
+
+            {/* Loading indicator */}
+            {isLoading && messages[messages.length - 1]?.role === 'user' && (
+              <div className="flex gap-3">
+                <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                </div>
+                <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          <div ref={messagesEndRef} className="h-4" />
+        </div>
+      </div>
+
+      {/* Input Area - Fixed at very bottom */}
+      <div className="flex-shrink-0 border-t border-border bg-background p-3 pb-[env(safe-area-inset-bottom,12px)]">
+        <div className="w-full space-y-2">
+          <div className="flex gap-2 items-end">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything..."
+              className="min-h-[44px] max-h-[120px] resize-none text-sm flex-1"
+              rows={1}
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
+              size="icon"
+              className="h-[44px] w-[44px] shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-center text-muted-foreground">
+            AI can make mistakes. Verify important info.
+          </p>
         </div>
       </div>
     </div>
