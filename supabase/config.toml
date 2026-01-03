@@ -66,3 +66,6 @@ verify_jwt = false
 
 [functions.realtime-voice-token]
 verify_jwt = true
+
+[functions.distribute-weekly-coins]
+verify_jwt = false

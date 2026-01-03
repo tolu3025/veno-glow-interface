@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Flame, Medal, ArrowLeft, TrendingUp, TrendingDown, Minus, Crown, Swords, Target, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trophy, Flame, Medal, ArrowLeft, TrendingUp, TrendingDown, Minus, Crown, Swords, Target, ChevronUp, ChevronDown, Coins } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 import LeaderboardUserModal from '@/components/challenge/LeaderboardUserModal';
+import { COIN_REWARDS } from '@/services/coinService';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -111,6 +112,14 @@ const StreakChallengeLeaderboard = () => {
     if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
     if (index === 2) return <Medal className="w-6 h-6 text-amber-600" />;
     return null;
+  };
+
+  // Get coin reward for position
+  const getCoinReward = (index: number) => {
+    if (index === 0) return COIN_REWARDS.leaderboard_1st;
+    if (index === 1) return COIN_REWARDS.leaderboard_2nd;
+    if (index >= 2 && index <= 9) return COIN_REWARDS.leaderboard_3rd_to_10th;
+    return 0;
   };
 
   const getRankChangeIcon = (change: 'up' | 'down' | 'same' | 'new' | undefined) => {
@@ -294,31 +303,42 @@ const StreakChallengeLeaderboard = () => {
                             </span>
                           </div>
                           
-                          {/* Threatening indicator */}
-                          {threateningUser && (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              className="mt-1 text-xs text-amber-500 flex items-center gap-1"
-                            >
-                              <TrendingUp className="w-3 h-3" />
-                              Close to overtaking #{index}!
-                            </motion.div>
-                          )}
-                        </div>
+                            {/* Threatening indicator */}
+                            {threateningUser && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="mt-1 text-xs text-amber-500 flex items-center gap-1"
+                              >
+                                <TrendingUp className="w-3 h-3" />
+                                Close to overtaking #{index}!
+                              </motion.div>
+                            )}
+                          </div>
 
-                        {/* Current Streak */}
-                        <div className="text-right">
-                          <motion.div
-                            key={entry.current_streak}
-                            initial={{ scale: 1.2 }}
-                            animate={{ scale: 1 }}
-                            className="text-2xl font-bold text-veno-primary"
-                          >
-                            {entry.current_streak}
-                          </motion.div>
-                          <div className="text-xs text-muted-foreground">streak</div>
-                        </div>
+                          {/* Coin Reward Badge (Top 10) */}
+                          {getCoinReward(index) > 0 && (
+                            <div className="flex flex-col items-center gap-1 px-2">
+                              <div className="flex items-center gap-1 text-amber-500">
+                                <Coins className="w-4 h-4" />
+                                <span className="text-sm font-semibold">+{getCoinReward(index)}</span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">weekly</span>
+                            </div>
+                          )}
+
+                          {/* Current Streak */}
+                          <div className="text-right">
+                            <motion.div
+                              key={entry.current_streak}
+                              initial={{ scale: 1.2 }}
+                              animate={{ scale: 1 }}
+                              className="text-2xl font-bold text-veno-primary"
+                            >
+                              {entry.current_streak}
+                            </motion.div>
+                            <div className="text-xs text-muted-foreground">streak</div>
+                          </div>
                       </div>
                     </Card>
                   </motion.div>
