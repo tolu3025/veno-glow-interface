@@ -246,7 +246,7 @@ const AIStudyAssistant: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col overflow-hidden">
+    <div className="h-screen flex bg-background overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {user && sidebarOpen && isMobile && (
         <div 
@@ -275,114 +275,117 @@ const AIStudyAssistant: React.FC = () => {
         />
       )}
 
-      {/* Header - Fixed height */}
-      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
-        <div className="flex items-center justify-between h-12 px-4">
-          <div className="flex items-center gap-3">
-            {user && (
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Header */}
+        <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between h-14 px-4">
+            <div className="flex items-center gap-3">
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="h-9 w-9"
+                >
+                  {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="h-8 w-8"
+                onClick={() => navigate(-1)}
+                className="h-9 w-9"
               >
-                {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                <ArrowLeft className="w-5 h-5" />
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h1 className="font-heading font-semibold text-lg">AI Study Assistant</h1>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h1 className="font-heading font-semibold text-lg">AI Study Assistant</h1>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Chat Area - Scrollable, takes remaining space */}
-      <div 
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
-      >
-        <div className="w-full px-4 py-4">
-          {/* Welcome Animation */}
-          {showWelcome && messages.length === 0 && (
-            <div className="flex justify-center py-8">
-              <WelcomeAnimator
-                userName={userName}
-                onComplete={handleWelcomeComplete}
-                isTyping={isTyping}
-              />
-            </div>
-          )}
-
-          {/* Messages - Full width */}
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={index}
-                role={message.role}
-                content={message.content}
-                isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
-              />
-            ))}
-
-            {/* Loading indicator */}
-            {isLoading && messages[messages.length - 1]?.role === 'user' && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                </div>
-                <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
+        {/* Messages Area */}
+        <div 
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+        >
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            {/* Welcome Animation */}
+            {showWelcome && messages.length === 0 && (
+              <div className="flex justify-center py-8">
+                <WelcomeAnimator
+                  userName={userName}
+                  onComplete={handleWelcomeComplete}
+                  isTyping={isTyping}
+                />
               </div>
             )}
-          </div>
 
-          <div ref={messagesEndRef} className="h-4" />
-        </div>
-      </div>
+            {/* Messages */}
+            <div className="space-y-4">
+              {messages.map((message, index) => (
+                <ChatMessage
+                  key={index}
+                  role={message.role}
+                  content={message.content}
+                  isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
+                />
+              ))}
 
-      {/* Input Area - Fixed at very bottom */}
-      <div className="flex-shrink-0 border-t border-border bg-background p-3 pb-[env(safe-area-inset-bottom,12px)]">
-        <div className="w-full space-y-2">
-          <div className="flex gap-2 items-end">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
-              className="min-h-[44px] max-h-[120px] resize-none text-sm flex-1"
-              rows={1}
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
-              size="icon"
-              className="h-[44px] w-[44px] shrink-0"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
+              {/* Loading indicator */}
+              {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                  </div>
+                  <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
               )}
-            </Button>
+            </div>
+
+            <div ref={messagesEndRef} className="h-4" />
           </div>
-          <p className="text-xs text-center text-muted-foreground">
-            AI can make mistakes. Verify important info.
-          </p>
+        </div>
+
+        {/* Input Area - Fixed at bottom */}
+        <div className="shrink-0 border-t border-border bg-background p-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <div className="max-w-4xl mx-auto space-y-2">
+            <div className="flex gap-2 items-end">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask anything..."
+                className="min-h-[48px] max-h-[120px] resize-none flex-1"
+                rows={1}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={isLoading || (!input.trim() && uploadedFiles.length === 0)}
+                size="icon"
+                className="h-12 w-12 shrink-0"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-center text-muted-foreground">
+              AI can make mistakes. Verify important info.
+            </p>
+          </div>
         </div>
       </div>
     </div>
