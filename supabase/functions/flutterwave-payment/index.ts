@@ -33,6 +33,15 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const webhookUrl = `${SUPABASE_URL}/functions/v1/flutterwave-callback`;
 
+    const getFeatureTitle = (type: string) => {
+      switch(type) {
+        case 'manual_test': return 'Manual Test Creation';
+        case 'voice_tutor': return 'AI Voice Tutor Premium';
+        case 'ai_test': 
+        default: return 'AI Test Creation';
+      }
+    };
+
     const payload = {
       tx_ref: txRef,
       amount: amount,
@@ -44,7 +53,7 @@ serve(async (req) => {
         name: userEmail.split('@')[0]
       },
       customizations: {
-        title: `Veno CBT - ${featureType === 'manual_test' ? 'Manual Test Creation' : 'AI Test Creation'}`,
+        title: `Veno CBT - ${getFeatureTitle(featureType)}`,
         description: `Payment for ${featureType.replace('_', ' ')} feature access`,
         logo: "https://venobot.online/veno-logo.png"
       },
