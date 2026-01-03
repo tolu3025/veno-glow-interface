@@ -56,6 +56,13 @@ import AIStudyAssistant from "./pages/AIStudyAssistant";
 import VoiceTutorPage from "./pages/VoiceTutorPage";
 import InstallPage from "./pages/InstallPage";
 
+// Organization Exam pages
+import OrgExamDashboard from "./pages/org-exam/index";
+import CreateOrgExam from "./pages/org-exam/CreateExam";
+import ManageOrgExam from "./pages/org-exam/ManageExam";
+import TakeOrgExam from "./pages/org-exam/TakeExam";
+import JoinOrgExam from "./pages/org-exam/JoinExam";
+
 import "./functions/appendToActivities";
 
 // Import admin pages
@@ -165,6 +172,10 @@ const AppRoutes = () => {
         <Route path="/test/:shareCode" element={<TakeTestByCode />} />
         <Route path="/cbt/take/:testId" element={<TakeTest />} />
         <Route path="/cbt/leaderboard/:testId" element={<Leaderboard />} />
+        
+        {/* Organization Exam - public routes */}
+        <Route path="/org-exam/join" element={<JoinOrgExam />} />
+        <Route path="/org-exam/take/:accessCode" element={<TakeOrgExam />} />
         
         {/* Admin Routes - IMPORTANT: These must be outside the MainLayout */}
         <Route path="/admin" element={
@@ -293,6 +304,25 @@ const AppRoutes = () => {
           <Route path="/profile" element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Organization Exam Routes - Protected */}
+          <Route path="/org-exam" element={
+            <ProtectedRoute>
+              <OrgExamDashboard />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/org-exam/create" element={
+            <ProtectedRoute>
+              <CreateOrgExam />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/org-exam/manage/:examId" element={
+            <ProtectedRoute>
+              <ManageOrgExam />
             </ProtectedRoute>
           } />
         </Route>

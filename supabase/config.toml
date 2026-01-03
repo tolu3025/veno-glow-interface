@@ -69,3 +69,6 @@ verify_jwt = true
 
 [functions.distribute-weekly-coins]
 verify_jwt = false
+
+[functions.generate-organization-exam]
+verify_jwt = false
