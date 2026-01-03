@@ -201,6 +201,38 @@ export type Database = {
           },
         ]
       }
+      anti_cheat_logs: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anti_cheat_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "organization_exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auth_users: {
         Row: {
           created_at: string | null
@@ -759,6 +791,237 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organization_exam_questions: {
+        Row: {
+          answer: number
+          created_at: string
+          exam_id: string
+          explanation: string | null
+          id: string
+          options: Json
+          order_index: number
+          question: string
+        }
+        Insert: {
+          answer: number
+          created_at?: string
+          exam_id: string
+          explanation?: string | null
+          id?: string
+          options: Json
+          order_index?: number
+          question: string
+        }
+        Update: {
+          answer?: number
+          created_at?: string
+          exam_id?: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          order_index?: number
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_exam_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "organization_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_exam_sessions: {
+        Row: {
+          answers: Json | null
+          created_at: string
+          exam_id: string
+          id: string
+          ip_address: string | null
+          score: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["exam_session_status"]
+          student_email: string
+          student_id: string | null
+          student_name: string
+          submitted_at: string | null
+          time_taken: number | null
+          total_questions: number | null
+          user_agent: string | null
+          violation_count: number | null
+        }
+        Insert: {
+          answers?: Json | null
+          created_at?: string
+          exam_id: string
+          id?: string
+          ip_address?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["exam_session_status"]
+          student_email: string
+          student_id?: string | null
+          student_name: string
+          submitted_at?: string | null
+          time_taken?: number | null
+          total_questions?: number | null
+          user_agent?: string | null
+          violation_count?: number | null
+        }
+        Update: {
+          answers?: Json | null
+          created_at?: string
+          exam_id?: string
+          id?: string
+          ip_address?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["exam_session_status"]
+          student_email?: string
+          student_id?: string | null
+          student_name?: string
+          submitted_at?: string | null
+          time_taken?: number | null
+          total_questions?: number | null
+          user_agent?: string | null
+          violation_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_exam_sessions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "organization_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_exams: {
+        Row: {
+          academic_level: Database["public"]["Enums"]["academic_level"]
+          access_code: string | null
+          allow_late_entry: boolean | null
+          created_at: string
+          created_by: string
+          curriculum_type: Database["public"]["Enums"]["curriculum_type"]
+          description: string | null
+          difficulty: Database["public"]["Enums"]["test_difficulty"]
+          id: string
+          instructions: string | null
+          max_violations: number | null
+          organization_id: string | null
+          question_count: number
+          scheduled_end: string | null
+          scheduled_start: string | null
+          show_results_immediately: boolean | null
+          shuffle_options: boolean | null
+          shuffle_questions: boolean | null
+          status: Database["public"]["Enums"]["org_exam_status"]
+          subject: string
+          time_limit: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          academic_level: Database["public"]["Enums"]["academic_level"]
+          access_code?: string | null
+          allow_late_entry?: boolean | null
+          created_at?: string
+          created_by: string
+          curriculum_type?: Database["public"]["Enums"]["curriculum_type"]
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["test_difficulty"]
+          id?: string
+          instructions?: string | null
+          max_violations?: number | null
+          organization_id?: string | null
+          question_count?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          show_results_immediately?: boolean | null
+          shuffle_options?: boolean | null
+          shuffle_questions?: boolean | null
+          status?: Database["public"]["Enums"]["org_exam_status"]
+          subject: string
+          time_limit?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          academic_level?: Database["public"]["Enums"]["academic_level"]
+          access_code?: string | null
+          allow_late_entry?: boolean | null
+          created_at?: string
+          created_by?: string
+          curriculum_type?: Database["public"]["Enums"]["curriculum_type"]
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["test_difficulty"]
+          id?: string
+          instructions?: string | null
+          max_violations?: number | null
+          organization_id?: string | null
+          question_count?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          show_results_immediately?: boolean | null
+          shuffle_options?: boolean | null
+          shuffle_questions?: boolean | null
+          status?: Database["public"]["Enums"]["org_exam_status"]
+          subject?: string
+          time_limit?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_exams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          address: string | null
+          admin_user_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          type: Database["public"]["Enums"]["organization_type"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admin_user_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          type?: Database["public"]["Enums"]["organization_type"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admin_user_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          type?: Database["public"]["Enums"]["organization_type"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       participant_results: {
         Row: {
@@ -2226,6 +2489,19 @@ export type Database = {
       unban_user: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
+      academic_level:
+        | "jss1"
+        | "jss2"
+        | "jss3"
+        | "sss1"
+        | "sss2"
+        | "sss3"
+        | "100_level"
+        | "200_level"
+        | "300_level"
+        | "400_level"
+        | "500_level"
+        | "professional"
       anatomy_question_category:
         | "musculoskeletal"
         | "cardiovascular"
@@ -2238,7 +2514,25 @@ export type Database = {
         | "lymphatic"
         | "integumentary"
       app_role: "admin" | "moderator" | "user" | "educator" | "superadmin"
+      curriculum_type: "waec" | "neco" | "jamb" | "university" | "custom"
+      exam_session_status:
+        | "registered"
+        | "in_progress"
+        | "submitted"
+        | "disqualified"
+        | "expired"
       order_status: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
+      org_exam_status:
+        | "draft"
+        | "scheduled"
+        | "active"
+        | "completed"
+        | "cancelled"
+      organization_type:
+        | "school"
+        | "university"
+        | "exam_center"
+        | "training_institute"
       product_condition: "new" | "like_new" | "good" | "fair" | "poor"
       question_difficulty: "beginner" | "intermediate" | "advanced"
       test_difficulty: "beginner" | "intermediate" | "advanced"
@@ -2372,6 +2666,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      academic_level: [
+        "jss1",
+        "jss2",
+        "jss3",
+        "sss1",
+        "sss2",
+        "sss3",
+        "100_level",
+        "200_level",
+        "300_level",
+        "400_level",
+        "500_level",
+        "professional",
+      ],
       anatomy_question_category: [
         "musculoskeletal",
         "cardiovascular",
@@ -2385,7 +2693,28 @@ export const Constants = {
         "integumentary",
       ],
       app_role: ["admin", "moderator", "user", "educator", "superadmin"],
+      curriculum_type: ["waec", "neco", "jamb", "university", "custom"],
+      exam_session_status: [
+        "registered",
+        "in_progress",
+        "submitted",
+        "disqualified",
+        "expired",
+      ],
       order_status: ["pending", "paid", "shipped", "delivered", "cancelled"],
+      org_exam_status: [
+        "draft",
+        "scheduled",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+      organization_type: [
+        "school",
+        "university",
+        "exam_center",
+        "training_institute",
+      ],
       product_condition: ["new", "like_new", "good", "fair", "poor"],
       question_difficulty: ["beginner", "intermediate", "advanced"],
       test_difficulty: ["beginner", "intermediate", "advanced"],
