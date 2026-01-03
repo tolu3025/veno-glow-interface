@@ -48,6 +48,27 @@ const ServicesPage = () => {
       category: "education"
     },
     {
+      id: "org-exam",
+      title: "Organization Exams",
+      description: "Conduct secure digital exams for schools and institutions with AI-powered question generation and anti-cheat features.",
+      icon: GraduationCap,
+      href: "/org-exam",
+      features: [
+        "AI-powered question generation",
+        "Nigerian curriculum alignment (WAEC, NECO, JAMB)",
+        "Anti-cheat monitoring system",
+        "Automated marking and results"
+      ],
+      details: "Enable schools, universities, and exam centers to conduct secure digital examinations. Our platform generates curriculum-aligned questions using AI and includes robust anti-cheat features for exam integrity.",
+      benefits: [
+        "Eliminates manual question typing",
+        "Secure exam environment",
+        "Real-time participant monitoring",
+        "Instant result compilation"
+      ],
+      category: "education"
+    },
+    {
       id: "tutorial",
       title: "Veno Tutorials",
       description: "Comprehensive tutorial library covering business, freelancing, education, and a wide range of learning topics with high-quality video content.",

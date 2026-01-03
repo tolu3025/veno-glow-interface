@@ -38,13 +38,6 @@ export default function OrgExamDashboard() {
   });
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
     if (exams.length > 0) {
       setStats({
         totalExams: exams.length,
@@ -54,8 +47,6 @@ export default function OrgExamDashboard() {
       });
     }
   }, [exams]);
-
-  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
