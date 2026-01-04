@@ -52,7 +52,7 @@ export default function CreateOrgExam() {
   
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
@@ -83,7 +83,6 @@ export default function CreateOrgExam() {
 
     if (!user) {
       toast.error('You must be logged in');
-      navigate('/auth');
       return;
     }
 
@@ -155,10 +154,7 @@ export default function CreateOrgExam() {
     }
   };
 
-  if (!user) {
-    navigate('/auth');
-    return null;
-  }
+  // ProtectedRoute handles auth - no need to check here
 
   return (
     <div className="min-h-screen bg-background">
