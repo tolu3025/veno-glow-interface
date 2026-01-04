@@ -50,73 +50,86 @@ export default function OrgExamDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div className="flex flex-col gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <GraduationCap className="h-8 w-8" />
-              Organization Exam Dashboard
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+              <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8" />
+              <span className="truncate">Organization Exams</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Create and manage formal examinations for your institution
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Create and manage formal examinations
             </p>
           </div>
-          <div className="flex gap-3 mt-4 md:mt-0">
-            <Button variant="outline" onClick={() => fetchExams()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+          <div className="flex gap-2 sm:gap-3">
+            <Button variant="outline" size="sm" onClick={() => fetchExams()}>
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button onClick={() => navigate('/org-exam/create')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Exam
+            <Button size="sm" onClick={() => navigate('/org-exam/create')}>
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Create Exam</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
+          <Card className="p-3 sm:p-0">
+            <CardHeader className="hidden sm:flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalExams}</div>
-              <p className="text-xs text-muted-foreground">All created examinations</p>
+            <CardContent className="sm:pt-0 p-0 sm:p-6">
+              <div className="flex sm:block items-center justify-between">
+                <span className="text-sm text-muted-foreground sm:hidden">Total</span>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalExams}</div>
+              </div>
+              <p className="text-xs text-muted-foreground hidden sm:block">All examinations</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Exams</CardTitle>
+          <Card className="p-3 sm:p-0">
+            <CardHeader className="hidden sm:flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeExams}</div>
-              <p className="text-xs text-muted-foreground">Currently active or scheduled</p>
+            <CardContent className="sm:pt-0 p-0 sm:p-6">
+              <div className="flex sm:block items-center justify-between">
+                <span className="text-sm text-muted-foreground sm:hidden">Active</span>
+                <div className="text-xl sm:text-2xl font-bold">{stats.activeExams}</div>
+              </div>
+              <p className="text-xs text-muted-foreground hidden sm:block">Currently active</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="p-3 sm:p-0">
+            <CardHeader className="hidden sm:flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completed</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completedExams}</div>
-              <p className="text-xs text-muted-foreground">Finished examinations</p>
+            <CardContent className="sm:pt-0 p-0 sm:p-6">
+              <div className="flex sm:block items-center justify-between">
+                <span className="text-sm text-muted-foreground sm:hidden">Done</span>
+                <div className="text-xl sm:text-2xl font-bold">{stats.completedExams}</div>
+              </div>
+              <p className="text-xs text-muted-foreground hidden sm:block">Finished exams</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="p-3 sm:p-0">
+            <CardHeader className="hidden sm:flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Participants</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalParticipants}</div>
-              <p className="text-xs text-muted-foreground">Total students examined</p>
+            <CardContent className="sm:pt-0 p-0 sm:p-6">
+              <div className="flex sm:block items-center justify-between">
+                <span className="text-sm text-muted-foreground sm:hidden">Students</span>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalParticipants}</div>
+              </div>
+              <p className="text-xs text-muted-foreground hidden sm:block">Total examined</p>
             </CardContent>
           </Card>
         </div>
@@ -175,37 +188,37 @@ export default function OrgExamDashboard() {
 function ExamListItem({ exam, onClick }: { exam: OrgExam; onClick: () => void }) {
   return (
     <div 
-      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+      className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors gap-2"
       onClick={onClick}
     >
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-3">
-          <h4 className="font-medium truncate">{exam.title}</h4>
-          <Badge className={statusColors[exam.status] || ''}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h4 className="font-medium text-sm sm:text-base truncate">{exam.title}</h4>
+          <Badge className={`${statusColors[exam.status] || ''} text-xs`}>
             {exam.status}
           </Badge>
         </div>
-        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-          <span>{exam.subject}</span>
+        <div className="flex items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-muted-foreground flex-wrap">
+          <span className="truncate">{exam.subject}</span>
+          <span className="hidden sm:inline">•</span>
+          <span>{exam.question_count}Q</span>
           <span>•</span>
-          <span>{exam.question_count} questions</span>
-          <span>•</span>
-          <span>{exam.time_limit} min</span>
+          <span>{exam.time_limit}m</span>
           {exam.access_code && (
             <>
-              <span>•</span>
-              <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
+              <span className="hidden sm:inline">•</span>
+              <span className="font-mono text-xs bg-muted px-1.5 sm:px-2 py-0.5 rounded hidden sm:inline">
                 {exam.access_code}
               </span>
             </>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground hidden md:block">
+      <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+        <span className="text-xs sm:text-sm text-muted-foreground hidden md:block">
           {format(new Date(exam.created_at), 'MMM d, yyyy')}
         </span>
-        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
       </div>
     </div>
   );

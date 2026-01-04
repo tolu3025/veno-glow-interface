@@ -113,7 +113,7 @@ export default function TakeOrgExam() {
         return;
       }
       
-      if (examData.status !== 'active' && examData.status !== 'scheduled') {
+      if (examData.status !== 'active' && examData.status !== 'scheduled' && examData.status !== 'draft') {
         toast.error('This exam is not currently available');
         setState('not_found');
         return;
@@ -339,15 +339,15 @@ export default function TakeOrgExam() {
 
   if (state === 'registration') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle>{exam?.title}</CardTitle>
-            <CardDescription>
+      <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader className="space-y-1 px-4 sm:px-6">
+            <CardTitle className="text-xl sm:text-2xl">{exam?.title}</CardTitle>
+            <CardDescription className="text-sm">
               Enter your details to register for this examination
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-4 sm:px-6">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name *</Label>
               <Input
@@ -398,35 +398,35 @@ export default function TakeOrgExam() {
 
   if (state === 'instructions') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-2xl w-full">
-          <CardHeader>
-            <CardTitle>Examination Instructions</CardTitle>
+      <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-xl sm:text-2xl">Examination Instructions</CardTitle>
             <CardDescription>{exam?.title}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="p-3 bg-muted rounded-lg">
+          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+              <div className="p-2 sm:p-3 bg-muted rounded-lg">
                 <p className="text-muted-foreground">Subject</p>
-                <p className="font-medium">{exam?.subject}</p>
+                <p className="font-medium truncate">{exam?.subject}</p>
               </div>
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-2 sm:p-3 bg-muted rounded-lg">
                 <p className="text-muted-foreground">Duration</p>
-                <p className="font-medium">{exam?.time_limit} minutes</p>
+                <p className="font-medium">{exam?.time_limit} min</p>
               </div>
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-2 sm:p-3 bg-muted rounded-lg">
                 <p className="text-muted-foreground">Questions</p>
                 <p className="font-medium">{questions.length}</p>
               </div>
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-2 sm:p-3 bg-muted rounded-lg">
                 <p className="text-muted-foreground">Max Violations</p>
                 <p className="font-medium">{exam?.max_violations}</p>
               </div>
             </div>
 
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-xs sm:text-sm">
               <h4 className="font-medium">Important Rules:</h4>
-              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+              <ul className="list-disc pl-4 sm:pl-5 space-y-1 text-muted-foreground">
                 <li>The exam will run in fullscreen mode</li>
                 <li>Do not switch tabs or windows during the exam</li>
                 <li>Right-clicking and copying are disabled</li>
@@ -437,9 +437,9 @@ export default function TakeOrgExam() {
             </div>
 
             {exam?.instructions && (
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">Additional Instructions:</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              <div className="p-3 sm:p-4 border rounded-lg">
+                <h4 className="font-medium mb-2 text-sm">Additional Instructions:</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">
                   {exam.instructions}
                 </p>
               </div>
@@ -513,68 +513,69 @@ export default function TakeOrgExam() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-card border-b px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="font-semibold">{exam?.title}</h1>
-          <p className="text-sm text-muted-foreground">{exam?.subject}</p>
+      <div className="bg-card border-b px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-semibold text-sm sm:text-base truncate">{exam?.title}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">{exam?.subject}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Badge variant={timeRemaining < 300 ? 'destructive' : 'secondary'} className="text-lg px-4 py-1">
-            <Clock className="h-4 w-4 mr-2" />
+        <div className="flex-shrink-0">
+          <Badge variant={timeRemaining < 300 ? 'destructive' : 'secondary'} className="text-sm sm:text-lg px-2 sm:px-4 py-1">
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             {formatTime(timeRemaining)}
           </Badge>
         </div>
       </div>
 
       {/* Progress */}
-      <div className="px-4 py-2 border-b bg-muted/50">
-        <div className="flex items-center justify-between text-sm mb-1">
-          <span>Question {currentQuestion + 1} of {questions.length}</span>
+      <div className="px-2 sm:px-4 py-2 border-b bg-muted/50">
+        <div className="flex items-center justify-between text-xs sm:text-sm mb-1">
+          <span>Q {currentQuestion + 1}/{questions.length}</span>
           <span>{answeredCount} answered</span>
         </div>
-        <Progress value={(answeredCount / questions.length) * 100} className="h-2" />
+        <Progress value={(answeredCount / questions.length) * 100} className="h-1.5 sm:h-2" />
       </div>
 
       {/* Question */}
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-2 sm:p-4 overflow-auto">
         <Card className="max-w-3xl mx-auto">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <Badge variant="outline" className="mb-2">Question {currentQuestion + 1}</Badge>
-                <CardTitle className="text-lg leading-relaxed">
+          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <Badge variant="outline" className="mb-2 text-xs">Q{currentQuestion + 1}</Badge>
+                <CardTitle className="text-sm sm:text-lg leading-relaxed">
                   {currentQ.question}
                 </CardTitle>
               </div>
               <Button
                 variant={flagged.has(currentQuestion) ? 'default' : 'outline'}
                 size="icon"
+                className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0"
                 onClick={toggleFlag}
               >
-                <Flag className="h-4 w-4" />
+                <Flag className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-6">
             {currentQ.options.map((option, idx) => (
               <div
                 key={idx}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                className={`p-2 sm:p-4 border rounded-lg cursor-pointer transition-colors ${
                   answers[currentQuestion] === idx
                     ? 'border-primary bg-primary/10'
                     : 'hover:bg-accent'
                 }`}
                 onClick={() => handleAnswerSelect(idx)}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-sm font-medium ${
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 ${
                     answers[currentQuestion] === idx
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'border-muted-foreground'
                   }`}>
                     {String.fromCharCode(65 + idx)}
                   </div>
-                  <span className="flex-1">{option}</span>
+                  <span className="flex-1 text-sm sm:text-base">{option}</span>
                 </div>
               </div>
             ))}
@@ -583,16 +584,16 @@ export default function TakeOrgExam() {
       </div>
 
       {/* Question Navigation */}
-      <div className="border-t bg-card p-4">
+      <div className="border-t bg-card p-2 sm:p-4">
         <div className="max-w-3xl mx-auto">
-          {/* Question buttons */}
-          <div className="flex flex-wrap gap-1 mb-4 justify-center">
+          {/* Question buttons - scrollable on mobile */}
+          <div className="flex flex-wrap gap-1 mb-3 sm:mb-4 justify-center max-h-20 sm:max-h-none overflow-y-auto">
             {questions.map((_, idx) => (
               <Button
                 key={idx}
                 variant={idx === currentQuestion ? 'default' : answers[idx] !== null ? 'secondary' : 'outline'}
                 size="sm"
-                className={`w-8 h-8 p-0 ${flagged.has(idx) ? 'ring-2 ring-orange-500' : ''}`}
+                className={`w-7 h-7 sm:w-8 sm:h-8 p-0 text-xs sm:text-sm ${flagged.has(idx) ? 'ring-2 ring-orange-500' : ''}`}
                 onClick={() => setCurrentQuestion(idx)}
               >
                 {idx + 1}
@@ -601,26 +602,31 @@ export default function TakeOrgExam() {
           </div>
           
           {/* Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Button
               variant="outline"
+              size="sm"
+              className="text-xs sm:text-sm"
               onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
               disabled={currentQuestion === 0}
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Previous
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Previous</span>
+              <span className="xs:hidden">Prev</span>
             </Button>
             
             {currentQuestion === questions.length - 1 ? (
-              <Button onClick={() => setShowSubmitDialog(true)}>
-                Submit Examination
+              <Button size="sm" className="text-xs sm:text-sm" onClick={() => setShowSubmitDialog(true)}>
+                Submit
               </Button>
             ) : (
               <Button
+                size="sm"
+                className="text-xs sm:text-sm"
                 onClick={() => setCurrentQuestion(Math.min(questions.length - 1, currentQuestion + 1))}
               >
                 Next
-                <ChevronRight className="h-4 w-4 ml-2" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </Button>
             )}
           </div>

@@ -135,77 +135,78 @@ export default function ManageOrgExam() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-          <div className="flex items-start gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/org-exam')}>
-              <ArrowLeft className="h-5 w-5" />
+        <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex items-start gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" onClick={() => navigate('/org-exam')}>
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">{exam.title}</h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg sm:text-2xl font-bold truncate">{exam.title}</h1>
                 <Badge className={statusColors[exam.status]}>
                   {exam.status}
                 </Badge>
               </div>
-              <p className="text-muted-foreground mt-1">
-                {exam.subject} • {exam.question_count} questions • {exam.time_limit} minutes
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {exam.subject} • {exam.question_count}Q • {exam.time_limit}min
               </p>
             </div>
           </div>
           
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap pl-10 sm:pl-14">
             {exam.status === 'draft' && (
-              <Button onClick={() => handleStatusChange('active')} disabled={!!actionLoading}>
+              <Button size="sm" onClick={() => handleStatusChange('active')} disabled={!!actionLoading}>
                 {actionLoading === 'active' ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
                 ) : (
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 sm:mr-2" />
                 )}
-                Activate Exam
+                <span className="hidden sm:inline">Activate</span>
               </Button>
             )}
             {exam.status === 'active' && (
-              <Button variant="destructive" onClick={() => handleStatusChange('completed')} disabled={!!actionLoading}>
+              <Button variant="destructive" size="sm" onClick={() => handleStatusChange('completed')} disabled={!!actionLoading}>
                 {actionLoading === 'completed' ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
                 ) : (
-                  <Square className="h-4 w-4 mr-2" />
+                  <Square className="h-4 w-4 sm:mr-2" />
                 )}
-                End Exam
+                <span className="hidden sm:inline">End Exam</span>
               </Button>
             )}
-            <Button variant="outline" onClick={loadExamData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+            <Button variant="outline" size="sm" onClick={loadExamData}>
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </div>
 
         {/* Access Code Card */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Card className="mb-4 sm:mb-6">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Access Code</p>
-                <p className="text-2xl font-mono font-bold">{exam.access_code}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Access Code</p>
+                <p className="text-xl sm:text-2xl font-mono font-bold">{exam.access_code}</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={copyAccessLink}>
+                <Button variant="outline" size="sm" onClick={copyAccessLink}>
                   {copied ? (
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="h-4 w-4 sm:mr-2" />
                   ) : (
-                    <Copy className="h-4 w-4 mr-2" />
+                    <Copy className="h-4 w-4 sm:mr-2" />
                   )}
-                  Copy Link
+                  <span className="hidden sm:inline">Copy Link</span>
                 </Button>
                 <Button 
                   variant="outline" 
+                  size="sm"
                   onClick={() => window.open(`/org-exam/take/${exam.access_code}`, '_blank')}
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Preview
+                  <ExternalLink className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Preview</span>
                 </Button>
               </div>
             </div>
@@ -214,27 +215,31 @@ export default function ManageOrgExam() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview">
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Overview
+          <TabsList className="mb-4 w-full sm:w-auto flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Overview</span>
+              <span className="xs:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="questions" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Questions ({questions.length})
+            <TabsTrigger value="questions" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Questions</span>
+              <span className="xs:hidden">Q</span>
+              <span className="text-xs">({questions.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="participants" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Participants ({sessions.length})
+            <TabsTrigger value="participants" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Participants</span>
+              <span className="sm:hidden">({sessions.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="results" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Results
+            <TabsTrigger value="results" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Results</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Exam Details</CardTitle>
