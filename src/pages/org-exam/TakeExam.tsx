@@ -178,28 +178,19 @@ export default function TakeOrgExam() {
       return;
     }
 
-    // Persist normalized values for the next step
-    setStudentName(normalizedName);
-    setStudentEmail(normalizedEmail);
-
     if (!exam) return;
-
-    // Move to instructions immediately (so a failing session insert doesn't block the flow)
-    setState('instructions');
 
     setRegistering(true);
     try {
-      // If a session already exists, resume it.
+      // Check for existing session BEFORE transitioning state
       const existingSession = await getSessionByEmail(exam.id, normalizedEmail);
       if (existingSession) {
         if (existingSession.status === 'submitted') {
           toast.error('You have already submitted this exam');
-          setState('registration');
           return;
         }
         if (existingSession.status === 'disqualified') {
           toast.error('You have been disqualified from this exam');
-          setState('registration');
           return;
         }
 
@@ -208,12 +199,17 @@ export default function TakeOrgExam() {
           setAnswers(existingSession.answers as (number | null)[]);
         }
       } else {
-        // Create session later (on “Begin Examination”) so users can still view instructions.
+        // No existing session; will create on "Begin Examination"
         setSession(null);
       }
+
+      // Persist normalized values and transition only after validation passes
+      setStudentName(normalizedName);
+      setStudentEmail(normalizedEmail);
+      setState('instructions');
     } catch (error) {
       console.error('Registration error:', error);
-      // Still allow instructions view; session creation happens on start.
+      toast.error('Unable to verify registration. Please try again.');
     } finally {
       setRegistering(false);
     }
