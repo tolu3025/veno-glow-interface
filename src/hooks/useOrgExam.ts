@@ -137,7 +137,7 @@ export function useOrgExam() {
         .from('organization_exams')
         .select('*')
         .eq('access_code', accessCode.toUpperCase())
-        .in('status', ['scheduled', 'active'])
+        .in('status', ['draft', 'scheduled', 'active'])
         .single();
 
       if (error) throw error;

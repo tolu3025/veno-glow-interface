@@ -158,21 +158,21 @@ export default function CreateOrgExam() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/org-exam')}>
-            <ArrowLeft className="h-5 w-5" />
+        <div className="flex items-start gap-2 sm:gap-4 mb-4 sm:mb-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" onClick={() => navigate('/org-exam')}>
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Create New Examination</h1>
-            <p className="text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold">Create New Exam</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Set up exam parameters and generate questions using AI
             </p>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Basic Info */}
           <Card>
             <CardHeader>

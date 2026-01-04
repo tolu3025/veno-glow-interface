@@ -37,18 +37,18 @@ export default function JoinOrgExam() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <GraduationCap className="h-8 w-8 text-primary" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="text-center px-4 sm:px-6">
+          <div className="mx-auto mb-3 sm:mb-4 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           </div>
-          <CardTitle>Join Examination</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl sm:text-2xl">Join Examination</CardTitle>
+          <CardDescription className="text-sm">
             Enter the access code provided by your institution
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4 sm:px-6">
           <div className="space-y-2">
             <Label htmlFor="code">Access Code</Label>
             <Input
@@ -56,7 +56,7 @@ export default function JoinOrgExam() {
               placeholder="Enter 8-character code"
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-              className="text-center text-lg font-mono tracking-widest"
+              className="text-center text-base sm:text-lg font-mono tracking-widest"
               maxLength={8}
               onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
             />
