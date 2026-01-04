@@ -170,64 +170,104 @@ export default function TakeOrgExam() {
   }, [state, exam]);
 
   const handleRegistration = async () => {
-    if (!studentName.trim() || !studentEmail.trim()) {
+    const normalizedName = studentName.trim();
+    const normalizedEmail = studentEmail.trim().toLowerCase();
+
+    if (!normalizedName || !normalizedEmail) {
       toast.error('Please enter your name and email');
       return;
     }
-    
+
+    // Persist normalized values for the next step
+    setStudentName(normalizedName);
+    setStudentEmail(normalizedEmail);
+
     if (!exam) return;
-    
+
+    // Move to instructions immediately (so a failing session insert doesn't block the flow)
+    setState('instructions');
+
     setRegistering(true);
     try {
-      // Check for existing session
-      const existingSession = await getSessionByEmail(exam.id, studentEmail);
+      // If a session already exists, resume it.
+      const existingSession = await getSessionByEmail(exam.id, normalizedEmail);
       if (existingSession) {
         if (existingSession.status === 'submitted') {
           toast.error('You have already submitted this exam');
+          setState('registration');
           return;
         }
         if (existingSession.status === 'disqualified') {
           toast.error('You have been disqualified from this exam');
+          setState('registration');
           return;
         }
-        // Resume session
+
         setSession(existingSession);
         if (existingSession.answers) {
           setAnswers(existingSession.answers as (number | null)[]);
         }
-        setState('instructions');
-        return;
-      }
-      
-      // Create new session
-      const newSession = await createSession({
-        exam_id: exam.id,
-        student_name: studentName,
-        student_email: studentEmail,
-        student_id: studentId || null,
-        status: 'registered',
-      });
-      
-      if (newSession) {
-        setSession(newSession);
-        setState('instructions');
+      } else {
+        // Create session later (on “Begin Examination”) so users can still view instructions.
+        setSession(null);
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Failed to register for exam');
+      // Still allow instructions view; session creation happens on start.
     } finally {
       setRegistering(false);
     }
   };
 
   const handleStartExam = async () => {
-    if (!session || !exam) return;
-    
-    await updateSession(session.id, {
+    if (!exam) return;
+
+    let workingSession = session;
+
+    // Create a session if we don't have one yet
+    if (!workingSession) {
+      const normalizedName = studentName.trim();
+      const normalizedEmail = studentEmail.trim().toLowerCase();
+
+      if (!normalizedName || !normalizedEmail) {
+        toast.error('Please enter your name and email');
+        setState('registration');
+        return;
+      }
+
+      if (exam.status === 'draft') {
+        toast.error('This exam has not been activated yet. Please contact your institution.');
+        return;
+      }
+
+      const newSession = await createSession({
+        exam_id: exam.id,
+        student_name: normalizedName,
+        student_email: normalizedEmail,
+        student_id: studentId.trim() ? studentId.trim() : null,
+        status: 'registered',
+      });
+
+      if (!newSession) {
+        toast.error('Unable to start exam. Please try again.');
+        return;
+      }
+
+      workingSession = newSession;
+      setSession(newSession);
+    }
+
+    const startedAt = (workingSession.started_at as string | null) ?? new Date().toISOString();
+    const ok = await updateSession(workingSession.id, {
       status: 'in_progress',
-      started_at: new Date().toISOString(),
+      started_at: startedAt,
     });
-    
+
+    if (!ok) {
+      toast.error('Unable to start exam');
+      return;
+    }
+
     setTimeRemaining(exam.time_limit * 60);
     requestFullscreen();
     setState('exam');

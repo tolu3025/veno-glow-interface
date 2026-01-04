@@ -67,61 +67,58 @@ export function useOrgExam() {
     fetchExams();
   }, [fetchExams]);
 
-  const createExam = async (examData: Omit<OrgExamInsert, 'created_by'>): Promise<OrgExam | null> => {
-    if (!user) {
-      toast.error('You must be logged in to create an exam');
-      return null;
-    }
+  const createExam = useCallback(
+    async (examData: Omit<OrgExamInsert, 'created_by'>): Promise<OrgExam | null> => {
+      if (!user) {
+        toast.error('You must be logged in to create an exam');
+        return null;
+      }
 
+      try {
+        const { data, error } = await supabase
+          .from('organization_exams')
+          .insert({
+            ...examData,
+            created_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setExams((prev) => [data, ...prev]);
+        return data;
+      } catch (error) {
+        console.error('Error creating exam:', error);
+        toast.error('Failed to create exam');
+        return null;
+      }
+    },
+    [user]
+  );
+
+  const updateExam = useCallback(async (examId: string, updates: OrgExamUpdate): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
-        .from('organization_exams')
-        .insert({
-          ...examData,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+      const { error } = await supabase.from('organization_exams').update(updates).eq('id', examId);
 
       if (error) throw error;
-      
-      setExams(prev => [data, ...prev]);
-      return data;
-    } catch (error) {
-      console.error('Error creating exam:', error);
-      toast.error('Failed to create exam');
-      return null;
-    }
-  };
 
-  const updateExam = async (examId: string, updates: OrgExamUpdate): Promise<boolean> => {
-    try {
-      const { error } = await supabase
-        .from('organization_exams')
-        .update(updates)
-        .eq('id', examId);
-
-      if (error) throw error;
-      
-      setExams(prev => prev.map(e => e.id === examId ? { ...e, ...updates } as OrgExam : e));
+      setExams((prev) => prev.map((e) => (e.id === examId ? ({ ...e, ...updates } as OrgExam) : e)));
       return true;
     } catch (error) {
       console.error('Error updating exam:', error);
       toast.error('Failed to update exam');
       return false;
     }
-  };
+  }, []);
 
-  const deleteExam = async (examId: string): Promise<boolean> => {
+  const deleteExam = useCallback(async (examId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('organization_exams')
-        .delete()
-        .eq('id', examId);
+      const { error } = await supabase.from('organization_exams').delete().eq('id', examId);
 
       if (error) throw error;
-      
-      setExams(prev => prev.filter(e => e.id !== examId));
+
+      setExams((prev) => prev.filter((e) => e.id !== examId));
       toast.success('Exam deleted successfully');
       return true;
     } catch (error) {
@@ -129,42 +126,38 @@ export function useOrgExam() {
       toast.error('Failed to delete exam');
       return false;
     }
-  };
+  }, []);
 
-  const getExamByAccessCode = async (accessCode: string): Promise<OrgExam | null> => {
+  const getExamByAccessCode = useCallback(async (accessCode: string): Promise<OrgExam | null> => {
     try {
       const { data, error } = await supabase
         .from('organization_exams')
         .select('*')
         .eq('access_code', accessCode.toUpperCase())
         .in('status', ['draft', 'scheduled', 'active'])
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data ?? null;
     } catch (error) {
       console.error('Error fetching exam by access code:', error);
       return null;
     }
-  };
+  }, []);
 
-  const getExamById = async (examId: string): Promise<OrgExam | null> => {
+  const getExamById = useCallback(async (examId: string): Promise<OrgExam | null> => {
     try {
-      const { data, error } = await supabase
-        .from('organization_exams')
-        .select('*')
-        .eq('id', examId)
-        .single();
+      const { data, error } = await supabase.from('organization_exams').select('*').eq('id', examId).maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data ?? null;
     } catch (error) {
       console.error('Error fetching exam:', error);
       return null;
     }
-  };
+  }, []);
 
-  const getExamQuestions = async (examId: string): Promise<OrgExamQuestion[]> => {
+  const getExamQuestions = useCallback(async (examId: string): Promise<OrgExamQuestion[]> => {
     try {
       const { data, error } = await supabase
         .from('organization_exam_questions')
@@ -173,31 +166,31 @@ export function useOrgExam() {
         .order('order_index');
 
       if (error) throw error;
-      
+
       // Parse options if they're stored as JSON strings
-      return (data || []).map(q => ({
+      return (data || []).map((q) => ({
         ...q,
-        options: Array.isArray(q.options) ? q.options : (typeof q.options === 'string' ? JSON.parse(q.options) : []),
+        options: Array.isArray(q.options)
+          ? q.options
+          : typeof q.options === 'string'
+            ? JSON.parse(q.options)
+            : [],
         explanation: q.explanation || undefined,
       })) as OrgExamQuestion[];
     } catch (error) {
       console.error('Error fetching questions:', error);
       return [];
     }
-  };
+  }, []);
 
-  const saveQuestions = async (examId: string, questions: Omit<OrgExamQuestion, 'id' | 'exam_id'>[]): Promise<boolean> => {
-    try {
-      // Delete existing questions
-      await supabase
-        .from('organization_exam_questions')
-        .delete()
-        .eq('exam_id', examId);
+  const saveQuestions = useCallback(
+    async (examId: string, questions: Omit<OrgExamQuestion, 'id' | 'exam_id'>[]): Promise<boolean> => {
+      try {
+        // Delete existing questions
+        await supabase.from('organization_exam_questions').delete().eq('exam_id', examId);
 
-      // Insert new questions
-      const { error } = await supabase
-        .from('organization_exam_questions')
-        .insert(
+        // Insert new questions
+        const { error } = await supabase.from('organization_exam_questions').insert(
           questions.map((q, index) => ({
             exam_id: examId,
             question: q.question,
@@ -208,23 +201,22 @@ export function useOrgExam() {
           }))
         );
 
-      if (error) throw error;
-      
-      // Update question count
-      await supabase
-        .from('organization_exams')
-        .update({ question_count: questions.length })
-        .eq('id', examId);
+        if (error) throw error;
 
-      return true;
-    } catch (error) {
-      console.error('Error saving questions:', error);
-      toast.error('Failed to save questions');
-      return false;
-    }
-  };
+        // Update question count
+        await supabase.from('organization_exams').update({ question_count: questions.length }).eq('id', examId);
 
-  const getExamSessions = async (examId: string): Promise<OrgExamSession[]> => {
+        return true;
+      } catch (error) {
+        console.error('Error saving questions:', error);
+        toast.error('Failed to save questions');
+        return false;
+      }
+    },
+    []
+  );
+
+  const getExamSessions = useCallback(async (examId: string): Promise<OrgExamSession[]> => {
     try {
       const { data, error } = await supabase
         .from('organization_exam_sessions')
@@ -238,15 +230,11 @@ export function useOrgExam() {
       console.error('Error fetching sessions:', error);
       return [];
     }
-  };
+  }, []);
 
-  const createSession = async (sessionData: OrgExamSessionInsert): Promise<OrgExamSession | null> => {
+  const createSession = useCallback(async (sessionData: OrgExamSessionInsert): Promise<OrgExamSession | null> => {
     try {
-      const { data, error } = await supabase
-        .from('organization_exam_sessions')
-        .insert(sessionData)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('organization_exam_sessions').insert(sessionData).select().single();
 
       if (error) throw error;
       return data;
@@ -259,14 +247,11 @@ export function useOrgExam() {
       }
       return null;
     }
-  };
+  }, []);
 
-  const updateSession = async (sessionId: string, updates: Partial<OrgExamSession>): Promise<boolean> => {
+  const updateSession = useCallback(async (sessionId: string, updates: Partial<OrgExamSession>): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('organization_exam_sessions')
-        .update(updates)
-        .eq('id', sessionId);
+      const { error } = await supabase.from('organization_exam_sessions').update(updates).eq('id', sessionId);
 
       if (error) throw error;
       return true;
@@ -274,48 +259,52 @@ export function useOrgExam() {
       console.error('Error updating session:', error);
       return false;
     }
-  };
+  }, []);
 
-  const getSessionByEmail = async (examId: string, email: string): Promise<OrgExamSession | null> => {
+  const getSessionByEmail = useCallback(async (examId: string, email: string): Promise<OrgExamSession | null> => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const { data, error } = await supabase
         .from('organization_exam_sessions')
         .select('*')
         .eq('exam_id', examId)
-        .eq('student_email', email)
-        .single();
+        .eq('student_email', normalizedEmail)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || null;
+      if (error) throw error;
+      return data ?? null;
     } catch (error) {
       console.error('Error fetching session:', error);
       return null;
     }
-  };
+  }, []);
 
-  const generateQuestions = async (params: {
-    subject: string;
-    academicLevel: string;
-    curriculumType: string;
-    questionCount: number;
-    difficulty: string;
-    topic?: string;
-  }): Promise<OrgExamQuestion[] | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-organization-exam', {
-        body: params,
-      });
+  const generateQuestions = useCallback(
+    async (params: {
+      subject: string;
+      academicLevel: string;
+      curriculumType: string;
+      questionCount: number;
+      difficulty: string;
+      topic?: string;
+    }): Promise<OrgExamQuestion[] | null> => {
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-organization-exam', {
+          body: params,
+        });
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
+        if (error) throw error;
+        if (data.error) throw new Error(data.error);
 
-      return data.questions;
-    } catch (error) {
-      console.error('Error generating questions:', error);
-      toast.error('Failed to generate questions');
-      return null;
-    }
-  };
+        return data.questions;
+      } catch (error) {
+        console.error('Error generating questions:', error);
+        toast.error('Failed to generate questions');
+        return null;
+      }
+    },
+    []
+  );
 
   return {
     exams,
