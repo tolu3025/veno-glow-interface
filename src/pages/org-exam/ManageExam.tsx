@@ -50,15 +50,11 @@ export default function ManageOrgExam() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    
+    // ProtectedRoute handles auth - just load data if we have examId
     if (examId) {
       loadExamData();
     }
-  }, [examId, user]);
+  }, [examId]);
 
   const loadExamData = async () => {
     if (!examId) return;
