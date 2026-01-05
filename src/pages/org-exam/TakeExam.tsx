@@ -11,6 +11,7 @@ import { Loader2, Clock, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, Chev
 import { useOrgExam, OrgExam, OrgExamQuestion, OrgExamSession } from '@/hooks/useOrgExam';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { toast } from 'sonner';
+import LaTeXText from '@/components/ui/latex-text';
 
 type ExamState = 'loading' | 'not_found' | 'registration' | 'instructions' | 'exam' | 'submitted' | 'disqualified';
 
@@ -579,7 +580,7 @@ export default function TakeOrgExam() {
               <div className="min-w-0 flex-1">
                 <Badge variant="outline" className="mb-2 text-xs">Q{currentQuestion + 1}</Badge>
                 <CardTitle className="text-sm sm:text-lg leading-relaxed">
-                  {currentQ.question}
+                  <LaTeXText>{currentQ.question}</LaTeXText>
                 </CardTitle>
               </div>
               <Button
@@ -611,7 +612,9 @@ export default function TakeOrgExam() {
                   }`}>
                     {String.fromCharCode(65 + idx)}
                   </div>
-                  <span className="flex-1 text-sm sm:text-base">{option}</span>
+                  <span className="flex-1 text-sm sm:text-base">
+                    <LaTeXText>{option}</LaTeXText>
+                  </span>
                 </div>
               </div>
             ))}
