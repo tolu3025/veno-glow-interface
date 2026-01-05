@@ -65,7 +65,7 @@ export const PendingChallenges: React.FC<PendingChallengesProps> = ({ onChalleng
           table: 'streak_challenges',
           filter: `host_id=eq.${user.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const challenge = payload.new as Challenge;
           const oldChallenge = payload.old as Challenge;
           
@@ -74,14 +74,31 @@ export const PendingChallenges: React.FC<PendingChallengesProps> = ({ onChalleng
             // Remove from pending list
             setPendingChallenges(prev => prev.filter(c => c.id !== challenge.id));
             
+            // Re-fetch full challenge data to ensure we have all fields including questions
+            const { data: fullChallenge, error } = await supabase
+              .from('streak_challenges')
+              .select('*')
+              .eq('id', challenge.id)
+              .single();
+            
+            if (error || !fullChallenge) {
+              console.error('Error fetching challenge data:', error);
+              toast({
+                title: 'Error',
+                description: 'Failed to load challenge. Please refresh.',
+                variant: 'destructive',
+              });
+              return;
+            }
+            
             // Notify the host and allow them to join
             toast({
               title: 'Challenge Accepted! 🎉',
               description: 'Your opponent is waiting. Click to join the battle!',
             });
             
-            // Trigger the callback to show host the join prompt
-            onChallengeAccepted(challenge);
+            // Trigger the callback to show host the join prompt with full data
+            onChallengeAccepted(fullChallenge as Challenge);
           }
           
           // Remove cancelled/expired challenges

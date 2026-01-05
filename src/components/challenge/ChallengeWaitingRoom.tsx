@@ -41,14 +41,31 @@ export const ChallengeWaitingRoom: React.FC<ChallengeWaitingRoomProps> = ({
           table: 'streak_challenges',
           filter: `id=eq.${challengeId}`,
         },
-        (payload) => {
+        async (payload) => {
           const challenge = payload.new as Challenge;
           
           if (challenge.status === 'in_progress') {
             setStatus('accepted');
+            
+            // Re-fetch full challenge data to ensure we have all fields including questions
+            const { data: fullChallenge, error } = await supabase
+              .from('streak_challenges')
+              .select('*')
+              .eq('id', challengeId)
+              .single();
+            
+            if (error || !fullChallenge) {
+              console.error('Error fetching full challenge:', error);
+              // Fallback to payload data
+              setTimeout(() => {
+                onChallengeAccepted(challenge);
+              }, 1000);
+              return;
+            }
+            
             // Small delay to show the accepted state before transitioning
             setTimeout(() => {
-              onChallengeAccepted(challenge);
+              onChallengeAccepted(fullChallenge as Challenge);
             }, 1000);
           } else if (challenge.status === 'declined') {
             setStatus('declined');
