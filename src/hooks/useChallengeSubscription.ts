@@ -75,12 +75,20 @@ export const useChallengeSubscription = () => {
           schema: 'public',
           table: 'streak_challenges',
         },
-        (payload) => {
+        async (payload) => {
           const challenge = payload.new as Challenge;
           
-          // Update active challenge if it's the same one
+          // Update active challenge if it's the same one - re-fetch to ensure complete data
           if (activeChallenge && activeChallenge.id === challenge.id) {
-            setActiveChallenge(challenge);
+            const { data: fullChallenge } = await supabase
+              .from('streak_challenges')
+              .select('*')
+              .eq('id', challenge.id)
+              .single();
+            
+            if (fullChallenge) {
+              setActiveChallenge(fullChallenge as Challenge);
+            }
           }
           
           // Clear incoming challenge if it was accepted/declined
