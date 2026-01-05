@@ -163,6 +163,19 @@ export const ChallengeSetupModal: React.FC<ChallengeSetupModalProps> = ({
   };
 
   const handleChallengeAccepted = (challenge: Challenge) => {
+    // Validate that challenge has questions before proceeding
+    if (!challenge.questions || !Array.isArray(challenge.questions) || challenge.questions.length === 0) {
+      console.error('Challenge missing questions:', challenge);
+      toast({
+        title: 'Error',
+        description: 'Failed to load battle questions. Please try again.',
+        variant: 'destructive',
+      });
+      setShowWaitingRoom(false);
+      setCreatedChallengeId(null);
+      return;
+    }
+    
     setShowWaitingRoom(false);
     onClose();
     if (onChallengeAccepted) {

@@ -47,25 +47,38 @@ export const ChallengeWaitingRoom: React.FC<ChallengeWaitingRoomProps> = ({
           if (challenge.status === 'in_progress') {
             setStatus('accepted');
             
-            // Re-fetch full challenge data to ensure we have all fields including questions
-            const { data: fullChallenge, error } = await supabase
-              .from('streak_challenges')
-              .select('*')
-              .eq('id', challengeId)
-              .single();
+            // Re-fetch full challenge data with retry logic to ensure questions are present
+            const fetchWithRetry = async (retries = 3): Promise<Challenge | null> => {
+              for (let i = 0; i < retries; i++) {
+                const { data, error } = await supabase
+                  .from('streak_challenges')
+                  .select('*')
+                  .eq('id', challengeId)
+                  .single();
+                
+                if (!error && data && data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+                  return data as Challenge;
+                }
+                
+                console.log(`Retry ${i + 1}/${retries} - questions not ready yet`);
+                if (i < retries - 1) {
+                  await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+                }
+              }
+              return null;
+            };
             
-            if (error || !fullChallenge) {
-              console.error('Error fetching full challenge:', error);
-              // Fallback to payload data
-              setTimeout(() => {
-                onChallengeAccepted(challenge);
-              }, 1000);
+            const fullChallenge = await fetchWithRetry();
+            
+            if (!fullChallenge) {
+              console.error('Failed to fetch challenge with questions after retries');
+              setStatus('expired');
               return;
             }
             
             // Small delay to show the accepted state before transitioning
             setTimeout(() => {
-              onChallengeAccepted(fullChallenge as Challenge);
+              onChallengeAccepted(fullChallenge);
             }, 1000);
           } else if (challenge.status === 'declined') {
             setStatus('declined');
