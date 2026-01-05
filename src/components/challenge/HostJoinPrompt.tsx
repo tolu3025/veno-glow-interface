@@ -23,22 +23,25 @@ export const HostJoinPrompt: React.FC<HostJoinPromptProps> = ({
     setIsJoining(true);
     try {
       // Update the started_at field to signal to opponent that host is ready
-      const { data: updatedChallenge, error } = await supabase
+      await supabase
         .from('streak_challenges')
         .update({ started_at: new Date().toISOString() })
+        .eq('id', challenge.id);
+
+      // Re-fetch the full challenge to ensure we have all data including questions
+      const { data: fullChallenge, error } = await supabase
+        .from('streak_challenges')
+        .select('*')
         .eq('id', challenge.id)
-        .select()
         .single();
 
       if (error) throw error;
       
-      // Merge with original challenge to ensure all fields are present
-      const mergedChallenge = {
-        ...challenge,
-        ...updatedChallenge,
-      } as Challenge;
+      if (!fullChallenge) {
+        throw new Error('Challenge not found');
+      }
       
-      onJoin(mergedChallenge);
+      onJoin(fullChallenge as Challenge);
     } catch (error) {
       console.error('Error joining challenge:', error);
       setIsJoining(false);
