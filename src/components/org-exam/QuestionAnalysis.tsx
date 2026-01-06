@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, TrendingDown, Brain } from 'lucide-react';
 import { OrgExamQuestion, OrgExamSession } from '@/hooks/useOrgExam';
-
+import LaTeXText from '@/components/ui/latex-text';
 interface QuestionAnalysisProps {
   questions: OrgExamQuestion[];
   sessions: OrgExamSession[];
@@ -122,7 +122,9 @@ export default function QuestionAnalysis({ questions, sessions }: QuestionAnalys
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <Badge variant="outline" className="mb-1">Q{stat.questionIndex + 1}</Badge>
-                    <p className="text-sm line-clamp-2">{stat.question}</p>
+                    <div className="text-sm line-clamp-2">
+                      <LaTeXText>{stat.question}</LaTeXText>
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
                     <p className={`font-medium ${stat.successRate < 40 ? 'text-destructive' : 'text-muted-foreground'}`}>
@@ -164,7 +166,11 @@ export default function QuestionAnalysis({ questions, sessions }: QuestionAnalys
                 {questionStats.map((stat) => (
                   <tr key={stat.questionIndex} className="border-b">
                     <td className="p-2 font-medium">{stat.questionIndex + 1}</td>
-                    <td className="p-2 max-w-xs truncate">{stat.question}</td>
+                    <td className="p-2 max-w-xs">
+                      <div className="line-clamp-2">
+                        <LaTeXText>{stat.question}</LaTeXText>
+                      </div>
+                    </td>
                     <td className="p-2 text-right text-muted-foreground">
                       {stat.correctCount}/{stat.totalAttempts}
                     </td>
