@@ -60,6 +60,10 @@ const AdminQuestions = () => {
   // Filters
   const [filterSubject, setFilterSubject] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const questionsPerPage = 10;
 
   const acceptedFileTypes = '.pdf,.docx,.ppt,.pptx';
 
@@ -404,6 +408,18 @@ const AdminQuestions = () => {
     return true;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
+  const paginatedQuestions = filteredQuestions.slice(
+    (currentPage - 1) * questionsPerPage,
+    currentPage * questionsPerPage
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterSubject, filterDifficulty]);
+
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading questions...</div>;
   }
@@ -592,78 +608,150 @@ const AdminQuestions = () => {
       </div>
 
       {/* Questions List */}
-      <div className="grid gap-4">
-        {filteredQuestions.map((question) => (
-          <Card key={question.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">
-                    <LaTeXText>{question.question}</LaTeXText>
-                  </CardTitle>
-                  <CardDescription>
-                    Subject: {question.subject} | Difficulty: {question.difficulty}
-                    {question.topic && ` | Topic: ${question.topic}`}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingQuestion(question)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Question</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this question? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteQuestion(question.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Array.isArray(question.options) ? 
-                  question.options.map((option: string, index: number) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Badge variant={index === question.answer ? "default" : "secondary"}>
-                        {String.fromCharCode(65 + index)}
-                      </Badge>
-                      <span><LaTeXText>{option}</LaTeXText></span>
-                      {index === question.answer && (
-                        <Badge variant="default" className="ml-auto">Correct</Badge>
-                      )}
-                    </div>
-                  )) : (
-                    <p>Invalid options format</p>
-                  )
-                }
-                {question.explanation && (
-                  <div className="mt-4 p-3 bg-muted rounded">
-                    <strong>Explanation:</strong> <LaTeXText>{question.explanation}</LaTeXText>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center text-sm text-muted-foreground">
+          <span>Showing {paginatedQuestions.length} of {filteredQuestions.length} questions</span>
+          {totalPages > 1 && (
+            <span>Page {currentPage} of {totalPages}</span>
+          )}
+        </div>
+        
+        <div className="grid gap-4">
+          {paginatedQuestions.map((question) => (
+            <Card key={question.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg">
+                      <LaTeXText>{question.question}</LaTeXText>
+                    </CardTitle>
+                    <CardDescription>
+                      Subject: {question.subject} | Difficulty: {question.difficulty}
+                      {question.topic && ` | Topic: ${question.topic}`}
+                    </CardDescription>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  <div className="flex gap-2 ml-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingQuestion(question)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Question</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this question? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteQuestion(question.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Array.isArray(question.options) ? 
+                    question.options.map((option: string, index: number) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Badge variant={index === question.answer ? "default" : "secondary"}>
+                          {String.fromCharCode(65 + index)}
+                        </Badge>
+                        <span><LaTeXText>{option}</LaTeXText></span>
+                        {index === question.answer && (
+                          <Badge variant="default" className="ml-auto">Correct</Badge>
+                        )}
+                      </div>
+                    )) : (
+                      <p>Invalid options format</p>
+                    )
+                  }
+                  {question.explanation && (
+                    <div className="mt-4 p-3 bg-muted rounded">
+                      <strong>Explanation:</strong> <LaTeXText>{question.explanation}</LaTeXText>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Add Question Dialog */}
