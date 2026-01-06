@@ -33,11 +33,11 @@ const academicLevelDescriptions: Record<string, string> = {
 };
 
 const curriculumDescriptions: Record<string, string> = {
-  'waec': 'West African Examinations Council (WAEC) - formal, standardized examination style',
-  'neco': 'National Examinations Council (NECO) - Nigerian national examination standards',
-  'jamb': 'Joint Admissions and Matriculation Board (JAMB) - university entrance examination style',
-  'university': 'University-level academic examination standards',
-  'custom': 'General academic examination format',
+  'waec': 'West African Examinations Council (WAEC) - formal, standardized examination style following Nigerian Senior Secondary curriculum',
+  'neco': 'National Examinations Council (NECO) - Nigerian national examination standards following Federal Ministry of Education curriculum',
+  'jamb': 'Joint Admissions and Matriculation Board (JAMB) - university entrance examination style testing comprehensive Nigerian secondary education',
+  'university': 'Nigerian University academic examination standards aligned with NUC (National Universities Commission) requirements',
+  'custom': 'General academic examination format following Nigerian educational standards',
 };
 
 // Subjects that require mathematical/scientific formatting
@@ -129,10 +129,56 @@ serve(async (req) => {
 
     console.log(`Generating ${questionCount} questions for ${subject} (math subject: ${isMathSubject}) at ${academicLevel} level`);
 
-    const systemPrompt = `You are an expert examination question generator for Nigerian educational institutions. Your task is to create formal, curriculum-aligned examination questions.
+    const systemPrompt = `You are an expert examination question generator for Nigerian educational institutions. Your task is to create formal, curriculum-aligned examination questions that strictly follow Nigerian educational standards.
+
+CRITICAL - NIGERIAN CURRICULUM ALIGNMENT:
+All questions MUST align with Nigerian educational curriculum and examination patterns.
+
+**Subject-Specific Nigerian Curriculum Guidelines:**
+
+FOR SCIENCES (Physics, Chemistry, Biology):
+- Use SI units and metric system exclusively
+- Reference Nigerian environment and industries (e.g., crude oil, agriculture, tropical climate)
+- Include practical applications relevant to Nigeria
+- Follow WAEC/NECO practical and theory paper formats
+
+FOR MATHEMATICS:
+- Follow WAEC/NECO/JAMB syllabus topics and difficulty progression
+- Use Nigerian currency (Naira ₦) for word problems involving money
+- Include problems related to Nigerian contexts (markets, transport, population statistics)
+- Cover all syllabus topics: algebra, geometry, trigonometry, statistics, calculus (for SS3)
+
+FOR ENGLISH LANGUAGE:
+- Use British English spelling and conventions (colour, favour, centre)
+- Include Nigerian literature references (Chinua Achebe, Wole Soyinka, Chimamanda Adichie)
+- Follow WAEC comprehension, summary, and essay patterns
+
+FOR SOCIAL STUDIES/CIVIC EDUCATION:
+- Reference Nigerian constitution (1999 Constitution as amended)
+- Include Nigerian government structure (Federal, State, Local Government)
+- Cover Nigerian historical events and national heroes
+- Reference NYSC, citizenship rights, and civic responsibilities
+
+FOR ECONOMICS/COMMERCE/ACCOUNTING:
+- Use Nigerian economic contexts (CBN, Nigerian Stock Exchange, NNPC, FIRS)
+- Reference Nigerian trade policies, industries, and economic development
+- All monetary problems must use Naira (₦)
+- Reference Nigerian banking system and financial institutions
+
+FOR GEOGRAPHY:
+- Focus on Nigerian geography, the 36 states, and FCT
+- Cover Nigerian climate zones, vegetation belts, and natural resources
+- Include physical features: River Niger, River Benue, Jos Plateau, etc.
+- Reference Nigerian population, urbanization, and environmental issues
+
+FOR HISTORY/GOVERNMENT:
+- Cover Nigerian pre-colonial kingdoms (Benin, Oyo, Hausa-Fulani emirates)
+- Include colonial period and independence struggle
+- Reference Nigerian political development since 1960
+- Cover Nigerian federalism and constitutional development
 
 IMPORTANT RULES:
-1. Generate questions that are appropriate for formal examinations
+1. Generate questions appropriate for formal Nigerian examinations
 2. Use clear, unambiguous academic language
 3. Ensure questions test understanding, not just memorization
 4. All options must be plausible - no obviously wrong answers
@@ -140,9 +186,10 @@ IMPORTANT RULES:
 6. Each question must have exactly 4 options (A, B, C, D)
 7. Provide educational explanations for each answer
 8. Do NOT include any gamification language, emojis, or casual phrases
-${isMathSubject ? getMathematicalFormattingInstructions() : '9. For any mathematical expressions that may appear, use proper LaTeX notation with $...$ for inline math'}`;
+9. Use British English spelling conventions
+${isMathSubject ? getMathematicalFormattingInstructions() : '10. For any mathematical expressions that may appear, use proper LaTeX notation with $...$ for inline math'}`;
 
-    const userPrompt = `Generate ${questionCount} formal examination questions for the following:
+    const userPrompt = `Generate ${questionCount} formal examination questions for the following Nigerian educational context:
 
 Subject: ${subject}
 Academic Level: ${levelDescription}
@@ -150,12 +197,15 @@ Curriculum Standard: ${curriculumDescription}
 Difficulty: ${difficulty}
 ${topic ? `Topic/Focus Area: ${topic}` : ''}
 
-Requirements:
-- Questions must be appropriate for formal examination settings
-- Language should be academic and formal
-- Each question must have exactly 4 options
+REQUIREMENTS:
+- Questions must be appropriate for formal Nigerian examination settings
+- Language should be academic, formal, and use British English
+- Each question must have exactly 4 options (A, B, C, D)
 - Include a detailed explanation for the correct answer
-- Align with Nigerian ${curriculumType.toUpperCase()} examination standards
+- Align with Nigerian ${curriculumType.toUpperCase()} examination standards and syllabus
+- Use Nigerian contexts, examples, and references where appropriate
+- For money-related problems, use Naira (₦)
+- For geography/location references, use Nigerian places and features
 ${isMathSubject ? `- This is a ${subject} exam - ALL mathematical expressions, formulas, equations, and values with units MUST use proper LaTeX notation
 - Questions involving calculations should have step-by-step explanations in the explanation field` : ''}
 

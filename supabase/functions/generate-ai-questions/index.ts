@@ -59,6 +59,66 @@ serve(async (req) => {
 const topicText = topic ? ` about ${topic}` : '';
     const descriptionText = description ? `\n\nSpecific requirements: ${description}` : '';
     
+    // Nigerian Curriculum Context
+    const nigerianCurriculumContext = `
+CRITICAL - NIGERIAN CURRICULUM ALIGNMENT:
+You are generating questions that MUST align with Nigerian educational standards and curriculum.
+
+**Educational Context:**
+- Questions must reflect Nigerian academic standards and examination patterns
+- Use examples, scenarios, and contexts familiar to Nigerian students
+- Reference Nigerian geography, history, culture, and current affairs where appropriate
+- Follow WAEC, NECO, and JAMB examination patterns and standards
+
+**Subject-Specific Nigerian Curriculum Guidelines:**
+
+FOR SCIENCES (Physics, Chemistry, Biology):
+- Use SI units and metric system exclusively
+- Reference Nigerian environment and industries (e.g., crude oil, agriculture, tropics)
+- Include practical applications relevant to Nigeria
+
+FOR MATHEMATICS:
+- Follow WAEC/NECO/JAMB syllabus topics and difficulty progression
+- Use Nigerian currency (Naira ₦) for word problems involving money
+- Include problems related to Nigerian contexts (markets, transport, population)
+
+FOR ENGLISH LANGUAGE:
+- Use British English spelling and conventions
+- Include Nigerian literature references (Chinua Achebe, Wole Soyinka, etc.)
+- Follow WAEC comprehension and essay patterns
+
+FOR SOCIAL STUDIES/CIVIC EDUCATION:
+- Reference Nigerian constitution, government structure, and civic duties
+- Include Nigerian historical events and national heroes
+- Cover Nigerian federalism and local government structure
+
+FOR ECONOMICS/COMMERCE:
+- Use Nigerian economic contexts (CBN, Nigerian Stock Exchange, NNPC)
+- Reference Nigerian trade, industries, and economic policies
+- Include problems with Naira (₦) currency
+
+FOR GEOGRAPHY:
+- Focus on Nigerian geography, climate zones, and natural resources
+- Reference Nigerian states, cities, and physical features
+- Include West African regional geography
+
+FOR HISTORY:
+- Cover Nigerian pre-colonial, colonial, and post-independence history
+- Reference Nigerian national heroes and political developments
+- Include West African history and Nigeria's role in Africa
+
+FOR GOVERNMENT:
+- Focus on Nigerian constitution and political structure
+- Reference the three tiers of government in Nigeria
+- Cover Nigerian electoral system and democratic processes
+
+**Examination Style Guidelines:**
+- Questions should match formal examination format used in Nigerian schools
+- Avoid casual language - use formal academic English
+- Structure questions as they would appear in WAEC/NECO/JAMB papers
+- Include clear, unambiguous options with only one correct answer
+`;
+
     let formatInstructions = '';
     if (shouldFormatMath) {
       formatInstructions = `
@@ -103,14 +163,18 @@ EXAMPLE EXPLANATION:
 
     // Function to generate questions in batches
     const generateQuestionsInBatch = async (batchSize: number) => {
-      const prompt = `Generate ${batchSize} multiple-choice questions for ${subject}${topicText} at ${difficulty} level.${descriptionText}${formatInstructions}
+      const prompt = `Generate ${batchSize} multiple-choice questions for ${subject}${topicText} at ${difficulty} level.${descriptionText}
+
+${nigerianCurriculumContext}
+${formatInstructions}
 
 Requirements:
 - Each question has exactly 4 options (A, B, C, D)
 - Only one correct answer per question
 - Include clear explanations for correct answers
-- Questions should test real understanding
-- Make questions educational and meaningful
+- Questions should test real understanding, not just memorization
+- Make questions educational, meaningful, and aligned with Nigerian curriculum
+- Use formal academic language appropriate for Nigerian examinations
 ${shouldFormatMath ? '- ALL math must use \\\\( \\\\) notation - NEVER use $ signs' : ''}
 
 Return ONLY valid JSON in this exact format:
@@ -139,7 +203,7 @@ Generate exactly ${batchSize} questions.`;
           messages: [
 { 
               role: 'system', 
-              content: `You are an expert educator creating high-quality educational questions. You MUST respond with valid JSON only. ${shouldFormatMath ? 'CRITICAL MATH RULE: Format ALL math using \\\\( expression \\\\) for inline and \\\\[ expression \\\\] for display. ABSOLUTELY NEVER use dollar signs ($). NEVER use \\\\begin{} environments. Examples: \\\\(x^2\\\\), \\\\(\\\\frac{a}{b}\\\\), \\\\(\\\\sqrt{x}\\\\), \\\\(\\\\int f(x) dx\\\\).' : ''}` 
+              content: `You are an expert Nigerian educator creating high-quality educational questions aligned with Nigerian curriculum standards (WAEC, NECO, JAMB). You MUST respond with valid JSON only. Use formal academic language appropriate for Nigerian educational institutions. ${shouldFormatMath ? 'CRITICAL MATH RULE: Format ALL math using \\\\( expression \\\\) for inline and \\\\[ expression \\\\] for display. ABSOLUTELY NEVER use dollar signs ($). NEVER use \\\\begin{} environments. Examples: \\\\(x^2\\\\), \\\\(\\\\frac{a}{b}\\\\), \\\\(\\\\sqrt{x}\\\\), \\\\(\\\\int f(x) dx\\\\).' : ''}` 
             },
             { role: 'user', content: prompt }
           ],
