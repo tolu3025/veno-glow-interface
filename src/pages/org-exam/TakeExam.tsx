@@ -12,6 +12,7 @@ import { useOrgExam, OrgExam, OrgExamQuestion, OrgExamSession } from '@/hooks/us
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { toast } from 'sonner';
 import LaTeXText from '@/components/ui/latex-text';
+import StudentResultView from '@/components/org-exam/StudentResultView';
 
 type ExamState = 'loading' | 'not_found' | 'registration' | 'instructions' | 'exam' | 'submitted' | 'disqualified';
 
@@ -492,33 +493,29 @@ export default function TakeOrgExam() {
   }
 
   if (state === 'submitted') {
+    const timeTaken = session?.time_taken || (exam ? exam.time_limit * 60 - timeRemaining : 0);
+    
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <CardTitle>Examination Submitted</CardTitle>
-            <CardDescription>
-              Your responses have been recorded successfully
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            {exam?.show_results_immediately && score !== null && (
-              <div className="p-6 bg-muted rounded-lg">
-                <p className="text-muted-foreground mb-2">Your Score</p>
-                <p className="text-4xl font-bold">
-                  {score} / {questions.length}
-                </p>
-                <p className="text-lg text-muted-foreground mt-1">
-                  ({((score / questions.length) * 100).toFixed(1)}%)
-                </p>
-              </div>
-            )}
+        <div className="w-full max-w-lg">
+          <StudentResultView
+            studentName={session?.student_name || studentName}
+            studentEmail={session?.student_email || studentEmail}
+            studentId={session?.student_id || studentId}
+            examTitle={exam?.title || 'Examination'}
+            subject={exam?.subject || ''}
+            score={score || 0}
+            totalQuestions={questions.length}
+            timeTaken={timeTaken}
+            submittedAt={session?.submitted_at}
+            showResults={exam?.show_results_immediately ?? false}
+          />
+          <div className="mt-4 text-center">
             <Button onClick={() => navigate('/')}>
               Return Home
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }

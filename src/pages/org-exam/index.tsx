@@ -12,7 +12,8 @@ import {
   Clock, 
   ChevronRight,
   GraduationCap,
-  RefreshCw
+  RefreshCw,
+  History
 } from 'lucide-react';
 import { useOrgExam, OrgExam } from '@/hooks/useOrgExam';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,7 +63,11 @@ export default function OrgExamDashboard() {
               Create and manage formal examinations
             </p>
           </div>
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex gap-2 sm:gap-3 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => navigate('/org-exam/history')}>
+              <History className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">History</span>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => fetchExams()}>
               <RefreshCw className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Refresh</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,12 @@ import {
   Shield,
   BarChart3,
   ExternalLink,
-  Loader2
+  Loader2,
+  Printer,
+  Download,
+  TrendingUp,
+  Brain,
+  ClipboardList
 } from 'lucide-react';
 import { useOrgExam, OrgExam, OrgExamQuestion, OrgExamSession } from '@/hooks/useOrgExam';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +32,13 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useReactToPrint } from 'react-to-print';
+import QuestionAnalysis from '@/components/org-exam/QuestionAnalysis';
+import PerformanceStats from '@/components/org-exam/PerformanceStats';
+import PrintableClassResults from '@/components/org-exam/PrintableClassResults';
+import PrintableResultSlip from '@/components/org-exam/PrintableResultSlip';
+import OfficialExamRecord from '@/components/org-exam/OfficialExamRecord';
+import { exportResultsToCSV, generateResultsSummary } from '@/utils/exportOrgExamResults';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -48,6 +60,37 @@ export default function ManageOrgExam() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<OrgExamSession | null>(null);
+  
+  // Print refs
+  const classResultsRef = useRef<HTMLDivElement>(null);
+  const resultSlipRef = useRef<HTMLDivElement>(null);
+  const examRecordRef = useRef<HTMLDivElement>(null);
+  
+  const handlePrintClassResults = useReactToPrint({
+    content: () => classResultsRef.current,
+    documentTitle: exam ? `${exam.title}_Results` : 'Exam_Results',
+  });
+  
+  const handlePrintResultSlip = useReactToPrint({
+    content: () => resultSlipRef.current,
+    documentTitle: selectedSession ? `Result_${selectedSession.student_name}` : 'Result_Slip',
+  });
+  
+  const handlePrintExamRecord = useReactToPrint({
+    content: () => examRecordRef.current,
+    documentTitle: selectedSession ? `Record_${selectedSession.student_name}` : 'Exam_Record',
+  });
+  
+  const handleExportCSV = () => {
+    if (!exam) return;
+    try {
+      exportResultsToCSV(exam, sessions);
+      toast.success('Results exported successfully');
+    } catch (error) {
+      toast.error('No results to export');
+    }
+  };
 
   useEffect(() => {
     // ProtectedRoute handles auth - just load data if we have examId
@@ -222,7 +265,7 @@ export default function ManageOrgExam() {
               <span className="xs:hidden">Info</span>
             </TabsTrigger>
             <TabsTrigger value="questions" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Questions</span>
               <span className="xs:hidden">Q</span>
               <span className="text-xs">({questions.length})</span>
@@ -235,6 +278,14 @@ export default function ManageOrgExam() {
             <TabsTrigger value="results" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Results</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Reports</span>
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Analysis</span>
             </TabsTrigger>
           </TabsList>
 
@@ -450,49 +501,149 @@ export default function ManageOrgExam() {
           </TabsContent>
 
           <TabsContent value="results">
-            <Card>
-              <CardHeader>
-                <CardTitle>Results Summary</CardTitle>
-                <CardDescription>
-                  Performance analytics for this examination
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {sessions.filter(s => s.status === 'submitted').length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No submissions yet
-                  </p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="p-4 border rounded-lg text-center">
-                      <p className="text-3xl font-bold">
-                        {sessions.filter(s => s.status === 'submitted').length}
-                      </p>
-                      <p className="text-muted-foreground">Submissions</p>
-                    </div>
-                    <div className="p-4 border rounded-lg text-center">
-                      <p className="text-3xl font-bold">
-                        {(() => {
-                          const submitted = sessions.filter(s => s.status === 'submitted' && s.score !== null);
-                          if (submitted.length === 0) return '-';
-                          const avg = submitted.reduce((sum, s) => sum + (s.score || 0), 0) / submitted.length;
-                          return avg.toFixed(1);
-                        })()}
-                      </p>
-                      <p className="text-muted-foreground">Average Score</p>
-                    </div>
-                    <div className="p-4 border rounded-lg text-center">
-                      <p className="text-3xl font-bold text-destructive">
-                        {sessions.filter(s => s.status === 'disqualified').length}
-                      </p>
-                      <p className="text-muted-foreground">Disqualified</p>
-                    </div>
+            <div className="space-y-6">
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrintClassResults}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Results
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+
+              {sessions.filter(s => s.status === 'submitted').length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-center text-muted-foreground py-8">
+                      No submissions yet
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Summary Stats */}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold">
+                          {sessions.filter(s => s.status === 'submitted').length}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Total Submissions</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold">
+                          {(() => {
+                            const submitted = sessions.filter(s => s.status === 'submitted' && s.score !== null);
+                            if (submitted.length === 0) return '-';
+                            const avg = submitted.reduce((sum, s) => sum + (s.score || 0), 0) / submitted.length;
+                            return avg.toFixed(1);
+                          })()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Average Score</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold">
+                          {Math.max(...sessions.filter(s => s.status === 'submitted').map(s => s.score || 0))}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Highest Score</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold text-destructive">
+                          {sessions.filter(s => s.status === 'disqualified').length}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Disqualified</p>
+                      </CardContent>
+                    </Card>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+
+                  {/* Individual Results Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Individual Results</CardTitle>
+                      <CardDescription>Click on a student to print their result slip</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-3 font-medium">Name</th>
+                              <th className="text-left p-3 font-medium hidden sm:table-cell">Email</th>
+                              <th className="text-center p-3 font-medium">Score</th>
+                              <th className="text-center p-3 font-medium">Grade</th>
+                              <th className="text-center p-3 font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sessions
+                              .filter(s => s.status === 'submitted')
+                              .sort((a, b) => (b.score || 0) - (a.score || 0))
+                              .map((session) => {
+                                const pct = ((session.score || 0) / exam.question_count) * 100;
+                                const grade = pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F';
+                                return (
+                                  <tr key={session.id} className="border-b hover:bg-muted/50">
+                                    <td className="p-3 font-medium">{session.student_name}</td>
+                                    <td className="p-3 text-muted-foreground hidden sm:table-cell">{session.student_email}</td>
+                                    <td className="p-3 text-center">{session.score}/{exam.question_count}</td>
+                                    <td className="p-3 text-center">
+                                      <Badge variant={grade === 'F' ? 'destructive' : 'secondary'}>
+                                        {grade}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedSession(session);
+                                          setTimeout(() => handlePrintResultSlip(), 100);
+                                        }}
+                                      >
+                                        <Printer className="h-4 w-4" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <PerformanceStats sessions={sessions} totalQuestions={exam.question_count} />
+          </TabsContent>
+
+          <TabsContent value="analysis">
+            <QuestionAnalysis questions={questions} sessions={sessions} />
           </TabsContent>
         </Tabs>
+
+        {/* Hidden Print Components */}
+        <div className="hidden">
+          <PrintableClassResults ref={classResultsRef} exam={exam} sessions={sessions} />
+          {selectedSession && (
+            <>
+              <PrintableResultSlip ref={resultSlipRef} exam={exam} session={selectedSession} />
+              <OfficialExamRecord ref={examRecordRef} exam={exam} session={selectedSession} />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
