@@ -35,7 +35,7 @@ const StreakChallengeLeaderboard = () => {
     const { data } = await supabase
       .from('user_challenge_stats')
       .select('*')
-      .order('highest_streak', { ascending: false })
+      .order('current_streak', { ascending: false })
       .order('total_wins', { ascending: false })
       .limit(50);
 

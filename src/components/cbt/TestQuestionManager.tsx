@@ -147,18 +147,22 @@ const TestQuestionManager: React.FC<TestQuestionManagerProps> = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="list" className="flex items-center gap-2">
-            <List className="h-4 w-4" />
-            Questions ({questions.length})
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="list" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2">
+            <List className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="hidden sm:inline">Questions</span>
+            <span className="sm:hidden">List</span>
+            <span className="hidden xs:inline">({questions.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="manual" className="flex items-center gap-2">
-            <PlusCircle className="h-4 w-4" />
-            Add Manually
+          <TabsTrigger value="manual" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2">
+            <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="hidden sm:inline">Add Manually</span>
+            <span className="sm:hidden">Manual</span>
           </TabsTrigger>
-          <TabsTrigger value="bank" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            From Question Bank
+          <TabsTrigger value="bank" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2">
+            <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="hidden sm:inline">From Question Bank</span>
+            <span className="sm:hidden">Bank</span>
           </TabsTrigger>
         </TabsList>
 
