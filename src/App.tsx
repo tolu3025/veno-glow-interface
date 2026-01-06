@@ -62,6 +62,7 @@ import CreateOrgExam from "./pages/org-exam/CreateExam";
 import ManageOrgExam from "./pages/org-exam/ManageExam";
 import TakeOrgExam from "./pages/org-exam/TakeExam";
 import JoinOrgExam from "./pages/org-exam/JoinExam";
+import ExamHistory from "./pages/org-exam/ExamHistory";
 
 import "./functions/appendToActivities";
 
@@ -323,6 +324,12 @@ const AppRoutes = () => {
           <Route path="/org-exam/manage/:examId" element={
             <ProtectedRoute>
               <ManageOrgExam />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/org-exam/history" element={
+            <ProtectedRoute>
+              <ExamHistory />
             </ProtectedRoute>
           } />
         </Route>
