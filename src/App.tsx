@@ -3,10 +3,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/providers/ThemeProvider";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { StreakProvider } from "@/providers/StreakProvider";
+import { PWAProvider, usePWA } from "@/providers/PWAProvider";
 import { StreakMissedDialog } from "@/components/streak/StreakMissedDialog";
 import { StreakMilestoneDialog } from "@/components/streak/StreakMilestoneDialog";
 import { RouteTracker } from "@/components/RouteTracker";
@@ -56,6 +57,10 @@ import AIStudyAssistant from "./pages/AIStudyAssistant";
 import VoiceTutorPage from "./pages/VoiceTutorPage";
 import InstallPage from "./pages/InstallPage";
 
+// PWA Pages
+import PWAAuthPage from "./pages/pwa/PWAAuthPage";
+import PWAHome from "./pages/pwa/PWAHome";
+
 // Organization Exam pages
 import OrgExamDashboard from "./pages/org-exam/index";
 import CreateOrgExam from "./pages/org-exam/CreateExam";
@@ -86,6 +91,24 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// PWA Root redirect component
+const PWARootRedirect: React.FC = () => {
+  const { isPWA } = usePWA();
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  // Only redirect from root path in PWA mode
+  if (isPWA && location.pathname === '/') {
+    if (isLoading) return null;
+    if (user) {
+      return <Navigate to="/pwa/home" replace />;
+    }
+    return <Navigate to="/pwa/auth" replace />;
+  }
+
+  return <Index />;
+};
 
 // Define AppRoutes as a separate component to avoid React Router issues
 const AppRoutes = () => {
@@ -156,6 +179,14 @@ const AppRoutes = () => {
       )}
 
       <Routes>
+        {/* PWA Routes */}
+        <Route path="/pwa/auth" element={<PWAAuthPage />} />
+        <Route path="/pwa/home" element={
+          <ProtectedRoute>
+            <PWAHome />
+          </ProtectedRoute>
+        } />
+        
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signup" element={<AuthPage initialMode="signup" />} />
         <Route path="/install" element={<InstallPage />} />
@@ -195,7 +226,7 @@ const AppRoutes = () => {
         
         <Route element={<MainLayout />}>
           {/* Public routes that don't require authentication */}
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<PWARootRedirect />} />
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
@@ -348,15 +379,17 @@ const App = () => {
         <ThemeProvider>
           <BrowserRouter>
             <AuthProvider>
-              <StreakProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <AdminSetup />
-                  <InstallPrompt />
-                  <AppRoutes />
-                </TooltipProvider>
-              </StreakProvider>
+              <PWAProvider>
+                <StreakProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <AdminSetup />
+                    <InstallPrompt />
+                    <AppRoutes />
+                  </TooltipProvider>
+                </StreakProvider>
+              </PWAProvider>
             </AuthProvider>
           </BrowserRouter>
         </ThemeProvider>
