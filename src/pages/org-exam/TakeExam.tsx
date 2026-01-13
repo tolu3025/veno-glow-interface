@@ -546,70 +546,75 @@ export default function TakeOrgExam() {
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <div className="bg-card border-b px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
+      {/* Header - fully responsive */}
+      <div className="bg-card border-b px-2 xs:px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h1 className="font-semibold text-sm sm:text-base truncate">{exam?.title}</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">{exam?.subject}</p>
+          <h1 className="font-semibold text-xs xs:text-sm sm:text-base md:text-lg truncate">{exam?.title}</h1>
+          <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground truncate">{exam?.subject}</p>
         </div>
         <div className="flex-shrink-0">
-          <Badge variant={timeRemaining < 300 ? 'destructive' : 'secondary'} className="text-sm sm:text-lg px-2 sm:px-4 py-1">
+          <Badge 
+            variant={timeRemaining < 300 ? 'destructive' : 'secondary'} 
+            className="text-xs xs:text-sm sm:text-base md:text-lg px-1.5 xs:px-2 sm:px-3 md:px-4 py-0.5 sm:py-1"
+          >
             <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             {formatTime(timeRemaining)}
           </Badge>
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="px-2 sm:px-4 py-2 border-b bg-muted/50">
-        <div className="flex items-center justify-between text-xs sm:text-sm mb-1">
-          <span>Q {currentQuestion + 1}/{questions.length}</span>
+      {/* Progress - responsive spacing */}
+      <div className="px-2 xs:px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 border-b bg-muted/50">
+        <div className="flex items-center justify-between text-[10px] xs:text-xs sm:text-sm mb-1">
+          <span className="font-medium">Q {currentQuestion + 1}/{questions.length}</span>
           <span>{answeredCount} answered</span>
         </div>
-        <Progress value={(answeredCount / questions.length) * 100} className="h-1.5 sm:h-2" />
+        <Progress value={(answeredCount / questions.length) * 100} className="h-1 xs:h-1.5 sm:h-2" />
       </div>
 
-      {/* Question */}
-      <div className="flex-1 p-2 sm:p-4 overflow-auto">
-        <Card className="max-w-3xl mx-auto">
-          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+      {/* Question - responsive layout */}
+      <div className="flex-1 p-1.5 xs:p-2 sm:p-4 md:p-6 overflow-auto">
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader className="px-2 xs:px-3 sm:px-4 md:px-6 py-2 xs:py-3 sm:py-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <Badge variant="outline" className="mb-2 text-xs">Q{currentQuestion + 1}</Badge>
-                <CardTitle className="text-sm sm:text-lg leading-relaxed">
+                <Badge variant="outline" className="mb-1.5 sm:mb-2 text-[10px] xs:text-xs">
+                  Question {currentQuestion + 1}
+                </Badge>
+                <CardTitle className="text-xs xs:text-sm sm:text-base md:text-lg leading-relaxed">
                   <LaTeXText>{currentQ.question}</LaTeXText>
                 </CardTitle>
               </div>
               <Button
                 variant={flagged.has(currentQuestion) ? 'default' : 'outline'}
                 size="icon"
-                className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0"
+                className="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 flex-shrink-0"
                 onClick={toggleFlag}
               >
                 <Flag className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-6">
+          <CardContent className="space-y-1.5 xs:space-y-2 sm:space-y-3 px-2 xs:px-3 sm:px-4 md:px-6 pb-3 sm:pb-4">
             {currentQ.options.map((option, idx) => (
               <div
                 key={idx}
-                className={`p-2 sm:p-4 border rounded-lg cursor-pointer transition-colors ${
+                className={`p-2 xs:p-2.5 sm:p-3 md:p-4 border rounded-md sm:rounded-lg cursor-pointer transition-all active:scale-[0.98] ${
                   answers[currentQuestion] === idx
-                    ? 'border-primary bg-primary/10'
-                    : 'hover:bg-accent'
+                    ? 'border-primary bg-primary/10 shadow-sm'
+                    : 'hover:bg-accent hover:border-accent-foreground/20'
                 }`}
                 onClick={() => handleAnswerSelect(idx)}
               >
                 <div className="flex items-start gap-2 sm:gap-3">
-                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 ${
+                  <div className={`w-5 h-5 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-[10px] xs:text-xs sm:text-sm font-semibold flex-shrink-0 transition-colors ${
                     answers[currentQuestion] === idx
                       ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-muted-foreground'
+                      : 'border-muted-foreground/50'
                   }`}>
                     {String.fromCharCode(65 + idx)}
                   </div>
-                  <span className="flex-1 text-sm sm:text-base">
+                  <span className="flex-1 text-xs xs:text-sm sm:text-base leading-relaxed">
                     <LaTeXText>{option}</LaTeXText>
                   </span>
                 </div>
@@ -619,17 +624,19 @@ export default function TakeOrgExam() {
         </Card>
       </div>
 
-      {/* Question Navigation */}
-      <div className="border-t bg-card p-2 sm:p-4">
-        <div className="max-w-3xl mx-auto">
-          {/* Question buttons - scrollable on mobile */}
-          <div className="flex flex-wrap gap-1 mb-3 sm:mb-4 justify-center max-h-20 sm:max-h-none overflow-y-auto">
+      {/* Question Navigation - responsive grid */}
+      <div className="border-t bg-card p-1.5 xs:p-2 sm:p-3 md:p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Question buttons - scrollable grid */}
+          <div className="flex flex-wrap gap-1 xs:gap-1.5 sm:gap-2 mb-2 sm:mb-3 md:mb-4 justify-center max-h-16 xs:max-h-20 sm:max-h-24 md:max-h-none overflow-y-auto py-1">
             {questions.map((_, idx) => (
               <Button
                 key={idx}
                 variant={idx === currentQuestion ? 'default' : answers[idx] !== null ? 'secondary' : 'outline'}
                 size="sm"
-                className={`w-7 h-7 sm:w-8 sm:h-8 p-0 text-xs sm:text-sm ${flagged.has(idx) ? 'ring-2 ring-orange-500' : ''}`}
+                className={`w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 p-0 text-[10px] xs:text-xs sm:text-sm ${
+                  flagged.has(idx) ? 'ring-2 ring-orange-500' : ''
+                }`}
                 onClick={() => setCurrentQuestion(idx)}
               >
                 {idx + 1}
@@ -637,58 +644,66 @@ export default function TakeOrgExam() {
             ))}
           </div>
           
-          {/* Navigation */}
-          <div className="flex items-center justify-between gap-2">
+          {/* Navigation buttons */}
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <Button
               variant="outline"
               size="sm"
-              className="text-xs sm:text-sm"
+              className="text-[10px] xs:text-xs sm:text-sm h-8 xs:h-9 sm:h-10 px-2 xs:px-3 sm:px-4"
               onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
               disabled={currentQuestion === 0}
             >
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
               <span className="hidden xs:inline">Previous</span>
               <span className="xs:hidden">Prev</span>
             </Button>
             
             {currentQuestion === questions.length - 1 ? (
-              <Button size="sm" className="text-xs sm:text-sm" onClick={() => setShowSubmitDialog(true)}>
-                Submit
+              <Button 
+                size="sm" 
+                className="text-[10px] xs:text-xs sm:text-sm h-8 xs:h-9 sm:h-10 px-3 xs:px-4 sm:px-6" 
+                onClick={() => setShowSubmitDialog(true)}
+              >
+                Submit Exam
               </Button>
             ) : (
               <Button
                 size="sm"
-                className="text-xs sm:text-sm"
+                className="text-[10px] xs:text-xs sm:text-sm h-8 xs:h-9 sm:h-10 px-2 xs:px-3 sm:px-4"
                 onClick={() => setCurrentQuestion(Math.min(questions.length - 1, currentQuestion + 1))}
               >
                 Next
-                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Submit Dialog */}
+      {/* Submit Dialog - responsive */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-md mx-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Submit Examination?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-base sm:text-lg">Submit Examination?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               You have answered {answeredCount} of {questions.length} questions.
               {answeredCount < questions.length && (
-                <span className="text-destructive block mt-2">
+                <span className="text-destructive block mt-2 font-medium">
                   Warning: You have {questions.length - answeredCount} unanswered questions.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continue Exam</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSubmit()} disabled={submitting}>
+          <AlertDialogFooter className="flex-col xs:flex-row gap-2">
+            <AlertDialogCancel className="text-xs sm:text-sm">Continue Exam</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => handleSubmit()} 
+              disabled={submitting}
+              className="text-xs sm:text-sm"
+            >
               {submitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />
                   Submitting...
                 </>
               ) : (
@@ -699,23 +714,26 @@ export default function TakeOrgExam() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Violation Warning */}
+      {/* Violation Warning - responsive */}
       <AlertDialog open={showViolationWarning} onOpenChange={setShowViolationWarning}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-md mx-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive text-base sm:text-lg">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
               Security Warning
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               {violationMessage}. This violation has been recorded.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => {
-              setShowViolationWarning(false);
-              requestFullscreen();
-            }}>
+            <AlertDialogAction 
+              className="text-xs sm:text-sm"
+              onClick={() => {
+                setShowViolationWarning(false);
+                requestFullscreen();
+              }}
+            >
               Continue Exam
             </AlertDialogAction>
           </AlertDialogFooter>

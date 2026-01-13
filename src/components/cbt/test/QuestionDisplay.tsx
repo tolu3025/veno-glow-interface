@@ -125,38 +125,45 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 xs:space-y-3 sm:space-y-4">
       <style dangerouslySetInnerHTML={{
         __html: `
           .katex-display {
-            margin: 1em 0;
+            margin: 0.5em 0;
             text-align: center;
           }
           .katex {
-            font-size: 1.1em;
+            font-size: 0.9em;
+          }
+          @media (min-width: 480px) {
+            .katex { font-size: 1em; }
+          }
+          @media (min-width: 640px) {
+            .katex-display { margin: 1em 0; }
+            .katex { font-size: 1.1em; }
           }
         `
       }} />
       <Card>
-        <CardHeader>
-          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <VenoLogo className="h-6 w-6" />
-              <CardTitle>Question {currentQuestion + 1}/{questions.length}</CardTitle>
+        <CardHeader className="px-2 xs:px-3 sm:px-4 md:px-6 py-2 xs:py-3 sm:py-4">
+          <div className="flex flex-col space-y-2 xs:space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-1.5 xs:gap-2">
+              <VenoLogo className="h-5 w-5 xs:h-6 xs:w-6" />
+              <CardTitle className="text-sm xs:text-base sm:text-lg">Question {currentQuestion + 1}/{questions.length}</CardTitle>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              <div className="flex items-center gap-1 bg-secondary/30 px-3 py-1 rounded-full">
-                <Clock className="h-4 w-4" />
-                <span className="text-sm font-medium">{formatTime(timeRemaining)}</span>
+            <div className="flex flex-wrap gap-1.5 xs:gap-2 sm:gap-3">
+              <div className="flex items-center gap-1 bg-secondary/30 px-2 xs:px-3 py-0.5 xs:py-1 rounded-full">
+                <Clock className="h-3 w-3 xs:h-4 xs:w-4" />
+                <span className="text-xs xs:text-sm font-medium">{formatTime(timeRemaining)}</span>
               </div>
               
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowCalculator(true)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
+                className="flex items-center gap-1 sm:gap-2 px-1.5 xs:px-2 sm:px-3 h-7 xs:h-8 sm:h-9 text-xs xs:text-sm"
               >
-                <Calculator className="h-4 w-4" />
+                <Calculator className="h-3 w-3 xs:h-4 xs:w-4" />
                 <span className="sm:inline hidden">Calculator</span>
               </Button>
               
@@ -164,9 +171,9 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 variant={flagged[currentQuestion] ? "destructive" : "outline"}
                 size="sm"
                 onClick={toggleFlag}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
+                className="flex items-center gap-1 sm:gap-2 px-1.5 xs:px-2 sm:px-3 h-7 xs:h-8 sm:h-9 text-xs xs:text-sm"
               >
-                <Flag className="h-4 w-4" />
+                <Flag className="h-3 w-3 xs:h-4 xs:w-4" />
                 <span className="sm:inline hidden">{flagged[currentQuestion] ? 'Flagged' : 'Flag'}</span>
               </Button>
             </div>
@@ -174,14 +181,14 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           <div className="mt-2">
             <Progress 
               value={((currentQuestion + 1) / questions.length) * 100} 
-              className="h-2"
+              className="h-1 xs:h-1.5 sm:h-2"
             />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
+        <CardContent className="px-2 xs:px-3 sm:px-4 md:px-6 pb-3 sm:pb-4">
+          <div className="space-y-3 xs:space-y-4 sm:space-y-6">
             <div>
-              <div className="text-lg font-medium mb-2">
+              <div className="text-sm xs:text-base sm:text-lg font-medium mb-2 leading-relaxed">
                 <ReactMarkdown
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}
@@ -193,32 +200,32 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 </ReactMarkdown>
               </div>
               {currentQuestionData?.explanation && (
-                <p className="text-sm text-muted-foreground italic mb-4">
+                <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground italic mb-3 sm:mb-4">
                   (This question includes an explanation that will be available after completion)
                 </p>
               )}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-1.5 xs:space-y-2 sm:space-y-3">
               {questionOptions.length > 0 ? (
                 questionOptions.map((option: string, index: number) => (
                   <div 
                     key={index}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    className={`p-2 xs:p-2.5 sm:p-3 md:p-4 border rounded-md sm:rounded-lg cursor-pointer transition-all active:scale-[0.98] ${
                       selectedAnswer === index 
-                        ? 'border-veno-primary bg-veno-primary/5' 
+                        ? 'border-veno-primary bg-veno-primary/5 shadow-sm' 
                         : 'hover:border-veno-primary/50'
                     }`}
                     onClick={() => onAnswerSelect(index)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className={`flex items-center justify-center w-5 h-5 xs:w-6 xs:h-6 rounded-full border-2 text-[10px] xs:text-xs sm:text-sm font-semibold flex-shrink-0 transition-colors ${
                         selectedAnswer === index 
                           ? 'border-veno-primary bg-veno-primary text-white' 
-                          : 'border-gray-300'
+                          : 'border-muted-foreground/50'
                       }`}>
                         {String.fromCharCode(65 + index)}
                       </div>
-                      <div>
+                      <div className="flex-1 text-xs xs:text-sm sm:text-base leading-relaxed">
                         <ReactMarkdown
                           remarkPlugins={[remarkMath]}
                           rehypePlugins={[rehypeKatex]}
@@ -233,25 +240,26 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                   </div>
                 ))
               ) : (
-                <div className="p-4 border rounded-lg text-center text-muted-foreground">
+                <div className="p-2 xs:p-3 sm:p-4 border rounded-lg text-center text-muted-foreground text-xs xs:text-sm">
                   No options available for this question.
                 </div>
               )}
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex gap-4 pt-6 border-t mt-6">
+        <CardFooter className="flex gap-2 xs:gap-3 sm:gap-4 pt-3 xs:pt-4 sm:pt-6 border-t mt-3 xs:mt-4 sm:mt-6 px-2 xs:px-3 sm:px-4 md:px-6">
           <Button 
             variant="outline" 
             onClick={onPreviousQuestion}
             disabled={currentQuestion === 0}
-            className="flex-1"
+            className="flex-1 text-xs xs:text-sm h-8 xs:h-9 sm:h-10"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Previous
+            <ArrowLeft className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+            <span className="hidden xs:inline">Previous</span>
+            <span className="xs:hidden">Prev</span>
           </Button>
           <Button 
-            className="flex-1 bg-veno-primary hover:bg-veno-primary/90" 
+            className="flex-1 bg-veno-primary hover:bg-veno-primary/90 text-xs xs:text-sm h-8 xs:h-9 sm:h-10" 
             onClick={onNextQuestion}
           >
             {currentQuestion < questions.length - 1 ? 'Next' : 'Finish'}
@@ -260,15 +268,15 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       </Card>
 
       <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
-        <DialogContent>
+        <DialogContent className="max-w-[90vw] xs:max-w-xs sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Calculator</DialogTitle>
+            <DialogTitle className="text-sm xs:text-base sm:text-lg">Calculator</DialogTitle>
           </DialogHeader>
-          <div className="p-4">
-            <div className="bg-secondary/10 p-4 rounded-lg mb-4 text-right">
-              <span className="text-2xl font-mono">{calcDisplay}</span>
+          <div className="p-2 xs:p-3 sm:p-4">
+            <div className="bg-secondary/10 p-2 xs:p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 text-right">
+              <span className="text-lg xs:text-xl sm:text-2xl font-mono">{calcDisplay}</span>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1 xs:gap-1.5 sm:gap-2">
               {[7, 8, 9, '÷', 4, 5, 6, '×', 1, 2, 3, '-', 0, '.', '=', '+'].map((btn) => (
                 <Button
                   key={btn}
@@ -281,7 +289,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     }
                     else handleOperation(btn);
                   }}
-                  className="h-12 text-lg"
+                  className="h-9 xs:h-10 sm:h-12 text-sm xs:text-base sm:text-lg"
                 >
                   {btn}
                 </Button>
@@ -289,7 +297,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
               <Button
                 variant="destructive"
                 onClick={handleClear}
-                className="h-12 col-span-4 mt-2"
+                className="h-9 xs:h-10 sm:h-12 col-span-4 mt-1 xs:mt-1.5 sm:mt-2 text-sm xs:text-base"
               >
                 Clear
               </Button>
@@ -298,7 +306,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
         </DialogContent>
       </Dialog>
       
-      <div className="my-4">
+      <div className="my-2 xs:my-3 sm:my-4">
         <AdPlacement location="content" contentCheck={false} />
       </div>
     </div>
