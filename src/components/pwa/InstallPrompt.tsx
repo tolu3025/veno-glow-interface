@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, X, Smartphone, Zap, Wifi } from 'lucide-react';
+import { Download, X, Smartphone, Zap, Wifi, Share } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -9,28 +9,69 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const PROMPT_DISMISSED_KEY = 'pwa-prompt-dismissed';
+const PROMPT_DISMISSED_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const PROMPT_NEVER_SHOW_KEY = 'pwa-prompt-never-show';
+const PROMPT_NEVER_SHOW_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
+    // Detect iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
+    // Check if iOS and running in Safari
+    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    if (isInStandaloneMode) {
+      setIsInstalled(true);
+      return;
+    }
+
+    // Check if dismissed recently
+    const dismissedAt = localStorage.getItem(PROMPT_DISMISSED_KEY);
+    if (dismissedAt) {
+      const dismissedTime = parseInt(dismissedAt, 10);
+      if (Date.now() - dismissedTime < PROMPT_DISMISSED_DURATION) {
+        return;
+      }
+    }
+
+    // Check if "never show" is set
+    const neverShowAt = localStorage.getItem(PROMPT_NEVER_SHOW_KEY);
+    if (neverShowAt) {
+      const neverShowTime = parseInt(neverShowAt, 10);
+      if (Date.now() - neverShowTime < PROMPT_NEVER_SHOW_DURATION) {
+        return;
+      }
+    }
+
+    // For iOS, show prompt after delay
+    if (isIOSDevice) {
+      setTimeout(() => setShowPrompt(true), 3000);
+      return;
+    }
+
+    // For other browsers, listen for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show prompt after a delay for better UX
       setTimeout(() => setShowPrompt(true), 3000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Check if app was installed
     window.addEventListener('appinstalled', () => {
       setIsInstalled(true);
       setShowPrompt(false);
@@ -43,6 +84,11 @@ export const InstallPrompt = () => {
   }, []);
 
   const handleInstall = async () => {
+    if (isIOS) {
+      setShowIOSInstructions(true);
+      return;
+    }
+
     if (!deferredPrompt) return;
 
     await deferredPrompt.prompt();
@@ -56,16 +102,13 @@ export const InstallPrompt = () => {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Don't show again for this session
-    sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+    localStorage.setItem(PROMPT_DISMISSED_KEY, Date.now().toString());
   };
 
-  // Don't show if dismissed this session
-  useEffect(() => {
-    if (sessionStorage.getItem('pwa-prompt-dismissed')) {
-      setShowPrompt(false);
-    }
-  }, []);
+  const handleNeverShow = () => {
+    setShowPrompt(false);
+    localStorage.setItem(PROMPT_NEVER_SHOW_KEY, Date.now().toString());
+  };
 
   if (isInstalled || !showPrompt) return null;
 
@@ -100,28 +143,64 @@ export const InstallPrompt = () => {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="flex flex-wrap gap-2 mb-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Zap className="h-3 w-3 text-primary" />
-                Fast access
-              </span>
-              <span className="flex items-center gap-1">
-                <Wifi className="h-3 w-3 text-primary" />
-                Works offline
-              </span>
-              <span className="flex items-center gap-1">
-                <Smartphone className="h-3 w-3 text-primary" />
-                Native feel
-              </span>
-            </div>
-            <Button 
-              onClick={handleInstall} 
-              className="w-full gap-2"
-              size="sm"
-            >
-              <Download className="h-4 w-4" />
-              Install App
-            </Button>
+            {showIOSInstructions ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  To install Veno on your {isIOS ? 'iPhone/iPad' : 'device'}:
+                </p>
+                <ol className="text-sm space-y-2 list-decimal list-inside">
+                  <li className="flex items-center gap-2">
+                    <span>Tap the</span>
+                    <Share className="h-4 w-4 inline" />
+                    <span>Share button</span>
+                  </li>
+                  <li>Scroll down and tap "Add to Home Screen"</li>
+                  <li>Tap "Add" in the top right corner</li>
+                </ol>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-2"
+                  onClick={() => setShowIOSInstructions(false)}
+                >
+                  Got it
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2 mb-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-primary" />
+                    Fast access
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Wifi className="h-3 w-3 text-primary" />
+                    Works offline
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Smartphone className="h-3 w-3 text-primary" />
+                    Native feel
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={handleInstall} 
+                    className="w-full gap-2"
+                    size="sm"
+                  >
+                    <Download className="h-4 w-4" />
+                    Install App
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground"
+                    onClick={handleNeverShow}
+                  >
+                    Don't show again for a week
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </motion.div>

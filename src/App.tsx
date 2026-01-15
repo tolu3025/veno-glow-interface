@@ -32,6 +32,8 @@ import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
 import PublicLeaderboards from "./pages/cbt/PublicLeaderboards";
+import CourseMaterialTest from "./pages/cbt/CourseMaterialTest";
+import AdminCourseMaterials from "./pages/admin/AdminCourseMaterials";
 import TutorialInfo from "./pages/TutorialInfo";
 import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
@@ -220,7 +222,7 @@ const AppRoutes = () => {
           <Route path="user-management" element={<AdminUserManagement />} />
           <Route path="questions" element={<AdminQuestions />} />
           <Route path="past-questions" element={<AdminPastQuestions />} />
-          
+          <Route path="course-materials" element={<AdminCourseMaterials />} />
           <Route path="assign-admin" element={<AssignAdmin />} />
         </Route>
         
@@ -230,6 +232,7 @@ const AppRoutes = () => {
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
+          <Route path="/cbt/course-material-test" element={<CourseMaterialTest />} />
           <Route path="/ai-tutorial/chat" element={<AiChat />} />
           <Route path="/ai-tutorial/resources" element={<AiResources />} />
           <Route path="/tutorial/info" element={<TutorialInfo />} />
