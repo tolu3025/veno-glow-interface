@@ -538,6 +538,48 @@ export type Database = {
         }
         Relationships: []
       }
+      course_materials: {
+        Row: {
+          course_code: string
+          course_name: string
+          course_title: string
+          created_at: string
+          department: string | null
+          file_content: string | null
+          file_url: string
+          id: string
+          institution: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          course_code: string
+          course_name: string
+          course_title: string
+          created_at?: string
+          department?: string | null
+          file_content?: string | null
+          file_url: string
+          id?: string
+          institution?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          course_code?: string
+          course_name?: string
+          course_title?: string
+          created_at?: string
+          department?: string | null
+          file_content?: string | null
+          file_url?: string
+          id?: string
+          institution?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       custom_tests: {
         Row: {
           created_at: string | null

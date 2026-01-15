@@ -72,3 +72,6 @@ verify_jwt = false
 
 [functions.generate-organization-exam]
 verify_jwt = false
+
+[functions.generate-pdf-questions]
+verify_jwt = false
