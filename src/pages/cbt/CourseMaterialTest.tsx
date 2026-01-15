@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, BookOpen, FileText, Loader2, GraduationCap, ArrowLeft, Upload, Check, X } from 'lucide-react';
+import { Search, BookOpen, FileText, Loader2, GraduationCap, ArrowLeft, Upload, Check, X, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LaTeXText from '@/components/ui/latex-text';
@@ -22,6 +22,7 @@ interface CourseMaterial {
   institution?: string;
   department?: string;
   file_content?: string;
+  file_url?: string;
 }
 
 interface GeneratedQuestions {
@@ -311,23 +312,35 @@ const CourseMaterialTest = () => {
                           </Select>
                         </div>
 
-                        <Button 
-                          onClick={handleGenerateQuestions}
-                          className="w-full"
-                          disabled={isGenerating}
-                        >
-                          {isGenerating ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Generating Questions...
-                            </>
-                          ) : (
-                            <>
-                              <GraduationCap className="h-4 w-4 mr-2" />
-                              Generate Test Questions
-                            </>
+                        <div className="flex gap-2">
+                          {foundMaterial.file_url && (
+                            <Button 
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => window.open(foundMaterial.file_url, '_blank')}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download PDF
+                            </Button>
                           )}
-                        </Button>
+                          <Button 
+                            onClick={handleGenerateQuestions}
+                            className="flex-1"
+                            disabled={isGenerating}
+                          >
+                            {isGenerating ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <GraduationCap className="h-4 w-4 mr-2" />
+                                Generate Questions
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
