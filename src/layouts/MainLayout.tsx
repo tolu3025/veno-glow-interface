@@ -1,14 +1,16 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Outlet, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/AuthProvider";
-import { UserCircle, LogOut, LogIn, Moon, Sun, Facebook, Instagram, Youtube } from "lucide-react";
+import { UserCircle, LogOut, LogIn, Moon, Sun, Facebook, Instagram, Youtube, Search } from "lucide-react";
 import { toast } from "sonner";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
 import MobileMenu from "@/components/ui/mobile-menu";
 import { StreakDisplay } from "@/components/streak/StreakDisplay";
 import { FloatingPaths } from "@/components/ui/background-paths";
+import { CourseSearchModal } from "@/components/search/CourseSearchModal";
 
 const MainLayout = () => {
   const { user, signOut } = useAuth();
@@ -16,6 +18,7 @@ const MainLayout = () => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const isHomePage = location.pathname === "/";
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const mainLinks = [
     { name: "Home", path: "/" },
@@ -81,7 +84,18 @@ const MainLayout = () => {
             ))}
           </nav>
           
-          <div className="ml-auto flex items-center space-x-4">
+          <div className="ml-auto flex items-center space-x-2 sm:space-x-4">
+            {/* Course Search Button */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSearchModalOpen(true)}
+              className="rounded-full"
+              title="Search Courses"
+            >
+              <Search size={18} />
+            </Button>
+            
             {/* Streak display - hidden on mobile via the component's internal styling */}
             <StreakDisplay variant="compact" />
             
@@ -137,6 +151,8 @@ const MainLayout = () => {
         </div>
       </header>
       
+      {/* Course Search Modal */}
+      <CourseSearchModal open={searchModalOpen} onOpenChange={setSearchModalOpen} />
       <main className="flex-1 relative z-10">
         <div className="container mx-auto px-4 md:px-6 py-4 max-w-7xl">
           <Outlet />

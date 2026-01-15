@@ -11,6 +11,7 @@ import FileUploader from '@/components/ai-assistant/FileUploader';
 import ChatHistorySidebar from '@/components/ai-assistant/ChatHistorySidebar';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CourseMaterialFeaturePopup } from '@/components/popups/CourseMaterialFeaturePopup';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -388,6 +389,8 @@ const AIStudyAssistant: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Feature Popup */}
+      <CourseMaterialFeaturePopup />
     </div>
   );
 };
