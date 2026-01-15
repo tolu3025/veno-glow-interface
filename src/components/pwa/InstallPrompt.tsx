@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, X, Smartphone, Zap, Wifi, Share, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import venoLogo from '@/../../public/veno-logo.png';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -157,7 +156,7 @@ export const InstallPrompt = () => {
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
-                  <img src={venoLogo} alt="Veno" className="h-8 w-8 object-contain" />
+                  <img src="/veno-logo.png" alt="Veno" className="h-8 w-8 object-contain" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Install Veno</CardTitle>
