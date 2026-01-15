@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, X, Smartphone, Zap, Wifi, Share } from 'lucide-react';
+import { Download, X, Smartphone, Zap, Wifi, Share, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -14,27 +14,34 @@ const PROMPT_DISMISSED_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 const PROMPT_NEVER_SHOW_KEY = 'pwa-prompt-never-show';
 const PROMPT_NEVER_SHOW_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// Detect platform
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+const isAndroid = () => /Android/.test(navigator.userAgent);
+const isSafari = () => /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const isChrome = () => /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigator.userAgent);
+const isInStandaloneMode = () => 
+  window.matchMedia('(display-mode: standalone)').matches || 
+  (window.navigator as any).standalone === true;
+
 export const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
-    // Detect iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(isIOSDevice);
-
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
+    // Detect platform
+    if (isIOS()) {
+      setPlatform('ios');
+    } else if (isAndroid()) {
+      setPlatform('android');
+    } else {
+      setPlatform('desktop');
     }
 
-    // Check if iOS and running in Safari
-    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
-    if (isInStandaloneMode) {
+    // Check if already installed
+    if (isInStandaloneMode()) {
       setIsInstalled(true);
       return;
     }
@@ -57,22 +64,39 @@ export const InstallPrompt = () => {
       }
     }
 
-    // For iOS, show prompt after delay
-    if (isIOSDevice) {
-      setTimeout(() => setShowPrompt(true), 3000);
-      return;
+    // For iOS in Safari, show manual instructions after delay
+    if (isIOS() && isSafari()) {
+      const timer = setTimeout(() => setShowPrompt(true), 3000);
+      return () => clearTimeout(timer);
     }
 
-    // For other browsers, listen for beforeinstallprompt
+    // For Android/Chrome, listen for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
+      console.log('beforeinstallprompt event fired');
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setTimeout(() => setShowPrompt(true), 3000);
+      setTimeout(() => setShowPrompt(true), 2000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
+    // Also show prompt for Android Chrome even without event (fallback)
+    if (isAndroid() && isChrome()) {
+      const fallbackTimer = setTimeout(() => {
+        if (!deferredPrompt) {
+          console.log('Showing Android install prompt (fallback)');
+          setShowPrompt(true);
+        }
+      }, 5000);
+      
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handler);
+        clearTimeout(fallbackTimer);
+      };
+    }
+
     window.addEventListener('appinstalled', () => {
+      console.log('App installed');
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
@@ -81,23 +105,38 @@ export const InstallPrompt = () => {
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
     };
-  }, []);
+  }, [deferredPrompt]);
 
   const handleInstall = async () => {
-    if (isIOS) {
-      setShowIOSInstructions(true);
+    // For iOS, show instructions
+    if (platform === 'ios') {
+      setShowInstructions(true);
       return;
     }
 
-    if (!deferredPrompt) return;
-
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setShowPrompt(false);
+    // For Android with deferred prompt
+    if (deferredPrompt) {
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('Install prompt outcome:', outcome);
+        
+        if (outcome === 'accepted') {
+          setShowPrompt(false);
+        }
+        setDeferredPrompt(null);
+      } catch (error) {
+        console.error('Install prompt error:', error);
+        // Show manual instructions as fallback
+        setShowInstructions(true);
+      }
+      return;
     }
-    setDeferredPrompt(null);
+
+    // Fallback for Android without deferred prompt
+    if (platform === 'android') {
+      setShowInstructions(true);
+    }
   };
 
   const handleDismiss = () => {
@@ -143,24 +182,39 @@ export const InstallPrompt = () => {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {showIOSInstructions ? (
+            {showInstructions ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  To install Veno on your {isIOS ? 'iPhone/iPad' : 'device'}:
+                  To install Veno on your {platform === 'ios' ? 'iPhone/iPad' : 'Android device'}:
                 </p>
-                <ol className="text-sm space-y-2 list-decimal list-inside">
-                  <li className="flex items-center gap-2">
-                    <span>Tap the</span>
-                    <Share className="h-4 w-4 inline" />
-                    <span>Share button</span>
-                  </li>
-                  <li>Scroll down and tap "Add to Home Screen"</li>
-                  <li>Tap "Add" in the top right corner</li>
-                </ol>
+                {platform === 'ios' ? (
+                  <ol className="text-sm space-y-2 list-decimal list-inside">
+                    <li className="flex items-center gap-2">
+                      <span>Tap the</span>
+                      <Share className="h-4 w-4 inline text-primary" />
+                      <span>Share button in Safari</span>
+                    </li>
+                    <li>Scroll down and tap "Add to Home Screen"</li>
+                    <li>Tap "Add" in the top right corner</li>
+                  </ol>
+                ) : (
+                  <ol className="text-sm space-y-2 list-decimal list-inside">
+                    <li className="flex items-center gap-2">
+                      <span>Tap the</span>
+                      <span className="text-primary font-bold">⋮</span>
+                      <span>menu in Chrome</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span>Tap "Add to Home screen" or</span>
+                      <Plus className="h-4 w-4 inline text-primary" />
+                    </li>
+                    <li>Tap "Add" to confirm</li>
+                  </ol>
+                )}
                 <Button 
                   variant="outline" 
                   className="w-full mt-2"
-                  onClick={() => setShowIOSInstructions(false)}
+                  onClick={() => setShowInstructions(false)}
                 >
                   Got it
                 </Button>
@@ -188,7 +242,7 @@ export const InstallPrompt = () => {
                     size="sm"
                   >
                     <Download className="h-4 w-4" />
-                    Install App
+                    {deferredPrompt ? 'Install App' : 'How to Install'}
                   </Button>
                   <Button 
                     variant="ghost" 
