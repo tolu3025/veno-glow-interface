@@ -22,12 +22,17 @@ export const CourseMaterialFeaturePopup: React.FC<CourseMaterialFeaturePopupProp
     if (shownAt) {
       const shownTime = parseInt(shownAt, 10);
       if (Date.now() - shownTime < POPUP_SHOWN_DURATION) {
+        console.log('CourseMaterialFeaturePopup: Already shown recently, skipping');
         return;
       }
     }
 
     // Show popup after a short delay
-    const timer = setTimeout(() => setIsOpen(true), 1500);
+    console.log('CourseMaterialFeaturePopup: Will show in 2 seconds');
+    const timer = setTimeout(() => {
+      console.log('CourseMaterialFeaturePopup: Opening now');
+      setIsOpen(true);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 

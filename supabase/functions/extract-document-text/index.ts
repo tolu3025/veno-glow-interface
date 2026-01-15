@@ -144,84 +144,83 @@ async function extractPptxText(data: Uint8Array): Promise<string> {
     const decoder = new TextDecoder('utf-8', { fatal: false });
     const zipContent = decoder.decode(data);
     
-    // Find slide content - each slide is in ppt/slides/slideX.xml
-    const slides: string[] = [];
-    let slideNum = 1;
+    console.log('PPTX raw content length:', zipContent.length);
     
-    // Extract text from each slide by finding slide boundaries
-    const slidePattern = /slide\d+\.xml/gi;
-    const slideMatches = zipContent.match(slidePattern) || [];
-    const uniqueSlides = [...new Set(slideMatches)].sort();
+    const allText: string[] = [];
     
-    console.log(`Found ${uniqueSlides.length} slides in PPTX`);
+    // Method 1: Extract from all text tags with various namespace patterns
+    // PowerPoint uses namespaces like a:t, p:t, etc.
+    const textPatterns = [
+      /<a:t>([^<]+)<\/a:t>/gi,           // DrawingML text
+      /<p:txBody[^>]*>([\s\S]*?)<\/p:txBody>/gi,  // Text body
+      /<a:r[^>]*>([\s\S]*?)<\/a:r>/gi,   // Run elements
+      />([^<]{3,})</g,                    // Any text between tags
+    ];
     
-    // Process the entire content, grouping by paragraph structures
-    const paragraphs: string[] = [];
+    // Extract from <a:t> tags first (most common in PPTX)
+    const atPattern = /<a:t>([^<]+)<\/a:t>/gi;
+    let atMatch;
+    while ((atMatch = atPattern.exec(zipContent)) !== null) {
+      const text = atMatch[1].trim();
+      if (text && text.length > 0 && !/^[\d\s\.\,]+$/.test(text)) {
+        allText.push(text);
+      }
+    }
     
-    // Extract from <a:p> paragraph blocks containing <a:t> text
-    const paragraphRegex = /<a:p[^>]*>([\s\S]*?)<\/a:p>/g;
-    let pMatch;
+    console.log('Found text segments from a:t tags:', allText.length);
     
-    while ((pMatch = paragraphRegex.exec(zipContent)) !== null) {
-      const paragraphContent = pMatch[1];
-      const textParts: string[] = [];
-      
-      // Get all text within this paragraph
-      const textRegex = /<a:t>([^<]+)<\/a:t>/g;
+    // If no a:t tags found, try broader pattern
+    if (allText.length === 0) {
+      // Try extracting from t elements with any namespace
+      const tPattern = /:t>([^<]+)<\//gi;
       let tMatch;
-      
-      while ((tMatch = textRegex.exec(paragraphContent)) !== null) {
-        if (tMatch[1] && tMatch[1].trim()) {
-          textParts.push(tMatch[1].trim());
+      while ((tMatch = tPattern.exec(zipContent)) !== null) {
+        const text = tMatch[1].trim();
+        if (text && text.length > 1 && /[a-zA-Z]/.test(text)) {
+          allText.push(text);
         }
       }
-      
-      if (textParts.length > 0) {
-        const paragraphText = textParts.join(' ').trim();
-        // Only add meaningful paragraphs (more than just a number or single char)
-        if (paragraphText.length > 2 && !/^[\d\.\s]+$/.test(paragraphText)) {
-          paragraphs.push(paragraphText);
+      console.log('Found text segments from :t pattern:', allText.length);
+    }
+    
+    // Fallback: extract all readable text from between angle brackets
+    if (allText.length === 0) {
+      const generalPattern = />([^<]{4,})</g;
+      let gMatch;
+      while ((gMatch = generalPattern.exec(zipContent)) !== null) {
+        const text = gMatch[1].trim();
+        // Filter out XML artifacts and keep meaningful text
+        if (text && 
+            text.length > 3 && 
+            /[a-zA-Z]{2,}/.test(text) &&
+            !text.includes('xmlns') &&
+            !text.includes('xml:') &&
+            !text.match(/^[\d\s\.\,\-]+$/)) {
+          allText.push(text);
         }
       }
+      console.log('Found text from general extraction:', allText.length);
     }
     
     // Remove duplicates while preserving order
-    const uniqueParagraphs: string[] = [];
     const seen = new Set<string>();
+    const uniqueText: string[] = [];
     
-    for (const p of paragraphs) {
-      const normalized = p.toLowerCase().trim();
-      if (!seen.has(normalized) && normalized.length > 2) {
+    for (const text of allText) {
+      const normalized = text.toLowerCase().trim();
+      if (!seen.has(normalized) && normalized.length > 1) {
         seen.add(normalized);
-        uniqueParagraphs.push(p);
+        uniqueText.push(text);
       }
     }
     
-    // Join paragraphs with proper line breaks
-    let extractedText = uniqueParagraphs.join('\n\n');
-    
-    // Clean up any remaining artifacts
-    extractedText = extractedText
-      .replace(/\s{3,}/g, '\n\n')
-      .replace(/\n{3,}/g, '\n\n')
+    // Join with proper spacing
+    let extractedText = uniqueText.join(' ')
+      .replace(/\s+/g, ' ')
+      .replace(/([.!?])\s*/g, '$1 ')
       .trim();
     
-    console.log(`Extracted ${extractedText.length} characters, ${uniqueParagraphs.length} paragraphs from PPTX`);
-    
-    if (extractedText.length < 100) {
-      // Fallback: extract all readable text
-      const fallbackParts: string[] = [];
-      const simpleTextRegex = /<a:t>([^<]+)<\/a:t>/g;
-      let sMatch;
-      
-      while ((sMatch = simpleTextRegex.exec(zipContent)) !== null) {
-        if (sMatch[1] && sMatch[1].trim().length > 2) {
-          fallbackParts.push(sMatch[1].trim());
-        }
-      }
-      
-      extractedText = fallbackParts.join(' ').replace(/\s+/g, ' ').trim();
-    }
+    console.log(`Extracted ${extractedText.length} characters from PPTX, ${uniqueText.length} unique segments`);
     
     if (extractedText.length < 50) {
       return '[PPTX text extraction limited. The file may contain mostly images or complex formatting. Please paste the text content directly for best results.]';
