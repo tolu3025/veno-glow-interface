@@ -129,9 +129,6 @@ export const CourseMaterialFeaturePopup: React.FC<CourseMaterialFeaturePopupProp
             </div>
             
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={handleClose}>
-                Maybe Later
-              </Button>
               <Button className="flex-1 gap-2" onClick={handleTryNow}>
                 Try It Now
                 <ArrowRight className="h-4 w-4" />
