@@ -144,44 +144,87 @@ async function extractPptxText(data: Uint8Array): Promise<string> {
     const decoder = new TextDecoder('utf-8', { fatal: false });
     const zipContent = decoder.decode(data);
     
-    const textParts: string[] = [];
+    // Find slide content - each slide is in ppt/slides/slideX.xml
+    const slides: string[] = [];
+    let slideNum = 1;
     
-    // Extract text from <a:t> tags (PowerPoint uses DrawingML)
-    const textRegex = /<a:t>([^<]*)<\/a:t>/g;
-    let match;
+    // Extract text from each slide by finding slide boundaries
+    const slidePattern = /slide\d+\.xml/gi;
+    const slideMatches = zipContent.match(slidePattern) || [];
+    const uniqueSlides = [...new Set(slideMatches)].sort();
     
-    while ((match = textRegex.exec(zipContent)) !== null) {
-      if (match[1] && match[1].trim()) {
-        textParts.push(match[1]);
+    console.log(`Found ${uniqueSlides.length} slides in PPTX`);
+    
+    // Process the entire content, grouping by paragraph structures
+    const paragraphs: string[] = [];
+    
+    // Extract from <a:p> paragraph blocks containing <a:t> text
+    const paragraphRegex = /<a:p[^>]*>([\s\S]*?)<\/a:p>/g;
+    let pMatch;
+    
+    while ((pMatch = paragraphRegex.exec(zipContent)) !== null) {
+      const paragraphContent = pMatch[1];
+      const textParts: string[] = [];
+      
+      // Get all text within this paragraph
+      const textRegex = /<a:t>([^<]+)<\/a:t>/g;
+      let tMatch;
+      
+      while ((tMatch = textRegex.exec(paragraphContent)) !== null) {
+        if (tMatch[1] && tMatch[1].trim()) {
+          textParts.push(tMatch[1].trim());
+        }
+      }
+      
+      if (textParts.length > 0) {
+        const paragraphText = textParts.join(' ').trim();
+        // Only add meaningful paragraphs (more than just a number or single char)
+        if (paragraphText.length > 2 && !/^[\d\.\s]+$/.test(paragraphText)) {
+          paragraphs.push(paragraphText);
+        }
       }
     }
     
-    // Also try <p:txBody> content
-    const txBodyRegex = /<a:t[^>]*>([^<]+)<\/a:t>/g;
-    while ((match = txBodyRegex.exec(zipContent)) !== null) {
-      if (match[1] && match[1].trim() && !textParts.includes(match[1])) {
-        textParts.push(match[1]);
+    // Remove duplicates while preserving order
+    const uniqueParagraphs: string[] = [];
+    const seen = new Set<string>();
+    
+    for (const p of paragraphs) {
+      const normalized = p.toLowerCase().trim();
+      if (!seen.has(normalized) && normalized.length > 2) {
+        seen.add(normalized);
+        uniqueParagraphs.push(p);
       }
     }
     
-    let extractedText = textParts.join(' ')
-      .replace(/\s+/g, ' ')
+    // Join paragraphs with proper line breaks
+    let extractedText = uniqueParagraphs.join('\n\n');
+    
+    // Clean up any remaining artifacts
+    extractedText = extractedText
+      .replace(/\s{3,}/g, '\n\n')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
     
-    if (extractedText.length < 50) {
-      const readableText = zipContent
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/[^\x20-\x7E\n]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+    console.log(`Extracted ${extractedText.length} characters, ${uniqueParagraphs.length} paragraphs from PPTX`);
+    
+    if (extractedText.length < 100) {
+      // Fallback: extract all readable text
+      const fallbackParts: string[] = [];
+      const simpleTextRegex = /<a:t>([^<]+)<\/a:t>/g;
+      let sMatch;
       
-      if (readableText.length > extractedText.length) {
-        extractedText = readableText.substring(0, 15000);
+      while ((sMatch = simpleTextRegex.exec(zipContent)) !== null) {
+        if (sMatch[1] && sMatch[1].trim().length > 2) {
+          fallbackParts.push(sMatch[1].trim());
+        }
       }
+      
+      extractedText = fallbackParts.join(' ').replace(/\s+/g, ' ').trim();
     }
     
-    if (extractedText.length < 20) {
-      return '[PPTX text extraction limited. Please paste the text content directly for best results.]';
+    if (extractedText.length < 50) {
+      return '[PPTX text extraction limited. The file may contain mostly images or complex formatting. Please paste the text content directly for best results.]';
     }
     
     return extractedText;

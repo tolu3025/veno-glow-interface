@@ -147,76 +147,130 @@ function parseQuestions(text: string) {
     sectionC: [] as any[],
   };
 
-  // Split by sections
-  const sectionAMatch = text.match(/SECTION A[:\s]*OBJECTIVE QUESTIONS[\s\S]*?(?=SECTION B|$)/i);
-  const sectionBMatch = text.match(/SECTION B[:\s]*SHORT ANSWER QUESTIONS[\s\S]*?(?=SECTION C|$)/i);
-  const sectionCMatch = text.match(/SECTION C[:\s]*ESSAY QUESTIONS[\s\S]*$/i);
+  console.log('Parsing questions from text length:', text.length);
+
+  // More flexible section matching
+  const sectionAMatch = text.match(/SECTION\s*A[:\s]*(?:OBJECTIVE\s*)?QUESTIONS?[\s\S]*?(?=SECTION\s*B|$)/i);
+  const sectionBMatch = text.match(/SECTION\s*B[:\s]*(?:SHORT\s*ANSWER\s*)?QUESTIONS?[\s\S]*?(?=SECTION\s*C|$)/i);
+  const sectionCMatch = text.match(/SECTION\s*C[:\s]*(?:ESSAY\s*)?QUESTIONS?[\s\S]*$/i);
 
   if (sectionAMatch) {
-    const objectiveQuestions = sectionAMatch[0].match(/\d+\.\s+[\s\S]*?(?=\d+\.|$)/g);
+    // Match questions with various formats
+    const objectiveQuestions = sectionAMatch[0].match(/(?:^|\n)\s*(\d+)\.\s*[\s\S]*?(?=(?:\n\s*\d+\.)|$)/gm);
+    
     if (objectiveQuestions) {
       sections.sectionA = objectiveQuestions.map((q, i) => {
         const lines = q.trim().split('\n').filter(l => l.trim());
-        const questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim();
+        let questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim() || '';
         const options: string[] = [];
         let correctAnswer = '';
 
-        lines.forEach(line => {
-          const optMatch = line.match(/^([A-D])\.\s*(.+)/i);
-          if (optMatch) {
-            options.push(optMatch[2].trim());
+        // Check if question continues to next line before options
+        for (let j = 1; j < lines.length; j++) {
+          const line = lines[j].trim();
+          if (line.match(/^[A-Da-d][\.\)]/)) break;
+          if (!line.match(/\[Correct|Answer/i)) {
+            questionText += ' ' + line;
           }
-          const correctMatch = line.match(/\[Correct:\s*([A-D])\]/i);
+        }
+
+        lines.forEach(line => {
+          // Match various option formats: A. , A), a., (A), etc.
+          const optMatch = line.match(/^[\(\s]*([A-Da-d])[\.\)\s]+(.+)/i);
+          if (optMatch) {
+            options.push(optMatch[2].replace(/\[Correct.*\]/i, '').trim());
+          }
+          // Match correct answer in various formats
+          const correctMatch = line.match(/\[(?:Correct|Answer)[:\s]*([A-Da-d])\]/i) ||
+                              line.match(/(?:Correct|Answer)[:\s]*([A-Da-d])/i);
           if (correctMatch) {
             correctAnswer = correctMatch[1].toUpperCase();
           }
         });
 
+        // If no correct answer found, try to find it in the question block
+        if (!correctAnswer) {
+          const blockMatch = q.match(/\[(?:Correct|Answer)[:\s]*([A-Da-d])\]/i);
+          if (blockMatch) {
+            correctAnswer = blockMatch[1].toUpperCase();
+          }
+        }
+
         return {
           id: i + 1,
-          question: questionText,
+          question: questionText.trim(),
           options,
           correctAnswer: ['A', 'B', 'C', 'D'].indexOf(correctAnswer),
           type: 'objective'
         };
-      }).filter(q => q.question && q.options.length === 4);
+      }).filter(q => q.question && q.options.length >= 2);
     }
+    
+    console.log('Parsed Section A questions:', sections.sectionA.length);
   }
 
   if (sectionBMatch) {
-    const shortQuestions = sectionBMatch[0].match(/\d+\.\s+[\s\S]*?(?=\d+\.|$)/g);
+    const shortQuestions = sectionBMatch[0].match(/(?:^|\n)\s*(\d+)\.\s*[\s\S]*?(?=(?:\n\s*\d+\.)|$)/gm);
+    
     if (shortQuestions) {
       sections.sectionB = shortQuestions.map((q, i) => {
         const lines = q.trim().split('\n').filter(l => l.trim());
-        const questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim();
-        const answerMatch = q.match(/\[Expected Answer:\s*([\s\S]*?)\]/i);
+        let questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim() || '';
+        
+        // Question might continue on next lines
+        for (let j = 1; j < lines.length; j++) {
+          const line = lines[j].trim();
+          if (line.match(/\[Expected|Answer/i)) break;
+          questionText += ' ' + line;
+        }
+        
+        const answerMatch = q.match(/\[Expected\s*Answer[:\s]*([\s\S]*?)\]/i) ||
+                           q.match(/Answer[:\s]*([\s\S]*?)(?:\n\d+\.|$)/i);
         
         return {
           id: i + 1,
-          question: questionText,
+          question: questionText.replace(/\[Expected.*\]/i, '').trim(),
           expectedAnswer: answerMatch ? answerMatch[1].trim() : '',
           type: 'short_answer'
         };
       }).filter(q => q.question);
     }
+    
+    console.log('Parsed Section B questions:', sections.sectionB.length);
   }
 
   if (sectionCMatch) {
-    const essayQuestions = sectionCMatch[0].match(/\d+\.\s+[\s\S]*?(?=\d+\.|$)/g);
+    const essayQuestions = sectionCMatch[0].match(/(?:^|\n)\s*(\d+)\.\s*[\s\S]*?(?=(?:\n\s*\d+\.)|$)/gm);
+    
     if (essayQuestions) {
       sections.sectionC = essayQuestions.map((q, i) => {
         const lines = q.trim().split('\n').filter(l => l.trim());
-        const questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim();
-        const keyPointsMatch = q.match(/\[Key Points:\s*([\s\S]*?)\]/i);
+        let questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim() || '';
+        
+        // Question might continue on next lines
+        for (let j = 1; j < lines.length; j++) {
+          const line = lines[j].trim();
+          if (line.match(/\[Key\s*Points/i)) break;
+          questionText += ' ' + line;
+        }
+        
+        const keyPointsMatch = q.match(/\[Key\s*Points[:\s]*([\s\S]*?)\]/i);
         
         return {
           id: i + 1,
-          question: questionText,
+          question: questionText.replace(/\[Key.*\]/i, '').trim(),
           keyPoints: keyPointsMatch ? keyPointsMatch[1].trim() : '',
           type: 'essay'
         };
       }).filter(q => q.question);
     }
+    
+    console.log('Parsed Section C questions:', sections.sectionC.length);
+  }
+
+  // Log if no questions were parsed
+  if (sections.sectionA.length === 0 && sections.sectionB.length === 0 && sections.sectionC.length === 0) {
+    console.log('Warning: No questions parsed. Raw text sample:', text.substring(0, 500));
   }
 
   return sections;
