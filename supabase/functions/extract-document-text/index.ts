@@ -96,24 +96,12 @@ function extractPdfText(data: Uint8Array): string {
 // Extract text from DOCX (ZIP containing XML)
 async function extractDocxText(data: Uint8Array): Promise<string> {
   try {
-    // DOCX files are ZIP archives
-    // We'll use a simple approach to find and parse the document.xml
-    
-    // Find the ZIP file entries
     const decoder = new TextDecoder('utf-8', { fatal: false });
-    
-    // Look for the document.xml content within the ZIP
-    // ZIP files have a specific structure - local file headers followed by data
-    
     const zipContent = decoder.decode(data);
     
-    // Find word/document.xml content
-    // In DOCX, the main content is in word/document.xml
-    
-    // Look for XML content between <w:t> tags
     const textParts: string[] = [];
     
-    // Simple extraction: find all text between <w:t> and </w:t> tags
+    // Extract text between <w:t> and </w:t> tags
     const textRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
     let match;
     
@@ -123,25 +111,11 @@ async function extractDocxText(data: Uint8Array): Promise<string> {
       }
     }
     
-    // Also try to find paragraph breaks
-    const withParagraphs = zipContent
-      .replace(/<w:p[^>]*>/g, '\n')
-      .replace(/<\/w:p>/g, '\n');
-    
-    const textRegex2 = /<w:t[^>]*>([^<]*)<\/w:t>/g;
-    while ((match = textRegex2.exec(withParagraphs)) !== null) {
-      if (match[1] && !textParts.includes(match[1])) {
-        textParts.push(match[1]);
-      }
-    }
-    
     let extractedText = textParts.join(' ')
       .replace(/\s+/g, ' ')
       .trim();
     
-    // If we couldn't extract much, try a different approach
     if (extractedText.length < 50) {
-      // Try to find any readable text content
       const readableText = zipContent
         .replace(/<[^>]+>/g, ' ')
         .replace(/[^\x20-\x7E\n]/g, ' ')
@@ -161,6 +135,59 @@ async function extractDocxText(data: Uint8Array): Promise<string> {
   } catch (error) {
     console.error('DOCX extraction error:', error);
     return '[Error extracting DOCX text. Please paste the text content directly.]';
+  }
+}
+
+// Extract text from PPTX (ZIP containing XML)
+async function extractPptxText(data: Uint8Array): Promise<string> {
+  try {
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    const zipContent = decoder.decode(data);
+    
+    const textParts: string[] = [];
+    
+    // Extract text from <a:t> tags (PowerPoint uses DrawingML)
+    const textRegex = /<a:t>([^<]*)<\/a:t>/g;
+    let match;
+    
+    while ((match = textRegex.exec(zipContent)) !== null) {
+      if (match[1] && match[1].trim()) {
+        textParts.push(match[1]);
+      }
+    }
+    
+    // Also try <p:txBody> content
+    const txBodyRegex = /<a:t[^>]*>([^<]+)<\/a:t>/g;
+    while ((match = txBodyRegex.exec(zipContent)) !== null) {
+      if (match[1] && match[1].trim() && !textParts.includes(match[1])) {
+        textParts.push(match[1]);
+      }
+    }
+    
+    let extractedText = textParts.join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    if (extractedText.length < 50) {
+      const readableText = zipContent
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/[^\x20-\x7E\n]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (readableText.length > extractedText.length) {
+        extractedText = readableText.substring(0, 15000);
+      }
+    }
+    
+    if (extractedText.length < 20) {
+      return '[PPTX text extraction limited. Please paste the text content directly for best results.]';
+    }
+    
+    return extractedText;
+  } catch (error) {
+    console.error('PPTX extraction error:', error);
+    return '[Error extracting PPTX text. Please paste the text content directly.]';
   }
 }
 
@@ -193,12 +220,15 @@ serve(async (req) => {
     } else if (extension === 'docx' || extension === 'doc') {
       console.log('Extracting DOCX text...');
       extractedText = await extractDocxText(binaryData);
+    } else if (extension === 'pptx' || extension === 'ppt') {
+      console.log('Extracting PPTX text...');
+      extractedText = await extractPptxText(binaryData);
     } else if (extension === 'txt') {
       const decoder = new TextDecoder('utf-8');
       extractedText = decoder.decode(binaryData);
     } else {
       return new Response(
-        JSON.stringify({ success: false, error: `Unsupported file type: ${extension}` }),
+        JSON.stringify({ success: false, error: `Unsupported file type: ${extension}. Supported: PDF, DOCX, PPTX, TXT` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
