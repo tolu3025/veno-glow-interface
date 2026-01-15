@@ -408,30 +408,35 @@ const CourseMaterialTest = () => {
                             <span className="font-bold text-primary text-sm sm:text-base">{idx + 1}.</span>
                             <LaTeXText className="flex-1 text-sm sm:text-base">{q.question}</LaTeXText>
                           </div>
-                          <div className="grid gap-2 pl-4 sm:pl-6">
+                          <div className="flex flex-col gap-2 pl-0 sm:pl-4 mt-2">
                             {q.options.map((option, optIdx) => {
                               const isSelected = userAnswers[`A-${q.id}`] === optIdx;
                               const isCorrect = showResults && q.correctAnswer === optIdx;
                               const isWrong = showResults && isSelected && q.correctAnswer !== optIdx;
                               
                               return (
-                                <Button
+                                <button
                                   key={optIdx}
-                                  variant={isSelected ? "default" : "outline"}
-                                  className={`justify-start h-auto py-2 px-2 sm:px-3 text-left text-xs sm:text-sm ${
-                                    isCorrect ? 'bg-green-500 hover:bg-green-600 text-white' :
-                                    isWrong ? 'bg-red-500 hover:bg-red-600 text-white' : ''
-                                  }`}
+                                  type="button"
+                                  className={`
+                                    flex items-start gap-2 w-full min-h-[44px] p-3 rounded-lg border text-left transition-colors
+                                    ${isSelected && !showResults ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-accent'}
+                                    ${isCorrect ? 'bg-green-500 text-white border-green-500' : ''}
+                                    ${isWrong ? 'bg-red-500 text-white border-red-500' : ''}
+                                    ${showResults ? 'cursor-default' : 'cursor-pointer'}
+                                  `}
                                   onClick={() => !showResults && handleAnswerSelect(`A-${q.id}`, optIdx)}
                                   disabled={showResults}
                                 >
-                                  <span className="font-semibold mr-1 sm:mr-2 flex-shrink-0">
+                                  <span className="font-semibold flex-shrink-0 min-w-[20px]">
                                     {['A', 'B', 'C', 'D'][optIdx]}.
                                   </span>
-                                  <LaTeXText className="flex-1">{option}</LaTeXText>
-                                  {isCorrect && <Check className="h-3 w-3 sm:h-4 sm:w-4 ml-auto flex-shrink-0" />}
-                                  {isWrong && <X className="h-3 w-3 sm:h-4 sm:w-4 ml-auto flex-shrink-0" />}
-                                </Button>
+                                  <span className="flex-1 break-words text-sm leading-relaxed">
+                                    <LaTeXText>{option}</LaTeXText>
+                                  </span>
+                                  {isCorrect && <Check className="h-4 w-4 flex-shrink-0 mt-0.5" />}
+                                  {isWrong && <X className="h-4 w-4 flex-shrink-0 mt-0.5" />}
+                                </button>
                               );
                             })}
                           </div>
