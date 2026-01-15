@@ -6,47 +6,58 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SYSTEM_PROMPT = `You are an AI Academic Question Generator built for Nigerian tertiary institutions.
-Your role is to generate examination and test questions strictly from the provided document content.
-You must behave and think like a Nigerian Lecturer when setting questions.
+const SYSTEM_PROMPT = `You are an AI Academic Question Generator for Nigerian tertiary institutions.
+Your task is to generate examination questions from the provided document content.
 
-CORE RULES:
-1. STRICT DOCUMENT USAGE: Generate questions ONLY from the provided document content. Do NOT use external knowledge.
-2. If the answer is not inside the document, respond with: "This information is not contained in the uploaded material."
-3. LECTURER MODE: Think like a Nigerian lecturer - test understanding, not memorization. Use real academic tone. Mix theory + application questions. Use Nigerian academic standards (WAEC, JAMB, University style).
-4. NO MARKDOWN: Do NOT use *, #, or bullet markdown. Use LaTeX formatting only for equations and numbering.
+IMPORTANT RULES:
+1. Generate questions based on the main topics and concepts found in the document.
+2. If the document content appears garbled or unclear, identify key words and phrases to form questions around.
+3. Always generate ALL 20 questions - 10 objective, 5 short answer, and 5 essay questions.
+4. Use Nigerian academic tone and style similar to WAEC, JAMB, and University exams.
+5. Do NOT refuse to generate questions. Always produce output.
 
 QUESTION STYLE:
-- Cover all major topics in the document
-- Increase in difficulty progressively
-- Include definitions, explanations, applications, and calculations (if present in document)
+- Cover main topics mentioned in the document
+- Increase difficulty progressively
+- Include definitions, explanations, applications
+- Use clear academic English
 
-OUTPUT FORMAT:
-Generate questions in this exact format:
+OUTPUT FORMAT (MUST FOLLOW EXACTLY):
 
-SECTION A: OBJECTIVE QUESTIONS (10 questions)
-Each question should have 4 options (A, B, C, D) with only one correct answer.
-Format each as:
-1. Question text
-   A. Option 1
-   B. Option 2
-   C. Option 3
-   D. Option 4
-   [Correct: X]
+SECTION A: OBJECTIVE QUESTIONS
+1. Question text here
+   A. First option
+   B. Second option
+   C. Third option
+   D. Fourth option
+   [Correct: A]
 
-SECTION B: SHORT ANSWER QUESTIONS (5 questions)
-Questions requiring brief explanations (2-3 sentences each).
-Format each as:
-1. Question text
-   [Expected Answer: Brief answer]
+2. Next question...
+   A. Option
+   B. Option
+   C. Option
+   D. Option
+   [Correct: B]
 
-SECTION C: ESSAY QUESTIONS (5 questions)
-Questions requiring detailed explanations and critical thinking.
-Format each as:
-1. Question text
-   [Key Points: Main points to cover]
+(Continue for all 10 questions)
 
-Use LaTeX notation for any mathematical expressions: \\( \\) for inline and \\[ \\] for display math.`;
+SECTION B: SHORT ANSWER QUESTIONS
+1. Question requiring brief explanation?
+   [Expected Answer: Brief 2-3 sentence answer here]
+
+2. Next question...
+   [Expected Answer: Answer here]
+
+(Continue for all 5 questions)
+
+SECTION C: ESSAY QUESTIONS
+1. Question requiring detailed explanation and analysis?
+   [Key Points: Main points that should be covered in the answer]
+
+2. Next question...
+   [Key Points: Key points here]
+
+(Continue for all 5 questions)`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -71,16 +82,25 @@ serve(async (req) => {
       );
     }
 
-    const userPrompt = `Generate examination questions for the following course:
-Course Name: ${course_name || 'Not specified'}
-Course Code: ${course_code || 'Not specified'}
-Course Title: ${course_title || 'Not specified'}
-Difficulty Level: ${difficulty}
+    // Clean up the content - remove excessive whitespace and non-printable characters
+    const cleanedContent = pdf_content
+      .replace(/[^\x20-\x7E\n\r]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 40000);
 
-DOCUMENT CONTENT:
-${pdf_content.substring(0, 50000)}
+    console.log('Content preview:', cleanedContent.substring(0, 500));
 
-Generate questions strictly based on the above content. Follow the format specified in your instructions.`;
+    const userPrompt = `Generate examination questions for this course:
+Course: ${course_name || 'Academic Course'}
+Code: ${course_code || 'N/A'}
+Title: ${course_title || 'General Studies'}
+Difficulty: ${difficulty}
+
+DOCUMENT CONTENT TO BASE QUESTIONS ON:
+${cleanedContent}
+
+Generate exactly 20 questions (10 objective, 5 short answer, 5 essay) based on this content. Follow the exact format specified.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -95,7 +115,7 @@ Generate questions strictly based on the above content. Follow the format specif
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: 4500,
       }),
     });
 
@@ -117,6 +137,9 @@ Generate questions strictly based on the above content. Follow the format specif
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Generated response length:', generatedQuestions.length);
+    console.log('Response preview:', generatedQuestions.substring(0, 300));
 
     // Parse the generated questions into structured format
     const sections = parseQuestions(generatedQuestions);
@@ -149,120 +172,132 @@ function parseQuestions(text: string) {
 
   console.log('Parsing questions from text length:', text.length);
 
-  // More flexible section matching
-  const sectionAMatch = text.match(/SECTION\s*A[:\s]*(?:OBJECTIVE\s*)?QUESTIONS?[\s\S]*?(?=SECTION\s*B|$)/i);
-  const sectionBMatch = text.match(/SECTION\s*B[:\s]*(?:SHORT\s*ANSWER\s*)?QUESTIONS?[\s\S]*?(?=SECTION\s*C|$)/i);
-  const sectionCMatch = text.match(/SECTION\s*C[:\s]*(?:ESSAY\s*)?QUESTIONS?[\s\S]*$/i);
+  // Split by sections more reliably
+  const sectionAStart = text.search(/SECTION\s*A/i);
+  const sectionBStart = text.search(/SECTION\s*B/i);
+  const sectionCStart = text.search(/SECTION\s*C/i);
 
-  if (sectionAMatch) {
-    // Match questions with various formats
-    const objectiveQuestions = sectionAMatch[0].match(/(?:^|\n)\s*(\d+)\.\s*[\s\S]*?(?=(?:\n\s*\d+\.)|$)/gm);
+  let sectionAText = '';
+  let sectionBText = '';
+  let sectionCText = '';
+
+  if (sectionAStart !== -1) {
+    const endA = sectionBStart !== -1 ? sectionBStart : (sectionCStart !== -1 ? sectionCStart : text.length);
+    sectionAText = text.substring(sectionAStart, endA);
+  }
+
+  if (sectionBStart !== -1) {
+    const endB = sectionCStart !== -1 ? sectionCStart : text.length;
+    sectionBText = text.substring(sectionBStart, endB);
+  }
+
+  if (sectionCStart !== -1) {
+    sectionCText = text.substring(sectionCStart);
+  }
+
+  // Parse Section A (Objective Questions)
+  if (sectionAText) {
+    const questionBlocks = sectionAText.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
     
-    if (objectiveQuestions) {
-      sections.sectionA = objectiveQuestions.map((q, i) => {
-        const lines = q.trim().split('\n').filter(l => l.trim());
-        let questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim() || '';
-        const options: string[] = [];
-        let correctAnswer = '';
+    for (let i = 0; i < questionBlocks.length; i++) {
+      const block = questionBlocks[i];
+      if (/^\d+$/.test(block.trim())) continue; // Skip number-only blocks
+      
+      const lines = block.split('\n').filter(l => l.trim());
+      if (lines.length === 0) continue;
 
-        // Check if question continues to next line before options
-        for (let j = 1; j < lines.length; j++) {
-          const line = lines[j].trim();
-          if (line.match(/^[A-Da-d][\.\)]/)) break;
-          if (!line.match(/\[Correct|Answer/i)) {
-            questionText += ' ' + line;
-          }
+      // First line(s) is the question
+      let questionText = '';
+      const options: string[] = [];
+      let correctAnswer = '';
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        // Check if it's an option line
+        const optionMatch = trimmedLine.match(/^([A-D])[\.\)]\s*(.+)/i);
+        if (optionMatch) {
+          options.push(optionMatch[2].replace(/\[Correct.*\]/i, '').trim());
+          continue;
         }
 
-        lines.forEach(line => {
-          // Match various option formats: A. , A), a., (A), etc.
-          const optMatch = line.match(/^[\(\s]*([A-Da-d])[\.\)\s]+(.+)/i);
-          if (optMatch) {
-            options.push(optMatch[2].replace(/\[Correct.*\]/i, '').trim());
-          }
-          // Match correct answer in various formats
-          const correctMatch = line.match(/\[(?:Correct|Answer)[:\s]*([A-Da-d])\]/i) ||
-                              line.match(/(?:Correct|Answer)[:\s]*([A-Da-d])/i);
-          if (correctMatch) {
-            correctAnswer = correctMatch[1].toUpperCase();
-          }
-        });
-
-        // If no correct answer found, try to find it in the question block
-        if (!correctAnswer) {
-          const blockMatch = q.match(/\[(?:Correct|Answer)[:\s]*([A-Da-d])\]/i);
-          if (blockMatch) {
-            correctAnswer = blockMatch[1].toUpperCase();
-          }
+        // Check for correct answer marker
+        const correctMatch = trimmedLine.match(/\[Correct[:\s]*([A-D])\]/i);
+        if (correctMatch) {
+          correctAnswer = correctMatch[1].toUpperCase();
+          continue;
         }
 
-        return {
-          id: i + 1,
+        // It's part of the question
+        if (options.length === 0 && !trimmedLine.match(/^SECTION/i)) {
+          questionText += (questionText ? ' ' : '') + trimmedLine.replace(/^\d+\.\s*/, '');
+        }
+      }
+
+      // Only add if we have a valid question with options
+      if (questionText && options.length >= 2) {
+        sections.sectionA.push({
+          id: sections.sectionA.length + 1,
           question: questionText.trim(),
           options,
           correctAnswer: ['A', 'B', 'C', 'D'].indexOf(correctAnswer),
           type: 'objective'
-        };
-      }).filter(q => q.question && q.options.length >= 2);
+        });
+      }
     }
     
     console.log('Parsed Section A questions:', sections.sectionA.length);
   }
 
-  if (sectionBMatch) {
-    const shortQuestions = sectionBMatch[0].match(/(?:^|\n)\s*(\d+)\.\s*[\s\S]*?(?=(?:\n\s*\d+\.)|$)/gm);
+  // Parse Section B (Short Answer)
+  if (sectionBText) {
+    const questionBlocks = sectionBText.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
     
-    if (shortQuestions) {
-      sections.sectionB = shortQuestions.map((q, i) => {
-        const lines = q.trim().split('\n').filter(l => l.trim());
-        let questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim() || '';
-        
-        // Question might continue on next lines
-        for (let j = 1; j < lines.length; j++) {
-          const line = lines[j].trim();
-          if (line.match(/\[Expected|Answer/i)) break;
-          questionText += ' ' + line;
-        }
-        
-        const answerMatch = q.match(/\[Expected\s*Answer[:\s]*([\s\S]*?)\]/i) ||
-                           q.match(/Answer[:\s]*([\s\S]*?)(?:\n\d+\.|$)/i);
-        
-        return {
-          id: i + 1,
-          question: questionText.replace(/\[Expected.*\]/i, '').trim(),
+    for (let i = 0; i < questionBlocks.length; i++) {
+      const block = questionBlocks[i];
+      if (/^\d+$/.test(block.trim())) continue;
+      
+      const answerMatch = block.match(/\[Expected\s*Answer[:\s]*([\s\S]*?)\]/i);
+      let questionText = block
+        .replace(/\[Expected\s*Answer[:\s]*[\s\S]*?\]/i, '')
+        .replace(/^SECTION.*$/mi, '')
+        .trim();
+
+      if (questionText && questionText.length > 10) {
+        sections.sectionB.push({
+          id: sections.sectionB.length + 1,
+          question: questionText.replace(/^\d+\.\s*/, '').trim(),
           expectedAnswer: answerMatch ? answerMatch[1].trim() : '',
           type: 'short_answer'
-        };
-      }).filter(q => q.question);
+        });
+      }
     }
     
     console.log('Parsed Section B questions:', sections.sectionB.length);
   }
 
-  if (sectionCMatch) {
-    const essayQuestions = sectionCMatch[0].match(/(?:^|\n)\s*(\d+)\.\s*[\s\S]*?(?=(?:\n\s*\d+\.)|$)/gm);
+  // Parse Section C (Essay)
+  if (sectionCText) {
+    const questionBlocks = sectionCText.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
     
-    if (essayQuestions) {
-      sections.sectionC = essayQuestions.map((q, i) => {
-        const lines = q.trim().split('\n').filter(l => l.trim());
-        let questionText = lines[0]?.replace(/^\d+\.\s*/, '').trim() || '';
-        
-        // Question might continue on next lines
-        for (let j = 1; j < lines.length; j++) {
-          const line = lines[j].trim();
-          if (line.match(/\[Key\s*Points/i)) break;
-          questionText += ' ' + line;
-        }
-        
-        const keyPointsMatch = q.match(/\[Key\s*Points[:\s]*([\s\S]*?)\]/i);
-        
-        return {
-          id: i + 1,
-          question: questionText.replace(/\[Key.*\]/i, '').trim(),
+    for (let i = 0; i < questionBlocks.length; i++) {
+      const block = questionBlocks[i];
+      if (/^\d+$/.test(block.trim())) continue;
+      
+      const keyPointsMatch = block.match(/\[Key\s*Points[:\s]*([\s\S]*?)\]/i);
+      let questionText = block
+        .replace(/\[Key\s*Points[:\s]*[\s\S]*?\]/i, '')
+        .replace(/^SECTION.*$/mi, '')
+        .trim();
+
+      if (questionText && questionText.length > 10) {
+        sections.sectionC.push({
+          id: sections.sectionC.length + 1,
+          question: questionText.replace(/^\d+\.\s*/, '').trim(),
           keyPoints: keyPointsMatch ? keyPointsMatch[1].trim() : '',
           type: 'essay'
-        };
-      }).filter(q => q.question);
+        });
+      }
     }
     
     console.log('Parsed Section C questions:', sections.sectionC.length);
@@ -270,7 +305,7 @@ function parseQuestions(text: string) {
 
   // Log if no questions were parsed
   if (sections.sectionA.length === 0 && sections.sectionB.length === 0 && sections.sectionC.length === 0) {
-    console.log('Warning: No questions parsed. Raw text sample:', text.substring(0, 500));
+    console.log('Warning: No questions parsed. Raw text sample:', text.substring(0, 1000));
   }
 
   return sections;

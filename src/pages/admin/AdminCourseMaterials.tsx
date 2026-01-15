@@ -179,7 +179,7 @@ const AdminCourseMaterials = () => {
         <div>
           <h1 className="text-3xl font-bold">Course Materials</h1>
           <p className="text-muted-foreground mt-1">
-            Upload and manage class PDFs for question generation
+            Upload and manage class documents (PDF, DOCX, PPTX) for question generation
           </p>
         </div>
         <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
@@ -193,7 +193,7 @@ const AdminCourseMaterials = () => {
             <DialogHeader>
               <DialogTitle>Upload Course Material</DialogTitle>
               <DialogDescription>
-                Upload a class PDF with course details for question generation
+                Upload a class document (PDF, DOCX, PPTX, TXT) for question generation
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -247,13 +247,16 @@ const AdminCourseMaterials = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="file">PDF File *</Label>
+                <Label htmlFor="file">Document File *</Label>
                 <Input
                   id="file"
                   type="file"
                   accept=".pdf,.docx,.doc,.ppt,.pptx,.txt"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Supported: PDF, Word (DOCX, DOC), PowerPoint (PPTX, PPT), Text (TXT)
+                </p>
               </div>
               <Button
                 onClick={handleUpload}
