@@ -214,10 +214,14 @@ async function extractPptxText(data: Uint8Array): Promise<string> {
       }
     }
     
-    // Join with proper spacing
+    // Join with proper spacing and sanitize
     let extractedText = uniqueText.join(' ')
       .replace(/\s+/g, ' ')
       .replace(/([.!?])\s*/g, '$1 ')
+      // Remove NULL bytes and unsupported Unicode escape sequences
+      .replace(/\u0000/g, '')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      .replace(/[^\x20-\x7E\xA0-\xFF\u0100-\uFFFF\n\r\t ]/g, '')
       .trim();
     
     console.log(`Extracted ${extractedText.length} characters from PPTX, ${uniqueText.length} unique segments`);

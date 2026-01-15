@@ -177,10 +177,21 @@ const AdminCourseMaterials = () => {
         console.warn('Text extraction warning:', extractResponse.error);
       }
 
-      const extractedText = extractResponse.data?.text || '';
+      let extractedText = extractResponse.data?.text || '';
       
       setUploadProgress(80);
       setUploadStage('Saving to database...');
+
+      // Sanitize text to remove unsupported Unicode escape sequences
+      // Remove NULL bytes, invalid unicode, and control characters
+      extractedText = extractedText
+        .replace(/\u0000/g, '') // Remove NULL bytes
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars except \t, \n, \r
+        .replace(/\\u0000/g, '') // Remove escaped NULL
+        .replace(/[^\x20-\x7E\xA0-\xFF\u0100-\uFFFF\n\r\t]/g, ' ') // Keep printable chars only
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim()
+        .substring(0, 50000); // Limit stored text
 
       // Save to database
       const { error: dbError } = await supabase
@@ -190,7 +201,7 @@ const AdminCourseMaterials = () => {
           course_code: courseCode.toUpperCase(),
           course_title: courseTitle,
           file_url: urlData.publicUrl,
-          file_content: extractedText.substring(0, 50000), // Limit stored text
+          file_content: extractedText,
           institution: institution || null,
           department: department || null,
           uploaded_by: user?.id
