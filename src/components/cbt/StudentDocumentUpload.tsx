@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, Loader2, X, File, AlertCircle } from 'lucide-react';
+import { Upload, FileText, X, File, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import DocumentProcessingAnimation from './DocumentProcessingAnimation';
 
 interface StudentDocumentUploadProps {
   onQuestionsGenerated: (questions: any) => void;
@@ -15,6 +16,7 @@ interface StudentDocumentUploadProps {
 const ACCEPTED_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/plain'
@@ -29,12 +31,13 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
   const [courseTitle, setCourseTitle] = useState('');
   const [difficulty, setDifficulty] = useState('intermediate');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStage, setProcessingStage] = useState<'extracting' | 'analyzing' | 'generating' | 'complete'>('extracting');
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateFile = (file: File): string | null => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      return 'Unsupported file type. Please upload PDF, DOCX, PPT, or TXT files.';
+      return 'Unsupported file type. Please upload PDF, DOCX, PPTX, or TXT files.';
     }
     if (file.size > MAX_FILE_SIZE) {
       return 'File is too large. Maximum size is 10MB.';
@@ -111,6 +114,7 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
     }
 
     setIsProcessing(true);
+    setProcessingStage('extracting');
     setError(null);
 
     try {
@@ -144,6 +148,13 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
         throw new Error('Could not extract text from document');
       }
 
+      setProcessingStage('analyzing');
+
+      // Small delay for visual feedback
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setProcessingStage('generating');
+
       // Generate questions from extracted text
       const questionsResponse = await supabase.functions.invoke('generate-pdf-questions', {
         body: {
@@ -160,6 +171,8 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
       }
 
       if (questionsResponse.data?.success) {
+        setProcessingStage('complete');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         toast.success('Questions generated successfully!');
         onQuestionsGenerated(questionsResponse.data);
       } else {
@@ -176,21 +189,31 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
     }
   };
 
+  if (isProcessing) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <DocumentProcessingAnimation stage={processingStage} />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
           <Upload className="h-5 w-5 text-primary" />
           Upload Your Document
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm">
           Share a document from WhatsApp, Telegram, or your file manager to generate questions
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 md:space-y-6">
         {/* File Upload Area */}
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors ${
             isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
           } ${error ? 'border-destructive' : ''}`}
           onDragOver={handleDragOver}
@@ -198,15 +221,15 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
           onDrop={handleDrop}
         >
           {file ? (
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               {getFileIcon()}
-              <div className="text-left">
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center sm:text-left">
+                <p className="font-medium text-sm md:text-base break-all">{file.name}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
-              <Button variant="ghost" size="icon" onClick={removeFile}>
+              <Button variant="ghost" size="icon" onClick={removeFile} className="flex-shrink-0">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -214,9 +237,9 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
             <div className="space-y-4">
               {getFileIcon()}
               <div>
-                <p className="font-medium">Drag and drop your file here</p>
-                <p className="text-sm text-muted-foreground">
-                  or click to browse (PDF, DOCX, PPT, TXT)
+                <p className="font-medium text-sm md:text-base">Drag and drop your file here</p>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  or click to browse (PDF, DOCX, PPTX, TXT)
                 </p>
               </div>
               <input
@@ -226,7 +249,7 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
                 id="file-upload"
                 onChange={handleFileInputChange}
               />
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild size="sm" className="md:size-default">
                 <label htmlFor="file-upload" className="cursor-pointer">
                   Browse Files
                 </label>
@@ -237,48 +260,51 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
 
         {error && (
           <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-sm">{error}</p>
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <p className="text-xs md:text-sm">{error}</p>
           </div>
         )}
 
         {/* Course Details (Optional) */}
         <div className="space-y-4">
-          <h4 className="font-medium">Course Details (Optional)</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h4 className="font-medium text-sm md:text-base">Course Details (Optional)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="courseName">Course Name</Label>
+              <Label htmlFor="courseName" className="text-sm">Course Name</Label>
               <Input
                 id="courseName"
                 placeholder="e.g., Introduction to Programming"
                 value={courseName}
                 onChange={(e) => setCourseName(e.target.value)}
+                className="text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="courseCode">Course Code</Label>
+              <Label htmlFor="courseCode" className="text-sm">Course Code</Label>
               <Input
                 id="courseCode"
                 placeholder="e.g., CSC101"
                 value={courseCode}
                 onChange={(e) => setCourseCode(e.target.value)}
+                className="text-sm"
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="courseTitle">Course Title</Label>
+              <Label htmlFor="courseTitle" className="text-sm">Course Title</Label>
               <Input
                 id="courseTitle"
                 placeholder="e.g., Computer Science 101"
                 value={courseTitle}
                 onChange={(e) => setCourseTitle(e.target.value)}
+                className="text-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="difficulty">Difficulty Level</Label>
+              <Label htmlFor="difficulty" className="text-sm">Difficulty Level</Label>
               <Select value={difficulty} onValueChange={setDifficulty}>
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,17 +324,8 @@ const StudentDocumentUpload: React.FC<StudentDocumentUploadProps> = ({ onQuestio
           size="lg"
           disabled={!file || isProcessing}
         >
-          {isProcessing ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Processing Document...
-            </>
-          ) : (
-            <>
-              <FileText className="h-4 w-4 mr-2" />
-              Generate Test Questions
-            </>
-          )}
+          <FileText className="h-4 w-4 mr-2" />
+          Generate Test Questions
         </Button>
       </CardContent>
     </Card>

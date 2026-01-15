@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LaTeXText from '@/components/ui/latex-text';
 import StudentDocumentUpload from '@/components/cbt/StudentDocumentUpload';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CourseMaterial {
   id: string;
@@ -57,6 +58,7 @@ interface GeneratedQuestions {
 
 const CourseMaterialTest = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [courseTitle, setCourseTitle] = useState('');
@@ -177,76 +179,79 @@ const CourseMaterialTest = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6">
+    <div className="min-h-screen bg-background px-4 py-4 sm:px-6 sm:py-6 md:px-8">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-4 sm:space-y-6"
         >
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="flex-shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Course Material Test</h1>
-              <p className="text-muted-foreground">Generate questions from class PDFs</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">Course Material Test</h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">Generate questions from class PDFs</p>
             </div>
           </div>
 
           {!generatedQuestions ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="search" className="gap-2">
-                  <Search className="h-4 w-4" />
-                  Search Course
+              <TabsList className="grid w-full grid-cols-2 h-auto">
+                <TabsTrigger value="search" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
+                  <Search className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Search</span> Course
                 </TabsTrigger>
-                <TabsTrigger value="upload" className="gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload Document
+                <TabsTrigger value="upload" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
+                  <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Upload</span> Document
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="search" className="space-y-6">
+              <TabsContent value="search" className="space-y-4 sm:space-y-6 mt-4">
                 {/* Search Form */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-primary" />
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       Find Course Material
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-xs sm:text-sm">
                       Search by course name, code, or title
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="search">Course Name or Code</Label>
+                      <Label htmlFor="search" className="text-sm">Course Name or Code</Label>
                       <Input
                         id="search"
                         placeholder="e.g., Introduction to Programming or CSC101"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        className="text-sm"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="code">Course Code</Label>
+                        <Label htmlFor="code" className="text-sm">Course Code</Label>
                         <Input
                           id="code"
                           placeholder="e.g., CSC101"
                           value={courseCode}
                           onChange={(e) => setCourseCode(e.target.value)}
+                          className="text-sm"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="title">Course Title</Label>
+                        <Label htmlFor="title" className="text-sm">Course Title</Label>
                         <Input
                           id="title"
                           placeholder="e.g., Computer Science 101"
                           value={courseTitle}
                           onChange={(e) => setCourseTitle(e.target.value)}
+                          className="text-sm"
                         />
                       </div>
                     </div>
@@ -254,6 +259,7 @@ const CourseMaterialTest = () => {
                       onClick={handleSearch} 
                       className="w-full"
                       disabled={isSearching}
+                      size={isMobile ? "default" : "lg"}
                     >
                       {isSearching ? (
                         <>
@@ -277,31 +283,31 @@ const CourseMaterialTest = () => {
                     animate={{ opacity: 1, scale: 1 }}
                   >
                     <Card className="border-primary/50">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-primary" />
+                      <CardHeader className="pb-3 sm:pb-6">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                           Course Material Found
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary">{foundMaterial.course_code}</Badge>
+                            <Badge variant="secondary" className="text-xs">{foundMaterial.course_code}</Badge>
                             {foundMaterial.institution && (
-                              <Badge variant="outline">{foundMaterial.institution}</Badge>
+                              <Badge variant="outline" className="text-xs">{foundMaterial.institution}</Badge>
                             )}
                             {foundMaterial.department && (
-                              <Badge variant="outline">{foundMaterial.department}</Badge>
+                              <Badge variant="outline" className="text-xs">{foundMaterial.department}</Badge>
                             )}
                           </div>
-                          <h3 className="text-lg font-semibold">{foundMaterial.course_name}</h3>
-                          <p className="text-muted-foreground">{foundMaterial.course_title}</p>
+                          <h3 className="text-base sm:text-lg font-semibold">{foundMaterial.course_name}</h3>
+                          <p className="text-sm text-muted-foreground">{foundMaterial.course_title}</p>
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Difficulty Level</Label>
+                          <Label className="text-sm">Difficulty Level</Label>
                           <Select value={difficulty} onValueChange={setDifficulty}>
-                            <SelectTrigger>
+                            <SelectTrigger className="text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -312,20 +318,22 @@ const CourseMaterialTest = () => {
                           </Select>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           {foundMaterial.file_url && (
                             <Button 
                               variant="outline"
                               className="flex-1"
+                              size={isMobile ? "default" : "lg"}
                               onClick={() => window.open(foundMaterial.file_url, '_blank')}
                             >
                               <Download className="h-4 w-4 mr-2" />
-                              Download PDF
+                              Download
                             </Button>
                           )}
                           <Button 
                             onClick={handleGenerateQuestions}
                             className="flex-1"
+                            size={isMobile ? "default" : "lg"}
                             disabled={isGenerating}
                           >
                             {isGenerating ? (
@@ -347,26 +355,26 @@ const CourseMaterialTest = () => {
                 )}
               </TabsContent>
 
-              <TabsContent value="upload">
+              <TabsContent value="upload" className="mt-4">
                 <StudentDocumentUpload onQuestionsGenerated={handleDocumentProcessed} />
               </TabsContent>
             </Tabs>
           ) : (
             /* Questions Display */
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <GraduationCap className="h-5 w-5 text-primary" />
-                        {generatedQuestions.course.course_name}
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                        <span className="truncate">{generatedQuestions.course.course_name}</span>
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-xs sm:text-sm truncate">
                         {generatedQuestions.course.course_code} - {generatedQuestions.course.course_title}
                       </CardDescription>
                     </div>
-                    <Button variant="outline" onClick={() => setGeneratedQuestions(null)}>
+                    <Button variant="outline" onClick={() => setGeneratedQuestions(null)} size="sm">
                       New Test
                     </Button>
                   </div>
@@ -375,32 +383,32 @@ const CourseMaterialTest = () => {
 
               {/* Section Tabs */}
               <Tabs value={currentSection} onValueChange={setCurrentSection}>
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="A">
+                <TabsList className="grid w-full grid-cols-3 h-auto">
+                  <TabsTrigger value="A" className="text-xs sm:text-sm py-2">
                     Section A ({generatedQuestions.sections.sectionA.length})
                   </TabsTrigger>
-                  <TabsTrigger value="B">
+                  <TabsTrigger value="B" className="text-xs sm:text-sm py-2">
                     Section B ({generatedQuestions.sections.sectionB.length})
                   </TabsTrigger>
-                  <TabsTrigger value="C">
+                  <TabsTrigger value="C" className="text-xs sm:text-sm py-2">
                     Section C ({generatedQuestions.sections.sectionC.length})
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="A" className="space-y-4">
+                <TabsContent value="A" className="space-y-4 mt-4">
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Objective Questions</CardTitle>
-                      <CardDescription>Select the correct option for each question</CardDescription>
+                    <CardHeader className="pb-3 sm:pb-6">
+                      <CardTitle className="text-base sm:text-lg">Objective Questions</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">Select the correct option for each question</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4 sm:space-y-6">
                       {generatedQuestions.sections.sectionA.map((q, idx) => (
-                        <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                          <div className="flex items-start gap-3">
-                            <span className="font-bold text-primary">{idx + 1}.</span>
-                            <LaTeXText className="flex-1">{q.question}</LaTeXText>
+                        <div key={q.id} className="p-3 sm:p-4 border rounded-lg space-y-3">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <span className="font-bold text-primary text-sm sm:text-base">{idx + 1}.</span>
+                            <LaTeXText className="flex-1 text-sm sm:text-base">{q.question}</LaTeXText>
                           </div>
-                          <div className="grid gap-2 pl-6">
+                          <div className="grid gap-2 pl-4 sm:pl-6">
                             {q.options.map((option, optIdx) => {
                               const isSelected = userAnswers[`A-${q.id}`] === optIdx;
                               const isCorrect = showResults && q.correctAnswer === optIdx;
@@ -410,19 +418,19 @@ const CourseMaterialTest = () => {
                                 <Button
                                   key={optIdx}
                                   variant={isSelected ? "default" : "outline"}
-                                  className={`justify-start h-auto py-2 px-3 ${
+                                  className={`justify-start h-auto py-2 px-2 sm:px-3 text-left text-xs sm:text-sm ${
                                     isCorrect ? 'bg-green-500 hover:bg-green-600 text-white' :
                                     isWrong ? 'bg-red-500 hover:bg-red-600 text-white' : ''
                                   }`}
                                   onClick={() => !showResults && handleAnswerSelect(`A-${q.id}`, optIdx)}
                                   disabled={showResults}
                                 >
-                                  <span className="font-semibold mr-2">
+                                  <span className="font-semibold mr-1 sm:mr-2 flex-shrink-0">
                                     {['A', 'B', 'C', 'D'][optIdx]}.
                                   </span>
-                                  <LaTeXText>{option}</LaTeXText>
-                                  {isCorrect && <Check className="h-4 w-4 ml-auto" />}
-                                  {isWrong && <X className="h-4 w-4 ml-auto" />}
+                                  <LaTeXText className="flex-1">{option}</LaTeXText>
+                                  {isCorrect && <Check className="h-3 w-3 sm:h-4 sm:w-4 ml-auto flex-shrink-0" />}
+                                  {isWrong && <X className="h-3 w-3 sm:h-4 sm:w-4 ml-auto flex-shrink-0" />}
                                 </Button>
                               );
                             })}
@@ -433,29 +441,29 @@ const CourseMaterialTest = () => {
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="B" className="space-y-4">
+                <TabsContent value="B" className="space-y-4 mt-4">
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Short Answer Questions</CardTitle>
-                      <CardDescription>Provide brief answers (2-3 sentences)</CardDescription>
+                    <CardHeader className="pb-3 sm:pb-6">
+                      <CardTitle className="text-base sm:text-lg">Short Answer Questions</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">Provide brief answers (2-3 sentences)</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4 sm:space-y-6">
                       {generatedQuestions.sections.sectionB.map((q, idx) => (
-                        <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                          <div className="flex items-start gap-3">
-                            <span className="font-bold text-primary">{idx + 1}.</span>
-                            <LaTeXText className="flex-1">{q.question}</LaTeXText>
+                        <div key={q.id} className="p-3 sm:p-4 border rounded-lg space-y-3">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <span className="font-bold text-primary text-sm sm:text-base">{idx + 1}.</span>
+                            <LaTeXText className="flex-1 text-sm sm:text-base">{q.question}</LaTeXText>
                           </div>
                           <textarea
-                            className="w-full min-h-[100px] p-3 border rounded-lg resize-y bg-background"
+                            className="w-full min-h-[80px] sm:min-h-[100px] p-2 sm:p-3 border rounded-lg resize-y bg-background text-sm"
                             placeholder="Enter your answer..."
                             value={userAnswers[`B-${q.id}`] || ''}
                             onChange={(e) => handleAnswerSelect(`B-${q.id}`, e.target.value)}
                           />
                           {showResults && q.expectedAnswer && (
-                            <div className="p-3 bg-muted rounded-lg">
-                              <p className="text-sm font-semibold text-muted-foreground">Expected Answer:</p>
-                              <LaTeXText>{q.expectedAnswer}</LaTeXText>
+                            <div className="p-2 sm:p-3 bg-muted rounded-lg">
+                              <p className="text-xs sm:text-sm font-semibold text-muted-foreground">Expected Answer:</p>
+                              <LaTeXText className="text-sm">{q.expectedAnswer}</LaTeXText>
                             </div>
                           )}
                         </div>
@@ -464,29 +472,29 @@ const CourseMaterialTest = () => {
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="C" className="space-y-4">
+                <TabsContent value="C" className="space-y-4 mt-4">
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Essay Questions</CardTitle>
-                      <CardDescription>Provide detailed explanations</CardDescription>
+                    <CardHeader className="pb-3 sm:pb-6">
+                      <CardTitle className="text-base sm:text-lg">Essay Questions</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">Provide detailed explanations</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4 sm:space-y-6">
                       {generatedQuestions.sections.sectionC.map((q, idx) => (
-                        <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                          <div className="flex items-start gap-3">
-                            <span className="font-bold text-primary">{idx + 1}.</span>
-                            <LaTeXText className="flex-1">{q.question}</LaTeXText>
+                        <div key={q.id} className="p-3 sm:p-4 border rounded-lg space-y-3">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <span className="font-bold text-primary text-sm sm:text-base">{idx + 1}.</span>
+                            <LaTeXText className="flex-1 text-sm sm:text-base">{q.question}</LaTeXText>
                           </div>
                           <textarea
-                            className="w-full min-h-[200px] p-3 border rounded-lg resize-y bg-background"
+                            className="w-full min-h-[150px] sm:min-h-[200px] p-2 sm:p-3 border rounded-lg resize-y bg-background text-sm"
                             placeholder="Enter your essay response..."
                             value={userAnswers[`C-${q.id}`] || ''}
                             onChange={(e) => handleAnswerSelect(`C-${q.id}`, e.target.value)}
                           />
                           {showResults && q.keyPoints && (
-                            <div className="p-3 bg-muted rounded-lg">
-                              <p className="text-sm font-semibold text-muted-foreground">Key Points:</p>
-                              <LaTeXText>{q.keyPoints}</LaTeXText>
+                            <div className="p-2 sm:p-3 bg-muted rounded-lg">
+                              <p className="text-xs sm:text-sm font-semibold text-muted-foreground">Key Points:</p>
+                              <LaTeXText className="text-sm">{q.keyPoints}</LaTeXText>
                             </div>
                           )}
                         </div>
@@ -506,10 +514,10 @@ const CourseMaterialTest = () => {
               {showResults && (
                 <Card className="border-primary/50">
                   <CardContent className="pt-6 text-center">
-                    <h3 className="text-2xl font-bold mb-2">
+                    <h3 className="text-xl sm:text-2xl font-bold mb-2">
                       Section A Score: {calculateScore()}/{generatedQuestions.sections.sectionA.length}
                     </h3>
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Review Section B and C answers above for expected responses
                     </p>
                     <Button onClick={() => {

@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Trash2, FileText, School, BookOpen, Loader2, Download } from 'lucide-react';
+import { Upload, Trash2, FileText, School, BookOpen, Loader2, Download, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
 
 interface CourseMaterial {
   id: string;
@@ -22,12 +23,26 @@ interface CourseMaterial {
   created_at: string;
 }
 
+const ACCEPTED_FILE_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain'
+];
+
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+
 const AdminCourseMaterials = () => {
   const { user } = useAuth();
   const [materials, setMaterials] = useState<CourseMaterial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState('');
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Form state
   const [courseName, setCourseName] = useState('');
@@ -58,29 +73,84 @@ const AdminCourseMaterials = () => {
     }
   };
 
+  const validateFile = (file: File): string | null => {
+    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      return `Unsupported file type: ${file.type}. Please upload PDF, DOCX, PPTX, or TXT files.`;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum size is 15MB.`;
+    }
+    return null;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    setUploadError(null);
+    
+    if (selectedFile) {
+      const error = validateFile(selectedFile);
+      if (error) {
+        setUploadError(error);
+        toast.error(error);
+        return;
+      }
+      setFile(selectedFile);
+    }
+  };
+
   const handleUpload = async () => {
     if (!file || !courseName || !courseCode || !courseTitle) {
       toast.error('Please fill in all required fields');
       return;
     }
 
+    const validationError = validateFile(file);
+    if (validationError) {
+      setUploadError(validationError);
+      toast.error(validationError);
+      return;
+    }
+
     setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError(null);
 
     try {
+      setUploadStage('Preparing file...');
+      setUploadProgress(10);
+
+      // Create a unique file path
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const fileName = `course-materials/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      setUploadStage('Uploading to storage...');
+      setUploadProgress(20);
+
       // Upload file to storage
-      const fileName = `course-materials/${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
+
+      setUploadProgress(40);
+      setUploadStage('Getting file URL...');
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from('documents')
         .getPublicUrl(fileName);
 
-      // Extract text from document
+      setUploadProgress(50);
+      setUploadStage('Extracting text from document...');
+
+      // Read file as base64
       const fileData = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -88,10 +158,13 @@ const AdminCourseMaterials = () => {
           const base64 = result.split(',')[1];
           resolve(base64);
         };
-        reader.onerror = reject;
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
       });
 
+      setUploadProgress(60);
+
+      // Extract text from document
       const extractResponse = await supabase.functions.invoke('extract-document-text', {
         body: {
           fileData,
@@ -100,23 +173,36 @@ const AdminCourseMaterials = () => {
         }
       });
 
+      if (extractResponse.error) {
+        console.warn('Text extraction warning:', extractResponse.error);
+      }
+
       const extractedText = extractResponse.data?.text || '';
+      
+      setUploadProgress(80);
+      setUploadStage('Saving to database...');
 
       // Save to database
       const { error: dbError } = await supabase
         .from('course_materials')
         .insert({
           course_name: courseName,
-          course_code: courseCode,
+          course_code: courseCode.toUpperCase(),
           course_title: courseTitle,
           file_url: urlData.publicUrl,
-          file_content: extractedText,
+          file_content: extractedText.substring(0, 50000), // Limit stored text
           institution: institution || null,
           department: department || null,
           uploaded_by: user?.id
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw new Error(`Database save failed: ${dbError.message}`);
+      }
+
+      setUploadProgress(100);
+      setUploadStage('Complete!');
 
       toast.success('Course material uploaded successfully!');
       setUploadDialogOpen(false);
@@ -125,9 +211,13 @@ const AdminCourseMaterials = () => {
 
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload course material');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload course material';
+      setUploadError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
+      setUploadStage('');
     }
   };
 
@@ -156,6 +246,22 @@ const AdminCourseMaterials = () => {
     }
   };
 
+  const getFileExtension = (url: string): string => {
+    const ext = url.split('.').pop()?.toLowerCase() || '';
+    return ext.split('?')[0]; // Remove query params
+  };
+
+  const getFileTypeLabel = (url: string): string => {
+    const ext = getFileExtension(url);
+    switch (ext) {
+      case 'pdf': return 'PDF';
+      case 'docx': case 'doc': return 'Word';
+      case 'pptx': case 'ppt': return 'PowerPoint';
+      case 'txt': return 'Text';
+      default: return 'Document';
+    }
+  };
+
   const resetForm = () => {
     setCourseName('');
     setCourseCode('');
@@ -163,6 +269,7 @@ const AdminCourseMaterials = () => {
     setInstitution('');
     setDepartment('');
     setFile(null);
+    setUploadError(null);
   };
 
   if (isLoading) {
@@ -174,26 +281,29 @@ const AdminCourseMaterials = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Course Materials</h1>
-          <p className="text-muted-foreground mt-1">
-            Upload and manage class documents (PDF, DOCX, PPTX) for question generation
+          <h1 className="text-2xl md:text-3xl font-bold">Course Materials</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
+            Upload and manage class documents for question generation
           </p>
         </div>
-        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+          setUploadDialogOpen(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Upload className="h-4 w-4 mr-2" />
               Upload Material
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Upload Course Material</DialogTitle>
               <DialogDescription>
-                Upload a class document (PDF, DOCX, PPTX, TXT) for question generation
+                Upload PDF, Word (DOCX, DOC), PowerPoint (PPTX, PPT), or Text files
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -204,6 +314,7 @@ const AdminCourseMaterials = () => {
                   placeholder="e.g., Introduction to Programming"
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
+                  disabled={isUploading}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -214,6 +325,7 @@ const AdminCourseMaterials = () => {
                     placeholder="e.g., CSC101"
                     value={courseCode}
                     onChange={(e) => setCourseCode(e.target.value)}
+                    disabled={isUploading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -223,6 +335,7 @@ const AdminCourseMaterials = () => {
                     placeholder="e.g., CS 101"
                     value={courseTitle}
                     onChange={(e) => setCourseTitle(e.target.value)}
+                    disabled={isUploading}
                   />
                 </div>
               </div>
@@ -234,6 +347,7 @@ const AdminCourseMaterials = () => {
                     placeholder="e.g., University of Lagos"
                     value={institution}
                     onChange={(e) => setInstitution(e.target.value)}
+                    disabled={isUploading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -243,6 +357,7 @@ const AdminCourseMaterials = () => {
                     placeholder="e.g., Computer Science"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
+                    disabled={isUploading}
                   />
                 </div>
               </div>
@@ -252,12 +367,36 @@ const AdminCourseMaterials = () => {
                   id="file"
                   type="file"
                   accept=".pdf,.docx,.doc,.ppt,.pptx,.txt"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={handleFileChange}
+                  disabled={isUploading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Supported: PDF, Word (DOCX, DOC), PowerPoint (PPTX, PPT), Text (TXT)
+                  Supported: PDF, Word (DOCX, DOC), PowerPoint (PPTX, PPT), Text (TXT) - Max 15MB
                 </p>
+                {file && (
+                  <p className="text-xs text-green-600">
+                    Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
               </div>
+
+              {uploadError && (
+                <div className="flex items-start gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm">{uploadError}</p>
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{uploadStage}</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+
               <Button
                 onClick={handleUpload}
                 className="w-full"
@@ -266,7 +405,7 @@ const AdminCourseMaterials = () => {
                 {isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
+                    {uploadStage || 'Uploading...'}
                   </>
                 ) : (
                   <>
@@ -281,17 +420,17 @@ const AdminCourseMaterials = () => {
       </div>
 
       {/* Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Materials</CardDescription>
-            <CardTitle className="text-3xl">{materials.length}</CardTitle>
+            <CardTitle className="text-2xl md:text-3xl">{materials.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Institutions</CardDescription>
-            <CardTitle className="text-3xl">
+            <CardTitle className="text-2xl md:text-3xl">
               {new Set(materials.filter(m => m.institution).map(m => m.institution)).size}
             </CardTitle>
           </CardHeader>
@@ -299,7 +438,7 @@ const AdminCourseMaterials = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Departments</CardDescription>
-            <CardTitle className="text-3xl">
+            <CardTitle className="text-2xl md:text-3xl">
               {new Set(materials.filter(m => m.department).map(m => m.department)).size}
             </CardTitle>
           </CardHeader>
@@ -311,7 +450,7 @@ const AdminCourseMaterials = () => {
         <CardHeader>
           <CardTitle>All Course Materials</CardTitle>
           <CardDescription>
-            Manage uploaded course materials and PDFs
+            Manage uploaded course materials and documents
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -332,39 +471,43 @@ const AdminCourseMaterials = () => {
               {materials.map((material) => (
                 <div
                   key={material.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors gap-4"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold">{material.course_name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="font-semibold truncate">{material.course_name}</h3>
                       <Badge variant="secondary">{material.course_code}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {getFileTypeLabel(material.file_url)}
+                      </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" />
-                        <span>{material.course_title}</span>
+                        <BookOpen className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{material.course_title}</span>
                       </div>
                       {material.institution && (
                         <div className="flex items-center gap-1">
-                          <School className="h-4 w-4" />
-                          <span>{material.institution}</span>
+                          <School className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{material.institution}</span>
                         </div>
                       )}
                       {material.department && (
-                        <span>{material.department}</span>
+                        <span className="truncate">{material.department}</span>
                       )}
                       <span className="text-xs">
                         {new Date(material.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 self-end sm:self-center">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => window.open(material.file_url, '_blank')}
                     >
                       <Download className="h-4 w-4" />
+                      <span className="ml-2 hidden sm:inline">Download</span>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
