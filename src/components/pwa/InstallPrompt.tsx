@@ -108,13 +108,7 @@ export const InstallPrompt = () => {
   }, [deferredPrompt]);
 
   const handleInstall = async () => {
-    // For iOS, show instructions
-    if (platform === 'ios') {
-      setShowInstructions(true);
-      return;
-    }
-
-    // For Android with deferred prompt
+    // For Android with deferred prompt - install directly
     if (deferredPrompt) {
       try {
         await deferredPrompt.prompt();
@@ -127,14 +121,12 @@ export const InstallPrompt = () => {
         setDeferredPrompt(null);
       } catch (error) {
         console.error('Install prompt error:', error);
-        // Show manual instructions as fallback
-        setShowInstructions(true);
       }
       return;
     }
 
-    // Fallback for Android without deferred prompt
-    if (platform === 'android') {
+    // For iOS, show instructions
+    if (platform === 'ios') {
       setShowInstructions(true);
     }
   };
@@ -242,7 +234,7 @@ export const InstallPrompt = () => {
                     size="sm"
                   >
                     <Download className="h-4 w-4" />
-                    {deferredPrompt ? 'Install App' : 'How to Install'}
+                    {platform === 'android' && deferredPrompt ? 'Install Now' : platform === 'ios' ? 'How to Install' : 'Install App'}
                   </Button>
                   <Button 
                     variant="ghost" 
@@ -250,7 +242,7 @@ export const InstallPrompt = () => {
                     className="w-full text-xs text-muted-foreground"
                     onClick={handleNeverShow}
                   >
-                    Don't show again for a week
+                    Not now
                   </Button>
                 </div>
               </>
