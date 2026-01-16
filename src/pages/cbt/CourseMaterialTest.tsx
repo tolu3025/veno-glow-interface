@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ interface SearchResults {
 
 const CourseMaterialTest = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [courseCode, setCourseCode] = useState('');
@@ -71,6 +72,7 @@ const CourseMaterialTest = () => {
   const [difficulty, setDifficulty] = useState('intermediate');
   const [isSearching, setIsSearching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false);
   const [foundMaterial, setFoundMaterial] = useState<CourseMaterial | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResults>({ materials: [], hasSearched: false });
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestions | null>(null);
@@ -78,6 +80,48 @@ const CourseMaterialTest = () => {
   const [currentSection, setCurrentSection] = useState('A');
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const [showResults, setShowResults] = useState(false);
+
+  // Handle incoming selectedCourse from navigation (from modal search)
+  useEffect(() => {
+    const state = location.state as { selectedCourse?: CourseMaterial; openUpload?: boolean } | null;
+    
+    if (state?.selectedCourse) {
+      // Fetch the full course data including file_content
+      const fetchFullCourseData = async () => {
+        setIsLoadingCourse(true);
+        try {
+          const { data, error } = await supabase
+            .from('course_materials')
+            .select('*')
+            .eq('id', state.selectedCourse!.id)
+            .single();
+
+          if (error) throw error;
+          
+          if (data) {
+            setFoundMaterial(data as CourseMaterial);
+            toast.success('Course loaded successfully!');
+          }
+        } catch (error) {
+          console.error('Error loading course:', error);
+          // Fallback to the partial data we have
+          setFoundMaterial(state.selectedCourse as CourseMaterial);
+        } finally {
+          setIsLoadingCourse(false);
+        }
+      };
+
+      fetchFullCourseData();
+      
+      // Clear the state to prevent re-loading on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+    
+    if (state?.openUpload) {
+      setActiveTab('upload');
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim() && !courseCode.trim() && !courseTitle.trim()) {
@@ -232,7 +276,17 @@ const CourseMaterialTest = () => {
             </div>
           </div>
 
-          {!generatedQuestions ? (
+          {/* Loading state when course is being fetched from modal */}
+          {isLoadingCourse && (
+            <Card>
+              <CardContent className="p-8 flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading course material...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!generatedQuestions && !isLoadingCourse ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2 h-auto">
                 <TabsTrigger value="search" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
@@ -470,7 +524,9 @@ const CourseMaterialTest = () => {
                 <StudentDocumentUpload onQuestionsGenerated={handleDocumentProcessed} />
               </TabsContent>
             </Tabs>
-          ) : (
+          ) : null}
+
+          {generatedQuestions && !isLoadingCourse ? (
             /* Questions Display */
             <div className="space-y-4 sm:space-y-6">
               <Card>
@@ -647,7 +703,7 @@ const CourseMaterialTest = () => {
                 </Card>
               )}
             </div>
-          )}
+          ) : null}
         </motion.div>
       </div>
     </div>
