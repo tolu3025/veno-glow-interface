@@ -56,6 +56,12 @@ interface GeneratedQuestions {
   };
 }
 
+// Search results state for multiple courses
+interface SearchResults {
+  materials: CourseMaterial[];
+  hasSearched: boolean;
+}
+
 const CourseMaterialTest = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -66,6 +72,7 @@ const CourseMaterialTest = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [foundMaterial, setFoundMaterial] = useState<CourseMaterial | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResults>({ materials: [], hasSearched: false });
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestions | null>(null);
   const [activeTab, setActiveTab] = useState('search');
   const [currentSection, setCurrentSection] = useState('A');
@@ -80,31 +87,53 @@ const CourseMaterialTest = () => {
 
     setIsSearching(true);
     setFoundMaterial(null);
+    setSearchResults({ materials: [], hasSearched: false });
 
     try {
       let query = supabase.from('course_materials').select('*');
 
+      // Build flexible OR query for partial matching
+      const searchTerms: string[] = [];
+      
       if (searchQuery.trim()) {
-        query = query.or(`course_name.ilike.%${searchQuery}%,course_code.ilike.%${searchQuery}%,course_title.ilike.%${searchQuery}%`);
+        const term = searchQuery.trim().toLowerCase();
+        searchTerms.push(
+          `course_name.ilike.%${term}%`,
+          `course_code.ilike.%${term}%`,
+          `course_title.ilike.%${term}%`,
+          `department.ilike.%${term}%`,
+          `institution.ilike.%${term}%`
+        );
       }
       if (courseCode.trim()) {
-        query = query.ilike('course_code', `%${courseCode}%`);
+        searchTerms.push(`course_code.ilike.%${courseCode.trim()}%`);
       }
       if (courseTitle.trim()) {
-        query = query.ilike('course_title', `%${courseTitle}%`);
+        searchTerms.push(`course_title.ilike.%${courseTitle.trim()}%`);
       }
 
-      const { data, error } = await query.limit(1).single();
+      if (searchTerms.length > 0) {
+        query = query.or(searchTerms.join(','));
+      }
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          toast.info('No course material found matching your search');
-        } else {
-          throw error;
-        }
-      } else {
-        setFoundMaterial(data as CourseMaterial);
+      // Fetch multiple results instead of just one
+      const { data, error } = await query
+        .order('course_name', { ascending: true })
+        .limit(50);
+
+      if (error) throw error;
+
+      const materials = (data as CourseMaterial[]) || [];
+      setSearchResults({ materials, hasSearched: true });
+
+      if (materials.length === 0) {
+        toast.info('No course materials found matching your search');
+      } else if (materials.length === 1) {
+        // Auto-select if only one result
+        setFoundMaterial(materials[0]);
         toast.success('Course material found!');
+      } else {
+        toast.success(`Found ${materials.length} matching courses`);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -112,6 +141,12 @@ const CourseMaterialTest = () => {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleSelectCourse = (course: CourseMaterial) => {
+    setFoundMaterial(course);
+    setSearchResults({ materials: [], hasSearched: false });
+    toast.success('Course selected!');
   };
 
   const handleGenerateQuestions = async () => {
@@ -275,6 +310,82 @@ const CourseMaterialTest = () => {
                     </Button>
                   </CardContent>
                 </Card>
+
+                {/* Search Results - Multiple Courses */}
+                {searchResults.hasSearched && searchResults.materials.length > 1 && !foundMaterial && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Card>
+                      <CardHeader className="pb-3 sm:pb-4">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                          <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                          Search Results
+                        </CardTitle>
+                        <CardDescription className="text-xs sm:text-sm">
+                          Found {searchResults.materials.length} matching courses. Select one to continue.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1">
+                          {searchResults.materials.map((course) => (
+                            <div
+                              key={course.id}
+                              onClick={() => handleSelectCourse(course)}
+                              className="p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-accent/50 transition-all"
+                            >
+                              <div className="flex items-start justify-between gap-2 sm:gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                    <Badge variant="secondary" className="text-xs">{course.course_code}</Badge>
+                                    {course.institution && (
+                                      <Badge variant="outline" className="text-xs truncate max-w-[120px]">{course.institution}</Badge>
+                                    )}
+                                    {course.department && (
+                                      <Badge variant="outline" className="text-xs truncate max-w-[120px]">{course.department}</Badge>
+                                    )}
+                                  </div>
+                                  <h4 className="font-medium text-sm sm:text-base truncate">{course.course_name}</h4>
+                                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{course.course_title}</p>
+                                </div>
+                                <Button variant="ghost" size="sm" className="flex-shrink-0">
+                                  Select
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {/* No Results Found */}
+                {searchResults.hasSearched && searchResults.materials.length === 0 && !foundMaterial && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Card className="border-dashed border-2">
+                      <CardContent className="p-6 text-center space-y-4">
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                          <FileText className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-1">No Courses Found</h4>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            No materials found matching your search. You can upload your own document instead.
+                          </p>
+                        </div>
+                        <Button onClick={() => setActiveTab('upload')} className="gap-2">
+                          <Upload className="h-4 w-4" />
+                          Upload Your Document
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
 
                 {/* Found Material */}
                 {foundMaterial && (

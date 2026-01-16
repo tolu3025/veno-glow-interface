@@ -40,11 +40,16 @@ export const CourseSearchModal: React.FC<CourseSearchModalProps> = ({ open, onOp
     setHasSearched(true);
 
     try {
+      const query = searchQuery.trim().toLowerCase();
+      
+      // Build flexible search - match partial inputs (even 2-3 letters)
+      // Search across course_name, course_code, course_title, department, and institution
       const { data, error } = await supabase
         .from('course_materials')
         .select('id, course_name, course_code, course_title, institution, department')
-        .or(`course_name.ilike.%${searchQuery}%,course_code.ilike.%${searchQuery}%,course_title.ilike.%${searchQuery}%`)
-        .limit(5);
+        .or(`course_name.ilike.%${query}%,course_code.ilike.%${query}%,course_title.ilike.%${query}%,department.ilike.%${query}%,institution.ilike.%${query}%`)
+        .order('course_name', { ascending: true })
+        .limit(50); // Increased limit to show more results
 
       if (error) throw error;
       setSearchResults((data as CourseMaterial[]) || []);
@@ -120,33 +125,38 @@ export const CourseSearchModal: React.FC<CourseSearchModalProps> = ({ open, onOp
           {searchResults.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Found {searchResults.length} course{searchResults.length > 1 ? 's' : ''}
+                Found {searchResults.length} course{searchResults.length > 1 ? 's' : ''}{searchResults.length >= 50 ? '+' : ''}
               </p>
-              {searchResults.map((course) => (
-                <Card 
-                  key={course.id} 
-                  className="cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => handleCourseSelect(course)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="secondary">{course.course_code}</Badge>
-                          {course.institution && (
-                            <Badge variant="outline" className="text-xs">{course.institution}</Badge>
-                          )}
+              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                {searchResults.map((course) => (
+                  <Card 
+                    key={course.id} 
+                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => handleCourseSelect(course)}
+                  >
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between gap-2 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <Badge variant="secondary" className="text-xs">{course.course_code}</Badge>
+                            {course.institution && (
+                              <Badge variant="outline" className="text-xs truncate max-w-[100px]">{course.institution}</Badge>
+                            )}
+                            {course.department && (
+                              <Badge variant="outline" className="text-xs truncate max-w-[100px]">{course.department}</Badge>
+                            )}
+                          </div>
+                          <h4 className="font-medium text-sm sm:text-base truncate">{course.course_name}</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{course.course_title}</p>
                         </div>
-                        <h4 className="font-medium">{course.course_name}</h4>
-                        <p className="text-sm text-muted-foreground">{course.course_title}</p>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0">
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon">
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 
