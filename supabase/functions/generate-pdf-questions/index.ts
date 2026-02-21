@@ -6,25 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SYSTEM_PROMPT = `You are an AI Academic Question Generator for Nigerian tertiary institutions.
-Your task is to generate examination questions from the provided document content.
+const MCQ_SYSTEM_PROMPT = `You are an AI Academic Question Generator for Nigerian tertiary institutions.
+Your task is to generate multiple-choice objective questions from the provided document content.
 
 IMPORTANT RULES:
-1. Generate questions based on the main topics and concepts found in the document.
-2. If the document content appears garbled or unclear, identify key words and phrases to form questions around.
-3. Always generate ALL 20 questions - 10 objective, 5 short answer, and 5 essay questions.
-4. Use Nigerian academic tone and style similar to WAEC, JAMB, and University exams.
-5. Do NOT refuse to generate questions. Always produce output.
-
-QUESTION STYLE:
-- Cover main topics mentioned in the document
-- Increase difficulty progressively
-- Include definitions, explanations, applications
-- Use clear academic English
+1. Generate exactly 40 multiple-choice objective questions.
+2. Each question MUST have exactly 4 options (A, B, C, D) and one correct answer.
+3. Use Nigerian academic tone and style similar to WAEC, JAMB, and University exams.
+4. Cover main topics mentioned in the document.
+5. Increase difficulty progressively.
+6. Do NOT refuse to generate questions. Always produce output.
 
 OUTPUT FORMAT (MUST FOLLOW EXACTLY):
 
-SECTION A: OBJECTIVE QUESTIONS
 1. Question text here
    A. First option
    B. Second option
@@ -39,23 +33,59 @@ SECTION A: OBJECTIVE QUESTIONS
    D. Option
    [Correct: B]
 
+(Continue for all 40 questions)`;
+
+const ESSAY_SYSTEM_PROMPT = `You are an AI Academic Question Generator for Nigerian tertiary institutions.
+Your task is to generate essay questions from the provided document content.
+
+IMPORTANT RULES:
+1. Generate exactly 10 essay questions.
+2. Questions should require detailed explanations and analysis.
+3. Use Nigerian academic tone and style similar to WAEC, JAMB, and University exams.
+4. Cover main topics mentioned in the document.
+5. Increase difficulty progressively.
+6. Do NOT refuse to generate questions. Always produce output.
+
+OUTPUT FORMAT (MUST FOLLOW EXACTLY):
+
+1. Question requiring detailed explanation and analysis?
+   [Key Points: Main points that should be covered in the answer]
+
+2. Next question...
+   [Key Points: Key points here]
+
+(Continue for all 10 questions)`;
+
+const LEGACY_SYSTEM_PROMPT = `You are an AI Academic Question Generator for Nigerian tertiary institutions.
+Your task is to generate examination questions from the provided document content.
+
+IMPORTANT RULES:
+1. Generate questions based on the main topics and concepts found in the document.
+2. Always generate ALL 20 questions - 10 objective, 5 short answer, and 5 essay questions.
+3. Use Nigerian academic tone and style similar to WAEC, JAMB, and University exams.
+4. Do NOT refuse to generate questions. Always produce output.
+
+OUTPUT FORMAT (MUST FOLLOW EXACTLY):
+
+SECTION A: OBJECTIVE QUESTIONS
+1. Question text here
+   A. First option
+   B. Second option
+   C. Third option
+   D. Fourth option
+   [Correct: A]
+
 (Continue for all 10 questions)
 
 SECTION B: SHORT ANSWER QUESTIONS
 1. Question requiring brief explanation?
    [Expected Answer: Brief 2-3 sentence answer here]
 
-2. Next question...
-   [Expected Answer: Answer here]
-
 (Continue for all 5 questions)
 
 SECTION C: ESSAY QUESTIONS
 1. Question requiring detailed explanation and analysis?
    [Key Points: Main points that should be covered in the answer]
-
-2. Next question...
-   [Key Points: Key points here]
 
 (Continue for all 5 questions)`;
 
@@ -65,7 +95,7 @@ serve(async (req) => {
   }
 
   try {
-    const { course_name, course_code, course_title, pdf_content, difficulty = 'intermediate' } = await req.json();
+    const { course_name, course_code, course_title, pdf_content, difficulty = 'intermediate', question_type } = await req.json();
 
     if (!pdf_content || pdf_content.trim().length === 0) {
       return new Response(
@@ -82,14 +112,33 @@ serve(async (req) => {
       );
     }
 
-    // Clean up the content - remove excessive whitespace and non-printable characters
     const cleanedContent = pdf_content
       .replace(/[^\x20-\x7E\n\r]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
       .substring(0, 40000);
 
+    console.log('Question type:', question_type || 'legacy');
     console.log('Content preview:', cleanedContent.substring(0, 500));
+
+    // Select system prompt and user prompt based on question_type
+    let systemPrompt: string;
+    let questionInstruction: string;
+    let maxTokens: number;
+
+    if (question_type === 'mcq') {
+      systemPrompt = MCQ_SYSTEM_PROMPT;
+      questionInstruction = 'Generate exactly 40 multiple-choice objective questions based on this content. Each must have 4 options and a correct answer.';
+      maxTokens = 8000;
+    } else if (question_type === 'essay') {
+      systemPrompt = ESSAY_SYSTEM_PROMPT;
+      questionInstruction = 'Generate exactly 10 essay questions with key points for each, based on this content.';
+      maxTokens = 5000;
+    } else {
+      systemPrompt = LEGACY_SYSTEM_PROMPT;
+      questionInstruction = 'Generate exactly 20 questions (10 objective, 5 short answer, 5 essay) based on this content. Follow the exact format specified.';
+      maxTokens = 4500;
+    }
 
     const userPrompt = `Generate examination questions for this course:
 Course: ${course_name || 'Academic Course'}
@@ -100,7 +149,7 @@ Difficulty: ${difficulty}
 DOCUMENT CONTENT TO BASE QUESTIONS ON:
 ${cleanedContent}
 
-Generate exactly 20 questions (10 objective, 5 short answer, 5 essay) based on this content. Follow the exact format specified.`;
+${questionInstruction}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -111,11 +160,11 @@ Generate exactly 20 questions (10 objective, 5 short answer, 5 essay) based on t
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 4500,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -139,16 +188,23 @@ Generate exactly 20 questions (10 objective, 5 short answer, 5 essay) based on t
     }
 
     console.log('Generated response length:', generatedQuestions.length);
-    console.log('Response preview:', generatedQuestions.substring(0, 300));
 
-    // Parse the generated questions into structured format
-    const sections = parseQuestions(generatedQuestions);
+    // Parse based on question_type
+    let sections;
+    if (question_type === 'mcq') {
+      sections = parseMCQQuestions(generatedQuestions);
+    } else if (question_type === 'essay') {
+      sections = parseEssayQuestions(generatedQuestions);
+    } else {
+      sections = parseLegacyQuestions(generatedQuestions);
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         questions: generatedQuestions,
         sections,
+        question_type: question_type || 'legacy',
         course: { course_name, course_code, course_title }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -163,16 +219,101 @@ Generate exactly 20 questions (10 objective, 5 short answer, 5 essay) based on t
   }
 });
 
-function parseQuestions(text: string) {
+function parseMCQQuestions(text: string) {
   const sections = {
     sectionA: [] as any[],
     sectionB: [] as any[],
     sectionC: [] as any[],
   };
 
-  console.log('Parsing questions from text length:', text.length);
+  // Split by question numbers
+  const questionBlocks = text.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
+  
+  for (let i = 0; i < questionBlocks.length; i++) {
+    const block = questionBlocks[i];
+    if (/^\d+$/.test(block.trim())) continue;
+    
+    const lines = block.split('\n').filter(l => l.trim());
+    if (lines.length === 0) continue;
 
-  // Split by sections more reliably
+    let questionText = '';
+    const options: string[] = [];
+    let correctAnswer = '';
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      const optionMatch = trimmedLine.match(/^([A-D])[\.\)]\s*(.+)/i);
+      if (optionMatch) {
+        options.push(optionMatch[2].replace(/\[Correct.*\]/i, '').trim());
+        continue;
+      }
+
+      const correctMatch = trimmedLine.match(/\[Correct[:\s]*([A-D])\]/i);
+      if (correctMatch) {
+        correctAnswer = correctMatch[1].toUpperCase();
+        continue;
+      }
+
+      if (options.length === 0) {
+        questionText += (questionText ? ' ' : '') + trimmedLine.replace(/^\d+\.\s*/, '');
+      }
+    }
+
+    if (questionText && options.length >= 2) {
+      sections.sectionA.push({
+        id: sections.sectionA.length + 1,
+        question: questionText.trim(),
+        options,
+        correctAnswer: ['A', 'B', 'C', 'D'].indexOf(correctAnswer),
+        type: 'objective'
+      });
+    }
+  }
+
+  console.log('Parsed MCQ questions:', sections.sectionA.length);
+  return sections;
+}
+
+function parseEssayQuestions(text: string) {
+  const sections = {
+    sectionA: [] as any[],
+    sectionB: [] as any[],
+    sectionC: [] as any[],
+  };
+
+  const questionBlocks = text.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
+  
+  for (let i = 0; i < questionBlocks.length; i++) {
+    const block = questionBlocks[i];
+    if (/^\d+$/.test(block.trim())) continue;
+    
+    const keyPointsMatch = block.match(/\[Key\s*Points[:\s]*([\s\S]*?)\]/i);
+    let questionText = block
+      .replace(/\[Key\s*Points[:\s]*[\s\S]*?\]/i, '')
+      .trim();
+
+    if (questionText && questionText.length > 10) {
+      sections.sectionC.push({
+        id: sections.sectionC.length + 1,
+        question: questionText.replace(/^\d+\.\s*/, '').trim(),
+        keyPoints: keyPointsMatch ? keyPointsMatch[1].trim() : '',
+        type: 'essay'
+      });
+    }
+  }
+
+  console.log('Parsed Essay questions:', sections.sectionC.length);
+  return sections;
+}
+
+function parseLegacyQuestions(text: string) {
+  const sections = {
+    sectionA: [] as any[],
+    sectionB: [] as any[],
+    sectionC: [] as any[],
+  };
+
   const sectionAStart = text.search(/SECTION\s*A/i);
   const sectionBStart = text.search(/SECTION\s*B/i);
   const sectionCStart = text.search(/SECTION\s*C/i);
@@ -195,117 +336,56 @@ function parseQuestions(text: string) {
     sectionCText = text.substring(sectionCStart);
   }
 
-  // Parse Section A (Objective Questions)
   if (sectionAText) {
     const questionBlocks = sectionAText.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
-    
     for (let i = 0; i < questionBlocks.length; i++) {
       const block = questionBlocks[i];
-      if (/^\d+$/.test(block.trim())) continue; // Skip number-only blocks
-      
+      if (/^\d+$/.test(block.trim())) continue;
       const lines = block.split('\n').filter(l => l.trim());
       if (lines.length === 0) continue;
-
-      // First line(s) is the question
       let questionText = '';
       const options: string[] = [];
       let correctAnswer = '';
-
       for (const line of lines) {
         const trimmedLine = line.trim();
-        
-        // Check if it's an option line
         const optionMatch = trimmedLine.match(/^([A-D])[\.\)]\s*(.+)/i);
-        if (optionMatch) {
-          options.push(optionMatch[2].replace(/\[Correct.*\]/i, '').trim());
-          continue;
-        }
-
-        // Check for correct answer marker
+        if (optionMatch) { options.push(optionMatch[2].replace(/\[Correct.*\]/i, '').trim()); continue; }
         const correctMatch = trimmedLine.match(/\[Correct[:\s]*([A-D])\]/i);
-        if (correctMatch) {
-          correctAnswer = correctMatch[1].toUpperCase();
-          continue;
-        }
-
-        // It's part of the question
+        if (correctMatch) { correctAnswer = correctMatch[1].toUpperCase(); continue; }
         if (options.length === 0 && !trimmedLine.match(/^SECTION/i)) {
           questionText += (questionText ? ' ' : '') + trimmedLine.replace(/^\d+\.\s*/, '');
         }
       }
-
-      // Only add if we have a valid question with options
       if (questionText && options.length >= 2) {
-        sections.sectionA.push({
-          id: sections.sectionA.length + 1,
-          question: questionText.trim(),
-          options,
-          correctAnswer: ['A', 'B', 'C', 'D'].indexOf(correctAnswer),
-          type: 'objective'
-        });
+        sections.sectionA.push({ id: sections.sectionA.length + 1, question: questionText.trim(), options, correctAnswer: ['A', 'B', 'C', 'D'].indexOf(correctAnswer), type: 'objective' });
       }
     }
-    
-    console.log('Parsed Section A questions:', sections.sectionA.length);
   }
 
-  // Parse Section B (Short Answer)
   if (sectionBText) {
     const questionBlocks = sectionBText.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
-    
     for (let i = 0; i < questionBlocks.length; i++) {
       const block = questionBlocks[i];
       if (/^\d+$/.test(block.trim())) continue;
-      
       const answerMatch = block.match(/\[Expected\s*Answer[:\s]*([\s\S]*?)\]/i);
-      let questionText = block
-        .replace(/\[Expected\s*Answer[:\s]*[\s\S]*?\]/i, '')
-        .replace(/^SECTION.*$/mi, '')
-        .trim();
-
+      let questionText = block.replace(/\[Expected\s*Answer[:\s]*[\s\S]*?\]/i, '').replace(/^SECTION.*$/mi, '').trim();
       if (questionText && questionText.length > 10) {
-        sections.sectionB.push({
-          id: sections.sectionB.length + 1,
-          question: questionText.replace(/^\d+\.\s*/, '').trim(),
-          expectedAnswer: answerMatch ? answerMatch[1].trim() : '',
-          type: 'short_answer'
-        });
+        sections.sectionB.push({ id: sections.sectionB.length + 1, question: questionText.replace(/^\d+\.\s*/, '').trim(), expectedAnswer: answerMatch ? answerMatch[1].trim() : '', type: 'short_answer' });
       }
     }
-    
-    console.log('Parsed Section B questions:', sections.sectionB.length);
   }
 
-  // Parse Section C (Essay)
   if (sectionCText) {
     const questionBlocks = sectionCText.split(/\n\s*(\d+)\.\s+/).filter(b => b.trim());
-    
     for (let i = 0; i < questionBlocks.length; i++) {
       const block = questionBlocks[i];
       if (/^\d+$/.test(block.trim())) continue;
-      
       const keyPointsMatch = block.match(/\[Key\s*Points[:\s]*([\s\S]*?)\]/i);
-      let questionText = block
-        .replace(/\[Key\s*Points[:\s]*[\s\S]*?\]/i, '')
-        .replace(/^SECTION.*$/mi, '')
-        .trim();
-
+      let questionText = block.replace(/\[Key\s*Points[:\s]*[\s\S]*?\]/i, '').replace(/^SECTION.*$/mi, '').trim();
       if (questionText && questionText.length > 10) {
-        sections.sectionC.push({
-          id: sections.sectionC.length + 1,
-          question: questionText.replace(/^\d+\.\s*/, '').trim(),
-          keyPoints: keyPointsMatch ? keyPointsMatch[1].trim() : '',
-          type: 'essay'
-        });
+        sections.sectionC.push({ id: sections.sectionC.length + 1, question: questionText.replace(/^\d+\.\s*/, '').trim(), keyPoints: keyPointsMatch ? keyPointsMatch[1].trim() : '', type: 'essay' });
       }
     }
-    
-    console.log('Parsed Section C questions:', sections.sectionC.length);
-  }
-
-  // Log if no questions were parsed
-  if (sections.sectionA.length === 0 && sections.sectionB.length === 0 && sections.sectionC.length === 0) {
-    console.log('Warning: No questions parsed. Raw text sample:', text.substring(0, 1000));
   }
 
   return sections;

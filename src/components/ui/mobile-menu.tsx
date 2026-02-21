@@ -7,7 +7,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { VenoLogo } from "@/components/ui/logo";
 import { useTheme } from "@/providers/ThemeProvider";
-import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Settings, User, LayoutDashboard } from "lucide-react";
+import { LogOut, LogIn, Moon, Sun, UserCircle, Home, BookOpen, Trophy, Settings, User, LayoutDashboard, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -45,6 +45,11 @@ const MobileMenu = ({ mainLinks }: MobileMenuProps) => {
       path: '/cbt/analytics',
       icon: Trophy,
       requiresAuth: true
+    },
+    {
+      name: 'Course Material',
+      path: '/cbt/course-material-test',
+      icon: FileText
     },
     {
       name: 'Settings',
