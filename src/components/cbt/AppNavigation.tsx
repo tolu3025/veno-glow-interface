@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, PlusCircle, BarChart, WifiOff, BookOpen, Library, Flame, Coins, Mic, Crown } from "lucide-react";
+import { Home, PlusCircle, BarChart, WifiOff, BookOpen, Library, Flame, Coins, Mic, Crown, FileText } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,12 @@ const AppNavigation = () => {
       icon: <Mic size={18} />,
       authRequired: true,
       isPremium: !hasVoiceTutorAccess,
+    },
+    {
+      name: "Course Material",
+      path: "/cbt/course-material-test",
+      icon: <FileText size={18} />,
+      authRequired: true,
     },
     {
       name: "Quiz",
