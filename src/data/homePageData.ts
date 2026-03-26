@@ -3,11 +3,11 @@ import { Book, BookOpen, Bot, FileText, CheckCircle, Flame, Sparkles, Graduation
 
 export const bannerSlides = [
   {
-    title: "AI Study Assistant",
-    subtitle: "Your intelligent learning companion. Upload documents, generate questions, solve problems, and get expert explanations across all subjects.",
-    background: "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600",
-    primaryButton: { text: "Start Learning", link: "/ai-assistant" },
-    secondaryButton: { text: "Learn More", link: "/ai-assistant" }
+    title: "Master Any Subject with CBT Practice",
+    subtitle: "Take computer-based tests, track your progress, and improve your scores with instant feedback and detailed analytics.",
+    background: "bg-gradient-to-r from-purple-600 to-veno-primary",
+    primaryButton: { text: "Start Practicing", link: "/cbt" },
+    secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
   },
   {
     title: "Challenge Your Friends",
@@ -16,20 +16,6 @@ export const bannerSlides = [
     primaryButton: { text: "Start Challenge", link: "/cbt/streak-challenge" },
     secondaryButton: { text: "View Leaderboard", link: "/cbt/streak-leaderboard" }
   },
-  {
-    title: "Learn Anywhere, Anytime",
-    subtitle: "Access your courses on any device with our responsive platform that adapts to your schedule and learning style.",
-    background: "bg-gradient-to-r from-veno-secondary to-purple-600",
-    primaryButton: { text: "Start Learning", link: "/cbt" },
-    secondaryButton: { text: "View Courses", link: "/cbt" }
-  },
-  {
-    title: "Interactive Assessment Tools",
-    subtitle: "Test your knowledge and track your progress with our comprehensive suite of CBT tools and analytics.",
-    background: "bg-gradient-to-r from-purple-600 to-veno-primary",
-    primaryButton: { text: "Take a Test", link: "/cbt" },
-    secondaryButton: { text: "View Analytics", link: "/cbt/analytics" }
-  }
 ];
 
 export const tutorials = [
@@ -83,4 +69,3 @@ export const testimonial = {
     role: "University Student"
   }
 };
-
