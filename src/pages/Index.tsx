@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import BannerCarousel from "@/components/home/BannerCarousel";
 import CallToAction from "@/components/home/CallToAction";
 import BackgroundBubbles from "@/components/home/BackgroundBubbles";
+import { WelcomeModal } from "@/components/home/WelcomeModal";
+import { PopularTests } from "@/components/home/PopularTests";
 import { bannerSlides } from "@/data/homePageData";
 import { BookOpen, Sparkles, Gamepad2, FileUp } from "lucide-react";
 
@@ -36,6 +38,7 @@ const Index = () => {
   return (
     <div className="pb-6 relative overflow-hidden">
       <BackgroundBubbles />
+      <WelcomeModal />
 
       {/* Hero Section */}
       <section className="relative pt-8 pb-12">
@@ -65,6 +68,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Popular Tests */}
+      <PopularTests />
 
       {/* Course Materials Section */}
       <section className="py-10">
