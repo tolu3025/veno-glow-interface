@@ -1,158 +1,99 @@
 
 import { useNavigate } from "react-router-dom";
 import BannerCarousel from "@/components/home/BannerCarousel";
-import FeaturesSection from "@/components/home/FeaturesSection";
-import TutorialsSection from "@/components/home/TutorialsSection";
-import TestimonialCard from "@/components/home/TestimonialCard";
 import CallToAction from "@/components/home/CallToAction";
 import BackgroundBubbles from "@/components/home/BackgroundBubbles";
-import AdPlacement from "@/components/ads/AdPlacement";
-import { bannerSlides, features, tutorials, testimonial } from "@/data/homePageData";
-import { Button } from "@/components/ui/button";
-import { StreakDisplay } from "@/components/streak/StreakDisplay";
-import { useStreak } from "@/providers/StreakProvider";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Award, GraduationCap } from "lucide-react";
+import { bannerSlides } from "@/data/homePageData";
+import { BookOpen, Sparkles, Gamepad2, FileUp } from "lucide-react";
 
-// Update the tutorials data to include the required 'id' property
-const tutorialsWithIds = tutorials.map((tutorial, index) => ({
-  ...tutorial,
-  id: `tutorial-${index + 1}`
-}));
+const actionCards = [
+  {
+    title: "Take a Test",
+    description: "Practice with thousands of CBT questions across multiple subjects.",
+    icon: BookOpen,
+    href: "/cbt",
+    gradient: "from-primary to-primary/80",
+  },
+  {
+    title: "AI Study Assistant",
+    description: "Get instant help, generate questions, and solve problems with AI.",
+    icon: Sparkles,
+    href: "/ai-assistant",
+    gradient: "from-pink-500 to-rose-500",
+  },
+  {
+    title: "Challenge Friends",
+    description: "Compete in real-time PvP battles and climb the leaderboard.",
+    icon: Gamepad2,
+    href: "/cbt/streak-challenge",
+    gradient: "from-green-500 to-emerald-500",
+  },
+];
 
 const Index = () => {
-  const { streak, getStreakMessage, isCourseUnlocked } = useStreak();
-  const isMobile = useIsMobile();
-  
+  const navigate = useNavigate();
+
   return (
     <div className="pb-6 relative overflow-hidden">
       <BackgroundBubbles />
-      
-      {/* Hero Section with Banner Carousel */}
-      <section className="relative pt-8 pb-16">
+
+      {/* Hero Section */}
+      <section className="relative pt-8 pb-12">
         <div className="container">
           <BannerCarousel bannerSlides={bannerSlides} />
         </div>
       </section>
 
-      {/* User Streak Display */}
-      {streak.currentStreak > 0 && (
-        <section className="py-8">
-          <div className="container">
-            <div className="max-w-md mx-auto">
-              <StreakDisplay variant="full" />
-            </div>
+      {/* 3 Action Cards */}
+      <section className="py-10">
+        <div className="container">
+          <h2 className="text-2xl font-bold text-center mb-8">Get Started</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+            {actionCards.map((card) => (
+              <button
+                key={card.title}
+                onClick={() => navigate(card.href)}
+                className="group relative rounded-2xl p-6 text-left transition-all hover:scale-[1.03] active:scale-[0.98] bg-card border border-border shadow-sm hover:shadow-lg"
+              >
+                <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-4`}>
+                  <card.icon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">{card.title}</h3>
+                <p className="text-sm text-muted-foreground">{card.description}</p>
+              </button>
+            ))}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* Course Progress Table */}
-      {streak.currentStreak > 0 && (
-        <section className="py-8">
-          <div className="container">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold text-center mb-8">Course Progress</h2>
-              <div className="veno-card overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Progress</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tutorialsWithIds.map((tutorial, index) => {
-                      const isUnlocked = isCourseUnlocked(tutorial.id);
-                      const progress = Math.min((streak.currentStreak * 10) + (index * 5), 100);
-                      
-                      return (
-                        <TableRow key={tutorial.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center">
-                              <tutorial.icon className="h-4 w-4 mr-2" />
-                              {tutorial.title}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={isUnlocked ? "default" : "secondary"}>
-                              {isUnlocked ? "Unlocked" : "Locked"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                                <div 
-                                  className="bg-veno-primary h-2 rounded-full" 
-                                  style={{ width: `${progress}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm text-muted-foreground">{progress}%</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              size="sm" 
-                              variant={isUnlocked ? "default" : "secondary"}
-                              disabled={!isUnlocked}
-                              onClick={() => window.location.href = tutorial.href}
-                            >
-                              {isUnlocked ? "Continue" : "Locked"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+      {/* Course Materials Section */}
+      <section className="py-10">
+        <div className="container">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={() => navigate("/cbt/course-material-test")}
+              className="w-full group relative rounded-2xl p-8 text-left transition-all hover:scale-[1.02] active:scale-[0.98] bg-card border border-border shadow-sm hover:shadow-lg"
+            >
+              <div className="flex items-center gap-5">
+                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shrink-0">
+                  <FileUp className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-1">Course Materials</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload your course material and generate practice tests instantly with AI.
+                  </p>
+                </div>
               </div>
-            </div>
+            </button>
           </div>
-        </section>
-      )}
-
-      {/* Features Section */}
-      <section className="py-16">
-        <div className="container">
-          <FeaturesSection features={features} />
         </div>
       </section>
 
-      {/* Tutorials Section */}
-      <section className="py-16">
-        <div className="container">
-          <TutorialsSection tutorials={tutorialsWithIds} />
-        </div>
-      </section>
-
-      {/* Ad Placement */}
-      <section className="py-8">
-        <div className="container">
-          <AdPlacement location="content" />
-        </div>
-      </section>
-
-      {/* Testimonial Section */}
-      <section className="py-16">
-        <div className="container">
-          <TestimonialCard quote={testimonial.quote} author={testimonial.author} />
-        </div>
-      </section>
-
-      {/* Call to Action Section */}
-      <section className="py-16">
+      {/* Call to Action */}
+      <section className="py-12">
         <div className="container">
           <CallToAction />
-        </div>
-      </section>
-
-      {/* Bottom Ad Placement */}
-      <section className="py-8">
-        <div className="container">
-          <AdPlacement location="footer" />
         </div>
       </section>
     </div>
