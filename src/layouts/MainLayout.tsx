@@ -60,25 +60,13 @@ const MainLayout = () => {
           
           <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 mx-6">
             {mainLinks.map((link) => (
-              link.external ? (
-                <a
-                  key={link.name}
-                  href={link.path}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium transition-colors hover:text-primary"
-                >
-                  {link.name}
-                </a>
-              ) : (
-                <Link 
-                  key={link.name} 
-                  to={link.path} 
-                  className="text-sm font-medium transition-colors hover:text-primary"
-                >
-                  {link.name}
-                </Link>
-              )
+              <Link 
+                key={link.name} 
+                to={link.path} 
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                {link.name}
+              </Link>
             ))}
           </nav>
           
