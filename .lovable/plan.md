@@ -1,75 +1,55 @@
 
 
-## Plan: Course Material Test Enhancements
+## Plan: Simplify Website and PWA
 
-### Overview
-Four key changes to the Course Material Test feature:
-
-1. **Add "Course Material Test" to navigation menus** so users can easily find it
-2. **Ask users to choose Essay or MCQ** after uploading a document
-3. **Generate 10 essay OR 40 MCQ questions** based on user choice (instead of the current fixed 10 obj + 5 short + 5 essay)
-4. **Preserve uploaded document after test completion** with separate "Regenerate" and "Upload New Document" buttons
+### Goal
+Make Veno's core purpose (CBT/Test Practice) immediately obvious. Remove clutter, reduce choices, and guide users to the main actions.
 
 ---
 
-### 1. Add to Navigation Menus
+### 1. Simplify Website Homepage (`src/pages/Index.tsx`)
 
-Add a "Course Material" link in two places:
+**Remove**: Course Progress Table, Tutorials Section, Features Section, Ads, Testimonial section
 
-- **AppNavigation sidebar** (`src/components/cbt/AppNavigation.tsx`): Add a new nav item with `FileText` icon pointing to `/cbt/course-material-test`
-- **Mobile menu** (`src/components/ui/mobile-menu.tsx`): Add to the app links section
+**New structure**:
+- **Hero banner** (keep existing carousel but simplify to 2 slides focused on CBT)
+- **3 Action Cards** -- large, clear cards with icons:
+  1. "Take a Test" -> `/cbt` (CBT practice)
+  2. "AI Study Assistant" -> `/ai-assistant` (AI-powered help)
+  3. "Challenge Friends" -> `/cbt/streak-challenge` (PvP challenges)
+- **Course Materials Section** -- a simple card linking to `/cbt/course-material-test` with a brief description ("Upload your course material and generate practice tests instantly")
+- **Call to Action** (keep existing)
 
-### 2. Question Type Selection After Upload
+**Also update `src/data/homePageData.ts`**: Reduce `bannerSlides` from 4 to 2 (keep the CBT-focused ones).
 
-In `src/components/cbt/StudentDocumentUpload.tsx` and `src/pages/cbt/CourseMaterialTest.tsx`:
+### 2. Simplify PWA Home (`src/pages/pwa/PWAHome.tsx`)
 
-- After a document is uploaded (file selected), show a question type selector: **"Essay"** or **"MCQ (Multiple Choice)"**
-- Store the selected type in state (`questionType: 'essay' | 'mcq'`)
-- Pass this choice to the edge function when generating questions
+**Reduce from 16 app icons to 6 core apps**:
+1. CBT Tests (`/cbt`)
+2. AI Assistant (`/ai-assistant`)
+3. Challenge (`/cbt/streak-challenge`)
+4. Course Material (`/cbt/course-material-test`)
+5. Past Questions (`/cbt/past-questions`)
+6. Analytics (`/cbt/analytics`)
 
-### 3. Update Edge Function for Dynamic Question Counts
+Remove: Library, Leaderboard, Streaks, Voice Tutor, Bot, Org Exam, Profile, Settings, Dashboard, Tutorials (these are still accessible via navigation/menus, just not on the home screen).
 
-In `supabase/functions/generate-pdf-questions/index.ts`:
+### 3. Simplify Navigation (`src/layouts/MainLayout.tsx`)
 
-- Accept a new parameter `question_type` (`'essay'` or `'mcq'`)
-- If `mcq`: Update the system prompt to generate **40 objective questions** only (no essay/short answer sections)
-- If `essay`: Update the system prompt to generate **10 essay questions** only
-- Increase `max_tokens` to handle 40 MCQ questions (approximately 8000 tokens)
-- Update the parsing logic to handle the new formats
+**Reduce header nav links** from 6 to 4:
+- Home, CBT, AI Assistant, Course Material
 
-### 4. Preserve Document & Regenerate Flow
-
-In `src/pages/cbt/CourseMaterialTest.tsx`:
-
-- Store the last uploaded document content and metadata in state (e.g., `lastUploadedContent`, `lastUploadMeta`)
-- When "New Test" is clicked after results:
-  - Clear questions and answers but **keep** the document data
-  - Show the question type selector again so user can regenerate
-- Add a separate **"Upload New Document"** button that fully resets everything (clears document + questions)
-- The `StudentDocumentUpload` component will pass extracted text back to parent so it can be reused
+Keep Blog in footer or mobile menu only. Remove Voice Tutor and Streak Challenge from top nav (still accessible from homepage cards and CBT pages).
 
 ---
 
 ### Technical Details
 
 **Files to modify:**
-- `src/components/cbt/AppNavigation.tsx` -- add nav item
-- `src/components/ui/mobile-menu.tsx` -- add nav item  
-- `src/components/cbt/StudentDocumentUpload.tsx` -- add question type selection, pass extracted content up to parent
-- `src/pages/cbt/CourseMaterialTest.tsx` -- question type state, regenerate vs new document flow, persist document data
-- `supabase/functions/generate-pdf-questions/index.ts` -- accept `question_type`, dynamic prompt/parsing for 40 MCQ or 10 essay
+- `src/pages/Index.tsx` -- Replace sections with 3 action cards + course materials card
+- `src/data/homePageData.ts` -- Reduce banner slides to 2
+- `src/pages/pwa/PWAHome.tsx` -- Reduce apps array to 6 items
+- `src/layouts/MainLayout.tsx` -- Simplify `mainLinks` array to 4 items
 
-**Edge function prompt changes:**
-- MCQ mode: "Generate exactly 40 multiple-choice objective questions with 4 options each"
-- Essay mode: "Generate exactly 10 essay questions with key points for each"
-- `max_tokens` increased from 4500 to ~8000 for 40 MCQ questions
-
-**State flow for document persistence:**
-
-```text
-User uploads doc --> Extracts text --> Stores in state
-  --> Picks MCQ or Essay --> Generates questions --> Takes test
-    --> "Regenerate" --> Goes back to type picker (doc still loaded)
-    --> "Upload New Document" --> Full reset
-```
+No new components needed -- the action cards will be simple inline cards using existing `Card` or styled divs with icons and navigation.
 
