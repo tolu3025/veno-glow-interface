@@ -37,7 +37,7 @@ import AdminCourseMaterials from "./pages/admin/AdminCourseMaterials";
 import TutorialInfo from "./pages/TutorialInfo";
 import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
-import BotPage from "./pages/BotPage";
+
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/payment/PaymentSuccess";
 import PaymentFailed from "./pages/payment/PaymentFailed";
