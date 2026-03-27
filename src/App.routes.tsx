@@ -105,8 +105,8 @@ export const routes = [
     element: <AiCreateTest />,
   },
   {
-    path: "/cbt/public-leaderboards",
-    element: <PublicLeaderboards />,
+    path: "/cbt/jamb",
+    element: <JambMode />,
   },
   {
     path: "/cbt/past-questions",
