@@ -31,13 +31,14 @@ import ManageTest from "./pages/cbt/ManageTest";
 import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
-import PublicLeaderboards from "./pages/cbt/PublicLeaderboards";
+import JambMode from "./pages/cbt/JambMode";
+import PracticeMode from "./pages/cbt/PracticeMode";
 import CourseMaterialTest from "./pages/cbt/CourseMaterialTest";
 import AdminCourseMaterials from "./pages/admin/AdminCourseMaterials";
 import TutorialInfo from "./pages/TutorialInfo";
 import TutorialCategoriesPage from "./pages/TutorialCategoriesPage";
 import OrdersPage from "./pages/OrdersPage";
-import BotPage from "./pages/BotPage";
+
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/payment/PaymentSuccess";
 import PaymentFailed from "./pages/payment/PaymentFailed";
@@ -231,15 +232,15 @@ const AppRoutes = () => {
           <Route path="/" element={<PWARootRedirect />} />
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/cbt/public-leaderboards" element={<PublicLeaderboards />} />
+          <Route path="/cbt/jamb" element={<JambMode />} />
+          <Route path="/cbt/practice" element={<PracticeMode />} />
           <Route path="/cbt/course-material-test" element={<CourseMaterialTest />} />
           <Route path="/ai-tutorial/chat" element={<AiChat />} />
           <Route path="/ai-tutorial/resources" element={<AiResources />} />
           <Route path="/tutorial/info" element={<TutorialInfo />} />
           <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
           
-          {/* Bot route - adding it here as a regular route */}
-          <Route path="/bot" element={<BotPage />} />
+          {/* AI Study Assistant route */}
           
           {/* AI Study Assistant route */}
           <Route path="/ai-assistant" element={<AIStudyAssistant />} />

@@ -16,7 +16,7 @@ import ComingSoon from "@/pages/ComingSoon";
 import Maintenance from "@/pages/Maintenance";
 import CbtPage from "@/pages/CbtPage";
 import CreateTest from "@/pages/cbt/CreateTest";
-import PublicLeaderboards from "@/pages/cbt/PublicLeaderboards";
+import JambMode from "@/pages/cbt/JambMode";
 import AiCreateTest from "@/pages/cbt/AiCreateTest";
 import PastQuestions from "@/pages/cbt/PastQuestions";
 import StreakChallenge from "@/pages/cbt/StreakChallenge";
@@ -105,8 +105,8 @@ export const routes = [
     element: <AiCreateTest />,
   },
   {
-    path: "/cbt/public-leaderboards",
-    element: <PublicLeaderboards />,
+    path: "/cbt/jamb",
+    element: <JambMode />,
   },
   {
     path: "/cbt/past-questions",
