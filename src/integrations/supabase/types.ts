@@ -733,6 +733,77 @@ export type Database = {
         }
         Relationships: []
       }
+      jamb_challenge_scores: {
+        Row: {
+          created_at: string
+          id: string
+          percentage: number
+          points: number
+          score: number
+          season_id: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          percentage?: number
+          points?: number
+          score?: number
+          season_id: string
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          percentage?: number
+          points?: number
+          score?: number
+          season_id?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jamb_challenge_scores_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "jamb_challenge_seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jamb_challenge_seasons: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          is_active: boolean
+          prize_description: string
+          starts_at: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          is_active?: boolean
+          prize_description?: string
+          starts_at: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          is_active?: boolean
+          prize_description?: string
+          starts_at?: string
+          title?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string | null
@@ -2372,6 +2443,27 @@ export type Database = {
           user_id: string | null
         }
         Relationships: []
+      }
+      jamb_challenge_leaderboard: {
+        Row: {
+          attempts: number | null
+          best_percentage: number | null
+          best_score: number | null
+          display_name: string | null
+          email: string | null
+          season_id: string | null
+          total_points: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jamb_challenge_scores_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "jamb_challenge_seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

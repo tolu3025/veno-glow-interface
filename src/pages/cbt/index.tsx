@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, GraduationCap, BookOpen, PlusCircle, FileUp } from "lucide-react";
+import { ArrowLeft, GraduationCap, BookOpen, PlusCircle, FileUp, Trophy } from "lucide-react";
 
 const CBTIndex = () => {
   const navigate = useNavigate();
@@ -66,6 +66,23 @@ const CBTIndex = () => {
               </div>
             </button>
           </div>
+          {/* JAMB Challenge Banner */}
+          <button
+            onClick={() => navigate('/cbt/jamb-challenge')}
+            className="w-full rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-2 border-yellow-500/30 shadow-sm hover:shadow-lg"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shrink-0">
+                <Trophy className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold">🔥 JAMB Challenge — Win ₦10,000!</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Compete for 2 weeks. Top 3 share the prize. Earn points from every JAMB practice!
+                </p>
+              </div>
+            </div>
+          </button>
 
           <div className="space-y-3 pt-2">
             <Button
