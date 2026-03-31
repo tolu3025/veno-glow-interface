@@ -114,6 +114,38 @@ const JambMode = () => {
     }));
   };
 
+  const recordChallengeScore = async (totalCorrect: number, totalQuestions: number, pct: number) => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return;
+
+      // Get active season
+      const { data: season } = await supabase
+        .from('jamb_challenge_seasons')
+        .select('id')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!season) return;
+
+      // Points = percentage score (e.g. 72% = 72 points)
+      const points = pct;
+
+      await supabase.from('jamb_challenge_scores').insert({
+        user_id: currentUser.id,
+        season_id: season.id,
+        score: totalCorrect,
+        total_questions: totalQuestions,
+        percentage: pct,
+        points,
+      });
+    } catch (err) {
+      console.error('Failed to record JAMB challenge score:', err);
+    }
+  };
+
   const handleSubmit = useCallback(() => {
     const newScores: Record<string, { correct: number; total: number }> = {};
 
@@ -127,6 +159,13 @@ const JambMode = () => {
       });
       newScores[sq.subject] = { correct, total: sq.questions.length };
     });
+
+    const totalCorrect = Object.values(newScores).reduce((a, b) => a + b.correct, 0);
+    const totalQuestions = Object.values(newScores).reduce((a, b) => a + b.total, 0);
+    const pct = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+    // Record score for JAMB Challenge
+    recordChallengeScore(totalCorrect, totalQuestions, pct);
 
     setScores(newScores);
     setPhase('results');
