@@ -305,6 +305,15 @@ const JambMode = () => {
             );
           })}
 
+          <Card className="border-2 border-yellow-500/30 bg-gradient-to-r from-yellow-500/5 to-orange-500/5">
+            <CardContent className="p-4 text-center space-y-2">
+              <p className="font-semibold text-sm">🔥 Your score earned you <span className="text-primary font-bold">{percentage} points</span> in the JAMB Challenge!</p>
+              <Button onClick={() => navigate('/cbt/jamb-challenge')} className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700">
+                View JAMB Challenge Leaderboard
+              </Button>
+            </CardContent>
+          </Card>
+
           <Button onClick={() => navigate('/cbt')} variant="outline" className="w-full">
             Back to CBT
           </Button>
