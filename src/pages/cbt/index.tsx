@@ -84,7 +84,7 @@ const CBTIndex = () => {
             </div>
           </button>
 
-
+          <div className="space-y-3 pt-2">
             <Button
               onClick={() => navigate('/cbt/create')}
               variant="outline"
