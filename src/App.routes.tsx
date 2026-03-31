@@ -122,6 +122,10 @@ export const routes = [
     element: <StreakChallengeLeaderboard />,
   },
   {
+    path: "/cbt/jamb-challenge",
+    element: <JambChallengeLeaderboard />,
+  },
+  {
     path: "/cbt/challenge/:shareCode",
     element: <JoinChallenge />,
   },
