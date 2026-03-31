@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, GraduationCap, BookOpen, PlusCircle, FileUp } from "lucide-react";
+import { ArrowLeft, GraduationCap, BookOpen, PlusCircle, FileUp, Trophy } from "lucide-react";
 
 const CBTIndex = () => {
   const navigate = useNavigate();
