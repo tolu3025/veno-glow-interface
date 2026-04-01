@@ -1,133 +1,154 @@
-## Plan: Redesign CBT with JAMB Mode + Practice Mode
+## Plan: Upgrade JAMB CBT to Real Exam Experience
 
-### Overview
+### Problem Analysis
 
-Simplify the CBT experience into two clear paths: **JAMB Mode** (full UTME simulation) and **Practice Mode** (free practice from question bank). Remove VenoBot and public leaderboards.
+1. **404 on JAMB Challenge**: Route `/cbt/jamb-challenge` exists in `App.routes.tsx` but is NOT registered in `App.tsx` (the actual router). Missing import + route.
+2. **Scoring is percentage-based (out of 100)**, not JAMB-standard (out of 400).
+3. **Exam interface shows all questions at once** per subject instead of one-at-a-time with a question navigation panel.
+4. **No passage/instruction support**, no image support, no explanations after exam.
+5. **No review before submission**.
 
 ---
 
-### 1. Remove VenoBot
+### 1. Fix JAMB Challenge 404
 
-**Files to modify:**
+**File: `src/App.tsx**`
 
-- `src/App.tsx` -- Remove `/bot` route
-- `src/pages/BotPage.tsx` -- Delete file
-- Any navigation references to BotPage
+- Add `import JambChallengeLeaderboard from "./pages/cbt/JambChallengeLeaderboard"`
+- Add route: `<Route path="/cbt/jamb-challenge" element={<JambChallengeLeaderboard />} />` inside MainLayout
 
-### 2. Remove Public Leaderboards
+---
 
-**Files to modify:**
+### 2. JAMB Scoring System (Over 400)
 
-- `src/App.tsx` -- Remove `/cbt/public-leaderboards` route
-- `src/pages/cbt/PublicLeaderboards.tsx` -- Delete file
-- `src/App.routes.tsx` -- Remove public leaderboards entry
-- `src/components/cbt/AppNavigation.tsx` -- Remove leaderboard nav item if present
+**File: `src/pages/cbt/JambMode.tsx**` — Results phase
 
-### 3. Redesign CBT Landing Page (`src/pages/CbtPage.tsx`)
+Current scoring: percentage out of 100. Change to:
 
-Replace the current complex page with a clean two-card layout:
+- Each subject scored out of 100 marks: `(correct / total) * 100` rounded
+- Total JAMB score = sum of 4 subject scores (max 400)
+- English   as one subject score (60 questions → score out of 100)
+- Display: total score `/400`, individual subject scores `/100`
+- Update challenge points recording to use the `/400` score
+
+---
+
+### 3. JAMB-Exact Question Interface (Major Rewrite of Exam Phase)
+
+**File: `src/pages/cbt/JambMode.tsx**` — Exam phase
+
+Replace the "all questions visible" layout with a real JAMB CBT interface:
 
 ```text
-┌─────────────────────────────────┐
-│         Choose Your Mode        │
-├────────────────┬────────────────┤
-│   🎯 JAMB     │   📚 Practice  │
-│   Mode        │   Mode         │
-│               │                │
-│ Full UTME     │ Pick a subject │
-│ simulation    │ and practice   │
-│ 4 subjects    │ at your pace   │
-│ Timed exam    │                │
-│               │                │
-│ [Start JAMB]  │ [Start Practice]│
-└────────────────┴────────────────┘
-│  + Create Custom Test (small)   │
-│  + Course Material Test (small) │
-└─────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ Timer    Subject Tabs    [Submit All]     │
+├──────────────────┬───────────────────────┤
+│                  │  Question Numbers     │
+│  Question Area   │  Grid (1-40)          │
+│                  │  ● Answered (green)   │
+│  Q12 of 40       │  ○ Unanswered (gray)  │
+│  [Question text] │  Click to jump        │
+│                  │                       │
+│  ○ A. Option     │                       │
+│  ● B. Option     │                       │
+│  ○ C. Option     │                       │
+│  ○ D. Option     │                       │
+│                  │                       │
+│  [Prev] [Next]   │                       │
+└──────────────────┴───────────────────────┘
 ```
 
-Below the two main cards, show smaller action buttons for "Create Custom Test" and "Course Material Test" for power users.
+Key features:
 
-### 4. Create JAMB Mode Page (`src/pages/cbt/JambMode.tsx`)
-
-**Step 1 -- Subject Selection:**
-
-- English is auto-selected (compulsory, 60 questions)
-- Literature (lekki headmaster) auto-included (10 questions)
-- User picks 3 more subjects from JAMB subject list (40 questions each)
-- Total: 60 + 10 + 40 + 40 + 40 = 190 questions
-- Time: Real JAMB timing (2 hours total, or configurable)
-
-**JAMB subjects available:** Mathematics, Physics, Chemistry, Biology, Commerce, Accounting, Government, CRK, Geography, Economics, Literature (englishlit)
-
-**Step 2 -- Exam:**
-
-- Fetch questions from ALOC API via edge function
-- Display one subject at a time with a subject tab bar
-- Timer counts down from total time
-- Submit all at once at the end
-
-**Step 3 -- Results:**
-
-- Score per subject + overall percentage
-- Simple pass/fail indication
-
-### 5. Create Edge Function (`supabase/functions/fetch-jamb-questions/index.ts`)
-
-Proxies requests to the ALOC API:
-
-- Accepts: `{ subjects: string[], type: "utme" }`
-- For each subject, calls `https://questions.aloc.com.ng/api/v2/q/{count}?subject={subject}&type=utme`
-- Uses ALOC access token stored as a Supabase secret
-- Returns combined questions grouped by subject
-- English: fetches 60 questions
-- Literature (englishlit): fetches 10 questions
-- Other subjects: fetches 40 questions each
-
-**New secret needed:** `ALOC_ACCESS_TOKEN`
-
-### 6. Update Practice Mode
-
-Keep the existing `QuizSection` component mostly as-is but move it to its own clean page at `/cbt/practice`. Users pick one subject, set difficulty/time/count, and practice.
-
-### 7. Update Routes (`src/App.tsx`)
-
-- Add `/cbt/jamb` route for JAMB mode page
-- Add `/cbt/practice` route for practice mode
-- Keep `/cbt` as the mode selection landing page
-- Remove `/bot` and `/cbt/public-leaderboards`
+- One question at a time with `currentQuestionIndex` state per subject
+- Question navigation sidebar/panel showing answered vs unanswered
+- Click any number to jump to that question
+- Prev/Next buttons
+- Support `dangerouslySetInnerHTML` for HTML content from ALOC (passages, images, instructions)
+- ALOC questions include `section` field — group questions with same section under a shared passage/instruction header
+- Support images in questions (ALOC may include `<img>` tags in HTML)
+- On mobile: question nav panel becomes a collapsible bottom sheet or horizontal scrollable strip
+- JAMB green/white/black color scheme
 
 ---
 
-### Technical Details
+### 4. Passage & Instruction Support
 
-**Files to create:**
+In the question display area:
 
-- `src/pages/cbt/JambMode.tsx` -- JAMB subject selection + exam flow
-- `src/pages/cbt/PracticeMode.tsx` -- Wrapper around existing QuizSection
-- `supabase/functions/fetch-jamb-questions/index.ts` -- ALOC API proxy
+- If the current question's `section` field contains passage text, show it above the question
+- Keep passage visible while answering linked questions (same section)
+- Style as a distinct bordered block above the question
 
-**Files to modify:**
+---
 
-- `src/pages/CbtPage.tsx` -- Replace with simple two-card mode selector
-- `src/App.tsx` -- Update routes (add JAMB/practice, remove bot/public-leaderboards)
-- `src/components/cbt/AppNavigation.tsx` -- Update nav items
-- `src/pages/Index.tsx` -- Update "Take a Test" card to point to new `/cbt`
+### 5. Review Before Submission
 
-**Files to delete:**
+Add a review screen triggered by "Submit All":
 
-- `src/pages/BotPage.tsx`
-- `src/pages/cbt/PublicLeaderboards.tsx`
+- Show all subjects with answered/unanswered counts
+- List unanswered question numbers per subject
+- Confirm dialog: "Are you sure? X questions unanswered"
+- Only submit after confirmation
 
-**ALOC API format (per their docs):**
+---
 
+### 6. Explanations After Exam
+
+**File: `src/pages/cbt/JambMode.tsx**` — Results phase
+
+Add a "View Explanations" button on results that navigates to a new explanations view:
+
+- Show each question with the user's answer, correct answer highlighted
+- For ALOC questions, the `answer` field shows the correct option letter
+- Color-code: green for correct, red for wrong
+- Group by subject with tabs
+
+---
+
+### 7. UI/UX — JAMB Brand Colors
+
+Apply JAMB-inspired styling to the exam interface:
+
+- Primary: light green (`#4CAF50` / `#388E3C`)
+- Background: white
+- Text: black
+- Clean, distraction-free, no decorative elements during exam
+
+---
+
+### 8. Auto-Submit on Timer Expiry
+
+Already implemented but needs to work with the new one-at-a-time interface. Ensure `handleSubmit` is stable via `useCallback` with correct dependencies.
+
+---
+
+### 9. Remove Last 10 Questions (Server Logic)
+
+**File: `supabase/functions/fetch-jamb-questions/index.ts**`
+
+After fetching from ALOC, slice off the last 10 questions per subject before returning:
+
+```typescript
+questions: data.data?.slice(0, -10) || []
 ```
-GET https://questions.aloc.com.ng/api/v2/q/40?subject=mathematics&type=utme
-Header: AccessToken: {ALOC_ACCESS_TOKEN}
-```
 
-Response returns questions with `question`, `option` (A-E), `answer`, `section`, `examtype`, `examyear`.
+This ensures the final 10 questions from each API response are excluded (they tend to be less reliable).
 
-**Secret required:** User will need to provide their ALOC access token before JAMB mode works.
+---
 
-Make sure to include all jamb subjects available English is compulsory though 
+### Files to Modify
+
+
+| File                                               | Changes                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `src/App.tsx`                                      | Add JAMB Challenge route + import                                                                                   |
+| `src/pages/cbt/JambMode.tsx`                       | Complete rewrite of exam UI (one-at-a-time, nav panel, JAMB scoring /400, review screen, explanations, JAMB colors) |
+| `supabase/functions/fetch-jamb-questions/index.ts` | Slice last 10 questions per subject                                                                                 |
+
+
+### Files Unchanged
+
+- `src/pages/cbt/JambChallengeLeaderboard.tsx` — Already functional, just needs route fix
+- Database schema — No changes needed
+- Also add literature in English as subject 
