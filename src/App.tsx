@@ -32,6 +32,7 @@ import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
 import JambMode from "./pages/cbt/JambMode";
+import JambChallengeLeaderboard from "./pages/cbt/JambChallengeLeaderboard";
 import PracticeMode from "./pages/cbt/PracticeMode";
 import CourseMaterialTest from "./pages/cbt/CourseMaterialTest";
 import AdminCourseMaterials from "./pages/admin/AdminCourseMaterials";
@@ -233,6 +234,7 @@ const AppRoutes = () => {
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cbt/jamb" element={<JambMode />} />
+          <Route path="/cbt/jamb-challenge" element={<JambChallengeLeaderboard />} />
           <Route path="/cbt/practice" element={<PracticeMode />} />
           <Route path="/cbt/course-material-test" element={<CourseMaterialTest />} />
           <Route path="/ai-tutorial/chat" element={<AiChat />} />

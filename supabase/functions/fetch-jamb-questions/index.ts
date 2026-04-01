@@ -46,10 +46,13 @@ serve(async (req) => {
         }
 
         const data = await res.json();
+        const allQuestions = data.data || [];
+        // Remove last 10 questions (less reliable)
+        const trimmed = allQuestions.length > 10 ? allQuestions.slice(0, -10) : allQuestions;
         return {
           subject: item.subject,
           label: item.label,
-          questions: data.data || [],
+          questions: trimmed,
         };
       })
     );
