@@ -32,6 +32,7 @@ import Analytics from "./pages/cbt/Analytics";
 import Library from "./pages/cbt/Library";
 import Leaderboard from "./pages/cbt/Leaderboard";
 import JambMode from "./pages/cbt/JambMode";
+import JambChallengeLeaderboard from "./pages/cbt/JambChallengeLeaderboard";
 import PracticeMode from "./pages/cbt/PracticeMode";
 import CourseMaterialTest from "./pages/cbt/CourseMaterialTest";
 import AdminCourseMaterials from "./pages/admin/AdminCourseMaterials";
