@@ -234,6 +234,7 @@ const AppRoutes = () => {
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cbt/jamb" element={<JambMode />} />
+          <Route path="/cbt/jamb-challenge" element={<JambChallengeLeaderboard />} />
           <Route path="/cbt/practice" element={<PracticeMode />} />
           <Route path="/cbt/course-material-test" element={<CourseMaterialTest />} />
           <Route path="/ai-tutorial/chat" element={<AiChat />} />

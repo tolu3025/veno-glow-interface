@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Clock, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Loader2, ChevronLeft, ChevronRight, Menu, X, Eye, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const JAMB_SUBJECTS = [
@@ -25,13 +24,13 @@ const JAMB_SUBJECTS = [
   { id: 'history', label: 'History' },
 ];
 
-// ALOC API question format
 interface AlocQuestion {
   id: number;
   question: string;
   option: { a: string; b: string; c: string; d: string; e?: string };
   answer: string;
   section: string;
+  image?: string;
   examtype: string;
   examyear: string;
 }
@@ -42,9 +41,9 @@ interface SubjectQuestions {
   questions: AlocQuestion[];
 }
 
-type Phase = 'select' | 'loading' | 'exam' | 'results';
+type Phase = 'select' | 'loading' | 'exam' | 'review' | 'results' | 'explanations';
 
-const TOTAL_TIME = 120 * 60; // 2 hours in seconds
+const TOTAL_TIME = 120 * 60;
 
 const JambMode = () => {
   const navigate = useNavigate();
@@ -52,9 +51,11 @@ const JambMode = () => {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [subjectQuestions, setSubjectQuestions] = useState<SubjectQuestions[]>([]);
   const [activeSubjectIndex, setActiveSubjectIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Record<number, string>>>({});
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [scores, setScores] = useState<Record<string, { correct: number; total: number }>>({});
+  const [showNavPanel, setShowNavPanel] = useState(false);
 
   const toggleSubject = (id: string) => {
     setSelectedSubjects(prev => {
@@ -72,24 +73,56 @@ const JambMode = () => {
       toast.error('Please select exactly 3 subjects');
       return;
     }
-
     setPhase('loading');
-
     try {
       const { data, error } = await supabase.functions.invoke('fetch-jamb-questions', {
         body: { subjects: selectedSubjects }
       });
-
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions returned');
 
-      setSubjectQuestions(data.questions);
+      // Merge English + Literature into one "English" subject
+      const englishData = data.questions.find((q: SubjectQuestions) => q.subject === 'english');
+      const litData = data.questions.find((q: SubjectQuestions) => q.subject === 'englishlit');
+      const otherSubjects = data.questions.filter((q: SubjectQuestions) => q.subject !== 'english' && q.subject !== 'englishlit');
+
+      const mergedEnglish: SubjectQuestions = {
+        subject: 'english',
+        label: 'Use of English',
+        questions: [...(englishData?.questions || []), ...(litData?.questions || [])],
+      };
+
+      setSubjectQuestions([mergedEnglish, ...otherSubjects]);
       setPhase('exam');
     } catch (err: any) {
       toast.error(err.message || 'Failed to fetch questions');
       setPhase('select');
     }
   };
+
+  const handleSubmit = useCallback(() => {
+    const newScores: Record<string, { correct: number; total: number }> = {};
+    subjectQuestions.forEach(sq => {
+      let correct = 0;
+      sq.questions.forEach((q, i) => {
+        const userAnswer = answers[sq.subject]?.[i];
+        if (userAnswer && userAnswer.toLowerCase() === q.answer?.toLowerCase()) {
+          correct++;
+        }
+      });
+      newScores[sq.subject] = { correct, total: sq.questions.length };
+    });
+
+    // Calculate JAMB score out of 400
+    const subjectScores = Object.values(newScores);
+    const jambTotal = subjectScores.reduce((sum, s) => sum + Math.round((s.correct / s.total) * 100), 0);
+    const totalCorrect = subjectScores.reduce((a, b) => a + b.correct, 0);
+    const totalQuestions = subjectScores.reduce((a, b) => a + b.total, 0);
+
+    recordChallengeScore(totalCorrect, totalQuestions, jambTotal);
+    setScores(newScores);
+    setPhase('results');
+  }, [subjectQuestions, answers]);
 
   // Timer
   useEffect(() => {
@@ -105,7 +138,7 @@ const JambMode = () => {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [phase, handleSubmit]);
 
   const handleAnswer = (subjectId: string, questionIndex: number, option: string) => {
     setAnswers(prev => ({
@@ -114,12 +147,10 @@ const JambMode = () => {
     }));
   };
 
-  const recordChallengeScore = async (totalCorrect: number, totalQuestions: number, pct: number) => {
+  const recordChallengeScore = async (totalCorrect: number, totalQuestions: number, jambScore: number) => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (!currentUser) return;
-
-      // Get active season
       const { data: season } = await supabase
         .from('jamb_challenge_seasons')
         .select('id')
@@ -127,49 +158,19 @@ const JambMode = () => {
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
-
       if (!season) return;
-
-      // Points = percentage score (e.g. 72% = 72 points)
-      const points = pct;
-
       await supabase.from('jamb_challenge_scores').insert({
         user_id: currentUser.id,
         season_id: season.id,
         score: totalCorrect,
         total_questions: totalQuestions,
-        percentage: pct,
-        points,
+        percentage: Math.round((totalCorrect / totalQuestions) * 100),
+        points: jambScore,
       });
     } catch (err) {
       console.error('Failed to record JAMB challenge score:', err);
     }
   };
-
-  const handleSubmit = useCallback(() => {
-    const newScores: Record<string, { correct: number; total: number }> = {};
-
-    subjectQuestions.forEach(sq => {
-      let correct = 0;
-      sq.questions.forEach((q, i) => {
-        const userAnswer = answers[sq.subject]?.[i];
-        if (userAnswer && userAnswer.toLowerCase() === q.answer?.toLowerCase()) {
-          correct++;
-        }
-      });
-      newScores[sq.subject] = { correct, total: sq.questions.length };
-    });
-
-    const totalCorrect = Object.values(newScores).reduce((a, b) => a + b.correct, 0);
-    const totalQuestions = Object.values(newScores).reduce((a, b) => a + b.total, 0);
-    const pct = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-
-    // Record score for JAMB Challenge
-    recordChallengeScore(totalCorrect, totalQuestions, pct);
-
-    setScores(newScores);
-    setPhase('results');
-  }, [subjectQuestions, answers]);
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -179,38 +180,61 @@ const JambMode = () => {
   };
 
   const activeSubject = subjectQuestions[activeSubjectIndex];
+  const activeQuestion = activeSubject?.questions[currentQuestionIndex];
+  const subjectAnswers = answers[activeSubject?.subject] || {};
+
+  // When switching subjects, reset question index
+  const switchSubject = (index: number) => {
+    setActiveSubjectIndex(index);
+    setCurrentQuestionIndex(0);
+    setShowNavPanel(false);
+  };
+
+  // Get answered count per subject
+  const getAnsweredCount = (subjectId: string) => Object.keys(answers[subjectId] || {}).length;
+
+  // Review data
+  const reviewData = useMemo(() => {
+    return subjectQuestions.map(sq => ({
+      label: sq.label,
+      subject: sq.subject,
+      total: sq.questions.length,
+      answered: getAnsweredCount(sq.subject),
+      unanswered: sq.questions.length - getAnsweredCount(sq.subject),
+      unansweredNumbers: sq.questions
+        .map((_, i) => i)
+        .filter(i => !answers[sq.subject]?.[i as number])
+        .map(i => (i as number) + 1),
+    }));
+  }, [subjectQuestions, answers]);
+
+  const totalUnanswered = reviewData.reduce((a, b) => a + b.unanswered, 0);
 
   // ── SUBJECT SELECTION ──
   if (phase === 'select') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b px-4 py-3">
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="sticky top-0 z-50 border-b px-4 py-3" style={{ backgroundColor: '#1B5E20', color: 'white' }}>
           <div className="flex items-center justify-between max-w-2xl mx-auto">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/cbt')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/cbt')} className="text-white hover:bg-white/20">
               <ArrowLeft size={18} />
             </Button>
-            <span className="font-semibold text-lg">JAMB Mode</span>
+            <span className="font-bold text-lg tracking-wide">JAMB UTME CBT</span>
             <div className="w-9" />
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-6 max-w-2xl space-y-5">
-          {/* Fixed subjects */}
-          <Card>
+          <Card className="border-0 shadow-md">
             <CardContent className="p-4 space-y-2">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Compulsory</h3>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <Check size={16} className="text-green-600" />
-                <span className="font-medium text-sm">English — 60 questions</span>
-              </div>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <Check size={16} className="text-amber-600" />
-                <span className="font-medium text-sm">Literature (Lekki Headmaster) — 10 questions</span>
+              <h3 className="font-semibold text-sm uppercase tracking-wide" style={{ color: '#1B5E20' }}>Compulsory Subject</h3>
+              <div className="flex items-center gap-2 p-3 rounded-lg border" style={{ backgroundColor: '#E8F5E9', borderColor: '#4CAF50' }}>
+                <Check size={16} style={{ color: '#2E7D32' }} />
+                <span className="font-medium text-sm">Use of English (incl. Literature) — ~60 questions</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Choose 3 */}
           <div>
             <h3 className="font-semibold mb-3">Choose 3 Subjects ({selectedSubjects.length}/3)</h3>
             <div className="grid grid-cols-2 gap-2">
@@ -220,11 +244,12 @@ const JambMode = () => {
                   <button
                     key={sub.id}
                     onClick={() => toggleSubject(sub.id)}
-                    className={`p-3 rounded-xl text-sm font-medium text-left transition-all border ${
-                      selected
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-card border-border hover:border-primary/50'
-                    }`}
+                    className="p-3 rounded-lg text-sm font-medium text-left transition-all border"
+                    style={{
+                      backgroundColor: selected ? '#1B5E20' : 'white',
+                      color: selected ? 'white' : '#333',
+                      borderColor: selected ? '#1B5E20' : '#ddd',
+                    }}
                   >
                     {sub.label}
                   </button>
@@ -233,14 +258,15 @@ const JambMode = () => {
             </div>
           </div>
 
-          <div className="text-center text-sm text-muted-foreground">
-            Total: <strong>190 questions</strong> · <strong>2 hours</strong>
+          <div className="text-center text-sm" style={{ color: '#666' }}>
+            Total: <strong>4 subjects</strong> · <strong>~180 questions</strong> · <strong>2 hours</strong>
           </div>
 
           <Button
             onClick={startExam}
             disabled={selectedSubjects.length !== 3}
-            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            className="w-full h-12 text-base font-bold border-0"
+            style={{ backgroundColor: '#1B5E20', color: 'white' }}
           >
             Start JAMB Exam
           </Button>
@@ -252,10 +278,99 @@ const JambMode = () => {
   // ── LOADING ──
   if (phase === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f5f5f5' }}>
         <div className="text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Preparing your JAMB exam...</p>
+          <Loader2 className="h-10 w-10 animate-spin mx-auto" style={{ color: '#1B5E20' }} />
+          <p style={{ color: '#666' }}>Preparing your JAMB exam...</p>
+          <p className="text-xs" style={{ color: '#999' }}>Fetching questions from question bank</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── REVIEW BEFORE SUBMIT ──
+  if (phase === 'review') {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="sticky top-0 z-50 border-b px-4 py-3" style={{ backgroundColor: '#1B5E20', color: 'white' }}>
+          <div className="flex items-center justify-between max-w-2xl mx-auto">
+            <Button variant="ghost" size="icon" onClick={() => setPhase('exam')} className="text-white hover:bg-white/20">
+              <ArrowLeft size={18} />
+            </Button>
+            <span className="font-bold text-lg">Review Submission</span>
+            <div className="w-9" />
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-6 max-w-lg space-y-4">
+          <Card className="border-0 shadow-md">
+            <CardContent className="p-5 text-center space-y-2">
+              <Clock size={24} className="mx-auto" style={{ color: '#1B5E20' }} />
+              <p className="font-bold text-lg">Time Remaining: {formatTime(timeLeft)}</p>
+              {totalUnanswered > 0 && (
+                <p className="text-sm" style={{ color: '#D32F2F' }}>
+                  ⚠️ You have <strong>{totalUnanswered}</strong> unanswered question{totalUnanswered > 1 ? 's' : ''}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {reviewData.map((rd, idx) => (
+            <Card key={rd.subject} className="border-0 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-semibold text-sm">{rd.label}</p>
+                  <span className="text-xs font-medium px-2 py-1 rounded-full" style={{
+                    backgroundColor: rd.unanswered === 0 ? '#E8F5E9' : '#FFF3E0',
+                    color: rd.unanswered === 0 ? '#2E7D32' : '#E65100',
+                  }}>
+                    {rd.answered}/{rd.total} answered
+                  </span>
+                </div>
+                {rd.unansweredNumbers.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs mb-1" style={{ color: '#999' }}>Unanswered:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {rd.unansweredNumbers.slice(0, 20).map(n => (
+                        <button
+                          key={n}
+                          onClick={() => {
+                            setActiveSubjectIndex(idx);
+                            setCurrentQuestionIndex(n - 1);
+                            setPhase('exam');
+                          }}
+                          className="w-7 h-7 text-xs rounded font-medium border"
+                          style={{ borderColor: '#E65100', color: '#E65100' }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                      {rd.unansweredNumbers.length > 20 && (
+                        <span className="text-xs self-center" style={{ color: '#999' }}>+{rd.unansweredNumbers.length - 20} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          <div className="space-y-2 pt-2">
+            <Button
+              onClick={handleSubmit}
+              className="w-full h-12 text-base font-bold border-0"
+              style={{ backgroundColor: '#D32F2F', color: 'white' }}
+            >
+              Submit Exam
+            </Button>
+            <Button
+              onClick={() => setPhase('exam')}
+              variant="outline"
+              className="w-full"
+            >
+              Continue Answering
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -263,53 +378,83 @@ const JambMode = () => {
 
   // ── RESULTS ──
   if (phase === 'results') {
-    const totalCorrect = Object.values(scores).reduce((a, b) => a + b.correct, 0);
-    const totalQuestions = Object.values(scores).reduce((a, b) => a + b.total, 0);
-    const percentage = Math.round((totalCorrect / totalQuestions) * 100);
+    const jambScorePerSubject = subjectQuestions.map(sq => {
+      const s = scores[sq.subject];
+      if (!s) return { label: sq.label, subject: sq.subject, score: 0, correct: 0, total: 0 };
+      const subjectScore = Math.round((s.correct / s.total) * 100);
+      return { label: sq.label, subject: sq.subject, score: subjectScore, correct: s.correct, total: s.total };
+    });
+    const totalJambScore = jambScorePerSubject.reduce((sum, s) => sum + s.score, 0);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b px-4 py-3">
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="sticky top-0 z-50 border-b px-4 py-3" style={{ backgroundColor: '#1B5E20', color: 'white' }}>
           <div className="flex items-center justify-center">
-            <span className="font-semibold text-lg">JAMB Results</span>
+            <span className="font-bold text-lg">JAMB Results</span>
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-6 max-w-lg space-y-4">
-          <Card>
-            <CardContent className="p-6 text-center space-y-2">
-              <p className="text-5xl font-bold">{percentage}%</p>
-              <p className="text-muted-foreground">{totalCorrect} / {totalQuestions} correct</p>
-              <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${
-                percentage >= 50 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              }`}>
-                {percentage >= 50 ? 'PASS' : 'FAIL'}
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-6 text-center space-y-3">
+              <p className="text-6xl font-black" style={{ color: '#1B5E20' }}>{totalJambScore}</p>
+              <p className="text-lg font-medium" style={{ color: '#666' }}>out of 400</p>
+              <div className="w-full rounded-full h-3 overflow-hidden" style={{ backgroundColor: '#E0E0E0' }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${(totalJambScore / 400) * 100}%`,
+                    backgroundColor: totalJambScore >= 200 ? '#4CAF50' : '#F44336',
+                  }}
+                />
+              </div>
+              <span
+                className="inline-block text-sm font-bold px-4 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: totalJambScore >= 200 ? '#E8F5E9' : '#FFEBEE',
+                  color: totalJambScore >= 200 ? '#2E7D32' : '#C62828',
+                }}
+              >
+                {totalJambScore >= 200 ? 'PASS' : 'BELOW CUT-OFF'}
               </span>
             </CardContent>
           </Card>
 
-          {subjectQuestions.map(sq => {
-            const s = scores[sq.subject];
-            if (!s) return null;
-            const pct = Math.round((s.correct / s.total) * 100);
-            return (
-              <Card key={sq.subject}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{sq.label}</p>
-                    <p className="text-xs text-muted-foreground">{s.correct}/{s.total} correct</p>
-                  </div>
-                  <span className="font-bold text-lg">{pct}%</span>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {jambScorePerSubject.map(s => (
+            <Card key={s.subject} className="border-0 shadow-sm">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-sm">{s.label}</p>
+                  <p className="text-xs" style={{ color: '#999' }}>{s.correct}/{s.total} correct</p>
+                </div>
+                <div className="text-right">
+                  <span className="font-black text-xl" style={{ color: '#1B5E20' }}>{s.score}</span>
+                  <span className="text-xs" style={{ color: '#999' }}>/100</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
-          <Card className="border-2 border-yellow-500/30 bg-gradient-to-r from-yellow-500/5 to-orange-500/5">
+          <Button
+            onClick={() => setPhase('explanations')}
+            className="w-full h-11 font-semibold border-0"
+            style={{ backgroundColor: '#1565C0', color: 'white' }}
+          >
+            <Eye size={16} className="mr-2" /> View Explanations
+          </Button>
+
+          <Card className="border-2 shadow-sm" style={{ borderColor: '#FFA000', backgroundColor: '#FFF8E1' }}>
             <CardContent className="p-4 text-center space-y-2">
-              <p className="font-semibold text-sm">🔥 Your score earned you <span className="text-primary font-bold">{percentage} points</span> in the JAMB Challenge!</p>
-              <Button onClick={() => navigate('/cbt/jamb-challenge')} className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700">
-                View JAMB Challenge Leaderboard
+              <Trophy size={20} className="mx-auto" style={{ color: '#F57F17' }} />
+              <p className="font-semibold text-sm">
+                🔥 You earned <span className="font-black" style={{ color: '#1B5E20' }}>{totalJambScore} points</span> in the JAMB Challenge!
+              </p>
+              <Button
+                onClick={() => navigate('/cbt/jamb-challenge')}
+                className="w-full border-0 font-semibold"
+                style={{ backgroundColor: '#F57F17', color: 'white' }}
+              >
+                View Challenge Leaderboard
               </Button>
             </CardContent>
           </Card>
@@ -322,92 +467,297 @@ const JambMode = () => {
     );
   }
 
-  // ── EXAM ──
+  // ── EXPLANATIONS ──
+  if (phase === 'explanations') {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#1B5E20', color: 'white' }}>
+          <div className="flex items-center justify-between px-4 py-3 max-w-2xl mx-auto">
+            <Button variant="ghost" size="icon" onClick={() => setPhase('results')} className="text-white hover:bg-white/20">
+              <ArrowLeft size={18} />
+            </Button>
+            <span className="font-bold text-lg">Answer Review</span>
+            <div className="w-9" />
+          </div>
+          <div className="flex overflow-x-auto px-2 pb-2 gap-1">
+            {subjectQuestions.map((sq, i) => (
+              <button
+                key={sq.subject}
+                onClick={() => setActiveSubjectIndex(i)}
+                className="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors"
+                style={{
+                  backgroundColor: i === activeSubjectIndex ? 'white' : 'rgba(255,255,255,0.2)',
+                  color: i === activeSubjectIndex ? '#1B5E20' : 'white',
+                }}
+              >
+                {sq.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-4 max-w-2xl space-y-3 pb-8">
+          {activeSubject?.questions.map((q, qIndex) => {
+            const userAnswer = answers[activeSubject.subject]?.[qIndex];
+            const correctAnswer = q.answer?.toLowerCase();
+            const isCorrect = userAnswer?.toLowerCase() === correctAnswer;
+            const optionLabels = ['a', 'b', 'c', 'd'];
+
+            return (
+              <Card key={qIndex} className="border-0 shadow-sm overflow-hidden">
+                {q.section && (
+                  <div className="px-4 pt-3 pb-2 text-xs italic border-b" style={{ backgroundColor: '#F5F5F5', color: '#666' }}>
+                    <div dangerouslySetInnerHTML={{ __html: q.section }} />
+                  </div>
+                )}
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{
+                      backgroundColor: isCorrect ? '#E8F5E9' : '#FFEBEE',
+                      color: isCorrect ? '#2E7D32' : '#C62828',
+                    }}>
+                      {qIndex + 1}
+                    </span>
+                    <p className="text-sm" dangerouslySetInnerHTML={{ __html: q.question }} />
+                  </div>
+                  {q.image && <img src={q.image} alt="question" className="max-w-full rounded" />}
+                  <div className="space-y-1.5 ml-8">
+                    {optionLabels.map(key => {
+                      const val = q.option[key as keyof typeof q.option];
+                      if (!val) return null;
+                      const isThisCorrect = key === correctAnswer;
+                      const isThisSelected = userAnswer?.toLowerCase() === key;
+                      let bg = 'white';
+                      let border = '#E0E0E0';
+                      let textColor = '#333';
+                      if (isThisCorrect) { bg = '#E8F5E9'; border = '#4CAF50'; textColor = '#1B5E20'; }
+                      else if (isThisSelected && !isThisCorrect) { bg = '#FFEBEE'; border = '#F44336'; textColor = '#C62828'; }
+
+                      return (
+                        <div key={key} className="p-2.5 rounded-lg text-sm border" style={{ backgroundColor: bg, borderColor: border, color: textColor }}>
+                          <span className="font-bold mr-2 uppercase">{key}.</span>
+                          <span dangerouslySetInnerHTML={{ __html: val }} />
+                          {isThisCorrect && <Check size={14} className="inline ml-2" style={{ color: '#2E7D32' }} />}
+                          {isThisSelected && !isThisCorrect && <X size={14} className="inline ml-2" style={{ color: '#C62828' }} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── EXAM INTERFACE ──
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Timer + Subject tabs */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
-        <div className="flex items-center justify-between px-4 py-2">
-          <span className="text-sm font-mono font-bold flex items-center gap-1">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
+      {/* Top bar */}
+      <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#1B5E20' }}>
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-sm font-mono font-bold flex items-center gap-1 text-white">
             <Clock size={14} />
             {formatTime(timeLeft)}
           </span>
-          <Button size="sm" variant="destructive" onClick={handleSubmit}>
-            Submit All
+          <span className="text-xs text-white/80 font-medium">JAMB UTME CBT</span>
+          <Button
+            size="sm"
+            onClick={() => setPhase('review')}
+            className="text-xs h-7 border-0 font-semibold"
+            style={{ backgroundColor: '#D32F2F', color: 'white' }}
+          >
+            Submit
           </Button>
         </div>
+        {/* Subject tabs */}
         <div className="flex overflow-x-auto px-2 pb-2 gap-1">
-          {subjectQuestions.map((sq, i) => (
-            <button
-              key={sq.subject}
-              onClick={() => setActiveSubjectIndex(i)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
-                i === activeSubjectIndex
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {sq.label} ({(answers[sq.subject] ? Object.keys(answers[sq.subject]).length : 0)}/{sq.questions.length})
-            </button>
-          ))}
+          {subjectQuestions.map((sq, i) => {
+            const answered = getAnsweredCount(sq.subject);
+            return (
+              <button
+                key={sq.subject}
+                onClick={() => switchSubject(i)}
+                className="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors"
+                style={{
+                  backgroundColor: i === activeSubjectIndex ? 'white' : 'rgba(255,255,255,0.15)',
+                  color: i === activeSubjectIndex ? '#1B5E20' : 'white',
+                }}
+              >
+                {sq.label} ({answered}/{sq.questions.length})
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Questions */}
-      {activeSubject && (
-        <div className="flex-1 container mx-auto px-4 py-4 max-w-2xl space-y-4 pb-24">
-          {activeSubject.questions.map((q, qIndex) => (
-            <Card key={qIndex} className="overflow-hidden">
-              <CardContent className="p-4 space-y-3">
-                <p className="text-sm font-medium">
-                  <span className="text-muted-foreground mr-1">Q{qIndex + 1}.</span>
-                  <span dangerouslySetInnerHTML={{ __html: q.question }} />
-                </p>
+      {activeSubject && activeQuestion && (
+        <div className="flex-1 flex flex-col md:flex-row">
+          {/* Main question area */}
+          <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full">
+            {/* Question header */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-bold" style={{ color: '#1B5E20' }}>
+                Question {currentQuestionIndex + 1} of {activeSubject.questions.length}
+              </span>
+              <button
+                onClick={() => setShowNavPanel(!showNavPanel)}
+                className="md:hidden p-2 rounded-lg border"
+                style={{ borderColor: '#1B5E20', color: '#1B5E20' }}
+              >
+                <Menu size={16} />
+              </button>
+            </div>
+
+            {/* Section/Passage */}
+            {activeQuestion.section && (
+              <div className="mb-4 p-3 rounded-lg border text-sm" style={{ backgroundColor: '#F1F8E9', borderColor: '#AED581' }}>
+                <p className="text-xs font-semibold mb-1 uppercase" style={{ color: '#558B2F' }}>Passage / Instruction</p>
+                <div dangerouslySetInnerHTML={{ __html: activeQuestion.section }} className="prose prose-sm max-w-none" />
+              </div>
+            )}
+
+            {/* Question */}
+            <Card className="border-0 shadow-md mb-4">
+              <CardContent className="p-5 space-y-4">
+                <p className="text-base font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: activeQuestion.question }} />
+                {activeQuestion.image && (
+                  <img src={activeQuestion.image} alt="question" className="max-w-full rounded-lg border" />
+                )}
+
                 <div className="space-y-2">
-                  {Object.entries(q.option).map(([key, value]) => {
-                    if (!value) return null;
-                    const isSelected = answers[activeSubject.subject]?.[qIndex] === key;
+                  {(['a', 'b', 'c', 'd'] as const).map(key => {
+                    const val = activeQuestion.option[key];
+                    if (!val) return null;
+                    const isSelected = subjectAnswers[currentQuestionIndex] === key;
                     return (
                       <button
                         key={key}
-                        onClick={() => handleAnswer(activeSubject.subject, qIndex, key)}
-                        className={`w-full text-left p-3 rounded-lg text-sm transition-colors border ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-card border-border hover:border-primary/50'
-                        }`}
+                        onClick={() => handleAnswer(activeSubject.subject, currentQuestionIndex, key)}
+                        className="w-full text-left p-3 rounded-lg text-sm transition-all border flex items-start gap-3"
+                        style={{
+                          backgroundColor: isSelected ? '#1B5E20' : 'white',
+                          color: isSelected ? 'white' : '#333',
+                          borderColor: isSelected ? '#1B5E20' : '#E0E0E0',
+                        }}
                       >
-                        <span className="font-semibold mr-2 uppercase">{key}.</span>
-                        <span dangerouslySetInnerHTML={{ __html: value }} />
+                        <span className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border" style={{
+                          borderColor: isSelected ? 'white' : '#BDBDBD',
+                          backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'transparent',
+                        }}>
+                          {key.toUpperCase()}
+                        </span>
+                        <span dangerouslySetInnerHTML={{ __html: val }} className="pt-0.5" />
                       </button>
                     );
                   })}
                 </div>
               </CardContent>
             </Card>
-          ))}
+
+            {/* Prev/Next */}
+            <div className="flex justify-between gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentQuestionIndex(i => Math.max(0, i - 1))}
+                disabled={currentQuestionIndex === 0}
+                className="flex-1"
+              >
+                <ChevronLeft size={16} className="mr-1" /> Previous
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (currentQuestionIndex < activeSubject.questions.length - 1) {
+                    setCurrentQuestionIndex(i => i + 1);
+                  } else if (activeSubjectIndex < subjectQuestions.length - 1) {
+                    switchSubject(activeSubjectIndex + 1);
+                  }
+                }}
+                className="flex-1"
+                style={currentQuestionIndex === activeSubject.questions.length - 1 && activeSubjectIndex < subjectQuestions.length - 1 ? { backgroundColor: '#1B5E20', color: 'white' } : {}}
+              >
+                {currentQuestionIndex === activeSubject.questions.length - 1 && activeSubjectIndex < subjectQuestions.length - 1
+                  ? 'Next Subject'
+                  : 'Next'} <ChevronRight size={16} className="ml-1" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Question navigation panel - desktop sidebar */}
+          <div className="hidden md:block w-48 border-l p-3 sticky top-24 self-start" style={{ backgroundColor: '#FAFAFA' }}>
+            <p className="text-xs font-semibold mb-2 uppercase" style={{ color: '#666' }}>Questions</p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {activeSubject.questions.map((_, i) => {
+                const isAnswered = !!subjectAnswers[i];
+                const isCurrent = i === currentQuestionIndex;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentQuestionIndex(i)}
+                    className="w-7 h-7 rounded text-xs font-medium transition-all"
+                    style={{
+                      backgroundColor: isCurrent ? '#1B5E20' : isAnswered ? '#4CAF50' : '#E0E0E0',
+                      color: isCurrent || isAnswered ? 'white' : '#666',
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 space-y-1 text-xs" style={{ color: '#999' }}>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#4CAF50' }} /> Answered
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded" style={{ backgroundColor: '#E0E0E0' }} /> Unanswered
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile question nav overlay */}
+          {showNavPanel && (
+            <div className="fixed inset-0 z-50 md:hidden" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={() => setShowNavPanel(false)}>
+              <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 max-h-[60vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-semibold text-sm">{activeSubject.label} — Questions</p>
+                  <button onClick={() => setShowNavPanel(false)}><X size={18} /></button>
+                </div>
+                <div className="grid grid-cols-8 gap-2">
+                  {activeSubject.questions.map((_, i) => {
+                    const isAnswered = !!subjectAnswers[i];
+                    const isCurrent = i === currentQuestionIndex;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => { setCurrentQuestionIndex(i); setShowNavPanel(false); }}
+                        className="w-8 h-8 rounded-lg text-xs font-medium"
+                        style={{
+                          backgroundColor: isCurrent ? '#1B5E20' : isAnswered ? '#4CAF50' : '#E0E0E0',
+                          color: isCurrent || isAnswered ? 'white' : '#666',
+                        }}
+                      >
+                        {i + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex gap-4 text-xs" style={{ color: '#999' }}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded" style={{ backgroundColor: '#4CAF50' }} /> Answered
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded" style={{ backgroundColor: '#E0E0E0' }} /> Unanswered
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Bottom nav between subjects */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t p-3 flex justify-between max-w-2xl mx-auto">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={activeSubjectIndex === 0}
-          onClick={() => { setActiveSubjectIndex(i => i - 1); window.scrollTo(0, 0); }}
-        >
-          <ChevronLeft size={16} className="mr-1" /> Prev Subject
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={activeSubjectIndex === subjectQuestions.length - 1}
-          onClick={() => { setActiveSubjectIndex(i => i + 1); window.scrollTo(0, 0); }}
-        >
-          Next Subject <ChevronRight size={16} className="ml-1" />
-        </Button>
-      </div>
     </div>
   );
 };
