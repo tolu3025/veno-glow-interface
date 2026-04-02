@@ -501,7 +501,7 @@ const JambMode = () => {
               return (
                 <button
                   key={sq.subject}
-                  onClick={() => { setActiveSubjectIndex(i); }}
+                  onClick={() => { setActiveSubjectIndex(i); fetchExplanationsForSubject(sq.subject, sq.questions); }}
                   className="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors"
                   style={{
                     backgroundColor: i === activeSubjectIndex ? 'white' : 'rgba(255,255,255,0.2)',
