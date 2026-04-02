@@ -57,6 +57,8 @@ const JambMode = () => {
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [scores, setScores] = useState<Record<string, { correct: number; total: number }>>({});
   const [showNavPanel, setShowNavPanel] = useState(false);
+  const [explanations, setExplanations] = useState<Record<string, Record<string, string>>>({});
+  const [loadingExplanations, setLoadingExplanations] = useState<Record<string, boolean>>({});
 
   const toggleSubject = (id: string) => {
     setSelectedSubjects(prev => {
@@ -82,7 +84,7 @@ const JambMode = () => {
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions returned');
 
-      // No merging — each subject stands on its own
+      // Edge function now merges english+lit into Use of English
       setSubjectQuestions(data.questions);
       setPhase('exam');
     } catch (err: any) {
@@ -160,6 +162,31 @@ const JambMode = () => {
       });
     } catch (err) {
       console.error('Failed to record JAMB challenge score:', err);
+    }
+  };
+
+  const fetchExplanationsForSubject = async (subjectId: string, questions: AlocQuestion[]) => {
+    if (explanations[subjectId] || loadingExplanations[subjectId]) return;
+    setLoadingExplanations(prev => ({ ...prev, [subjectId]: true }));
+    try {
+      const questionsData = questions.map(q => ({
+        question: q.question?.replace(/<[^>]*>/g, '') || '',
+        option: q.option,
+        answer: q.answer,
+        subject: subjectId,
+      }));
+      const { data, error } = await supabase.functions.invoke('generate-jamb-explanations', {
+        body: { questions: questionsData }
+      });
+      if (error) throw error;
+      if (data?.explanations) {
+        setExplanations(prev => ({ ...prev, [subjectId]: data.explanations }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch explanations:', err);
+      toast.error('Could not load explanations for this subject');
+    } finally {
+      setLoadingExplanations(prev => ({ ...prev, [subjectId]: false }));
     }
   };
 
@@ -424,7 +451,7 @@ const JambMode = () => {
           ))}
 
           <Button
-            onClick={() => { setActiveSubjectIndex(0); setPhase('explanations'); }}
+            onClick={() => { setActiveSubjectIndex(0); setPhase('explanations'); fetchExplanationsForSubject(subjectQuestions[0]?.subject, subjectQuestions[0]?.questions); }}
             className="w-full h-11 font-semibold border-0"
             style={{ backgroundColor: '#1565C0', color: 'white' }}
           >
@@ -474,7 +501,7 @@ const JambMode = () => {
               return (
                 <button
                   key={sq.subject}
-                  onClick={() => { setActiveSubjectIndex(i); }}
+                  onClick={() => { setActiveSubjectIndex(i); fetchExplanationsForSubject(sq.subject, sq.questions); }}
                   className="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors"
                   style={{
                     backgroundColor: i === activeSubjectIndex ? 'white' : 'rgba(255,255,255,0.2)',
@@ -539,6 +566,22 @@ const JambMode = () => {
                   {wasSkipped && (
                     <p className="ml-8 text-xs font-medium" style={{ color: '#E65100' }}>⚠️ You skipped this question</p>
                   )}
+                  {/* AI Explanation */}
+                  <div className="ml-8 mt-2">
+                    {loadingExplanations[activeSubject.subject] && !explanations[activeSubject.subject] ? (
+                      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: '#E3F2FD' }}>
+                        <Loader2 size={14} className="animate-spin" style={{ color: '#1565C0' }} />
+                        <span className="text-xs" style={{ color: '#1565C0' }}>Generating explanations...</span>
+                      </div>
+                    ) : explanations[activeSubject.subject]?.[String(qIndex)] ? (
+                      <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: '#F3E5F5', borderColor: '#CE93D8' }}>
+                        <p className="text-xs font-bold mb-1 uppercase" style={{ color: '#7B1FA2' }}>💡 Explanation</p>
+                        <p className="text-sm leading-relaxed" style={{ color: '#4A148C', whiteSpace: 'pre-line' }}>
+                          {explanations[activeSubject.subject][String(qIndex)]}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                 </CardContent>
               </Card>
             );
