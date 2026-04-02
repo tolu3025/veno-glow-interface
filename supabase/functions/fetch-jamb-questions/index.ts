@@ -21,13 +21,16 @@ serve(async (req) => {
       throw new Error('Exactly 3 additional subjects required');
     }
 
-    // English is compulsory (60 questions), + 3 user-selected subjects (40 each)
+    // Use of English = english (40, API max) + englishlit (20) = 60 questions combined
+    // Plus 3 user-selected elective subjects (40 each)
     const fetchList = [
-      { subject: 'english', count: 60, label: 'English' },
+      { subject: 'english', count: 40, label: 'English', group: 'use_of_english' },
+      { subject: 'englishlit', count: 20, label: 'Literature (Novel)', group: 'use_of_english' },
       ...subjects.map((s: string) => ({
-        subject: s === 'englishlit' ? 'englishlit' : s,
+        subject: s,
         count: 40,
         label: s === 'englishlit' ? 'Literature in English' : s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '),
+        group: s,
       })),
     ];
 
@@ -49,13 +52,30 @@ serve(async (req) => {
         return {
           subject: item.subject,
           label: item.label,
+          group: item.group,
           questions: allQuestions,
         };
       })
     );
 
+    // Merge english + englishlit(novel) into one "Use of English" subject
+    const useOfEnglishParts = results.filter(r => r.group === 'use_of_english');
+    const electiveSubjects = results.filter(r => r.group !== 'use_of_english');
+
+    const mergedEnglish = {
+      subject: 'use_of_english',
+      label: 'Use of English',
+      questions: useOfEnglishParts.flatMap(p => p.questions),
+    };
+
+    const finalResults = [mergedEnglish, ...electiveSubjects.map(s => ({
+      subject: s.subject,
+      label: s.label,
+      questions: s.questions,
+    }))];
+
     return new Response(
-      JSON.stringify({ questions: results }),
+      JSON.stringify({ questions: finalResults }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
