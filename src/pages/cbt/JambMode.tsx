@@ -165,6 +165,31 @@ const JambMode = () => {
     }
   };
 
+  const fetchExplanationsForSubject = async (subjectId: string, questions: AlocQuestion[]) => {
+    if (explanations[subjectId] || loadingExplanations[subjectId]) return;
+    setLoadingExplanations(prev => ({ ...prev, [subjectId]: true }));
+    try {
+      const questionsData = questions.map(q => ({
+        question: q.question?.replace(/<[^>]*>/g, '') || '',
+        option: q.option,
+        answer: q.answer,
+        subject: subjectId,
+      }));
+      const { data, error } = await supabase.functions.invoke('generate-jamb-explanations', {
+        body: { questions: questionsData }
+      });
+      if (error) throw error;
+      if (data?.explanations) {
+        setExplanations(prev => ({ ...prev, [subjectId]: data.explanations }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch explanations:', err);
+      toast.error('Could not load explanations for this subject');
+    } finally {
+      setLoadingExplanations(prev => ({ ...prev, [subjectId]: false }));
+    }
+  };
+
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
