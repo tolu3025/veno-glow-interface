@@ -21,14 +21,13 @@ serve(async (req) => {
       throw new Error('Exactly 3 additional subjects required');
     }
 
-    // Build fetch list: English 60, Literature (englishlit) 10, + 3 subjects × 40
+    // English is compulsory (60 questions), + 3 user-selected subjects (40 each)
     const fetchList = [
       { subject: 'english', count: 60, label: 'English' },
-      { subject: 'englishlit', count: 10, label: 'Literature (Lekki Headmaster)' },
       ...subjects.map((s: string) => ({
-        subject: s,
+        subject: s === 'englishlit' ? 'englishlit' : s,
         count: 40,
-        label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '),
+        label: s === 'englishlit' ? 'Literature in English' : s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '),
       })),
     ];
 
@@ -47,12 +46,10 @@ serve(async (req) => {
 
         const data = await res.json();
         const allQuestions = data.data || [];
-        // Remove last 10 questions (less reliable)
-        const trimmed = allQuestions.length > 10 ? allQuestions.slice(0, -10) : allQuestions;
         return {
           subject: item.subject,
           label: item.label,
-          questions: trimmed,
+          questions: allQuestions,
         };
       })
     );
