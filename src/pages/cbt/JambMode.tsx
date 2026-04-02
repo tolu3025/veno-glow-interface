@@ -451,7 +451,7 @@ const JambMode = () => {
           ))}
 
           <Button
-            onClick={() => { setActiveSubjectIndex(0); setPhase('explanations'); }}
+            onClick={() => { setActiveSubjectIndex(0); setPhase('explanations'); fetchExplanationsForSubject(subjectQuestions[0]?.subject, subjectQuestions[0]?.questions); }}
             className="w-full h-11 font-semibold border-0"
             style={{ backgroundColor: '#1565C0', color: 'white' }}
           >
