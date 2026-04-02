@@ -566,7 +566,22 @@ const JambMode = () => {
                   {wasSkipped && (
                     <p className="ml-8 text-xs font-medium" style={{ color: '#E65100' }}>⚠️ You skipped this question</p>
                   )}
-                </CardContent>
+                  {/* AI Explanation */}
+                  <div className="ml-8 mt-2">
+                    {loadingExplanations[activeSubject.subject] && !explanations[activeSubject.subject] ? (
+                      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: '#E3F2FD' }}>
+                        <Loader2 size={14} className="animate-spin" style={{ color: '#1565C0' }} />
+                        <span className="text-xs" style={{ color: '#1565C0' }}>Generating explanations...</span>
+                      </div>
+                    ) : explanations[activeSubject.subject]?.[String(qIndex)] ? (
+                      <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: '#F3E5F5', borderColor: '#CE93D8' }}>
+                        <p className="text-xs font-bold mb-1 uppercase" style={{ color: '#7B1FA2' }}>💡 Explanation</p>
+                        <p className="text-sm leading-relaxed" style={{ color: '#4A148C', whiteSpace: 'pre-line' }}>
+                          {explanations[activeSubject.subject][String(qIndex)]}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
               </Card>
             );
           })}
