@@ -84,7 +84,7 @@ const JambMode = () => {
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions returned');
 
-      // No merging — each subject stands on its own
+      // Edge function now merges english+lit into Use of English
       setSubjectQuestions(data.questions);
       setPhase('exam');
     } catch (err: any) {
