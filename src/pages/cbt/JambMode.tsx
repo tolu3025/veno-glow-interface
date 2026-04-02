@@ -582,6 +582,7 @@ const JambMode = () => {
                       </div>
                     ) : null}
                   </div>
+                </CardContent>
               </Card>
             );
           })}
