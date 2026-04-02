@@ -11,6 +11,7 @@ const JAMB_SUBJECTS = [
   { id: 'physics', label: 'Physics' },
   { id: 'chemistry', label: 'Chemistry' },
   { id: 'biology', label: 'Biology' },
+  { id: 'englishlit', label: 'Literature in English' },
   { id: 'commerce', label: 'Commerce' },
   { id: 'accounting', label: 'Accounting' },
   { id: 'government', label: 'Government' },
@@ -81,18 +82,8 @@ const JambMode = () => {
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions returned');
 
-      // Merge English + Literature into one "English" subject
-      const englishData = data.questions.find((q: SubjectQuestions) => q.subject === 'english');
-      const litData = data.questions.find((q: SubjectQuestions) => q.subject === 'englishlit');
-      const otherSubjects = data.questions.filter((q: SubjectQuestions) => q.subject !== 'english' && q.subject !== 'englishlit');
-
-      const mergedEnglish: SubjectQuestions = {
-        subject: 'english',
-        label: 'Use of English',
-        questions: [...(englishData?.questions || []), ...(litData?.questions || [])],
-      };
-
-      setSubjectQuestions([mergedEnglish, ...otherSubjects]);
+      // No merging — each subject stands on its own
+      setSubjectQuestions(data.questions);
       setPhase('exam');
     } catch (err: any) {
       toast.error(err.message || 'Failed to fetch questions');
@@ -113,7 +104,7 @@ const JambMode = () => {
       newScores[sq.subject] = { correct, total: sq.questions.length };
     });
 
-    // Calculate JAMB score out of 400
+    // Calculate JAMB score out of 400 (each subject scored out of 100)
     const subjectScores = Object.values(newScores);
     const jambTotal = subjectScores.reduce((sum, s) => sum + Math.round((s.correct / s.total) * 100), 0);
     const totalCorrect = subjectScores.reduce((a, b) => a + b.correct, 0);
@@ -183,17 +174,14 @@ const JambMode = () => {
   const activeQuestion = activeSubject?.questions[currentQuestionIndex];
   const subjectAnswers = answers[activeSubject?.subject] || {};
 
-  // When switching subjects, reset question index
   const switchSubject = (index: number) => {
     setActiveSubjectIndex(index);
     setCurrentQuestionIndex(0);
     setShowNavPanel(false);
   };
 
-  // Get answered count per subject
   const getAnsweredCount = (subjectId: string) => Object.keys(answers[subjectId] || {}).length;
 
-  // Review data
   const reviewData = useMemo(() => {
     return subjectQuestions.map(sq => ({
       label: sq.label,
@@ -230,7 +218,7 @@ const JambMode = () => {
               <h3 className="font-semibold text-sm uppercase tracking-wide" style={{ color: '#1B5E20' }}>Compulsory Subject</h3>
               <div className="flex items-center gap-2 p-3 rounded-lg border" style={{ backgroundColor: '#E8F5E9', borderColor: '#4CAF50' }}>
                 <Check size={16} style={{ color: '#2E7D32' }} />
-                <span className="font-medium text-sm">Use of English (incl. Literature) — ~60 questions</span>
+                <span className="font-medium text-sm">Use of English — 60 questions</span>
               </div>
             </CardContent>
           </Card>
@@ -436,7 +424,7 @@ const JambMode = () => {
           ))}
 
           <Button
-            onClick={() => setPhase('explanations')}
+            onClick={() => { setActiveSubjectIndex(0); setPhase('explanations'); }}
             className="w-full h-11 font-semibold border-0"
             style={{ backgroundColor: '#1565C0', color: 'white' }}
           >
@@ -480,19 +468,23 @@ const JambMode = () => {
             <div className="w-9" />
           </div>
           <div className="flex overflow-x-auto px-2 pb-2 gap-1">
-            {subjectQuestions.map((sq, i) => (
-              <button
-                key={sq.subject}
-                onClick={() => setActiveSubjectIndex(i)}
-                className="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors"
-                style={{
-                  backgroundColor: i === activeSubjectIndex ? 'white' : 'rgba(255,255,255,0.2)',
-                  color: i === activeSubjectIndex ? '#1B5E20' : 'white',
-                }}
-              >
-                {sq.label}
-              </button>
-            ))}
+            {subjectQuestions.map((sq, i) => {
+              const s = scores[sq.subject];
+              const subjectScore = s ? Math.round((s.correct / s.total) * 100) : 0;
+              return (
+                <button
+                  key={sq.subject}
+                  onClick={() => { setActiveSubjectIndex(i); }}
+                  className="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors"
+                  style={{
+                    backgroundColor: i === activeSubjectIndex ? 'white' : 'rgba(255,255,255,0.2)',
+                    color: i === activeSubjectIndex ? '#1B5E20' : 'white',
+                  }}
+                >
+                  {sq.label} ({subjectScore}/100)
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -502,6 +494,7 @@ const JambMode = () => {
             const correctAnswer = q.answer?.toLowerCase();
             const isCorrect = userAnswer?.toLowerCase() === correctAnswer;
             const optionLabels = ['a', 'b', 'c', 'd'];
+            const wasSkipped = !userAnswer;
 
             return (
               <Card key={qIndex} className="border-0 shadow-sm overflow-hidden">
@@ -513,12 +506,12 @@ const JambMode = () => {
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start gap-2">
                     <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{
-                      backgroundColor: isCorrect ? '#E8F5E9' : '#FFEBEE',
-                      color: isCorrect ? '#2E7D32' : '#C62828',
+                      backgroundColor: wasSkipped ? '#FFF3E0' : isCorrect ? '#E8F5E9' : '#FFEBEE',
+                      color: wasSkipped ? '#E65100' : isCorrect ? '#2E7D32' : '#C62828',
                     }}>
                       {qIndex + 1}
                     </span>
-                    <p className="text-sm" dangerouslySetInnerHTML={{ __html: q.question }} />
+                    <p className="text-sm flex-1" dangerouslySetInnerHTML={{ __html: q.question }} />
                   </div>
                   {q.image && <img src={q.image} alt="question" className="max-w-full rounded" />}
                   <div className="space-y-1.5 ml-8">
@@ -543,6 +536,9 @@ const JambMode = () => {
                       );
                     })}
                   </div>
+                  {wasSkipped && (
+                    <p className="ml-8 text-xs font-medium" style={{ color: '#E65100' }}>⚠️ You skipped this question</p>
+                  )}
                 </CardContent>
               </Card>
             );
