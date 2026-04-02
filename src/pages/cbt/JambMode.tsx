@@ -57,6 +57,8 @@ const JambMode = () => {
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [scores, setScores] = useState<Record<string, { correct: number; total: number }>>({});
   const [showNavPanel, setShowNavPanel] = useState(false);
+  const [explanations, setExplanations] = useState<Record<string, Record<string, string>>>({});
+  const [loadingExplanations, setLoadingExplanations] = useState<Record<string, boolean>>({});
 
   const toggleSubject = (id: string) => {
     setSelectedSubjects(prev => {
