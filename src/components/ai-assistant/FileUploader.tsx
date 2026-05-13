@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Image, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UploadedFile {
   id: string;
@@ -86,35 +87,24 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
       // Read file as base64
       const base64 = await readFileAsBase64(file);
       
-      // Call backend to extract text
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-document-text`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            fileData: base64,
-            fileName: file.name,
-            fileType: file.type,
-          }),
-        }
-      );
+      // Call backend to extract text using the Supabase client
+      const { data, error } = await supabase.functions.invoke('extract-document-text', {
+        body: {
+          fileData: base64,
+          fileName: file.name,
+          fileType: file.type,
+        },
+      });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to extract text');
+      if (error) {
+        throw new Error(error.message || 'Failed to extract text');
       }
-
-      const result = await response.json();
       
-      if (result.success && result.text) {
-        console.log(`Extracted ${result.charCount} characters from ${file.name}`);
-        return result.text;
+      if (data.success && data.text) {
+        console.log(`Extracted ${data.charCount} characters from ${file.name}`);
+        return data.text;
       } else {
-        throw new Error(result.error || 'No text extracted');
+        throw new Error(data.error || 'No text extracted');
       }
     } catch (error) {
       console.error('Document extraction error:', error);
