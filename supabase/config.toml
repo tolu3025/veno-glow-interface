@@ -75,3 +75,6 @@ verify_jwt = true
 
 [functions.fetch-jamb-questions]
 verify_jwt = true
+
+[functions.generate-jamb-explanations]
+verify_jwt = true
