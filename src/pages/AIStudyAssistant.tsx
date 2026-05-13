@@ -148,67 +148,33 @@ const AIStudyAssistant: React.FC = () => {
       // Log the context being sent
       console.log('Sending to AI with document context:', documentContext.length, 'characters');
       
-      const response = await fetch(
-        `https://oavauprgngpftanumlzs.supabase.co/functions/v1/ai-study-assistant`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hdmF1cHJnbmdwZnRhbnVtbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2NjAwNzcsImV4cCI6MjA1MDIzNjA3N30.KSCyROzMVdoW0_lrknnbx6TmabgZTEdsDNVZ67zuKyg`,
-          },
-          body: JSON.stringify({
-            messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-            documentContext,
-            imageContext,
-          }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('ai-study-assistant', {
+        body: {
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          documentContext,
+          imageContext,
+        },
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get response');
+      if (error) {
+        throw new Error(error.message || 'Failed to get response');
       }
 
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
+      // The invoke method currently doesn't support direct streaming in the same way fetch does
+      // But we can check the response data
+      if (!data) throw new Error('No response data');
 
       let assistantMessage = '';
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantMessage += content;
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: assistantMessage };
-                return updated;
-              });
-            }
-          } catch {
-            // Partial JSON, continue
-          }
-        }
+      // If the function returns a simple JSON response instead of a stream
+      if (data.choices && data.choices[0]?.message?.content) {
+        assistantMessage = data.choices[0].message.content;
+        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+      } else if (data.text) {
+        assistantMessage = data.text;
+        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+      } else if (typeof data === 'string') {
+        assistantMessage = data;
+        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
       }
 
       // Save assistant message to database
