@@ -233,19 +233,43 @@ const AppRoutes = () => {
           <Route path="/" element={<PWARootRedirect />} />
           <Route path="/cbt/library" element={<Library />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/cbt/jamb" element={<JambMode />} />
+          <Route path="/cbt/jamb" element={
+            <ProtectedRoute>
+              <JambMode />
+            </ProtectedRoute>
+          } />
           <Route path="/cbt/jamb-challenge" element={<JambChallengeLeaderboard />} />
-          <Route path="/cbt/practice" element={<PracticeMode />} />
-          <Route path="/cbt/course-material-test" element={<CourseMaterialTest />} />
-          <Route path="/ai-tutorial/chat" element={<AiChat />} />
-          <Route path="/ai-tutorial/resources" element={<AiResources />} />
+          <Route path="/cbt/practice" element={
+            <ProtectedRoute>
+              <PracticeMode />
+            </ProtectedRoute>
+          } />
+          <Route path="/cbt/course-material-test" element={
+            <ProtectedRoute>
+              <CourseMaterialTest />
+            </ProtectedRoute>
+          } />
+          <Route path="/ai-tutorial/chat" element={
+            <ProtectedRoute>
+              <AiChat />
+            </ProtectedRoute>
+          } />
+          <Route path="/ai-tutorial/resources" element={
+            <ProtectedRoute>
+              <AiResources />
+            </ProtectedRoute>
+          } />
           <Route path="/tutorial/info" element={<TutorialInfo />} />
           <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
           
           {/* AI Study Assistant route */}
           
           {/* AI Study Assistant route */}
-          <Route path="/ai-assistant" element={<AIStudyAssistant />} />
+          <Route path="/ai-assistant" element={
+            <ProtectedRoute>
+              <AIStudyAssistant />
+            </ProtectedRoute>
+          } />
           
           {/* Voice Tutor route */}
           <Route path="/voice-tutor" element={
