@@ -1,0 +1,4 @@
+## 2025-05-15 - Hardcoded JWT and Insecure Edge Function Secret Leakage
+**Vulnerability:** A hardcoded JWT was found in `AIStudyAssistant.tsx` and `FileUploader.tsx`. Additionally, the `get-openai-key` Edge Function was designed to return the `OPENAI_API_KEY` directly to the client, and several sensitive Edge Functions were configured without JWT verification.
+**Learning:** Hardcoding credentials for convenience or rapid prototyping often leads to them remaining in production-bound code. Providing secrets directly to the client from an Edge Function completely bypasses the security benefits of server-side secrets.
+**Prevention:** Always use dynamic session tokens from `supabase.auth.getSession()` for authenticated requests. Never write functions that return server-side secrets to the client. Enforce `verify_jwt = true` in `supabase/config.toml` for all sensitive operations.
