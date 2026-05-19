@@ -1,0 +1,4 @@
+## 2025-05-22 - [Hardcoded Credentials and Insecure Edge Functions]
+**Vulnerability:** Hardcoded Supabase credentials and JWT tokens were found in multiple frontend files. Additionally, sensitive Edge Functions had `verify_jwt = false` in `supabase/config.toml`, allowing unauthenticated access.
+**Learning:** Hardcoded credentials often creep in during rapid prototyping or when using external API clients that aren't integrated with the app's auth provider. Edge Functions might be left unauthenticated for easier testing but should always be secured before deployment.
+**Prevention:** Always use environment variables for service URLs and keys. Use dynamic session tokens from the authentication context for Edge Function calls. Enforce `verify_jwt = true` for all Edge Functions that process user data or perform sensitive operations.
