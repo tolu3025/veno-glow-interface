@@ -1,0 +1,4 @@
+## 2025-05-22 - [Broken Authentication via Hardcoded JWT and Insecure Edge Functions]
+**Vulnerability:** A hardcoded JWT token was found in the `AIStudyAssistant.tsx` component, used for authenticating requests to a sensitive Edge Function. Additionally, several Edge Functions had `verify_jwt` set to `false` in `supabase/config.toml`, allowing unauthenticated access even if the client-side code was fixed.
+**Learning:** Hardcoded tokens are often used during development but can easily be forgotten and committed. Backend security (e.g., `verify_jwt`) must always be enabled for sensitive operations, even if the frontend seems secure.
+**Prevention:** Always use dynamic session tokens from `supabase.auth.getSession()` for Edge Function calls and enforce `verify_jwt = true` in `supabase/config.toml` for all non-public functions. Use a linter or secret scanner to detect hardcoded JWTs.
