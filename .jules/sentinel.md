@@ -1,0 +1,4 @@
+## 2025-05-15 - Hardcoded JWT in AI Study Assistant
+**Vulnerability:** A hardcoded `anon` JWT was used in `src/pages/AIStudyAssistant.tsx` and `src/components/ai-assistant/FileUploader.tsx` to authorize requests to Supabase Edge Functions. Additionally, these functions were configured with `verify_jwt = false` in `supabase/config.toml`.
+**Learning:** Hardcoding tokens, even `anon` tokens, is a security risk as it exposes credentials in the source code. Bypassing JWT verification on Edge Functions that interact with paid services (like OpenAI) allows potential cost exploitation and unauthorized access.
+**Prevention:** Always use dynamic session tokens from `supabase.auth.getSession()` for authorized requests. Ensure `verify_jwt = true` is set in `supabase/config.toml` for all sensitive Edge Functions.
