@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Image, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UploadedFile {
@@ -83,17 +84,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
 
   const extractDocumentText = async (file: File): Promise<string> => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Authentication required for document extraction');
+      }
+
       // Read file as base64
       const base64 = await readFileAsBase64(file);
       
       // Call backend to extract text
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://oavauprgngpftanumlzs.supabase.co';
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-document-text`,
+        `${supabaseUrl}/functions/v1/extract-document-text`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             fileData: base64,
