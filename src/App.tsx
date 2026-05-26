@@ -243,9 +243,11 @@ const AppRoutes = () => {
           <Route path="/tutorial/watch" element={<VideoPlayerPage />} />
           
           {/* AI Study Assistant route */}
-          
-          {/* AI Study Assistant route */}
-          <Route path="/ai-assistant" element={<AIStudyAssistant />} />
+          <Route path="/ai-assistant" element={
+            <ProtectedRoute>
+              <AIStudyAssistant />
+            </ProtectedRoute>
+          } />
           
           {/* Voice Tutor route */}
           <Route path="/voice-tutor" element={
