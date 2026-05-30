@@ -25,9 +25,6 @@ refresh_token_reuse_interval = 10
 [functions]
 timeout_seconds = 30
 
-[functions.get-openai-key]
-verify_jwt = true
-
 [functions.brevo-email-confirmation]
 verify_jwt = false
 
@@ -56,13 +53,13 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-study-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-ai-questions]
-verify_jwt = false
+verify_jwt = true
 
 [functions.extract-document-text]
-verify_jwt = false
+verify_jwt = true
 
 [functions.realtime-voice-token]
 verify_jwt = true
