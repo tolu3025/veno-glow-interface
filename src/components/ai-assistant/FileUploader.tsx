@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Image, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UploadedFile {
   id: string;
@@ -83,6 +84,12 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
 
   const extractDocumentText = async (file: File): Promise<string> => {
     try {
+      // Get session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required to process documents');
+      }
+
       // Read file as base64
       const base64 = await readFileAsBase64(file);
       
@@ -93,7 +100,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFilesProcessed, uploadedF
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             fileData: base64,
