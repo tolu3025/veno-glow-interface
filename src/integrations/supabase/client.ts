@@ -3,8 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Supabase connection constants
-const SUPABASE_URL = "https://oavauprgngpftanumlzs.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hdmF1cHJnbmdwZnRhbnVtbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2NjAwNzcsImV4cCI6MjA1MDIzNjA3N30.KSCyROzMVdoW0_lrknnbx6TmabgZTEdsDNVZ67zuKyg";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.warn('Supabase credentials missing. Ensure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are set in your environment.');
+}
 
 // Maximum number of retries for operations
 const MAX_RETRIES = 3;
@@ -12,8 +16,8 @@ const INITIAL_BACKOFF_MS = 1000;
 
 // Create a standard client with enhanced configuration
 export const supabase = createClient<Database>(
-  SUPABASE_URL, 
-  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_URL || '',
+  SUPABASE_PUBLISHABLE_KEY || '',
   {
     auth: {
       persistSession: true,
@@ -163,9 +167,9 @@ export const retryOperation = async <T>(
 
 // Enhanced query function with retry and offline detection
 export const querySafe = async <T>(
-  queryFn: () => Promise<{ data: T | null, error: any }>,
+  queryFn: () => Promise<{ data: T | null, error: unknown }>,
   fallbackData: T | null = null
-): Promise<{ data: T | null, error: any, offline: boolean }> => {
+): Promise<{ data: T | null, error: unknown, offline: boolean }> => {
   if (!isOnline()) {
     return { data: fallbackData, error: new Error('Device is offline'), offline: true };
   }

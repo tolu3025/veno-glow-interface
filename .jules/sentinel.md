@@ -1,0 +1,4 @@
+## 2025-05-15 - [Hardcoded Secrets and Insecure Authentication]
+**Vulnerability:** Hardcoded Supabase secrets (URL and JWT) were found in the integration client and frontend components. Furthermore, Edge Function calls were using a static publishable key for authentication instead of dynamic user session tokens.
+**Learning:** Hardcoded secrets often remain as fallbacks even after environment variables are introduced, creating a persistent risk. Using publishable keys for authentication on Edge Functions prevents the backend from enforcing proper row-level security (RLS) or user-specific logic.
+**Prevention:** Remove all hardcoded fallbacks for secrets. Always use `supabase.auth.getSession()` to retrieve dynamic access tokens for manual `fetch` calls to Edge Functions to ensure the user's identity is correctly propagated.
