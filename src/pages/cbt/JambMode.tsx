@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, Clock, Loader2, ChevronLeft, ChevronRight, Menu, X, Eye, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { sanitizeHtml } from '@/lib/utils';
 
 const JAMB_SUBJECTS = [
   { id: 'mathematics', label: 'Mathematics' },
@@ -527,7 +528,7 @@ const JambMode = () => {
               <Card key={qIndex} className="border-0 shadow-sm overflow-hidden">
                 {q.section && (
                   <div className="px-4 pt-3 pb-2 text-xs italic border-b" style={{ backgroundColor: '#F5F5F5', color: '#666' }}>
-                    <div dangerouslySetInnerHTML={{ __html: q.section }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(q.section) }} />
                   </div>
                 )}
                 <CardContent className="p-4 space-y-2">
@@ -538,7 +539,7 @@ const JambMode = () => {
                     }}>
                       {qIndex + 1}
                     </span>
-                    <p className="text-sm flex-1" dangerouslySetInnerHTML={{ __html: q.question }} />
+                    <p className="text-sm flex-1" dangerouslySetInnerHTML={{ __html: sanitizeHtml(q.question) }} />
                   </div>
                   {q.image && <img src={q.image} alt="question" className="max-w-full rounded" />}
                   <div className="space-y-1.5 ml-8">
@@ -556,7 +557,7 @@ const JambMode = () => {
                       return (
                         <div key={key} className="p-2.5 rounded-lg text-sm border" style={{ backgroundColor: bg, borderColor: border, color: textColor }}>
                           <span className="font-bold mr-2 uppercase">{key}.</span>
-                          <span dangerouslySetInnerHTML={{ __html: val }} />
+                          <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(val) }} />
                           {isThisCorrect && <Check size={14} className="inline ml-2" style={{ color: '#2E7D32' }} />}
                           {isThisSelected && !isThisCorrect && <X size={14} className="inline ml-2" style={{ color: '#C62828' }} />}
                         </div>
@@ -654,14 +655,14 @@ const JambMode = () => {
             {activeQuestion.section && (
               <div className="mb-4 p-3 rounded-lg border text-sm" style={{ backgroundColor: '#F1F8E9', borderColor: '#AED581' }}>
                 <p className="text-xs font-semibold mb-1 uppercase" style={{ color: '#558B2F' }}>Passage / Instruction</p>
-                <div dangerouslySetInnerHTML={{ __html: activeQuestion.section }} className="prose prose-sm max-w-none" />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeQuestion.section) }} className="prose prose-sm max-w-none" />
               </div>
             )}
 
             {/* Question */}
             <Card className="border-0 shadow-md mb-4">
               <CardContent className="p-5 space-y-4">
-                <p className="text-base font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: activeQuestion.question }} />
+                <p className="text-base font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeQuestion.question) }} />
                 {activeQuestion.image && (
                   <img src={activeQuestion.image} alt="question" className="max-w-full rounded-lg border" />
                 )}
@@ -688,7 +689,7 @@ const JambMode = () => {
                         }}>
                           {key.toUpperCase()}
                         </span>
-                        <span dangerouslySetInnerHTML={{ __html: val }} className="pt-0.5" />
+                        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(val) }} className="pt-0.5" />
                       </button>
                     );
                   })}

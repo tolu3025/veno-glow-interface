@@ -6,7 +6,7 @@ import { ArrowLeft, CheckCircle, XCircle, Calculator, Lightbulb, BookOpen, Chevr
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeHtml } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
@@ -185,7 +185,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
             </div>
             <div className="flex-1">
               <div className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
-                <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedContent) }} />
               </div>
             </div>
           </div>
@@ -200,7 +200,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
         return (
           <div key={index} className="mb-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="text-green-700 dark:text-green-300 text-sm bg-white dark:bg-gray-800 p-3 rounded border">
-              <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedContent) }} />
             </div>
           </div>
         );
@@ -211,7 +211,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
       
       return (
         <div key={index} className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
-          <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedContent) }} />
         </div>
       );
     });
@@ -320,7 +320,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-base leading-relaxed mb-3">
                         <div dangerouslySetInnerHTML={{ 
-                          __html: `${index + 1}. ${formatTextWithLatex(questionText)}`
+                          __html: sanitizeHtml(`${index + 1}. ${formatTextWithLatex(questionText)}`)
                         }} />
                       </CardTitle>
                       
@@ -349,7 +349,7 @@ const DetailedExplanationView: React.FC<DetailedExplanationViewProps> = ({
                               {String.fromCharCode(65 + optionIndex)}
                             </div>
                             <div className="flex-1 leading-relaxed">
-                              <div dangerouslySetInnerHTML={{ __html: formatTextWithLatex(option) }} />
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatTextWithLatex(option)) }} />
                             </div>
                             {optionIndex === correctAnswer && 
                               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
