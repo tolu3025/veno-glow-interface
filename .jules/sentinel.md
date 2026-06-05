@@ -1,0 +1,4 @@
+## 2025-05-15 - Hardcoded Credentials and Insecure Edge Functions
+**Vulnerability:** Hardcoded Supabase 'anon' keys were found in multiple files (src/integrations/supabase/client.ts, src/pages/AIStudyAssistant.tsx). Additionally, several AI-powered Edge Functions had `verify_jwt = false` in supabase/config.toml, allowing unauthenticated execution.
+**Learning:** Hardcoding 'anon' keys leads to maintenance debt and security risks if the keys need rotation. Disabling JWT verification on Edge Functions that call expensive downstream APIs (like OpenAI) exposes the project to financial and resource exhaustion risks.
+**Prevention:** Always use environment variables for Supabase credentials. Enforce `verify_jwt = true` for any Edge Function that handles sensitive data or incurs significant costs, and use `supabase.auth.getSession()` to provide dynamic user tokens in frontend requests.
