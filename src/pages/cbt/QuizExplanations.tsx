@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/utils';
 import 'katex/dist/katex.min.css';
 import { renderToString } from 'katex';
 
@@ -172,7 +173,7 @@ const QuizExplanations: React.FC = () => {
           <div key={index} className="mb-4">
             <div className="bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-l-4 border-primary rounded-r-lg p-3">
               <h4 className="font-bold text-primary text-base mb-1">
-                <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(trimmed)) }} />
               </h4>
             </div>
           </div>
@@ -185,7 +186,7 @@ const QuizExplanations: React.FC = () => {
           <div key={index} className="mb-4">
             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
               <div className="font-mono text-sm bg-white dark:bg-slate-900 p-3 rounded border">
-                <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(trimmed)) }} />
               </div>
             </div>
           </div>
@@ -199,7 +200,7 @@ const QuizExplanations: React.FC = () => {
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-l-4 border-green-500 dark:border-green-400">
               <div className="font-semibold text-green-800 dark:text-green-200 flex items-start gap-2">
                 <span className="text-green-600 dark:text-green-400 mt-1">✓</span>
-                <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(trimmed)) }} />
               </div>
             </div>
           </div>
@@ -211,7 +212,7 @@ const QuizExplanations: React.FC = () => {
         return (
           <div key={index} className="mb-3">
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-2 font-mono text-center border border-blue-200 dark:border-blue-800">
-              <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
+              <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(trimmed)) }} />
             </div>
           </div>
         );
@@ -221,7 +222,7 @@ const QuizExplanations: React.FC = () => {
       return (
         <div key={index} className="mb-3">
           <p className="text-foreground leading-relaxed">
-            <span dangerouslySetInnerHTML={{ __html: renderLatexContent(trimmed) }} />
+            <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(trimmed)) }} />
           </p>
         </div>
       );
@@ -236,7 +237,7 @@ const QuizExplanations: React.FC = () => {
     return paragraphs.map((paragraph, index) => (
       <div key={index} className="mb-3">
         <p className="text-foreground leading-relaxed text-sm">
-          <span dangerouslySetInnerHTML={{ __html: renderLatexContent(paragraph.trim()) }} />
+          <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(paragraph.trim())) }} />
         </p>
       </div>
     ));
@@ -306,7 +307,7 @@ const QuizExplanations: React.FC = () => {
                       </Badge>
                     </div>
                     <h3 className="text-base font-medium leading-relaxed">
-                      <span dangerouslySetInnerHTML={{ __html: renderLatexContent(question.question) }} />
+                      <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(question.question)) }} />
                     </h3>
                   </div>
                 </div>
@@ -335,7 +336,7 @@ const QuizExplanations: React.FC = () => {
                             {String.fromCharCode(65 + optionIndex)}.
                           </span>
                           <span className="flex-1">
-                            <span dangerouslySetInnerHTML={{ __html: renderLatexContent(option) }} />
+                            <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderLatexContent(option)) }} />
                           </span>
                           {isCorrectOption && (
                             <Badge variant="default" className="text-xs">Correct</Badge>
