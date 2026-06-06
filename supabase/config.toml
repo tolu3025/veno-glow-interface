@@ -56,7 +56,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-study-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-ai-questions]
 verify_jwt = false
