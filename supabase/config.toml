@@ -29,19 +29,19 @@ timeout_seconds = 30
 verify_jwt = true
 
 [functions.brevo-email-confirmation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-payment]
 verify_jwt = true
 
 [functions.send-notification-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-tutor]
-verify_jwt = false
+verify_jwt = true
 
 [functions.flutterwave-callback]
-verify_jwt = false
+verify_jwt = true
 
 [functions.flutterwave-payment]
 verify_jwt = true
@@ -56,25 +56,25 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-study-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-ai-questions]
-verify_jwt = false
+verify_jwt = true
 
 [functions.extract-document-text]
-verify_jwt = false
+verify_jwt = true
 
 [functions.realtime-voice-token]
 verify_jwt = true
 
 [functions.distribute-weekly-coins]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-organization-exam]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-pdf-questions]
-verify_jwt = false
+verify_jwt = true
 
 [functions.fetch-jamb-questions]
-verify_jwt = false
+verify_jwt = true
