@@ -1,0 +1,4 @@
+## 2025-05-22 - Remediation of Cross-Site Scripting (XSS) Vulnerabilities in CBT Components
+**Vulnerability:** Several components rendering Computer Based Test (CBT) questions and explanations were using `dangerouslySetInnerHTML` with unsanitized content from the backend/AI, posing a significant XSS risk.
+**Learning:** The application heavily relies on rendering HTML and LaTeX content for educational material. While `react-markdown` was used in some places, others manually processed strings and injected them directly into the DOM to support complex formatting and KaTeX rendering.
+**Prevention:** Always use a sanitization library like `DOMPurify` when `dangerouslySetInnerHTML` is necessary. Created a centralized `sanitizeHtml` utility in `src/lib/security.ts` configured to support MathML (often used by KaTeX) while stripping malicious scripts and attributes.
