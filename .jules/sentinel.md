@@ -1,0 +1,4 @@
+## 2025-06-13 - Secure Edge Function Communication
+**Vulnerability:** Hardcoded Supabase JWT token and publishable key used in frontend `fetch` calls to Edge Functions. Sensitive Edge Functions were configured with `verify_jwt = false` in `supabase/config.toml`, making them publicly accessible.
+**Learning:** Manual `fetch` calls to Supabase Edge Functions (e.g., for streaming support) do not automatically attach the user's session JWT. Developers might resort to hardcoding tokens or disabling JWT verification to make them work.
+**Prevention:** Always use `supabase.auth.getSession()` to retrieve dynamic access tokens for manual `fetch` calls. Ensure all sensitive Edge Functions have `verify_jwt = true` in `supabase/config.toml`. Use `supabase.functions.invoke()` when streaming is not required, as it handles authentication automatically.
