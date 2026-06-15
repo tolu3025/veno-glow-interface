@@ -1,0 +1,4 @@
+## 2025-06-15 - Remediated Hardcoded Credentials and Insecure Edge Functions
+**Vulnerability:** Hardcoded Supabase anon keys and static JWT tokens were being used in frontend components (`AIStudyAssistant.tsx`, `client.ts`) and several Edge Functions had `verify_jwt = false`.
+**Learning:** Hardcoding credentials often happens during rapid prototyping but leads to significant security risks if not replaced with environment variables and dynamic session management. Manual `fetch` calls to Edge Functions bypassed the automatic authentication handling provided by the Supabase SDK.
+**Prevention:** Always use `import.meta.env` for Supabase credentials. Use `supabase.auth.getSession()` to retrieve dynamic access tokens for manual `fetch` calls to Edge Functions, and ensure `verify_jwt = true` is set in `supabase/config.toml` for all sensitive backend logic.
