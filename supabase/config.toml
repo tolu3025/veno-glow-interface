@@ -56,13 +56,13 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-study-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-ai-questions]
-verify_jwt = false
+verify_jwt = true
 
 [functions.extract-document-text]
-verify_jwt = false
+verify_jwt = true
 
 [functions.realtime-voice-token]
 verify_jwt = true
@@ -77,4 +77,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.fetch-jamb-questions]
-verify_jwt = false
+verify_jwt = true
