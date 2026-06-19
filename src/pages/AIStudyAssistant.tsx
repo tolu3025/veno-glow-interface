@@ -3,6 +3,7 @@ import { Send, Loader2, Sparkles, ArrowLeft, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import WelcomeAnimator from '@/components/ai-assistant/WelcomeAnimator';
@@ -145,16 +146,19 @@ const AIStudyAssistant: React.FC = () => {
     await saveMessage(sessionId, 'user', fullMessage);
 
     try {
+      // Get the current session to use the access token
+      const { data: { session } } = await supabase.auth.getSession();
+
       // Log the context being sent
       console.log('Sending to AI with document context:', documentContext.length, 'characters');
       
       const response = await fetch(
-        `https://oavauprgngpftanumlzs.supabase.co/functions/v1/ai-study-assistant`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-study-assistant`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hdmF1cHJnbmdwZnRhbnVtbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2NjAwNzcsImV4cCI6MjA1MDIzNjA3N30.KSCyROzMVdoW0_lrknnbx6TmabgZTEdsDNVZ67zuKyg`,
+            'Authorization': `Bearer ${session?.access_token || ''}`,
           },
           body: JSON.stringify({
             messages: newMessages.map(m => ({ role: m.role, content: m.content })),
