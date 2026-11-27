@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.credit_wallet(uuid, numeric) FROM PUBLIC;

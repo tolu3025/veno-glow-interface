@@ -1,0 +1,9 @@
+project_id = "yuydjchodsjbnbwsvhpz"
+
+[functions.breet-webhook]
+verify_jwt = false
+
+[functions.reconcile-withdrawals]
+verify_jwt = false
+
+

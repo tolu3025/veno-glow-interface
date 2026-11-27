@@ -1,0 +1,1 @@
+ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'merchant_payment'; ALTER TYPE transaction_type ADD VALUE IF NOT EXISTS 'service_request_payout';

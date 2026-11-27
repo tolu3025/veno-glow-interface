@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.kyc_max_balance(uuid) FROM PUBLIC, anon, authenticated;

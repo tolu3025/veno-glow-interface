@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kuka Pay — Offline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #f5f3ff; color: #3b0764;
+    }
+    .container { text-align: center; padding: 2rem; max-width: 400px; }
+    .icon { font-size: 4rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: #6b21a8; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    button {
+      background: #6b21a8; color: white; border: none; padding: 0.75rem 2rem;
+      border-radius: 0.75rem; font-size: 1rem; cursor: pointer;
+    }
+    button:hover { background: #581c87; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1>You're Offline</h1>
+    <p>Kuka Pay needs an internet connection. Your queued transactions will sync automatically when you're back online.</p>
+    <button onclick="location.reload()" style="margin-bottom: 1rem;">Try Again</button>
+    <div style="margin-top: 1.5rem; font-size: 0.85rem; color: #6b21a8;">
+      Need help? <a href="mailto:support@kukapay.com.ng" style="color: #6b21a8; text-decoration: underline;">Contact Support</a>
+    </div>
+  </div>
+</body>
+</html>

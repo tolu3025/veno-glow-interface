@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.collections_award_bonus_trigger() FROM PUBLIC, anon, authenticated;
